@@ -11,18 +11,18 @@ import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { ArrowLeft, ArrowRight, Check, Sparkles } from "lucide-react"
 
 const steps = [
-  { id: 1, name: "Basics", description: "Card name and reward" },
-  { id: 2, name: "Design", description: "Colors and branding" },
-  { id: 3, name: "Review", description: "Preview and launch" },
+  { id: 1, name: "Datos", description: "Nombre y recompensa" },
+  { id: 2, name: "Diseño", description: "Colores y marca" },
+  { id: 3, name: "Revisión", description: "Vista previa y crear" },
 ]
 
 const colorPresets = [
-  { name: "Orange", value: "#f97316" },
-  { name: "Blue", value: "#3b82f6" },
-  { name: "Green", value: "#10b981" },
-  { name: "Purple", value: "#8b5cf6" },
-  { name: "Pink", value: "#ec4899" },
-  { name: "Amber", value: "#f59e0b" },
+  { name: "Naranja", value: "#f97316" },
+  { name: "Azul", value: "#3b82f6" },
+  { name: "Verde", value: "#10b981" },
+  { name: "Púrpura", value: "#8b5cf6" },
+  { name: "Rosa", value: "#ec4899" },
+  { name: "Ámbar", value: "#f59e0b" },
 ]
 
 export default function CreateCardPage() {
@@ -35,7 +35,7 @@ export default function CreateCardPage() {
     expirationDate: "",
     description: "",
     brandColor: "#f97316",
-    businessName: "Your Business",
+    businessName: "Tu Negocio",
   })
 
   const updateFormData = (field: string, value: string | number) => {
@@ -66,8 +66,8 @@ export default function CreateCardPage() {
           <ArrowLeft className="h-4 w-4" />
           Back to Cards
         </Link>
-        <h1 className="text-2xl font-bold text-foreground">Create Loyalty Card</h1>
-        <p className="text-muted-foreground">Set up a new loyalty card campaign in just a few steps</p>
+        <h1 className="text-2xl font-bold text-foreground">Crear Tarjeta de Lealtad</h1>
+        <p className="text-muted-foreground">Configura una nueva tarjeta de lealtad en pocos pasos</p>
       </div>
 
       {/* Progress Steps */}
@@ -117,41 +117,41 @@ export default function CreateCardPage() {
           {currentStep === 1 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-lg font-semibold text-foreground mb-1">Card Basics</h2>
+                <h2 className="text-lg font-semibold text-foreground mb-1">Datos de la Tarjeta</h2>
                 <p className="text-sm text-muted-foreground">
-                  What will customers earn with this card?
+                  ¿Qué ganarán los clientes con esta tarjeta?
                 </p>
               </div>
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="cardName">Card Name</Label>
+                  <Label htmlFor="cardName">Nombre de la Tarjeta</Label>
                   <Input
                     id="cardName"
-                    placeholder="e.g., Coffee Rewards"
+                    placeholder="Ej: Café Rewards"
                     value={formData.cardName}
                     onChange={(e) => updateFormData("cardName", e.target.value)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    This is the name customers will see on their card
+                    Este es el nombre que los clientes verán en su tarjeta
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="reward">Reward</Label>
+                  <Label htmlFor="reward">Recompensa</Label>
                   <Input
                     id="reward"
-                    placeholder="e.g., Free Coffee"
+                    placeholder="Ej: Café Gratis"
                     value={formData.reward}
                     onChange={(e) => updateFormData("reward", e.target.value)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    What do customers get when they complete the card?
+                    ¿Qué obtienen los clientes al completar la tarjeta?
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="maxStamps">Stamps Required</Label>
+                  <Label htmlFor="maxStamps">Sellos Requeridos</Label>
                   <div className="flex items-center gap-3">
                     {[5, 8, 10, 12, 15].map((num) => (
                       <button
@@ -168,12 +168,12 @@ export default function CreateCardPage() {
                     ))}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    How many stamps to earn the reward?
+                    ¿Cuántos sellos para ganar la recompensa?
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="expirationDate">Expiration Date (optional)</Label>
+                  <Label htmlFor="expirationDate">Fecha de Vencimiento (opcional)</Label>
                   <Input
                     id="expirationDate"
                     type="date"
@@ -183,10 +183,10 @@ export default function CreateCardPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description (optional)</Label>
+                  <Label htmlFor="description">Descripción (opcional)</Label>
                   <Textarea
                     id="description"
-                    placeholder="Add any extra details about your loyalty program..."
+                    placeholder="Agrega detalles sobre tu programa de lealtad..."
                     value={formData.description}
                     onChange={(e) => updateFormData("description", e.target.value)}
                     rows={3}
@@ -200,25 +200,25 @@ export default function CreateCardPage() {
           {currentStep === 2 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-lg font-semibold text-foreground mb-1">Card Design</h2>
+                <h2 className="text-lg font-semibold text-foreground mb-1">Diseño de Tarjeta</h2>
                 <p className="text-sm text-muted-foreground">
-                  Customize the look of your loyalty card
+                  Personaliza la apariencia de tu tarjeta de lealtad
                 </p>
               </div>
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="businessName">Business Name</Label>
+                  <Label htmlFor="businessName">Nombre del Negocio</Label>
                   <Input
                     id="businessName"
-                    placeholder="Your Business Name"
+                    placeholder="Nombre de tu Negocio"
                     value={formData.businessName}
                     onChange={(e) => updateFormData("businessName", e.target.value)}
                   />
                 </div>
 
                 <div className="space-y-3">
-                  <Label>Brand Color</Label>
+                  <Label>Color de Marca</Label>
                   <div className="grid grid-cols-6 gap-3">
                     {colorPresets.map((color) => (
                       <button
@@ -236,7 +236,7 @@ export default function CreateCardPage() {
                   </div>
                   <div className="flex items-center gap-3 mt-4">
                     <Label htmlFor="customColor" className="text-sm text-muted-foreground">
-                      Custom:
+                      Personalizado:
                     </Label>
                     <input
                       type="color"
@@ -260,37 +260,37 @@ export default function CreateCardPage() {
           {currentStep === 3 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-lg font-semibold text-foreground mb-1">Review & Launch</h2>
+                <h2 className="text-lg font-semibold text-foreground mb-1">Revisión y Creación</h2>
                 <p className="text-sm text-muted-foreground">
-                  Make sure everything looks good before creating your card
+                  Asegúrate de que todo esté correcto antes de crear tu tarjeta
                 </p>
               </div>
 
               <div className="space-y-4">
                 <div className="bg-muted/50 rounded-xl p-4 space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Card Name</span>
+                    <span className="text-sm text-muted-foreground">Nombre de Tarjeta</span>
                     <span className="text-sm font-medium text-foreground">
                       {formData.cardName || "Not set"}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Reward</span>
+                    <span className="text-sm text-muted-foreground">Recompensa</span>
                     <span className="text-sm font-medium text-foreground">
                       {formData.reward || "Not set"}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Stamps Required</span>
+                    <span className="text-sm text-muted-foreground">Sellos Requeridos</span>
                     <span className="text-sm font-medium text-foreground">{formData.maxStamps}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Business Name</span>
+                    <span className="text-sm text-muted-foreground">Nombre del Negocio</span>
                     <span className="text-sm font-medium text-foreground">{formData.businessName}</span>
                   </div>
                   {formData.expirationDate && (
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Expires</span>
+                      <span className="text-sm text-muted-foreground">Vence</span>
                       <span className="text-sm font-medium text-foreground">{formData.expirationDate}</span>
                     </div>
                   )}
@@ -299,9 +299,9 @@ export default function CreateCardPage() {
                 <div className="bg-primary/10 rounded-xl p-4 flex items-start gap-3">
                   <Sparkles className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-foreground">Ready to go!</p>
+                    <p className="text-sm font-medium text-foreground">¡Listo para crear!</p>
                     <p className="text-xs text-muted-foreground">
-                      After creating, you&apos;ll get a QR code that customers can scan to join your loyalty program.
+                      Después de crear, obtendrás un código QR que los clientes pueden escanear para unirse a tu programa de lealtad.
                     </p>
                   </div>
                 </div>
@@ -317,17 +317,17 @@ export default function CreateCardPage() {
               disabled={currentStep === 1}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+              Atrás
             </Button>
             {currentStep < 3 ? (
               <Button onClick={nextStep}>
-                Continue
+                Continuar
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             ) : (
               <Button onClick={handleCreate}>
                 <Check className="h-4 w-4 mr-2" />
-                Create Card
+                Crear Tarjeta
               </Button>
             )}
           </div>
@@ -337,15 +337,15 @@ export default function CreateCardPage() {
         <div className="lg:sticky lg:top-24 h-fit">
           <div className="bg-muted/30 rounded-2xl p-8 border border-border">
             <h3 className="text-sm font-medium text-muted-foreground mb-6 text-center">
-              Live Preview
+              Vista Previa
             </h3>
             <LoyaltyCardPreview
-              businessName={formData.businessName || "Your Business"}
-              customerName="Happy Customer"
+              businessName={formData.businessName || "Tu Negocio"}
+              customerName="Cliente Feliz"
               currentStamps={Math.floor(formData.maxStamps * 0.6)}
               maxStamps={formData.maxStamps}
-              reward={formData.reward || "Your Reward"}
-              expirationDate={formData.expirationDate ? new Date(formData.expirationDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : undefined}
+              reward={formData.reward || "Tu Recompensa"}
+              expirationDate={formData.expirationDate ? new Date(formData.expirationDate).toLocaleDateString("es-US", { month: "short", day: "numeric", year: "numeric" }) : undefined}
               brandColor={formData.brandColor}
             />
           </div>

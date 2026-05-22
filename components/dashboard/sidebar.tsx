@@ -18,11 +18,11 @@ import { Button } from "@/components/ui/button"
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Loyalty Cards", href: "/dashboard/cards", icon: CreditCard },
-  { name: "Customers", href: "/dashboard/customers", icon: Users },
-  { name: "QR Codes", href: "/dashboard/qr-codes", icon: QrCode },
-  { name: "Branding", href: "/dashboard/branding", icon: Palette },
-  { name: "Settings", href: "/dashboard/settings", icon: Settings },
+  { name: "Tarjetas de Lealtad", href: "/dashboard/cards", icon: CreditCard },
+  { name: "Clientes", href: "/dashboard/customers", icon: Users },
+  { name: "Códigos QR", href: "/dashboard/qr-codes", icon: QrCode },
+  { name: "Marca", href: "/dashboard/branding", icon: Palette },
+  { name: "Configuración", href: "/dashboard/settings", icon: Settings },
 ]
 
 export function DashboardSidebar() {
@@ -71,7 +71,7 @@ export function DashboardSidebar() {
             </div>
             <div className="flex flex-col">
               <span className="font-semibold text-foreground">Koda Fidelity</span>
-              <span className="text-xs text-muted-foreground">Loyalty Platform</span>
+              <span className="text-xs text-muted-foreground">Plataforma de Lealtad</span>
             </div>
           </div>
 
@@ -101,12 +101,12 @@ export function DashboardSidebar() {
           {/* Bottom section */}
           <div className="p-4 border-t border-border">
             <div className="rounded-xl bg-muted/50 p-4">
-              <p className="text-xs font-medium text-foreground mb-1">Need help?</p>
+              <p className="text-xs font-medium text-foreground mb-1">¿Necesitas ayuda?</p>
               <p className="text-xs text-muted-foreground mb-3">
-                Check our docs or contact support
+                Revisa nuestros docs o contacta soporte
               </p>
               <Button size="sm" variant="secondary" className="w-full text-xs">
-                View Documentation
+                Ver Documentación
               </Button>
             </div>
           </div>

@@ -35,18 +35,16 @@ export default function CardsPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Loyalty Cards</h1>
-          <p className="text-muted-foreground">Manage your digital loyalty card campaigns</p>
+          <h1 className="text-2xl font-bold text-foreground">Tarjetas de Lealtad</h1>
+          <p className="text-muted-foreground">Gestiona tus campañas de tarjetas de lealtad digitales</p>
         </div>
         <Link href="/dashboard/cards/new">
           <Button>
             <Plus className="h-4 w-4 mr-2" />
-            Create Card
+            Crear Tarjeta
           </Button>
         </Link>
       </div>
-
-      {/* Cards Grid */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {cards.map((card) => (
           <div
@@ -67,12 +65,12 @@ export default function CardsPage() {
                   {card.name.charAt(0)}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
                     card.status === "active" 
                       ? "bg-green-100 text-green-700" 
                       : "bg-muted text-muted-foreground"
                   }`}>
-                    {card.status === "active" ? "Active" : "Paused"}
+                    {card.status === "active" ? "Activa" : "Pausada"}
                   </span>
                   <Button variant="ghost" size="icon" className="h-8 w-8">
                     <MoreVertical className="h-4 w-4" />
@@ -85,11 +83,11 @@ export default function CardsPage() {
 
               <div className="bg-muted/50 rounded-xl p-3 mb-4">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Reward</span>
+                  <span className="text-muted-foreground">Recompensa</span>
                   <span className="font-medium text-foreground">{card.reward}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm mt-1">
-                  <span className="text-muted-foreground">Required stamps</span>
+                  <span className="text-muted-foreground">Sellos requeridos</span>
                   <span className="font-medium text-foreground">{card.maxStamps}</span>
                 </div>
               </div>
@@ -99,17 +97,17 @@ export default function CardsPage() {
                 <div className="text-center p-2 bg-muted/30 rounded-lg">
                   <Users className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
                   <p className="text-sm font-semibold text-foreground">{card.customers}</p>
-                  <p className="text-xs text-muted-foreground">Customers</p>
+                  <p className="text-xs text-muted-foreground">Clientes</p>
                 </div>
                 <div className="text-center p-2 bg-muted/30 rounded-lg">
                   <Stamp className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
                   <p className="text-sm font-semibold text-foreground">{card.totalStamps}</p>
-                  <p className="text-xs text-muted-foreground">Stamps</p>
+                  <p className="text-xs text-muted-foreground">Sellos</p>
                 </div>
                 <div className="text-center p-2 bg-muted/30 rounded-lg">
                   <QrCode className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
                   <p className="text-sm font-semibold text-foreground">1</p>
-                  <p className="text-xs text-muted-foreground">QR Code</p>
+                  <p className="text-xs text-muted-foreground">Código QR</p>
                 </div>
               </div>
 
@@ -117,7 +115,7 @@ export default function CardsPage() {
               <div className="flex gap-2">
                 <Link href={`/dashboard/cards/${card.id}`} className="flex-1">
                   <Button variant="outline" className="w-full">
-                    View Details
+                    Ver Detalles
                   </Button>
                 </Link>
                 <Link href="/dashboard/qr-codes">
@@ -138,9 +136,9 @@ export default function CardsPage() {
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
             <Plus className="h-8 w-8 text-primary" />
           </div>
-          <h3 className="font-semibold text-lg text-foreground mb-2">Create New Card</h3>
+          <h3 className="font-semibold text-lg text-foreground mb-2">Crear Nueva Tarjeta</h3>
           <p className="text-sm text-muted-foreground max-w-[200px]">
-            Start a new loyalty campaign and engage your customers
+            Inicia una nueva campaña de lealtad y atrae a tus clientes
           </p>
         </Link>
       </div>

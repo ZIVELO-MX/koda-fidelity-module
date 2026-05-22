@@ -17,7 +17,7 @@ const colorPresets = [
 
 export default function BrandingPage() {
   const [brandColor, setBrandColor] = useState("#f97316")
-  const [businessName, setBusinessName] = useState("Your Business")
+  const [businessName, setBusinessName] = useState("Tu Negocio")
   const [saved, setSaved] = useState(false)
 
   const handleSave = () => {
@@ -29,13 +29,13 @@ export default function BrandingPage() {
     <div className="space-y-8 max-w-2xl">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Branding</h1>
-        <p className="text-muted-foreground">Customize how your loyalty cards look to customers</p>
+        <h1 className="text-2xl font-bold text-foreground">Marca</h1>
+        <p className="text-muted-foreground">Personaliza cómo se ven tus tarjetas de lealtad para los clientes</p>
       </div>
 
       {/* Logo Upload */}
       <div className="bg-card rounded-2xl p-6 border border-border">
-        <h2 className="font-semibold text-foreground mb-4">Business Logo</h2>
+        <h2 className="font-semibold text-foreground mb-4">Logo del Negocio</h2>
         <div className="flex items-start gap-6">
           <div
             className="w-24 h-24 rounded-2xl flex items-center justify-center text-white text-3xl font-bold flex-shrink-0"
@@ -45,11 +45,11 @@ export default function BrandingPage() {
           </div>
           <div className="flex-1">
             <p className="text-sm text-muted-foreground mb-4">
-              Upload a square logo (recommended: 512x512px). This will appear on your loyalty cards and customer-facing pages.
+              Sube un logo cuadrado (recomendado: 512x512px). Aparecerá en tus tarjetas de lealtad y páginas para clientes.
             </p>
             <Button variant="outline">
               <Upload className="h-4 w-4 mr-2" />
-              Upload Logo
+              Subir Logo
             </Button>
           </div>
         </div>
@@ -57,27 +57,27 @@ export default function BrandingPage() {
 
       {/* Business Name */}
       <div className="bg-card rounded-2xl p-6 border border-border">
-        <h2 className="font-semibold text-foreground mb-4">Business Name</h2>
+        <h2 className="font-semibold text-foreground mb-4">Nombre del Negocio</h2>
         <div className="space-y-2">
-          <Label htmlFor="businessName">Display Name</Label>
+          <Label htmlFor="businessName">Nombre Visible</Label>
           <Input
             id="businessName"
             value={businessName}
             onChange={(e) => setBusinessName(e.target.value)}
-            placeholder="Enter your business name"
+            placeholder="Ingresa el nombre de tu negocio"
           />
           <p className="text-xs text-muted-foreground">
-            This name appears on loyalty cards and customer communications
+            Este nombre aparece en las tarjetas de lealtad y comunicaciones con clientes
           </p>
         </div>
       </div>
 
       {/* Brand Color */}
       <div className="bg-card rounded-2xl p-6 border border-border">
-        <h2 className="font-semibold text-foreground mb-4">Brand Color</h2>
+        <h2 className="font-semibold text-foreground mb-4">Color de Marca</h2>
         <div className="space-y-4">
           <div>
-            <Label className="text-sm text-muted-foreground mb-3 block">Quick presets</Label>
+            <Label className="text-sm text-muted-foreground mb-3 block">Colores rápidos</Label>
             <div className="flex flex-wrap gap-3">
               {colorPresets.map((color) => (
                 <button
@@ -96,7 +96,7 @@ export default function BrandingPage() {
           <div className="flex items-center gap-4">
             <div>
               <Label htmlFor="customColor" className="text-sm text-muted-foreground mb-2 block">
-                Custom color
+                Color personalizado
               </Label>
               <div className="flex items-center gap-3">
                 <input
@@ -120,7 +120,7 @@ export default function BrandingPage() {
 
       {/* Preview */}
       <div className="bg-card rounded-2xl p-6 border border-border">
-        <h2 className="font-semibold text-foreground mb-4">Preview</h2>
+        <h2 className="font-semibold text-foreground mb-4">Vista Previa</h2>
         <div className="bg-muted/30 rounded-xl p-6">
           <div className="flex items-center gap-4 mb-4">
             <div
@@ -130,8 +130,8 @@ export default function BrandingPage() {
               {businessName.charAt(0)}
             </div>
             <div>
-              <p className="font-semibold text-foreground text-lg">{businessName || "Your Business"}</p>
-              <p className="text-sm text-muted-foreground">Loyalty Card</p>
+              <p className="font-semibold text-foreground text-lg">{businessName || "Tu Negocio"}</p>
+              <p className="text-sm text-muted-foreground">Tarjeta de Lealtad</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -152,10 +152,10 @@ export default function BrandingPage() {
           {saved ? (
             <>
               <Check className="h-4 w-4 mr-2" />
-              Saved!
+              ¡Guardado!
             </>
           ) : (
-            "Save Changes"
+            "Guardar Cambios"
           )}
         </Button>
       </div>
