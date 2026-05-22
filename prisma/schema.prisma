@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Business {
+  id           String        @id @default(cuid())
+  name         String
+  brandColor   String        @default("#ff6b35")
+  logoUrl      String?
+  email        String        @unique
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  loyaltyCards LoyaltyCard[]
+}
+
+model LoyaltyCard {
+  id             String     @id @default(cuid())
+  businessId     String
+  business       Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name           String
+  reward         String
+  stampsRequired Int        @default(10)
+  brandColor     String     @default("#ff6b35")
+  expiresAt      DateTime?
+  description    String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  customers      Customer[]
+}
+
+model Customer {
+  id           String     @id @default(cuid())
+  name         String
+  cardId       String
+  card         LoyaltyCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  stamps       Int        @default(0)
+  applePassId  String?
+  googlePassId String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  stampsLog    StampLog[]
+}
+
+model StampLog {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  type       String   // "stamp" | "redeem"
+  createdAt  DateTime @default(now())
+}
