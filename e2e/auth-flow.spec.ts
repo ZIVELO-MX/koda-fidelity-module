@@ -13,16 +13,12 @@ test.describe("Auth Flow", () => {
     await page.getByLabel("Contraseña").fill(TEST_PASSWORD)
     await page.getByRole("button", { name: "Crear Cuenta" }).click()
 
-    // After signup, user may be redirected to dashboard (no email confirm)
-    // or see a success message (email confirm required)
     await page.waitForURL(/\/dashboard|\/signup/, { timeout: 15000 })
 
     const currentUrl = page.url()
     if (currentUrl.includes("/dashboard")) {
-      // Email confirmation is disabled — signup succeeded immediately
       await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible()
     } else {
-      // Email confirmation required
       await expect(page.getByText("Revisa tu correo para confirmar")).toBeVisible()
     }
   })
@@ -33,41 +29,35 @@ test.describe("Auth Flow", () => {
     await page.getByLabel("Contraseña").fill(TEST_PASSWORD)
     await page.getByRole("button", { name: "Iniciar Sesión" }).click()
 
-    // Should redirect to dashboard
     await page.waitForURL("**/dashboard", { timeout: 15000 })
-    await expect(page.getByText("Dashboard")).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible()
   })
 
   test("session persists after page reload", async ({ page }) => {
-    // Login first
     await page.goto("/login")
     await page.getByLabel("Correo electrónico").fill(TEST_EMAIL)
     await page.getByLabel("Contraseña").fill(TEST_PASSWORD)
     await page.getByRole("button", { name: "Iniciar Sesión" }).click()
     await page.waitForURL("**/dashboard", { timeout: 15000 })
 
-    // Reload the page
     await page.reload()
     await page.waitForURL("**/dashboard")
-    await expect(page.getByText("Dashboard")).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible()
   })
 
   test("logout redirects to login", async ({ page }) => {
-    // Login first
     await page.goto("/login")
     await page.getByLabel("Correo electrónico").fill(TEST_EMAIL)
     await page.getByLabel("Contraseña").fill(TEST_PASSWORD)
     await page.getByRole("button", { name: "Iniciar Sesión" }).click()
     await page.waitForURL("**/dashboard", { timeout: 15000 })
 
-    // Click logout
     await page.getByRole("button", { name: "Cerrar Sesión" }).click()
     await page.waitForURL("**/login", { timeout: 10000 })
-    await expect(page.getByRole("heading", { name: "Iniciar Sesión" })).toBeVisible()
+    await expect(page.getByText("Iniciar Sesión")).toBeVisible()
   })
 
   test("after logout, dashboard redirects to login", async ({ page }) => {
-    // Login then logout
     await page.goto("/login")
     await page.getByLabel("Correo electrónico").fill(TEST_EMAIL)
     await page.getByLabel("Contraseña").fill(TEST_PASSWORD)
@@ -77,7 +67,6 @@ test.describe("Auth Flow", () => {
     await page.getByRole("button", { name: "Cerrar Sesión" }).click()
     await page.waitForURL("**/login", { timeout: 10000 })
 
-    // Try accessing dashboard
     await page.goto("/dashboard")
     await page.waitForURL("**/login")
   })
