@@ -28,7 +28,10 @@
 ### Fase 0 — Setup de infraestructura
 
 - [ ] Crear proyecto Supabase
-- [ ] Configurar Prisma con schema inicial (businesses, loyalty_cards, customers, stamps)
+- [x] Configurar Prisma con schema inicial (businesses, loyalty_cards, customers, stamps)
+- [x] Crear seed con datos mockeados
+- [x] Tests que validan datos mock (11 tests)
+- [ ] Instalar Supabase client + helpers
 - [ ] Conectar Supabase Auth (login dueños de negocio)
 - [ ] Migrar datos mock a DB real
 - [ ] Configurar variables de entorno en Vercel
