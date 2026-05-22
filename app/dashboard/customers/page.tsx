@@ -66,8 +66,8 @@ export default function CustomersPage() {
     <div className="space-y-8">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Customers</h1>
-        <p className="text-muted-foreground">View and manage your loyalty program members</p>
+        <h1 className="text-2xl font-bold text-foreground">Clientes</h1>
+        <p className="text-muted-foreground">Consulta y gestiona los miembros de tu programa de lealtad</p>
       </div>
 
       {/* Filters */}
@@ -75,13 +75,13 @@ export default function CustomersPage() {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search customers..."
+            placeholder="Buscar clientes..."
             className="pl-10"
           />
         </div>
         <Button variant="outline">
           <Filter className="h-4 w-4 mr-2" />
-          Filter
+          Filtrar
         </Button>
       </div>
 
@@ -92,22 +92,22 @@ export default function CustomersPage() {
             <thead>
               <tr className="border-b border-border bg-muted/30">
                 <th className="text-left text-sm font-medium text-muted-foreground px-6 py-4">
-                  Customer
+                  Cliente
                 </th>
                 <th className="text-left text-sm font-medium text-muted-foreground px-6 py-4">
-                  Card
+                  Tarjeta
                 </th>
                 <th className="text-left text-sm font-medium text-muted-foreground px-6 py-4">
-                  Progress
+                  Progreso
                 </th>
                 <th className="text-left text-sm font-medium text-muted-foreground px-6 py-4">
-                  Last Visit
+                  Última Visita
                 </th>
                 <th className="text-left text-sm font-medium text-muted-foreground px-6 py-4">
-                  Redemptions
+                  Canjes
                 </th>
                 <th className="text-right text-sm font-medium text-muted-foreground px-6 py-4">
-                  Actions
+                  Acciones
                 </th>
               </tr>
             </thead>
@@ -148,7 +148,7 @@ export default function CustomersPage() {
                       {customer.stamps >= customer.maxStamps && (
                         <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
                           <Gift className="h-3 w-3" />
-                          Ready
+                          Listo
                         </span>
                       )}
                     </div>

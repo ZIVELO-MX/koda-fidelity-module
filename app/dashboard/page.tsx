@@ -37,12 +37,12 @@ export default function DashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back! Here&apos;s what&apos;s happening.</p>
+          <p className="text-muted-foreground">¡Bienvenido! Esto es lo que está pasando.</p>
         </div>
         <Link href="/dashboard/cards/new">
           <Button>
             <Plus className="h-4 w-4 mr-2" />
-            Create Card
+            Crear Tarjeta
           </Button>
         </Link>
       </div>
@@ -50,30 +50,30 @@ export default function DashboardPage() {
       {/* Stats Grid */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Active Cards"
+          title="Tarjetas Activas"
           value={2}
-          change="+1 this month"
+          change="+1 este mes"
           changeType="positive"
           icon={CreditCard}
         />
         <StatCard
-          title="Total Customers"
+          title="Total Clientes"
           value={209}
-          change="+23 this week"
+          change="+23 esta semana"
           changeType="positive"
           icon={Users}
         />
         <StatCard
-          title="Stamps Given"
+          title="Sellos Entregados"
           value="1,090"
-          change="+156 this week"
+          change="+156 esta semana"
           changeType="positive"
           icon={Stamp}
         />
         <StatCard
-          title="Redemptions"
+          title="Canjes"
           value={47}
-          change="+8 this week"
+          change="+8 esta semana"
           changeType="positive"
           icon={TrendingUp}
         />
@@ -84,9 +84,9 @@ export default function DashboardPage() {
         {/* Campaigns */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-foreground">Your Loyalty Cards</h2>
+            <h2 className="text-lg font-semibold text-foreground">Tus Tarjetas de Lealtad</h2>
             <Link href="/dashboard/cards" className="text-sm text-primary hover:underline">
-              View all
+              Ver todas
             </Link>
           </div>
           <div className="grid sm:grid-cols-2 gap-4">
@@ -103,19 +103,19 @@ export default function DashboardPage() {
                     {campaign.name.charAt(0)}
                   </div>
                   <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
-                    Active
+                    Activa
                   </span>
                 </div>
                 <h3 className="font-semibold text-foreground mb-1">{campaign.name}</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  {campaign.maxStamps} stamps for {campaign.reward}
+                  {campaign.maxStamps} sellos para {campaign.reward}
                 </p>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">
-                    <span className="font-medium text-foreground">{campaign.customers}</span> customers
+                    <span className="font-medium text-foreground">{campaign.customers}</span> clientes
                   </span>
                   <span className="text-muted-foreground">
-                    <span className="font-medium text-foreground">{campaign.stampsGiven}</span> stamps
+                    <span className="font-medium text-foreground">{campaign.stampsGiven}</span> sellos
                   </span>
                 </div>
               </div>
@@ -127,15 +127,15 @@ export default function DashboardPage() {
               <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
                 <Plus className="h-6 w-6 text-primary" />
               </div>
-              <p className="font-medium text-foreground">Create New Card</p>
-              <p className="text-sm text-muted-foreground">Start a new loyalty campaign</p>
+              <p className="font-medium text-foreground">Crear Nueva Tarjeta</p>
+              <p className="text-sm text-muted-foreground">Inicia una nueva campaña de lealtad</p>
             </Link>
           </div>
         </div>
 
         {/* Recent Activity */}
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-foreground">Recent Activity</h2>
+          <h2 className="text-lg font-semibold text-foreground">Actividad Reciente</h2>
           <div className="bg-card rounded-2xl border border-border overflow-hidden">
             <div className="divide-y divide-border">
               {recentActivity.map((activity, index) => (
@@ -164,10 +164,10 @@ export default function DashboardPage() {
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {activity.type === "stamp"
-                          ? "Earned a stamp"
+                          ? "Recibió un sello"
                           : activity.type === "redeem"
-                          ? "Redeemed reward"
-                          : "Joined"}{" "}
+                          ? "Canjeó recompensa"
+                          : "Se unió"}{" "}
                         - {activity.card}
                       </p>
                     </div>
@@ -184,7 +184,7 @@ export default function DashboardPage() {
                 className="text-sm text-primary hover:underline flex items-center justify-center gap-1"
               >
                 View all activity
-                <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>
@@ -196,26 +196,26 @@ export default function DashboardPage() {
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div className="max-w-md">
             <h2 className="text-lg font-semibold text-foreground mb-2">
-              Your card, in their wallet
+              Tu tarjeta, en su billetera
             </h2>
             <p className="text-muted-foreground mb-4">
-              This is how your customers see their loyalty card in Apple Wallet or Google Wallet.
-              Beautiful, accessible, always with them.
+              Así es como tus clientes ven su tarjeta de lealtad en Apple Wallet o Google Wallet.
+              Hermosa, accesible, siempre con ellos.
             </p>
             <Link href="/dashboard/cards/new">
               <Button variant="outline">
-                Customize Card Design
+                Personalizar Diseño
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             </Link>
           </div>
           <div className="w-full max-w-xs">
             <LoyaltyCardPreview
-              businessName="Your Business"
-              customerName="Happy Customer"
+              businessName="Tu Negocio"
+              customerName="Cliente Feliz"
               currentStamps={7}
               maxStamps={10}
-              reward="Free Reward"
+              reward="Recompensa Gratis"
               expirationDate="Dec 31, 2026"
               brandColor="#f97316"
             />
