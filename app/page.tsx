@@ -263,11 +263,10 @@ export default function LandingPage() {
             </p>
             <Link href="/dashboard">
               <Button size="lg" className="text-base px-10">
-                Get Started Free
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-            </div>
+                Comenzar Gratis
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
