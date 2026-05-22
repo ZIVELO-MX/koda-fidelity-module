@@ -2,6 +2,11 @@
 
 > Basado en el análisis del proyecto, `docs/idea.md`, `docs/colors.md`, `docs/deploy.md` y decisiones del equipo.
 
+## Workflow
+
+- **Solo PRs a `main`** — nunca push directo
+- Toda feature o fix va en una rama separada y pasa por code review antes de mergear
+
 ---
 
 ## Stack Definido
@@ -35,16 +40,16 @@
 - [ ] Crear endpoint `/api/passes/apple/:cardId` que genere y firme un PKPass
 - [ ] Generar certificado Apple Wallet (Pass Type ID + certificado de firma)
 - [ ] Implementar lógica de actualización de passes (stamps update via push)
-- [ ] Integrar botón "Add to Apple Wallet" en el flujo `join/[cardId]`
+- [ ] Integrar botón "Añadir a Apple Wallet" en el flujo `join/[cardId]`
 - [ ] Probar pases en dispositivo real / simulador
 
 ### Fase 2 — Wallet Passes (Google Wallet)
 
 - [ ] Investigar Google Wallet API (JWT + issuer class/object)
 - [ ] Configurar cuenta Google Pay & Wallet Console
-- [ 】Crear endpoint `/api/passes/google/:cardId` que genere JWT firmado
+- [ ] Crear endpoint `/api/passes/google/:cardId` que genere JWT firmado
 - [ ] Implementar clase y objeto de loyalty card en Google Wallet
-- [ ] Integrar botón "Add to Google Wallet" en el flujo `join/[cardId]`
+- [ ] Integrar botón "Añadir a Google Wallet" en el flujo `join/[cardId]`
 - [ ] Probar pases en Android / emulador
 
 ### Fase 3 — Backend real + API Routes
@@ -75,7 +80,7 @@
 - [ ] Conectar escaneo con endpoint de sellado
 - [ ] Feedback visual en tiempo real al empleado
 - [ ] Mostrar cliente encontrado y progreso actual
-- [ ] Botón "Add Stamp" + "Redeem Reward" funcionales
+- [ ] Botón "Agregar Sello" + "Canjear Recompensa" funcionales
 
 ### Fase 6 — Landing page + polish
 
