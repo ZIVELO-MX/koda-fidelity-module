@@ -7,21 +7,29 @@ test.describe("Auth Flow", () => {
   test("signup creates a new user", async ({ page }) => {
     const uniqueEmail = `test-${Date.now()}@kodafidelity.com`
 
+    // Fill and submit signup form
     await page.goto("/signup")
     await page.getByLabel("Nombre del negocio").fill("Test Cafe")
     await page.getByLabel("Correo electrónico").fill(uniqueEmail)
     await page.getByLabel("Contraseña").fill(TEST_PASSWORD)
     await page.getByRole("button", { name: "Crear Cuenta" }).click()
 
-    // Wait for redirect or in-page success/error feedback
+    // Wait for redirect or page to settle
     await page.waitForURL(/\/dashboard|\/signup/, { timeout: 15000 })
 
     if (page.url().includes("/dashboard")) {
+      // Email confirmation disabled — user is already logged in
       await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible()
-    } else {
-      // Should show either success or error feedback after submission
-      await expect(page.getByText(/correctamente|error|confirmar/i).first()).toBeVisible()
+      return
     }
+
+    // Try logging in with the new credentials to verify user was created
+    await page.goto("/login")
+    await page.getByLabel("Correo electrónico").fill(uniqueEmail)
+    await page.getByLabel("Contraseña").fill(TEST_PASSWORD)
+    await page.getByRole("button", { name: "Iniciar Sesión" }).click()
+    await page.waitForURL("**/dashboard", { timeout: 15000 })
+    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible()
   })
 
   test("login with valid credentials succeeds", async ({ page }) => {
