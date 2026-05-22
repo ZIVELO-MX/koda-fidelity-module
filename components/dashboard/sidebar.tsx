@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { logout } from "@/lib/actions/auth"
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -99,7 +100,7 @@ export function DashboardSidebar() {
           </nav>
 
           {/* Bottom section */}
-          <div className="p-4 border-t border-border">
+          <div className="p-4 border-t border-border space-y-2">
             <div className="rounded-xl bg-muted/50 p-4">
               <p className="text-xs font-medium text-foreground mb-1">¿Necesitas ayuda?</p>
               <p className="text-xs text-muted-foreground mb-3">
@@ -109,6 +110,11 @@ export function DashboardSidebar() {
                 Ver Documentación
               </Button>
             </div>
+            <form action={logout}>
+              <Button size="sm" variant="ghost" className="w-full text-xs text-muted-foreground hover:text-destructive">
+                Cerrar Sesión
+              </Button>
+            </form>
           </div>
         </div>
       </aside>
