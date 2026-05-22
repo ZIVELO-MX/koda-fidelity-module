@@ -13,17 +13,14 @@ test.describe("Auth Flow", () => {
     await page.getByLabel("Contraseña").fill(TEST_PASSWORD)
     await page.getByRole("button", { name: "Crear Cuenta" }).click()
 
-    // Wait for redirect or form submission result
-    await page.waitForTimeout(2000)
+    // Wait for redirect or in-page success/error feedback
+    await page.waitForURL(/\/dashboard|\/signup/, { timeout: 15000 })
 
-    const currentUrl = page.url()
-    if (currentUrl.includes("/dashboard")) {
+    if (page.url().includes("/dashboard")) {
       await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible()
     } else {
-      // After submit, either success (email confirm) or error should appear
-      const hasSuccess = await page.getByText("Revisa tu correo para confirmar").isVisible().catch(() => false)
-      const hasError = await page.locator('[class*="destructive"]').isVisible().catch(() => false)
-      expect(hasSuccess || hasError).toBe(true)
+      // Should show either success or error feedback after submission
+      await expect(page.getByText(/correctamente|error|confirmar/i).first()).toBeVisible()
     }
   })
 
