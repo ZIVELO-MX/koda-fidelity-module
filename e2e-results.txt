@@ -1,0 +1,156 @@
+
+> my-project@0.1.0 e2e /home/benrod/proyectos/zivelo/koda/koda-fidelity-module
+> playwright test
+
+
+Running 10 tests using 2 workers
+
+  ✘   2 e2e/auth-ui.spec.ts:4:7 › Auth UI › signup page shows registration form (INVITE_ONLY=false) (2.2s)
+  ✘   3 e2e/auth-ui.spec.ts:13:7 › Auth UI › login page shows login form (665ms)
+  ✓   4 e2e/auth-ui.spec.ts:21:7 › Auth UI › login with invalid credentials shows error (918ms)
+  ✘   5 e2e/auth-ui.spec.ts:29:7 › Auth UI › unauthenticated access to dashboard redirects to login (528ms)
+  ✓   6 e2e/auth-ui.spec.ts:35:7 › Auth UI › authenticated user on login page redirects to dashboard (451ms)
+  ✘   1 e2e/auth-flow.spec.ts:7:7 › Auth Flow › signup creates a new user (7.4s)
+  ✓   7 e2e/auth-flow.spec.ts:26:7 › Auth Flow › login with valid credentials succeeds (1.4s)
+  ✓   8 e2e/auth-flow.spec.ts:36:7 › Auth Flow › session persists after page reload (2.0s)
+  ✘   9 e2e/auth-flow.spec.ts:48:7 › Auth Flow › logout redirects to login (2.4s)
+  ✓  10 e2e/auth-flow.spec.ts:60:7 › Auth Flow › after logout, dashboard redirects to login (2.0s)
+
+
+  1) e2e/auth-flow.spec.ts:7:7 › Auth Flow › signup creates a new user ─────────────────────────────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByText('Revisa tu correo para confirmar')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for getByText('Revisa tu correo para confirmar')[22m
+
+
+      20 |       await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible()
+      21 |     } else {
+    > 22 |       await expect(page.getByText("Revisa tu correo para confirmar")).toBeVisible()
+         |                                                                       ^
+      23 |     }
+      24 |   })
+      25 |
+        at /home/benrod/proyectos/zivelo/koda/koda-fidelity-module/e2e/auth-flow.spec.ts:22:71
+
+    Error Context: test-results/auth-flow-Auth-Flow-signup-creates-a-new-user/error-context.md
+
+  2) e2e/auth-flow.spec.ts:48:7 › Auth Flow › logout redirects to login ────────────────────────────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByText('Iniciar Sesión')
+    Expected: visible
+    Error: strict mode violation: getByText('Iniciar Sesión') resolved to 2 elements:
+        1) <div data-slot="card-title" class="font-semibold text-2xl">Iniciar Sesión</div> aka locator('div').filter({ hasText: /^Iniciar Sesión$/ })
+        2) <button type="submit" data-slot="button" class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary tex…>Iniciar Sesión</button> aka getByRole('button', { name: 'Iniciar Sesión' })
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for getByText('Iniciar Sesión')[22m
+
+
+      55 |     await page.getByRole("button", { name: "Cerrar Sesión" }).click()
+      56 |     await page.waitForURL("**/login", { timeout: 10000 })
+    > 57 |     await expect(page.getByText("Iniciar Sesión")).toBeVisible()
+         |                                                    ^
+      58 |   })
+      59 |
+      60 |   test("after logout, dashboard redirects to login", async ({ page }) => {
+        at /home/benrod/proyectos/zivelo/koda/koda-fidelity-module/e2e/auth-flow.spec.ts:57:52
+
+    Error Context: test-results/auth-flow-Auth-Flow-logout-redirects-to-login/error-context.md
+
+  3) e2e/auth-ui.spec.ts:4:7 › Auth UI › signup page shows registration form (INVITE_ONLY=false) ───
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByText('Crear Cuenta')
+    Expected: visible
+    Error: strict mode violation: getByText('Crear Cuenta') resolved to 2 elements:
+        1) <div data-slot="card-title" class="font-semibold text-2xl">Crear Cuenta</div> aka locator('div').filter({ hasText: /^Crear Cuenta$/ })
+        2) <button type="submit" data-slot="button" class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary tex…>Crear Cuenta</button> aka getByRole('button', { name: 'Crear Cuenta' })
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for getByText('Crear Cuenta')[22m
+
+
+      4 |   test("signup page shows registration form (INVITE_ONLY=false)", async ({ page }) => {
+      5 |     await page.goto("/signup")
+    > 6 |     await expect(page.getByText("Crear Cuenta")).toBeVisible()
+        |                                                  ^
+      7 |     await expect(page.getByLabel("Nombre del negocio")).toBeVisible()
+      8 |     await expect(page.getByLabel("Correo electrónico")).toBeVisible()
+      9 |     await expect(page.getByLabel("Contraseña")).toBeVisible()
+        at /home/benrod/proyectos/zivelo/koda/koda-fidelity-module/e2e/auth-ui.spec.ts:6:50
+
+    Error Context: test-results/auth-ui-Auth-UI-signup-pag-a4df9-ion-form-INVITE-ONLY-false-/error-context.md
+
+  4) e2e/auth-ui.spec.ts:13:7 › Auth UI › login page shows login form ──────────────────────────────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByText('Iniciar Sesión')
+    Expected: visible
+    Error: strict mode violation: getByText('Iniciar Sesión') resolved to 2 elements:
+        1) <div data-slot="card-title" class="font-semibold text-2xl">Iniciar Sesión</div> aka locator('div').filter({ hasText: /^Iniciar Sesión$/ })
+        2) <button type="submit" data-slot="button" class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary tex…>Iniciar Sesión</button> aka getByRole('button', { name: 'Iniciar Sesión' })
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for getByText('Iniciar Sesión')[22m
+
+
+      13 |   test("login page shows login form", async ({ page }) => {
+      14 |     await page.goto("/login")
+    > 15 |     await expect(page.getByText("Iniciar Sesión")).toBeVisible()
+         |                                                    ^
+      16 |     await expect(page.getByLabel("Correo electrónico")).toBeVisible()
+      17 |     await expect(page.getByLabel("Contraseña")).toBeVisible()
+      18 |     await expect(page.getByRole("button", { name: "Iniciar Sesión" })).toBeVisible()
+        at /home/benrod/proyectos/zivelo/koda/koda-fidelity-module/e2e/auth-ui.spec.ts:15:52
+
+    Error Context: test-results/auth-ui-Auth-UI-login-page-shows-login-form/error-context.md
+
+  5) e2e/auth-ui.spec.ts:29:7 › Auth UI › unauthenticated access to dashboard redirects to login ───
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByText('Iniciar Sesión')
+    Expected: visible
+    Error: strict mode violation: getByText('Iniciar Sesión') resolved to 2 elements:
+        1) <div data-slot="card-title" class="font-semibold text-2xl">Iniciar Sesión</div> aka locator('div').filter({ hasText: /^Iniciar Sesión$/ })
+        2) <button type="submit" data-slot="button" class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary tex…>Iniciar Sesión</button> aka getByRole('button', { name: 'Iniciar Sesión' })
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for getByText('Iniciar Sesión')[22m
+
+
+      30 |     await page.goto("/dashboard")
+      31 |     await page.waitForURL("**/login")
+    > 32 |     await expect(page.getByText("Iniciar Sesión")).toBeVisible()
+         |                                                    ^
+      33 |   })
+      34 |
+      35 |   test("authenticated user on login page redirects to dashboard", async ({ page, context }) => {
+        at /home/benrod/proyectos/zivelo/koda/koda-fidelity-module/e2e/auth-ui.spec.ts:32:52
+
+    Error Context: test-results/auth-ui-Auth-UI-unauthenti-b6123-ashboard-redirects-to-login/error-context.md
+
+  5 failed
+    e2e/auth-flow.spec.ts:7:7 › Auth Flow › signup creates a new user ──────────────────────────────
+    e2e/auth-flow.spec.ts:48:7 › Auth Flow › logout redirects to login ─────────────────────────────
+    e2e/auth-ui.spec.ts:4:7 › Auth UI › signup page shows registration form (INVITE_ONLY=false) ────
+    e2e/auth-ui.spec.ts:13:7 › Auth UI › login page shows login form ───────────────────────────────
+    e2e/auth-ui.spec.ts:29:7 › Auth UI › unauthenticated access to dashboard redirects to login ────
+  5 passed (19.2s)
+ ELIFECYCLE  Command failed with exit code 1.
