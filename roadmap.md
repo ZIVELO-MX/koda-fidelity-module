@@ -27,13 +27,16 @@
 
 ### Fase 0 — Setup de infraestructura
 
-- [ ] Crear proyecto Supabase
+- [x] Crear proyecto Supabase y conectar pooler
 - [x] Configurar Prisma con schema inicial (businesses, loyalty_cards, customers, stamps)
 - [x] Crear seed con datos mockeados
 - [x] Tests que validan datos mock (11 tests)
-- [ ] Instalar Supabase client + helpers
+- [x] Tests de interfaz AuthService (9 tests)
+- [x] Instalar Supabase client + helpers (@supabase/supabase-js, @supabase/ssr)
+- [x] Crear capa portable de auth (lib/auth.ts, lib/auth-service.ts)
+- [x] Crear proxy para proteger rutas (proxy.ts)
+- [x] Migrar datos mock a DB real (seed ejecutado en Supabase)
 - [ ] Conectar Supabase Auth (login dueños de negocio)
-- [ ] Migrar datos mock a DB real
 - [ ] Configurar variables de entorno en Vercel
 - [ ] Apuntar dominio desde Cloudflare a Vercel
 
