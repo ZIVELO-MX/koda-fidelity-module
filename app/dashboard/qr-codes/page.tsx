@@ -73,12 +73,6 @@ export default function QRCodesPage() {
                   size={180}
                   level="H"
                   fgColor={qr.color}
-                  imageSettings={{
-                    src: "",
-                    height: 0,
-                    width: 0,
-                    excavate: false,
-                  }}
                 />
               </div>
 
