@@ -28,12 +28,12 @@ export default function LandingPage() {
               </Link>
             </div>
             <div className="flex items-center gap-3">
-              <Link href="/dashboard">
+              <Link href="/login">
                 <Button variant="ghost" className="hidden sm:inline-flex">
                   Iniciar Sesión
                 </Button>
               </Link>
-              <Link href="/dashboard">
+              <Link href="/signup">
                 <Button>
                   Comenzar
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -63,7 +63,7 @@ export default function LandingPage() {
                 Sin cuentas que crear. Solo escanea, guarda y recompensa.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/dashboard">
+                <Link href="/signup">
                   <Button size="lg" className="w-full sm:w-auto text-base px-8">
                     Prueba Gratis
                     <ArrowRight className="ml-2 h-5 w-5" />
@@ -261,7 +261,7 @@ export default function LandingPage() {
               Comienza tu prueba gratis hoy. Sin tarjeta de crédito. 
               Crea tu primera tarjeta de lealtad en minutos.
             </p>
-            <Link href="/dashboard">
+            <Link href="/signup">
               <Button size="lg" className="text-base px-10">
                 Comenzar Gratis
                 <ArrowRight className="ml-2 h-5 w-5" />
