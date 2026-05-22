@@ -9,8 +9,8 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'Koda Fidelity - Digital Loyalty Cards',
-  description: 'Digital loyalty cards for Apple Wallet and Google Wallet. Turn returning customers into loyal customers with Koda.',
+  title: 'Koda Fidelity - Tarjetas de Fidelidad Digitales',
+  description: 'Tarjetas de fidelidad digitales para Apple Wallet y Google Wallet. Convierte clientes recurrentes en clientes leales con Koda.',
   generator: 'v0.app',
   icons: {
     icon: [
@@ -37,7 +37,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="bg-background">
+    <html lang="es" className="bg-background">
       <body className={`${inter.variable} font-sans antialiased`}>
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}

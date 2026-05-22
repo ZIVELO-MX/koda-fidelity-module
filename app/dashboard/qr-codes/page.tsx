@@ -37,8 +37,8 @@ export default function QRCodesPage() {
     <div className="space-y-8">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">QR Codes</h1>
-        <p className="text-muted-foreground">Print or share QR codes for customers to join your loyalty programs</p>
+        <h1 className="text-2xl font-bold text-foreground">Códigos QR</h1>
+        <p className="text-muted-foreground">Imprime o comparte códigos QR para que los clientes se unan a tus programas de lealtad</p>
       </div>
 
       {/* QR Codes Grid */}
@@ -62,7 +62,7 @@ export default function QRCodesPage() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-foreground">{qr.cardName}</h3>
-                  <p className="text-xs text-muted-foreground">{qr.scans} scans total</p>
+                  <p className="text-xs text-muted-foreground">{qr.scans} escaneos totales</p>
                 </div>
               </div>
 
@@ -73,35 +73,29 @@ export default function QRCodesPage() {
                   size={180}
                   level="H"
                   fgColor={qr.color}
-                  imageSettings={{
-                    src: "",
-                    height: 0,
-                    width: 0,
-                    excavate: false,
-                  }}
                 />
               </div>
 
               {/* URL */}
               <div className="bg-muted/50 rounded-xl p-3 mb-4">
-                <p className="text-xs text-muted-foreground mb-1">Landing page URL</p>
+                <p className="text-xs text-muted-foreground mb-1">URL de destino</p>
                 <p className="text-sm text-foreground font-mono truncate">{qr.url}</p>
               </div>
 
               {/* Stats */}
               <div className="flex items-center justify-between text-sm text-muted-foreground mb-6">
-                <span>Last scan: {qr.lastScan}</span>
+                <span>Último escaneo: {qr.lastScan}</span>
               </div>
 
               {/* Actions */}
               <div className="grid grid-cols-2 gap-2">
                 <Button variant="outline" className="w-full">
                   <Download className="h-4 w-4 mr-2" />
-                  Download
+                  Descargar
                 </Button>
                 <Button variant="outline" className="w-full">
                   <Printer className="h-4 w-4 mr-2" />
-                  Print
+                  Imprimir
                 </Button>
               </div>
               <div className="grid grid-cols-2 gap-2 mt-2">
@@ -113,18 +107,18 @@ export default function QRCodesPage() {
                   {copiedId === qr.id ? (
                     <>
                       <Check className="h-4 w-4 mr-2" />
-                      Copied!
+                      ¡Copiado!
                     </>
                   ) : (
                     <>
                       <Copy className="h-4 w-4 mr-2" />
-                      Copy URL
+                      Copiar URL
                     </>
                   )}
                 </Button>
                 <Button variant="ghost" className="w-full">
                   <ExternalLink className="h-4 w-4 mr-2" />
-                  Preview
+                  Vista Previa
                 </Button>
               </div>
             </div>
@@ -134,19 +128,19 @@ export default function QRCodesPage() {
 
       {/* Print Tips */}
       <div className="bg-muted/30 rounded-2xl p-6 border border-border">
-        <h3 className="font-semibold text-foreground mb-2">Printing Tips</h3>
+        <h3 className="font-semibold text-foreground mb-2">Consejos de Impresión</h3>
         <ul className="text-sm text-muted-foreground space-y-2">
           <li className="flex items-start gap-2">
             <span className="text-primary font-bold">1.</span>
-            Download the QR code as a high-resolution PNG or SVG for best print quality
+            Descarga el código QR como PNG o SVG de alta resolución para mejor calidad de impresión
           </li>
           <li className="flex items-start gap-2">
             <span className="text-primary font-bold">2.</span>
-            Place QR codes at checkout counters, tables, or entrances where customers can easily scan
+            Coloca los códigos QR en mostradores, mesas o entradas donde los clientes puedan escanear fácilmente
           </li>
           <li className="flex items-start gap-2">
             <span className="text-primary font-bold">3.</span>
-            Add a call-to-action like &quot;Scan to join our rewards program&quot; near the QR code
+            Agrega un llamado a la acción como &quot;Escanea para unirte a nuestro programa de recompensas&quot; cerca del código QR
           </li>
         </ul>
       </div>

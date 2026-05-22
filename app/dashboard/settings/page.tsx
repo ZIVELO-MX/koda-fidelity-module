@@ -18,8 +18,8 @@ export default function SettingsPage() {
     <div className="space-y-8 max-w-2xl">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Settings</h1>
-        <p className="text-muted-foreground">Manage your account and business settings</p>
+        <h1 className="text-2xl font-bold text-foreground">Configuración</h1>
+        <p className="text-muted-foreground">Gestiona tu cuenta y configuración del negocio</p>
       </div>
 
       {/* Business Information */}
@@ -29,27 +29,27 @@ export default function SettingsPage() {
             <Building2 className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h2 className="font-semibold text-foreground">Business Information</h2>
-            <p className="text-sm text-muted-foreground">Basic details about your business</p>
+            <h2 className="font-semibold text-foreground">Información del Negocio</h2>
+            <p className="text-sm text-muted-foreground">Detalles básicos sobre tu negocio</p>
           </div>
         </div>
         <div className="space-y-4">
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="businessName">Business Name</Label>
+              <Label htmlFor="businessName">Nombre del Negocio</Label>
               <Input id="businessName" defaultValue="The Daily Grind" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="businessType">Business Type</Label>
+              <Label htmlFor="businessType">Tipo de Negocio</Label>
               <Input id="businessType" defaultValue="Coffee Shop" />
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="address">Address</Label>
-            <Input id="address" defaultValue="123 Main Street, City, State 12345" />
+            <Label htmlFor="address">Dirección</Label>
+            <Input id="address" defaultValue="Calle Principal 123, Ciudad, Estado" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number</Label>
+            <Label htmlFor="phone">Teléfono</Label>
             <Input id="phone" defaultValue="(555) 123-4567" />
           </div>
         </div>
@@ -62,12 +62,12 @@ export default function SettingsPage() {
             <Mail className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h2 className="font-semibold text-foreground">Contact Email</h2>
-            <p className="text-sm text-muted-foreground">Where we send important updates</p>
+            <h2 className="font-semibold text-foreground">Email de Contacto</h2>
+            <p className="text-sm text-muted-foreground">Donde enviamos actualizaciones importantes</p>
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="email">Email Address</Label>
+          <Label htmlFor="email">Correo Electrónico</Label>
           <Input id="email" type="email" defaultValue="owner@dailygrind.com" />
         </div>
       </div>
@@ -79,18 +79,18 @@ export default function SettingsPage() {
             <Globe className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h2 className="font-semibold text-foreground">Website & Social</h2>
-            <p className="text-sm text-muted-foreground">Your online presence</p>
+            <h2 className="font-semibold text-foreground">Sitio Web y Redes</h2>
+            <p className="text-sm text-muted-foreground">Tu presencia en línea</p>
           </div>
         </div>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="website">Website</Label>
-            <Input id="website" placeholder="https://yourbusiness.com" />
+            <Label htmlFor="website">Sitio Web</Label>
+            <Input id="website" placeholder="https://tunegocio.com" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="instagram">Instagram</Label>
-            <Input id="instagram" placeholder="@yourbusiness" />
+            <Input id="instagram" placeholder="@tunegocio" />
           </div>
         </div>
       </div>
@@ -102,15 +102,15 @@ export default function SettingsPage() {
             <Bell className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h2 className="font-semibold text-foreground">Notifications</h2>
-            <p className="text-sm text-muted-foreground">How you want to be notified</p>
+            <h2 className="font-semibold text-foreground">Notificaciones</h2>
+            <p className="text-sm text-muted-foreground">Cómo quieres ser notificado</p>
           </div>
         </div>
         <div className="space-y-4">
           {[
-            { label: "New customer joins", description: "Get notified when someone joins your loyalty program" },
-            { label: "Reward redeemed", description: "Get notified when a customer redeems a reward" },
-            { label: "Weekly summary", description: "Receive a weekly summary of your loyalty program" },
+            { label: "Nuevo cliente se une", description: "Notifícame cuando alguien se una a tu programa de lealtad" },
+            { label: "Recompensa canjeada", description: "Notifícame cuando un cliente canjee una recompensa" },
+            { label: "Resumen semanal", description: "Recibe un resumen semanal de tu programa de lealtad" },
           ].map((item, index) => (
             <div key={index} className="flex items-center justify-between py-2">
               <div>
@@ -133,12 +133,12 @@ export default function SettingsPage() {
             <Shield className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h2 className="font-semibold text-foreground">Security</h2>
-            <p className="text-sm text-muted-foreground">Protect your account</p>
+            <h2 className="font-semibold text-foreground">Seguridad</h2>
+            <p className="text-sm text-muted-foreground">Protege tu cuenta</p>
           </div>
         </div>
         <div className="space-y-4">
-          <Button variant="outline">Change Password</Button>
+          <Button variant="outline">Cambiar Contraseña</Button>
         </div>
       </div>
 
@@ -148,10 +148,10 @@ export default function SettingsPage() {
           {saved ? (
             <>
               <Check className="h-4 w-4 mr-2" />
-              Saved!
+              ¡Guardado!
             </>
           ) : (
-            "Save Changes"
+            "Guardar Cambios"
           )}
         </Button>
       </div>

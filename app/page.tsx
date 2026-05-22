@@ -18,24 +18,24 @@ export default function LandingPage() {
             </div>
             <div className="hidden md:flex items-center gap-8">
               <Link href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Features
+                Funciones
               </Link>
               <Link href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                How it Works
+                Cómo Funciona
               </Link>
               <Link href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Pricing
+                Precios
               </Link>
             </div>
             <div className="flex items-center gap-3">
               <Link href="/dashboard">
                 <Button variant="ghost" className="hidden sm:inline-flex">
-                  Sign in
+                  Iniciar Sesión
                 </Button>
               </Link>
               <Link href="/dashboard">
                 <Button>
-                  Get Started
+                  Comenzar
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
@@ -52,41 +52,41 @@ export default function LandingPage() {
             <div className="space-y-8">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
                 <Zap className="h-4 w-4" />
-                Digital Loyalty Made Simple
+                Lealtad Digital Hecha Simple
               </div>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight text-balance">
-                Turn returning customers into{" "}
-                <span className="text-primary">loyal customers</span>
+                Convierte clientes recurrentes en{" "}
+                <span className="text-primary">clientes leales</span>
               </h1>
               <p className="text-lg text-muted-foreground max-w-xl leading-relaxed">
-                Digital loyalty cards for Apple Wallet and Google Wallet. No apps to download. 
-                No accounts to create. Just scan, save, and reward.
+                Tarjetas de fidelidad digitales para Apple Wallet y Google Wallet. Sin apps que descargar. 
+                Sin cuentas que crear. Solo escanea, guarda y recompensa.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/dashboard">
                   <Button size="lg" className="w-full sm:w-auto text-base px-8">
-                    Start Free Trial
+                    Prueba Gratis
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
                 <Link href="#how-it-works">
                   <Button size="lg" variant="outline" className="w-full sm:w-auto text-base px-8">
-                    See How it Works
+                    Ver Cómo Funciona
                   </Button>
                 </Link>
               </div>
               <div className="flex flex-wrap items-center gap-6 pt-4">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-5 w-5 text-primary" />
-                  <span className="text-sm text-muted-foreground">Free to start</span>
+                  <span className="text-sm text-muted-foreground">Gratis para empezar</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-5 w-5 text-primary" />
-                  <span className="text-sm text-muted-foreground">No credit card</span>
+                  <span className="text-sm text-muted-foreground">Sin tarjeta de crédito</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-5 w-5 text-primary" />
-                  <span className="text-sm text-muted-foreground">Setup in 2 min</span>
+                  <span className="text-sm text-muted-foreground">Configuración en 2 min</span>
                 </div>
               </div>
             </div>
@@ -113,10 +113,10 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Simple for you. Seamless for customers.
+              Simple para ti. Perfecto para tus clientes.
             </h2>
             <p className="text-lg text-muted-foreground">
-              Get your digital loyalty program up and running in minutes, not days.
+              Tu programa de lealtad digital funcionando en minutos, no en días.
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
@@ -124,20 +124,20 @@ export default function LandingPage() {
               {
                 icon: QrCode,
                 step: "01",
-                title: "Create Your Card",
-                description: "Design a beautiful loyalty card with your brand colors and logo. Set your reward and stamp count.",
+                title: "Crea tu Tarjeta",
+                description: "Diseña una tarjeta de lealtad con tus colores y logo. Define tu recompensa y la cantidad de sellos.",
               },
               {
                 icon: Smartphone,
                 step: "02",
-                title: "Customers Scan & Save",
-                description: "Print your QR code. Customers scan it and instantly save the card to Apple or Google Wallet.",
+                title: "Clientes Escanean y Guardan",
+                description: "Imprime tu código QR. Los clientes lo escanean y guardan la tarjeta al instante en Apple o Google Wallet.",
               },
               {
                 icon: Wallet,
                 step: "03",
-                title: "Reward Loyalty",
-                description: "Scan customer cards to add stamps. When they reach the goal, they redeem their reward.",
+                title: "Recompensa la Lealtad",
+                description: "Escanea las tarjetas de clientes para agregar sellos. Cuando alcanzan la meta, canjean su recompensa.",
               },
             ].map((item, index) => (
               <div
@@ -165,43 +165,43 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Everything you need to build loyalty
+              Todo lo que necesitas para construir lealtad
             </h2>
             <p className="text-lg text-muted-foreground">
-              Powerful features designed for small businesses that want big results.
+              Funciones diseñadas para pequeños negocios que quieren grandes resultados.
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               {
                 icon: Wallet,
-                title: "Wallet Integration",
-                description: "Native Apple Wallet and Google Wallet support. Cards update in real-time.",
+                title: "Integración con Wallet",
+                description: "Soporte nativo para Apple Wallet y Google Wallet. Las tarjetas se actualizan en tiempo real.",
               },
               {
                 icon: QrCode,
-                title: "QR-Based Flow",
-                description: "No apps needed. Customers scan a QR code and they're done.",
+                title: "Flujo con QR",
+                description: "Sin apps necesarias. Los clientes escanean un código QR y listo.",
               },
               {
                 icon: Zap,
-                title: "Instant Setup",
-                description: "Create your first loyalty card in under 2 minutes.",
+                title: "Configuración Instantánea",
+                description: "Crea tu primera tarjeta de lealtad en menos de 2 minutos.",
               },
               {
                 icon: Shield,
-                title: "Secure & Private",
-                description: "Customer data is protected. No account required for customers.",
+                title: "Seguro y Privado",
+                description: "Los datos del cliente están protegidos. Sin cuenta requerida para clientes.",
               },
               {
                 icon: BarChart3,
-                title: "Simple Analytics",
-                description: "Track stamps, redemptions, and customer engagement.",
+                title: "Analíticas Simples",
+                description: "Monitorea sellos, canjes y la actividad de tus clientes.",
               },
               {
                 icon: Smartphone,
                 title: "Mobile-First",
-                description: "Optimized for the way customers actually interact with businesses.",
+                description: "Optimizado para la forma en que los clientes interactúan con los negocios.",
               },
             ].map((feature, index) => (
               <div
@@ -224,18 +224,18 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Perfect for local businesses
+              Perfecto para negocios locales
             </h2>
             <p className="text-lg text-muted-foreground">
-              Join thousands of small businesses already using Koda Fidelity.
+              Únete a cientos de pequeños negocios que ya usan Koda Fidelity.
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { emoji: "☕", name: "Coffee Shops", example: "Buy 9, get 1 free" },
-              { emoji: "🍕", name: "Restaurants", example: "Free dessert after 5 visits" },
-              { emoji: "💇", name: "Barber Shops", example: "10th haircut free" },
-              { emoji: "🛒", name: "Local Stores", example: "Earn points on purchases" },
+              { emoji: "☕", name: "Cafeterías", example: "Compra 9, llévate 1 gratis" },
+              { emoji: "🍕", name: "Restaurantes", example: "Postre gratis después de 5 visitas" },
+              { emoji: "💇", name: "Barberías", example: "10mo corte gratis" },
+              { emoji: "🛒", name: "Tiendas Locales", example: "Acumula puntos en tus compras" },
             ].map((useCase, index) => (
               <div
                 key={index}
@@ -255,15 +255,15 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-3xl p-12 lg:p-16 border border-primary/20">
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Ready to build customer loyalty?
+              ¿Listo para construir lealtad?
             </h2>
             <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
-              Start your free trial today. No credit card required. 
-              Create your first loyalty card in minutes.
+              Comienza tu prueba gratis hoy. Sin tarjeta de crédito. 
+              Crea tu primera tarjeta de lealtad en minutos.
             </p>
             <Link href="/dashboard">
               <Button size="lg" className="text-base px-10">
-                Get Started Free
+                Comenzar Gratis
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
@@ -282,17 +282,17 @@ export default function LandingPage() {
               <span className="font-semibold text-foreground">Koda Fidelity</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Part of the Koda POS ecosystem. Built for small businesses.
+              Parte del ecosistema Koda POS. Hecho para pequeños negocios.
             </p>
             <div className="flex items-center gap-6">
               <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Privacy
+                Privacidad
               </Link>
               <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Terms
+                Términos
               </Link>
               <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Support
+                Soporte
               </Link>
             </div>
           </div>

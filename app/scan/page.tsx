@@ -85,7 +85,7 @@ export default function ScanPage() {
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-sm">K</span>
             </div>
-            <span className="font-semibold text-foreground">Stamp Scanner</span>
+            <span className="font-semibold text-foreground">Escáner de Sellos</span>
           </div>
           <div className="w-20" /> {/* Spacer for centering */}
         </div>
@@ -104,16 +104,16 @@ export default function ScanPage() {
                 <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
                   <Camera className="h-10 w-10 text-primary" />
                 </div>
-                <p className="text-lg font-semibold text-foreground">Tap to Scan</p>
+                <p className="text-lg font-semibold text-foreground">Toca para Escanear</p>
                 <p className="text-sm text-muted-foreground">
-                  Scan customer&apos;s QR code
+                  Escanea el código QR del cliente
                 </p>
               </div>
 
               {/* Divider */}
               <div className="flex items-center gap-4">
                 <div className="flex-1 h-px bg-border" />
-                <span className="text-sm text-muted-foreground">or search</span>
+                <span className="text-sm text-muted-foreground">o buscar</span>
                 <div className="flex-1 h-px bg-border" />
               </div>
 
@@ -122,7 +122,7 @@ export default function ScanPage() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search by customer name..."
+                    placeholder="Buscar por nombre de cliente..."
                     className="pl-10"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -152,14 +152,14 @@ export default function ScanPage() {
                               <p className="text-sm font-medium text-foreground">
                                 {customer.stamps}/{customer.maxStamps}
                               </p>
-                              <p className="text-xs text-muted-foreground">stamps</p>
+                              <p className="text-xs text-muted-foreground">sellos</p>
                             </div>
                           </button>
                         ))}
                       </div>
                     ) : (
                       <p className="p-4 text-sm text-muted-foreground text-center">
-                        No customers found
+                        No se encontraron clientes
                       </p>
                     )}
                   </div>
@@ -181,7 +181,7 @@ export default function ScanPage() {
                   <div className="absolute inset-x-4 top-1/2 h-0.5 bg-primary animate-pulse" />
                 </div>
               </div>
-              <p className="text-white mt-6 font-medium">Scanning...</p>
+              <p className="text-white mt-6 font-medium">Escaneando...</p>
             </div>
           )}
 
@@ -210,9 +210,9 @@ export default function ScanPage() {
                 {/* Stamps Progress */}
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-muted-foreground">Progress</span>
+                    <span className="text-sm text-muted-foreground">Progreso</span>
                     <span className="text-sm font-medium text-foreground">
-                      {selectedCustomer.stamps}/{selectedCustomer.maxStamps} stamps
+                      {selectedCustomer.stamps}/{selectedCustomer.maxStamps} sellos
                     </span>
                   </div>
                   <div className="grid grid-cols-10 gap-1.5">
@@ -234,8 +234,8 @@ export default function ScanPage() {
                   <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
                     <Gift className="h-6 w-6 text-green-600" />
                     <div>
-                      <p className="font-medium text-green-800">Reward Ready!</p>
-                      <p className="text-sm text-green-600">Customer can redeem their reward</p>
+                    <p className="font-medium text-green-800">¡Recompensa Lista!</p>
+                    <p className="text-sm text-green-600">El cliente puede canjear su recompensa</p>
                     </div>
                   </div>
                 ) : (
@@ -243,10 +243,10 @@ export default function ScanPage() {
                     <Stamp className="h-6 w-6 text-primary" />
                     <div>
                       <p className="font-medium text-foreground">
-                        {selectedCustomer.maxStamps - selectedCustomer.stamps} more to go
+                        {selectedCustomer.maxStamps - selectedCustomer.stamps} más para la meta
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        Add a stamp for this visit
+                        Agrega un sello por esta visita
                       </p>
                     </div>
                   </div>
@@ -263,17 +263,17 @@ export default function ScanPage() {
                     : ""
                 }`}
               >
-                {selectedCustomer.stamps >= selectedCustomer.maxStamps ? (
-                  <>
-                    <Gift className="h-6 w-6 mr-3" />
-                    Redeem Reward
-                  </>
-                ) : (
-                  <>
-                    <Stamp className="h-6 w-6 mr-3" />
-                    Add Stamp
-                  </>
-                )}
+                  {selectedCustomer.stamps >= selectedCustomer.maxStamps ? (
+                    <>
+                      <Gift className="h-6 w-6 mr-3" />
+                      Canjear Recompensa
+                    </>
+                  ) : (
+                    <>
+                      <Stamp className="h-6 w-6 mr-3" />
+                      Agregar Sello
+                    </>
+                  )}
               </Button>
             </div>
           )}
@@ -294,12 +294,12 @@ export default function ScanPage() {
               
               <div>
                 <h2 className="text-2xl font-bold text-foreground mb-2">
-                  {scanState === "redeemed" ? "Reward Redeemed!" : "Stamp Added!"}
+                  {scanState === "redeemed" ? "¡Recompensa Canjeada!" : "¡Sello Agregado!"}
                 </h2>
                 <p className="text-muted-foreground">
                   {scanState === "redeemed"
-                    ? `${selectedCustomer?.name} has claimed their reward`
-                    : `${selectedCustomer?.name} now has ${selectedCustomer?.stamps} stamps`}
+                    ? `${selectedCustomer?.name} ha canjeado su recompensa`
+                    : `${selectedCustomer?.name} ahora tiene ${selectedCustomer?.stamps} sellos`}
                 </p>
               </div>
 
@@ -321,7 +321,7 @@ export default function ScanPage() {
               )}
 
               <Button onClick={resetScan} size="lg" className="w-full">
-                Scan Next Customer
+                Escanear Siguiente Cliente
               </Button>
             </div>
           )}

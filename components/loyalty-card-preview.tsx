@@ -20,7 +20,7 @@ interface LoyaltyCardPreviewProps {
 export function LoyaltyCardPreview({
   businessName,
   businessLogo,
-  customerName = "Your Name",
+  customerName = "Tu Nombre",
   currentStamps,
   maxStamps,
   reward,
@@ -71,21 +71,21 @@ export function LoyaltyCardPreview({
             )}
             <div>
               <h3 className="font-semibold text-foreground text-lg">{businessName}</h3>
-              <p className="text-xs text-muted-foreground">Loyalty Card</p>
+              <p className="text-xs text-muted-foreground">Tarjeta de Lealtad</p>
             </div>
           </div>
         </div>
 
         {/* Customer name */}
         <div className="bg-muted/50 rounded-xl p-3">
-          <p className="text-xs text-muted-foreground mb-0.5">Member</p>
+          <p className="text-xs text-muted-foreground mb-0.5">Miembro</p>
           <p className="font-medium text-foreground">{customerName}</p>
         </div>
 
         {/* Stamps grid */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-medium text-foreground">Your Progress</p>
+            <p className="text-sm font-medium text-foreground">Tu Progreso</p>
             <p className="text-sm text-muted-foreground">
               {currentStamps}/{maxStamps}
             </p>
@@ -127,7 +127,7 @@ export function LoyaltyCardPreview({
           className="rounded-xl p-4 text-center"
           style={{ backgroundColor: `${brandColor}15` }}
         >
-          <p className="text-xs text-muted-foreground mb-1">Your Reward</p>
+          <p className="text-xs text-muted-foreground mb-1">Tu Recompensa</p>
           <p className="font-semibold text-foreground">{reward}</p>
         </div>
 
@@ -147,7 +147,7 @@ export function LoyaltyCardPreview({
 
         {/* Footer */}
         <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border">
-          {expirationDate && <span>Expires: {expirationDate}</span>}
+          {expirationDate && <span>Vence: {expirationDate}</span>}
           <span className="ml-auto">Powered by Koda</span>
         </div>
       </div>
