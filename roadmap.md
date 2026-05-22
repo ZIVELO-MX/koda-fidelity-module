@@ -36,7 +36,10 @@
 - [x] Crear capa portable de auth (lib/auth.ts, lib/auth-service.ts)
 - [x] Crear proxy para proteger rutas (proxy.ts)
 - [x] Migrar datos mock a DB real (seed ejecutado en Supabase)
-- [ ] Conectar Supabase Auth (login dueños de negocio)
+- [x] Conectar Supabase Auth — server actions + /login + /signup pages
+- [x] Página 404 personalizada con humor
+- [x] Login modo invite-only (INVITE_ONLY=true, desbloqueable con env var)
+- [x] Tests de config/invite-only (4 tests)
 - [ ] Configurar variables de entorno en Vercel
 - [ ] Apuntar dominio desde Cloudflare a Vercel
 
@@ -165,7 +168,8 @@ model StampLog {
 ## Prioridades inmediatas (próximas semanas)
 
 1. **Wallet Passes (Apple & Google)** — es la feature core del producto
-2. **Supabase + Prisma setup** — necesario para que los pases sean reales
-3. **Auth** — para que dueños de negocio puedan gestionar sus tarjetas
-4. **Backend real** — migrar datos mock a API real
-5. **Dashboard + Scan** — conectar todo el flujo end-to-end
+2. **Auth: crear usuario test + probar login end-to-end**
+3. **Backend real** — API routes REST protegidas con Supabase Auth
+4. **Dashboard con datos reales** — migrar de mock a Supabase
+5. **Wallet Passes** — implementar PKPass y Google Wallet JWT
+6. **Dashboard + Scan** — conectar todo el flujo end-to-end
