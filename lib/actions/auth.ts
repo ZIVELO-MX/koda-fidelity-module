@@ -41,7 +41,11 @@ export async function signup(_prev: AuthResult, formData: FormData): Promise<Aut
       redirect("/dashboard")
     }
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error al registrarse" }
+    const message = e instanceof Error ? e.message : "Error al registrarse"
+    if (message === "Confirmation email sent") {
+      return { success: true }
+    }
+    return { error: message }
   }
 
   return { success: true }

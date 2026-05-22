@@ -40,6 +40,9 @@
 - [x] Página 404 personalizada con humor
 - [x] Login modo invite-only (INVITE_ONLY=true, desbloqueable con env var)
 - [x] Tests de config/invite-only (4 tests)
+- [x] Signup dinámico: formulario real vs gate según INVITE_ONLY
+- [x] E2E tests con Playwright: UI rendering, login, signup, logout, middleware
+- [x] Script para crear test user en Supabase Auth (email_confirm=true)
 - [ ] Configurar variables de entorno en Vercel
 - [ ] Apuntar dominio desde Cloudflare a Vercel
 
