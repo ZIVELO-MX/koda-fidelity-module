@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test"
 test.describe("Auth UI", () => {
   test("signup page shows registration form (INVITE_ONLY=false)", async ({ page }) => {
     await page.goto("/signup")
-    await expect(page.getByText("Crear Cuenta")).toBeVisible()
+    await expect(page.getByText("Crear Cuenta").first()).toBeVisible()
     await expect(page.getByLabel("Nombre del negocio")).toBeVisible()
     await expect(page.getByLabel("Correo electrónico")).toBeVisible()
     await expect(page.getByLabel("Contraseña")).toBeVisible()
@@ -12,7 +12,7 @@ test.describe("Auth UI", () => {
 
   test("login page shows login form", async ({ page }) => {
     await page.goto("/login")
-    await expect(page.getByText("Iniciar Sesión")).toBeVisible()
+    await expect(page.getByText("Iniciar Sesión").first()).toBeVisible()
     await expect(page.getByLabel("Correo electrónico")).toBeVisible()
     await expect(page.getByLabel("Contraseña")).toBeVisible()
     await expect(page.getByRole("button", { name: "Iniciar Sesión" })).toBeVisible()
@@ -29,7 +29,7 @@ test.describe("Auth UI", () => {
   test("unauthenticated access to dashboard redirects to login", async ({ page }) => {
     await page.goto("/dashboard")
     await page.waitForURL("**/login")
-    await expect(page.getByText("Iniciar Sesión")).toBeVisible()
+    await expect(page.getByText("Iniciar Sesión").first()).toBeVisible()
   })
 
   test("authenticated user on login page redirects to dashboard", async ({ page, context }) => {
