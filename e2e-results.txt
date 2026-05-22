@@ -1,0 +1,41 @@
+
+> my-project@0.1.0 e2e /home/benrod/proyectos/zivelo/koda/koda-fidelity-module
+> playwright test
+
+
+Running 10 tests using 2 workers
+
+  ✓   2 e2e/auth-ui.spec.ts:4:7 › Auth UI › signup page shows registration form (INVITE_ONLY=false) (2.5s)
+  ✓   3 e2e/auth-ui.spec.ts:13:7 › Auth UI › login page shows login form (762ms)
+  ✓   4 e2e/auth-ui.spec.ts:21:7 › Auth UI › login with invalid credentials shows error (1.0s)
+  ✘   1 e2e/auth-flow.spec.ts:7:7 › Auth Flow › signup creates a new user (4.8s)
+  ✓   5 e2e/auth-ui.spec.ts:29:7 › Auth UI › unauthenticated access to dashboard redirects to login (575ms)
+  ✓   6 e2e/auth-ui.spec.ts:35:7 › Auth UI › authenticated user on login page redirects to dashboard (536ms)
+  ✓   7 e2e/auth-flow.spec.ts:30:7 › Auth Flow › login with valid credentials succeeds (1.3s)
+  ✓   8 e2e/auth-flow.spec.ts:40:7 › Auth Flow › session persists after page reload (1.8s)
+  ✓   9 e2e/auth-flow.spec.ts:52:7 › Auth Flow › logout redirects to login (1.6s)
+  ✓  10 e2e/auth-flow.spec.ts:64:7 › Auth Flow › after logout, dashboard redirects to login (1.8s)
+
+
+  1) e2e/auth-flow.spec.ts:7:7 › Auth Flow › signup creates a new user ─────────────────────────────
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32mtrue[39m
+    Received: [31mfalse[39m
+
+      24 |       const hasSuccess = await page.getByText("Revisa tu correo para confirmar").isVisible().catch(() => false)
+      25 |       const hasError = await page.locator('[class*="destructive"]').isVisible().catch(() => false)
+    > 26 |       expect(hasSuccess || hasError).toBe(true)
+         |                                      ^
+      27 |     }
+      28 |   })
+      29 |
+        at /home/benrod/proyectos/zivelo/koda/koda-fidelity-module/e2e/auth-flow.spec.ts:26:38
+
+    Error Context: test-results/auth-flow-Auth-Flow-signup-creates-a-new-user/error-context.md
+
+  1 failed
+    e2e/auth-flow.spec.ts:7:7 › Auth Flow › signup creates a new user ──────────────────────────────
+  9 passed (15.0s)
+ ELIFECYCLE  Command failed with exit code 1.

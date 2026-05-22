@@ -1,5 +1,6 @@
 "use server"
 
+import type { AuthSession } from "@/lib/auth"
 import { authService } from "@/lib/auth-service"
 import { config } from "@/lib/config"
 import { revalidatePath } from "next/cache"
@@ -34,18 +35,21 @@ export async function signup(_prev: AuthResult, formData: FormData): Promise<Aut
 
   if (!email || !password || !name) return { error: "Todos los campos son requeridos" }
 
+  let session: AuthSession | null = null
   try {
     const result = await authService.signUp(email, password, name)
-    if (result.user) {
-      revalidatePath("/dashboard")
-      redirect("/dashboard")
-    }
+    session = result
   } catch (e) {
     const message = e instanceof Error ? e.message : "Error al registrarse"
     if (message === "Confirmation email sent") {
       return { success: true }
     }
     return { error: message }
+  }
+
+  if (session?.user) {
+    revalidatePath("/dashboard")
+    redirect("/dashboard")
   }
 
   return { success: true }
