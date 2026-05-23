@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { handleApiError, ValidationError, NotFoundError } from "@/lib/api-utils"
+import { createClient } from "@/lib/supabase-server"
+import { handleApiError, ValidationError, NotFoundError, UnauthorizedError } from "@/lib/api-utils"
 
 const cardInclude = {
   card: {
@@ -72,6 +73,12 @@ export async function GET(request: NextRequest) {
     }
 
     if (email) {
+      const supabase = await createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user?.email || user.email !== email) {
+        throw new UnauthorizedError()
+      }
+
       const where: Record<string, unknown> = { email }
       if (cardId) where.cardId = cardId
 
