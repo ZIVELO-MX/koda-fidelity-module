@@ -1,43 +1,71 @@
 import Link from "next/link"
+import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { StatCard } from "@/components/dashboard/stat-card"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
+import { prisma } from "@/lib/prisma"
+import { createClient } from "@/lib/supabase-server"
 import { CreditCard, Users, Stamp, TrendingUp, Plus, ArrowRight } from "lucide-react"
 
-const recentActivity = [
-  { type: "stamp", customer: "Sarah M.", card: "Coffee Rewards", time: "2 min ago" },
-  { type: "redeem", customer: "John D.", card: "Coffee Rewards", time: "15 min ago" },
-  { type: "new", customer: "Emma W.", card: "Lunch Special", time: "1 hour ago" },
-  { type: "stamp", customer: "Mike R.", card: "Haircut Club", time: "2 hours ago" },
-]
+function timeAgo(date: Date): string {
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
+  if (seconds < 60) return "hace unos segundos"
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `hace ${minutes} min`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `hace ${hours}h`
+  const days = Math.floor(hours / 24)
+  if (days < 30) return `hace ${days}d`
+  return date.toLocaleDateString("es-MX")
+}
 
-const campaigns = [
-  {
-    name: "Coffee Rewards",
-    customers: 142,
-    stampsGiven: 856,
-    color: "#f97316",
-    maxStamps: 10,
-    reward: "Free Coffee",
-  },
-  {
-    name: "Lunch Special",
-    customers: 67,
-    stampsGiven: 234,
-    color: "#3b82f6",
-    maxStamps: 8,
-    reward: "Free Dessert",
-  },
-]
+export default async function DashboardPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
-export default function DashboardPage() {
+  if (!user?.email) {
+    redirect("/login")
+  }
+
+  const business = await prisma.business.findUnique({
+    where: { email: user.email },
+  })
+
+  if (!business) {
+    redirect("/login")
+  }
+
+  const cards = await prisma.loyaltyCard.findMany({
+    where: { businessId: business.id },
+    include: {
+      _count: { select: { customers: true } },
+      customers: { select: { stamps: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  })
+
+  const allLogs = await prisma.stampLog.findMany({
+    where: {
+      customer: { card: { businessId: business.id } },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 10,
+    include: {
+      customer: { select: { name: true, card: { select: { name: true } } } },
+    },
+  })
+
+  const activeCards = cards.length
+  const totalCustomers = cards.reduce((sum, c) => sum + c._count.customers, 0)
+  const stampsGiven = cards.reduce((sum, c) => sum + c.customers.reduce((s, cust) => s + cust.stamps, 0), 0)
+  const redemptions = allLogs.filter((l) => l.type === "redeem").length
+
   return (
     <div className="space-y-8">
-      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground">¡Bienvenido! Esto es lo que está pasando.</p>
+          <p className="text-muted-foreground">¡Bienvenido, {business.name}! Esto es lo que está pasando.</p>
         </div>
         <Link href="/dashboard/cards/new">
           <Button>
@@ -47,41 +75,14 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Tarjetas Activas"
-          value={2}
-          change="+1 este mes"
-          changeType="positive"
-          icon={CreditCard}
-        />
-        <StatCard
-          title="Total Clientes"
-          value={209}
-          change="+23 esta semana"
-          changeType="positive"
-          icon={Users}
-        />
-        <StatCard
-          title="Sellos Entregados"
-          value="1,090"
-          change="+156 esta semana"
-          changeType="positive"
-          icon={Stamp}
-        />
-        <StatCard
-          title="Canjes"
-          value={47}
-          change="+8 esta semana"
-          changeType="positive"
-          icon={TrendingUp}
-        />
+        <StatCard title="Tarjetas Activas" value={activeCards} icon={CreditCard} />
+        <StatCard title="Total Clientes" value={totalCustomers} icon={Users} />
+        <StatCard title="Sellos Entregados" value={stampsGiven} icon={Stamp} />
+        <StatCard title="Canjes" value={redemptions} icon={TrendingUp} />
       </div>
 
-      {/* Main Content Grid */}
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Campaigns */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-foreground">Tus Tarjetas de Lealtad</h2>
@@ -90,32 +91,32 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="grid sm:grid-cols-2 gap-4">
-            {campaigns.map((campaign) => (
+            {cards.map((card) => (
               <div
-                key={campaign.name}
+                key={card.id}
                 className="bg-card rounded-2xl p-5 border border-border hover:shadow-md transition-shadow"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div
                     className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold"
-                    style={{ backgroundColor: campaign.color }}
+                    style={{ backgroundColor: card.brandColor }}
                   >
-                    {campaign.name.charAt(0)}
+                    {card.name.charAt(0)}
                   </div>
                   <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
                     Activa
                   </span>
                 </div>
-                <h3 className="font-semibold text-foreground mb-1">{campaign.name}</h3>
+                <h3 className="font-semibold text-foreground mb-1">{card.name}</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  {campaign.maxStamps} sellos para {campaign.reward}
+                  {card.stampsRequired} sellos para {card.reward}
                 </p>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">
-                    <span className="font-medium text-foreground">{campaign.customers}</span> clientes
+                    <span className="font-medium text-foreground">{card._count.customers}</span> clientes
                   </span>
                   <span className="text-muted-foreground">
-                    <span className="font-medium text-foreground">{campaign.stampsGiven}</span> sellos
+                    <span className="font-medium text-foreground">{card.customers.reduce((s, c) => s + c.stamps, 0)}</span> sellos
                   </span>
                 </div>
               </div>
@@ -133,65 +134,61 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Recent Activity */}
         <div className="space-y-4">
           <h2 className="text-lg font-semibold text-foreground">Actividad Reciente</h2>
           <div className="bg-card rounded-2xl border border-border overflow-hidden">
             <div className="divide-y divide-border">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="p-4 hover:bg-muted/50 transition-colors">
-                  <div className="flex items-start gap-3">
-                    <div
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                        activity.type === "stamp"
-                          ? "bg-primary/10 text-primary"
-                          : activity.type === "redeem"
-                          ? "bg-green-100 text-green-600"
-                          : "bg-blue-100 text-blue-600"
-                      }`}
-                    >
-                      {activity.type === "stamp" ? (
-                        <Stamp className="h-4 w-4" />
-                      ) : activity.type === "redeem" ? (
-                        <TrendingUp className="h-4 w-4" />
-                      ) : (
-                        <Users className="h-4 w-4" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">
-                        {activity.customer}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {activity.type === "stamp"
-                          ? "Recibió un sello"
-                          : activity.type === "redeem"
-                          ? "Canjeó recompensa"
-                          : "Se unió"}{" "}
-                        - {activity.card}
-                      </p>
-                    </div>
-                    <span className="text-xs text-muted-foreground flex-shrink-0">
-                      {activity.time}
-                    </span>
-                  </div>
+              {allLogs.length === 0 ? (
+                <div className="p-6 text-center text-sm text-muted-foreground">
+                  Aún no hay actividad. Crea una tarjeta y comparte el código QR.
                 </div>
-              ))}
+              ) : (
+                allLogs.map((log) => (
+                  <div key={log.id} className="p-4 hover:bg-muted/50 transition-colors">
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          log.type === "stamp"
+                            ? "bg-primary/10 text-primary"
+                            : "bg-green-100 text-green-600"
+                        }`}
+                      >
+                        {log.type === "stamp" ? (
+                          <Stamp className="h-4 w-4" />
+                        ) : (
+                          <TrendingUp className="h-4 w-4" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {log.customer.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {log.type === "stamp" ? "Recibió un sello" : "Canjeó recompensa"}
+                          {" - "}{log.customer.card.name}
+                        </p>
+                      </div>
+                      <span className="text-xs text-muted-foreground flex-shrink-0">
+                        {timeAgo(log.createdAt)}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
             <div className="p-4 bg-muted/30 border-t border-border">
               <Link
                 href="/dashboard/customers"
                 className="text-sm text-primary hover:underline flex items-center justify-center gap-1"
               >
-                View all activity
-                  <ArrowRight className="h-4 w-4" />
+                Ver toda la actividad
+                <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Card Preview Section */}
       <div className="bg-card rounded-2xl border border-border p-6">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div className="max-w-md">
@@ -200,7 +197,6 @@ export default function DashboardPage() {
             </h2>
             <p className="text-muted-foreground mb-4">
               Así es como tus clientes ven su tarjeta de lealtad en Apple Wallet o Google Wallet.
-              Hermosa, accesible, siempre con ellos.
             </p>
             <Link href="/dashboard/cards/new">
               <Button variant="outline">
@@ -211,13 +207,13 @@ export default function DashboardPage() {
           </div>
           <div className="w-full max-w-xs">
             <LoyaltyCardPreview
-              businessName="Tu Negocio"
+              businessName={business.name}
               customerName="Cliente Feliz"
               currentStamps={7}
               maxStamps={10}
               reward="Recompensa Gratis"
               expirationDate="Dec 31, 2026"
-              brandColor="#f97316"
+              brandColor={business.brandColor}
             />
           </div>
         </div>
