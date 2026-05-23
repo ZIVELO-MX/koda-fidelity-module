@@ -53,8 +53,7 @@ export async function POST(
     },
   })
 
-  const origin = request.headers.get("origin") || request.nextUrl.origin
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || origin
+  const baseUrl = process.env.GOOGLE_WALLET_IMAGE_BASE_URL || request.nextUrl.origin
 
   const jwtToken = await generateLoyaltyPassJwt({
     customerId: customer.id,
