@@ -43,7 +43,7 @@ export const authService: AuthService = {
     })
 
     if (error) throw error
-    if (!data.session) throw new Error("Confirmation email sent")
+    if (!data.session || !data.user) throw new Error("Confirmation email sent")
 
     return {
       user: {
