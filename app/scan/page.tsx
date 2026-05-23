@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,49 +12,90 @@ import {
   ArrowLeft, 
   Search,
   User,
-  X
+  X,
+  Loader2
 } from "lucide-react"
 
-// Mock customer data
-const mockCustomers = [
-  { id: "1", name: "Sarah Mitchell", stamps: 7, maxStamps: 10, card: "Coffee Rewards" },
-  { id: "2", name: "John Davidson", stamps: 10, maxStamps: 10, card: "Coffee Rewards" },
-  { id: "3", name: "Emma Wilson", stamps: 3, maxStamps: 8, card: "Lunch Special" },
-]
+interface SearchCustomer {
+  id: string
+  name: string
+  stamps: number
+  maxStamps: number
+  cardName: string
+  cardReward: string
+}
 
 type ScanState = "idle" | "scanning" | "found" | "stamped" | "redeemed"
 
 export default function ScanPage() {
   const [scanState, setScanState] = useState<ScanState>("idle")
-  const [selectedCustomer, setSelectedCustomer] = useState<typeof mockCustomers[0] | null>(null)
+  const [selectedCustomer, setSelectedCustomer] = useState<SearchCustomer | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
+  const [searchResults, setSearchResults] = useState<SearchCustomer[]>([])
+  const [searching, setSearching] = useState(false)
+  const [actionLoading, setActionLoading] = useState(false)
+  const [actionError, setActionError] = useState<string | null>(null)
 
-  const filteredCustomers = mockCustomers.filter(c => 
-    c.name.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([])
+      return
+    }
+
+    const timer = setTimeout(async () => {
+      setSearching(true)
+      try {
+        const res = await fetch(`/api/customers?q=${encodeURIComponent(searchQuery)}`)
+        const data = await res.json()
+        setSearchResults(data.customers || [])
+      } catch {
+        setSearchResults([])
+      } finally {
+        setSearching(false)
+      }
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [searchQuery])
 
   const simulateScan = () => {
     setScanState("scanning")
     setTimeout(() => {
-      const customer = mockCustomers[Math.floor(Math.random() * mockCustomers.length)]
-      setSelectedCustomer(customer)
       setScanState("found")
+      setSearchQuery("")
     }, 1500)
   }
 
-  const addStamp = () => {
+  const addStamp = async () => {
     if (!selectedCustomer) return
-    
-    if (selectedCustomer.stamps >= selectedCustomer.maxStamps) {
-      // Redeem reward
-      setScanState("redeemed")
-    } else {
-      // Add stamp
-      setSelectedCustomer({
-        ...selectedCustomer,
-        stamps: selectedCustomer.stamps + 1,
+    setActionLoading(true)
+    setActionError(null)
+
+    try {
+      const type = selectedCustomer.stamps >= selectedCustomer.maxStamps ? "redeem" : "stamp"
+      const res = await fetch("/api/stamps", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customerId: selectedCustomer.id, type }),
       })
-      setScanState("stamped")
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || "Error al procesar")
+      }
+
+      if (data.event === "redeem") {
+        setSelectedCustomer({ ...selectedCustomer, stamps: 0 })
+        setScanState("redeemed")
+      } else {
+        setSelectedCustomer({ ...selectedCustomer, stamps: selectedCustomer.stamps + 1 })
+        setScanState("stamped")
+      }
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Error al procesar")
+    } finally {
+      setActionLoading(false)
     }
   }
 
@@ -62,16 +103,17 @@ export default function ScanPage() {
     setScanState("idle")
     setSelectedCustomer(null)
     setSearchQuery("")
+    setSearchResults([])
+    setActionError(null)
   }
 
-  const selectCustomer = (customer: typeof mockCustomers[0]) => {
+  const selectCustomer = (customer: SearchCustomer) => {
     setSelectedCustomer(customer)
     setScanState("found")
   }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
       <header className="border-b border-border bg-card sticky top-0 z-10">
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
           <Link 
@@ -87,16 +129,14 @@ export default function ScanPage() {
             </div>
             <span className="font-semibold text-foreground">Escáner de Sellos</span>
           </div>
-          <div className="w-20" /> {/* Spacer for centering */}
+          <div className="w-20" />
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-8">
         <div className="w-full max-w-md">
           {scanState === "idle" && (
             <div className="space-y-6">
-              {/* Scanner Area */}
               <div 
                 onClick={simulateScan}
                 className="aspect-square max-h-[300px] bg-muted/50 rounded-3xl border-2 border-dashed border-border flex flex-col items-center justify-center cursor-pointer hover:bg-muted/80 hover:border-primary/50 transition-all"
@@ -110,14 +150,12 @@ export default function ScanPage() {
                 </p>
               </div>
 
-              {/* Divider */}
               <div className="flex items-center gap-4">
                 <div className="flex-1 h-px bg-border" />
                 <span className="text-sm text-muted-foreground">o buscar</span>
                 <div className="flex-1 h-px bg-border" />
               </div>
 
-              {/* Manual Search */}
               <div className="space-y-3">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -129,40 +167,46 @@ export default function ScanPage() {
                   />
                 </div>
                 
-                {searchQuery && (
-                  <div className="bg-card rounded-xl border border-border overflow-hidden">
-                    {filteredCustomers.length > 0 ? (
-                      <div className="divide-y divide-border">
-                        {filteredCustomers.map((customer) => (
-                          <button
-                            key={customer.id}
-                            onClick={() => selectCustomer(customer)}
-                            className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors text-left"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                <User className="h-5 w-5 text-primary" />
-                              </div>
-                              <div>
-                                <p className="font-medium text-foreground">{customer.name}</p>
-                                <p className="text-xs text-muted-foreground">{customer.card}</p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-sm font-medium text-foreground">
-                                {customer.stamps}/{customer.maxStamps}
-                              </p>
-                              <p className="text-xs text-muted-foreground">sellos</p>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="p-4 text-sm text-muted-foreground text-center">
-                        No se encontraron clientes
-                      </p>
-                    )}
+                {searching && (
+                  <div className="flex items-center justify-center p-4">
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                   </div>
+                )}
+
+                {!searching && searchResults.length > 0 && (
+                  <div className="bg-card rounded-xl border border-border overflow-hidden">
+                    <div className="divide-y divide-border">
+                      {searchResults.map((customer) => (
+                        <button
+                          key={customer.id}
+                          onClick={() => selectCustomer(customer)}
+                          className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors text-left"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                              <User className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-foreground">{customer.name}</p>
+                              <p className="text-xs text-muted-foreground">{customer.cardName}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-medium text-foreground">
+                              {customer.stamps}/{customer.maxStamps}
+                            </p>
+                            <p className="text-xs text-muted-foreground">sellos</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {!searching && searchQuery && searchResults.length === 0 && (
+                  <p className="p-4 text-sm text-muted-foreground text-center">
+                    No se encontraron clientes
+                  </p>
                 )}
               </div>
             </div>
@@ -171,13 +215,11 @@ export default function ScanPage() {
           {scanState === "scanning" && (
             <div className="aspect-square max-h-[300px] bg-foreground rounded-3xl flex flex-col items-center justify-center">
               <div className="relative">
-                {/* Scanning animation */}
                 <div className="w-48 h-48 border-4 border-white/30 rounded-2xl relative">
                   <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white rounded-tl-lg" />
                   <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white rounded-tr-lg" />
                   <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white rounded-bl-lg" />
                   <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white rounded-br-lg" />
-                  {/* Scanning line */}
                   <div className="absolute inset-x-4 top-1/2 h-0.5 bg-primary animate-pulse" />
                 </div>
               </div>
@@ -187,7 +229,6 @@ export default function ScanPage() {
 
           {scanState === "found" && selectedCustomer && (
             <div className="space-y-6">
-              {/* Customer Card */}
               <div className="bg-card rounded-2xl p-6 border border-border">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
@@ -196,7 +237,7 @@ export default function ScanPage() {
                     </div>
                     <div>
                       <p className="font-semibold text-lg text-foreground">{selectedCustomer.name}</p>
-                      <p className="text-sm text-muted-foreground">{selectedCustomer.card}</p>
+                      <p className="text-sm text-muted-foreground">{selectedCustomer.cardName}</p>
                     </div>
                   </div>
                   <button
@@ -207,7 +248,6 @@ export default function ScanPage() {
                   </button>
                 </div>
 
-                {/* Stamps Progress */}
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-muted-foreground">Progreso</span>
@@ -229,13 +269,12 @@ export default function ScanPage() {
                   </div>
                 </div>
 
-                {/* Status */}
                 {selectedCustomer.stamps >= selectedCustomer.maxStamps ? (
                   <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
                     <Gift className="h-6 w-6 text-green-600" />
                     <div>
-                    <p className="font-medium text-green-800">¡Recompensa Lista!</p>
-                    <p className="text-sm text-green-600">El cliente puede canjear su recompensa</p>
+                      <p className="font-medium text-green-800">¡Recompensa Lista!</p>
+                      <p className="text-sm text-green-600">El cliente puede canjear su recompensa</p>
                     </div>
                   </div>
                 ) : (
@@ -253,9 +292,13 @@ export default function ScanPage() {
                 )}
               </div>
 
-              {/* Action Button */}
+              {actionError && (
+                <p className="text-sm text-red-500 text-center">{actionError}</p>
+              )}
+
               <Button
                 onClick={addStamp}
+                disabled={actionLoading}
                 size="lg"
                 className={`w-full h-16 text-lg ${
                   selectedCustomer.stamps >= selectedCustomer.maxStamps
@@ -263,22 +306,24 @@ export default function ScanPage() {
                     : ""
                 }`}
               >
-                  {selectedCustomer.stamps >= selectedCustomer.maxStamps ? (
-                    <>
-                      <Gift className="h-6 w-6 mr-3" />
-                      Canjear Recompensa
-                    </>
-                  ) : (
-                    <>
-                      <Stamp className="h-6 w-6 mr-3" />
-                      Agregar Sello
-                    </>
-                  )}
+                {actionLoading ? (
+                  <Loader2 className="h-6 w-6 mr-3 animate-spin" />
+                ) : selectedCustomer.stamps >= selectedCustomer.maxStamps ? (
+                  <>
+                    <Gift className="h-6 w-6 mr-3" />
+                    Canjear Recompensa
+                  </>
+                ) : (
+                  <>
+                    <Stamp className="h-6 w-6 mr-3" />
+                    Agregar Sello
+                  </>
+                )}
               </Button>
             </div>
           )}
 
-          {(scanState === "stamped" || scanState === "redeemed") && (
+          {(scanState === "stamped" || scanState === "redeemed") && selectedCustomer && (
             <div className="text-center space-y-6">
               <div
                 className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto ${
@@ -298,12 +343,12 @@ export default function ScanPage() {
                 </h2>
                 <p className="text-muted-foreground">
                   {scanState === "redeemed"
-                    ? `${selectedCustomer?.name} ha canjeado su recompensa`
-                    : `${selectedCustomer?.name} ahora tiene ${selectedCustomer?.stamps} sellos`}
+                    ? `${selectedCustomer.name} ha canjeado su recompensa`
+                    : `${selectedCustomer.name} ahora tiene ${selectedCustomer.stamps} sellos`}
                 </p>
               </div>
 
-              {scanState === "stamped" && selectedCustomer && (
+              {scanState === "stamped" && (
                 <div className="bg-card rounded-xl p-4 border border-border">
                   <div className="grid grid-cols-10 gap-1.5">
                     {Array.from({ length: selectedCustomer.maxStamps }).map((_, i) => (

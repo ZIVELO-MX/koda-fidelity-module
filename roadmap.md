@@ -48,16 +48,22 @@
 
 ### Fase 1 — Backend real + API Routes
 
-- [ ] Migrar todas las páginas a datos reales desde Supabase
-- [ ] Crear API routes REST:
+- [x] Crear API routes REST:
   - `POST /api/cards` — crear tarjeta de fidelidad
   - `GET /api/cards` — listar tarjetas
-  - `GET /api/cards/:id` — detalle de tarjeta
-  - `POST /api/stamps` — agregar sello
-  - `GET /api/customers` — listar clientes
+  - `GET /api/cards/:id` — detalle de tarjeta (público, para join flow)
+  - `POST /api/stamps` — agregar sello / canjear recompensa
+  - `GET /api/customers` — listar clientes (con búsqueda `?q=`)
   - `GET /api/dashboard/stats` — estadísticas del dashboard
-- [ ] Autenticar rutas con Supabase Auth (middleware)
-- [ ] Proteger rutas del dashboard con session check
+- [x] Migrar dashboard home a datos reales desde Prisma
+- [x] Migrar dashboard/cards a datos reales desde Prisma
+- [x] Migrar dashboard/customers a datos reales desde Prisma
+- [x] Conectar formulario crear tarjeta a `POST /api/cards`
+- [x] Conectar join flow a `GET /api/cards/:id` (datos reales)
+- [x] Conectar scan page a `GET /api/customers` y `POST /api/stamps`
+- [x] Middleware de auth (middleware.ts) — protege dashboard, redirige login/signup
+- [x] Proteger rutas del dashboard con session check
+- [x] Crear Business automáticamente al registrarse
 
 ### Fase 2 — Dashboard completo
 

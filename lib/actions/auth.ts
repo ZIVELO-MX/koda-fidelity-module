@@ -3,6 +3,7 @@
 import type { AuthSession } from "@/lib/auth"
 import { authService } from "@/lib/auth-service"
 import { config } from "@/lib/config"
+import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
@@ -48,6 +49,12 @@ export async function signup(_prev: AuthResult, formData: FormData): Promise<Aut
   }
 
   if (session?.user) {
+    const existing = await prisma.business.findUnique({ where: { email } })
+    if (!existing) {
+      await prisma.business.create({
+        data: { email, name },
+      })
+    }
     revalidatePath("/dashboard")
     redirect("/dashboard")
   }
