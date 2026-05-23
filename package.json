@@ -17,7 +17,8 @@
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
     "e2e:debug": "playwright test --debug",
-    "seed:test-user": "pnpm tsx scripts/create-test-user.ts"
+    "seed:test-user": "pnpm tsx scripts/create-test-user.ts",
+    "generate:pass-images": "tsx scripts/generate-pass-images.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
