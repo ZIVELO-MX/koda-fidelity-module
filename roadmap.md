@@ -46,33 +46,29 @@
 - [ ] Configurar variables de entorno en Vercel
 - [ ] Apuntar dominio desde Cloudflare a Vercel
 
-### Fase 1 — Backend real + API Routes
+### Fase 1 — Backend real + API Routes ✅ Completada
 
-- [x] Crear API routes REST:
+- [x] API routes REST:
   - `POST /api/cards` — crear tarjeta de fidelidad
   - `GET /api/cards` — listar tarjetas
   - `GET /api/cards/:id` — detalle de tarjeta (público, para join flow)
   - `POST /api/stamps` — agregar sello / canjear recompensa
   - `GET /api/customers` — listar clientes (con búsqueda `?q=`)
   - `GET /api/dashboard/stats` — estadísticas del dashboard
-- [x] Migrar dashboard home a datos reales desde Prisma
-- [x] Migrar dashboard/cards a datos reales desde Prisma
-- [x] Migrar dashboard/customers a datos reales desde Prisma
+- [x] Migrar dashboard home, cards y customers a datos reales (Prisma)
 - [x] Conectar formulario crear tarjeta a `POST /api/cards`
 - [x] Conectar join flow a `GET /api/cards/:id` (datos reales)
 - [x] Conectar scan page a `GET /api/customers` y `POST /api/stamps`
-- [x] Middleware de auth (middleware.ts) — protege dashboard, redirige login/signup
-- [x] Proteger rutas del dashboard con session check
+- [x] Middleware de auth + protección de rutas dashboard
 - [x] Crear Business automáticamente al registrarse
+- [x] Tests: 46 tests, 0 errores de tipo
 
 ### Fase 2 — Dashboard completo
 
-- [ ] Dashboard home con datos reales (stats, actividad reciente)
-- [ ] CRUD de tarjetas de fidelidad
-- [ ] Gestión de clientes con datos reales
+- [ ] CRUD completo de tarjetas (PUT/DELETE /api/cards/:id, detalle por ID)
 - [ ] Generación de QR codes funcionales por tarjeta
 - [ ] Personalización de marca (logo, color) persistente
-- [ ] Configuración del negocio
+- [ ] Configuración del negocio (editar nombre, email)
 
 ### Fase 3 — Flujo de sellado (Scan)
 
