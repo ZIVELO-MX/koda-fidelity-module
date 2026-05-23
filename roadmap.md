@@ -99,6 +99,7 @@
 - [x] Integrar botón "Añadir a Google Wallet" en el flujo `join/[cardId]`
 - [x] Configurar cuenta Google Pay & Wallet Console (Issuer ID + service account)
 - [x] Mejorar diseño visual del pase (logo, hero image, secondary points, colores)
+- [x] Migrar imágenes de pases a Supabase Storage (bucket `pass-images`) y remover binarios del repo
 - [ ] Probar pases en Android / emulador
 - [ ] Generar certificado Apple Wallet (Pass Type ID + certificado de firma) — requiere Apple Developer Account ($99/año)
 - [ ] Implementar lógica de actualización de passes (stamps update via push)

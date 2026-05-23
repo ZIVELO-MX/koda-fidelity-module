@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken"
 import path from "node:path"
 import fs from "node:fs/promises"
 import { prisma } from "@/lib/prisma"
+import { getPublicUrl } from "@/lib/supabase-storage"
 
 const DEV_MODE = process.env.GOOGLE_WALLET_DEV_MODE === "true"
 const ISSUER_ID = process.env.GOOGLE_WALLET_ISSUER_ID || ""
@@ -51,21 +52,6 @@ export function getConfigError(): string | null {
   return getConfigIssue()
 }
 
-function isPrivateUrl(url: string): boolean {
-  try {
-    const host = new URL(url).hostname
-    return (
-      host === "localhost" ||
-      host === "127.0.0.1" ||
-      host.startsWith("192.168.") ||
-      host.startsWith("10.") ||
-      host.startsWith("172.")
-    )
-  } catch {
-    return true
-  }
-}
-
 function heroImageName(brandColor: string): string {
   const color = brandColor.toLowerCase()
   if (color.includes("f97316") || color.includes("ff6b35") || color.includes("orange")) return "hero-orange.png"
@@ -103,8 +89,6 @@ export async function generateLoyaltyPassJwt(params: GeneratePassJwtParams): Pro
   const stampsRemaining = Math.max(0, stampsRequired - stamps)
   const progress = Math.round((stamps / stampsRequired) * 100)
 
-  const hasPublicImages = !isPrivateUrl(baseUrl)
-
   const loyaltyClass: Record<string, unknown> = {
     id: classId(cardId),
     issuerName: businessName,
@@ -119,15 +103,13 @@ export async function generateLoyaltyPassJwt(params: GeneratePassJwtParams): Pro
     locations: [],
   }
 
-  if (hasPublicImages) {
-    loyaltyClass.logo = {
-      sourceUri: { uri: `${baseUrl}/passes/google-logo.png` },
-      contentDescription: { defaultValue: { language: "es-MX", value: businessName } },
-    }
-    loyaltyClass.cardTitleImage = {
-      sourceUri: { uri: `${baseUrl}/passes/google-logo.png` },
-      contentDescription: { defaultValue: { language: "es-MX", value: cardName } },
-    }
+  loyaltyClass.logo = {
+    sourceUri: { uri: getPublicUrl("google-logo.png") },
+    contentDescription: { defaultValue: { language: "es-MX", value: businessName } },
+  }
+  loyaltyClass.cardTitleImage = {
+    sourceUri: { uri: getPublicUrl("google-logo.png") },
+    contentDescription: { defaultValue: { language: "es-MX", value: cardName } },
   }
 
   const loyaltyObject: Record<string, unknown> = {
@@ -171,11 +153,9 @@ export async function generateLoyaltyPassJwt(params: GeneratePassJwtParams): Pro
     },
   }
 
-  if (hasPublicImages) {
-    loyaltyObject.heroImage = {
-      sourceUri: { uri: `${baseUrl}/passes/${heroImageName(brandColor)}` },
-      contentDescription: { defaultValue: { language: "es-MX", value: businessName } },
-    }
+  loyaltyObject.heroImage = {
+    sourceUri: { uri: getPublicUrl(heroImageName(brandColor)) },
+    contentDescription: { defaultValue: { language: "es-MX", value: businessName } },
   }
 
   const signingKey = await getSigningKey()

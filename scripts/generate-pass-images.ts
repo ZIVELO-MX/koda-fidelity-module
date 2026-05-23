@@ -1,11 +1,25 @@
+import { loadEnvConfig } from "@next/env"
 import sharp from "sharp"
 import path from "node:path"
 import fs from "node:fs/promises"
 import { fileURLToPath } from "node:url"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+loadEnvConfig(path.join(__dirname, ".."))
+
 const PASSES_DIR = path.join(__dirname, "..", "public", "passes")
 const ICON_SVG = path.join(__dirname, "..", "public", "icon.svg")
+
+async function uploadToSupabase(name: string, filePath: string): Promise<void> {
+  try {
+    const { uploadPassImage } = await import("../lib/supabase-storage")
+    const buffer = await fs.readFile(filePath)
+    const url = await uploadPassImage(name, buffer)
+    console.log("  Uploaded to Supabase Storage:", url)
+  } catch (err) {
+    console.warn("  Skipped Supabase upload (not configured or unavailable):", (err as Error).message)
+  }
+}
 
 async function main() {
   await fs.mkdir(PASSES_DIR, { recursive: true })
@@ -29,6 +43,10 @@ async function main() {
   await sharp(svgBuffer).resize(400, 400).png().toFile(path.join(PASSES_DIR, "google-logo.png"))
 
   console.log("Pass images generated in", PASSES_DIR)
+  console.log("Uploading Google Wallet images to Supabase Storage...")
+  await uploadToSupabase("hero-orange.png", path.join(PASSES_DIR, "hero-orange.png"))
+  await uploadToSupabase("hero-blue.png", path.join(PASSES_DIR, "hero-blue.png"))
+  await uploadToSupabase("google-logo.png", path.join(PASSES_DIR, "google-logo.png"))
 }
 
 async function heroImage(color: string, logo: Buffer): Promise<sharp.Sharp> {
@@ -67,8 +85,6 @@ async function heroImage(color: string, logo: Buffer): Promise<sharp.Sharp> {
     .toBuffer()
 
   return sharp(overlay)
-
-  console.log("Pass images generated in", PASSES_DIR)
 }
 
 main().catch(console.error)
