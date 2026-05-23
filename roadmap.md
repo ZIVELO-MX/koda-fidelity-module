@@ -48,11 +48,13 @@
 
 ### Fase 1 — Wallet Passes (Apple Wallet)
 
-- [ ] Investigar formato PKPass (archivo .pkpass con manifest.json, pass.json, imágenes)
-- [ ] Crear endpoint `/api/passes/apple/:cardId` que genere y firme un PKPass
-- [ ] Generar certificado Apple Wallet (Pass Type ID + certificado de firma)
+- [x] Investigar formato PKPass (archivo .pkpass con manifest.json, pass.json, imágenes)
+- [x] Crear endpoint `/api/passes/apple/:cardId` que genere y firme un PKPass
+- [x] Integrar botón "Añadir a Apple Wallet" en el flujo `join/[cardId]`
+- [x] Generar imágenes placeholder para el pase (icon, logo, strip, thumbnail)
+- [x] Crear modo desarrollo (APPLE_WALLET_DEV_MODE=true) para pruebas sin certificado
+- [ ] Generar certificado Apple Wallet (Pass Type ID + certificado de firma) — requiere Apple Developer Account ($99/año)
 - [ ] Implementar lógica de actualización de passes (stamps update via push)
-- [ ] Integrar botón "Añadir a Apple Wallet" en el flujo `join/[cardId]`
 - [ ] Probar pases en dispositivo real / simulador
 
 ### Fase 2 — Wallet Passes (Google Wallet)
@@ -170,9 +172,9 @@ model StampLog {
 
 ## Prioridades inmediatas (próximas semanas)
 
-1. **Wallet Passes (Apple & Google)** — es la feature core del producto
-2. **Auth: crear usuario test + probar login end-to-end**
-3. **Backend real** — API routes REST protegidas con Supabase Auth
-4. **Dashboard con datos reales** — migrar de mock a Supabase
-5. **Wallet Passes** — implementar PKPass y Google Wallet JWT
+1. **Wallet Passes (Google Wallet)** — implementar pases para Android (solo requiere Google Cloud, gratis)
+2. **Backend real** — API routes REST protegidas con Supabase Auth
+3. **Dashboard con datos reales** — migrar de mock a Supabase
+4. **Auth: crear usuario test + probar login end-to-end**
+5. **Apple Wallet: certificado real** — cuando se tenga Apple Developer Account
 6. **Dashboard + Scan** — conectar todo el flujo end-to-end
