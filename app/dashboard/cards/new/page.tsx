@@ -50,9 +50,35 @@ export default function CreateCardPage() {
     if (currentStep > 1) setCurrentStep(currentStep - 1)
   }
 
-  const handleCreate = () => {
-    // In a real app, this would save to a database
-    router.push("/dashboard/cards")
+  const [saving, setSaving] = useState(false)
+
+  const handleCreate = async () => {
+    setSaving(true)
+    try {
+      const res = await fetch("/api/cards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.cardName,
+          reward: formData.reward,
+          stampsRequired: formData.maxStamps,
+          brandColor: formData.brandColor,
+          description: formData.description || undefined,
+          expiresAt: formData.expirationDate || undefined,
+        }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || "Error al crear la tarjeta")
+      }
+
+      router.push("/dashboard/cards")
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Error al crear la tarjeta")
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -325,9 +351,9 @@ export default function CreateCardPage() {
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             ) : (
-              <Button onClick={handleCreate}>
+              <Button onClick={handleCreate} disabled={saving}>
                 <Check className="h-4 w-4 mr-2" />
-                Crear Tarjeta
+                {saving ? "Creando..." : "Crear Tarjeta"}
               </Button>
             )}
           </div>

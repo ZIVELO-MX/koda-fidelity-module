@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import type { AuthService, AuthSession } from "../auth"
+import type { AuthService, AuthSession, AuthUser } from "../auth"
 
 class MockAuthService implements AuthService {
   private user = {
@@ -93,21 +93,22 @@ describe("AuthService interface contract", () => {
 
   it("getUser returns null when not authenticated", async () => {
     const auth = new (class implements AuthService {
-      getSession() {
+      getSession(): Promise<AuthSession | null> {
         return Promise.resolve(null)
       }
-      signIn() {
+      signIn(_email: string, _password: string): Promise<AuthSession> {
         throw new Error("No")
       }
-      signUp() {
+      signUp(_email: string, _password: string, _name: string): Promise<AuthSession> {
         throw new Error("No")
       }
-      signOut() {
+      signOut(): Promise<void> {
         return Promise.resolve()
       }
-      async getUser() {
+      async getUser(): Promise<AuthUser | null> {
         const session = await this.getSession()
-        return session?.user ?? null
+        if (!session) return null
+        return session.user
       }
     })()
     const user = await auth.getUser()
