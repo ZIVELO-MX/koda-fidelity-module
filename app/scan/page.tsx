@@ -4,17 +4,20 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { 
-  Camera, 
-  Stamp, 
-  Check, 
-  Gift, 
-  ArrowLeft, 
+import { QRScanner } from "@/components/scan/qr-scanner"
+import {
+  Camera,
+  Stamp,
+  Check,
+  Gift,
+  ArrowLeft,
   Search,
   User,
   X,
-  Loader2
+  Loader2,
+  Scan,
 } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 interface SearchCustomer {
   id: string
@@ -28,6 +31,7 @@ interface SearchCustomer {
 type ScanState = "idle" | "scanning" | "found" | "stamped" | "redeemed"
 
 export default function ScanPage() {
+  const router = useRouter()
   const [scanState, setScanState] = useState<ScanState>("idle")
   const [selectedCustomer, setSelectedCustomer] = useState<SearchCustomer | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
@@ -35,6 +39,8 @@ export default function ScanPage() {
   const [searching, setSearching] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
+  const [useCamera, setUseCamera] = useState(false)
+  const [cameraError, setCameraError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!searchQuery.trim()) {
@@ -58,12 +64,31 @@ export default function ScanPage() {
     return () => clearTimeout(timer)
   }, [searchQuery])
 
-  const simulateScan = () => {
+  const handleScanResult = async (customerId: string) => {
     setScanState("scanning")
-    setTimeout(() => {
+    setCameraError(null)
+    setUseCamera(false)
+
+    try {
+      const res = await fetch(`/api/join?id=${encodeURIComponent(customerId)}`)
+      if (!res.ok) {
+        throw new Error("Cliente no encontrado")
+      }
+      const data = await res.json()
+      const c = data.customer
+      setSelectedCustomer({
+        id: c.id,
+        name: c.name,
+        stamps: c.stamps,
+        maxStamps: c.card.stampsRequired,
+        cardName: c.card.name,
+        cardReward: c.card.reward,
+      })
       setScanState("found")
-      setSearchQuery("")
-    }, 1500)
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Error al buscar cliente")
+      setScanState("idle")
+    }
   }
 
   const addStamp = async () => {
@@ -105,6 +130,7 @@ export default function ScanPage() {
     setSearchQuery("")
     setSearchResults([])
     setActionError(null)
+    setCameraError(null)
   }
 
   const selectCustomer = (customer: SearchCustomer) => {
@@ -116,8 +142,8 @@ export default function ScanPage() {
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border bg-card sticky top-0 z-10">
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
-          <Link 
-            href="/dashboard" 
+          <Link
+            href="/dashboard"
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -137,17 +163,36 @@ export default function ScanPage() {
         <div className="w-full max-w-md">
           {scanState === "idle" && (
             <div className="space-y-6">
-              <div 
-                onClick={simulateScan}
-                className="aspect-square max-h-[300px] bg-muted/50 rounded-3xl border-2 border-dashed border-border flex flex-col items-center justify-center cursor-pointer hover:bg-muted/80 hover:border-primary/50 transition-all"
-              >
-                <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                  <Camera className="h-10 w-10 text-primary" />
-                </div>
-                <p className="text-lg font-semibold text-foreground">Toca para Escanear</p>
-                <p className="text-sm text-muted-foreground">
-                  Escanea el código QR del cliente
-                </p>
+              <div className="space-y-3">
+                <Button
+                  onClick={() => setUseCamera(!useCamera)}
+                  variant={useCamera ? "default" : "outline"}
+                  className="w-full"
+                  size="lg"
+                >
+                  {useCamera ? (
+                    <>
+                      <Scan className="h-5 w-5 mr-2" />
+                      Escáner Activo
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="h-5 w-5 mr-2" />
+                      Abrir Escáner
+                    </>
+                  )}
+                </Button>
+
+                {cameraError && (
+                  <p className="text-sm text-red-500 text-center">{cameraError}</p>
+                )}
+
+                {useCamera && (
+                  <QRScanner
+                    onScan={handleScanResult}
+                    onError={(err) => setCameraError(err)}
+                  />
+                )}
               </div>
 
               <div className="flex items-center gap-4">
@@ -166,7 +211,7 @@ export default function ScanPage() {
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
-                
+
                 {searching && (
                   <div className="flex items-center justify-center p-4">
                     <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -213,17 +258,8 @@ export default function ScanPage() {
           )}
 
           {scanState === "scanning" && (
-            <div className="aspect-square max-h-[300px] bg-foreground rounded-3xl flex flex-col items-center justify-center">
-              <div className="relative">
-                <div className="w-48 h-48 border-4 border-white/30 rounded-2xl relative">
-                  <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white rounded-tl-lg" />
-                  <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white rounded-tr-lg" />
-                  <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white rounded-bl-lg" />
-                  <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white rounded-br-lg" />
-                  <div className="absolute inset-x-4 top-1/2 h-0.5 bg-primary animate-pulse" />
-                </div>
-              </div>
-              <p className="text-white mt-6 font-medium">Escaneando...</p>
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           )}
 
@@ -336,7 +372,7 @@ export default function ScanPage() {
                   <Check className="h-12 w-12 text-primary" />
                 )}
               </div>
-              
+
               <div>
                 <h2 className="text-2xl font-bold text-foreground mb-2">
                   {scanState === "redeemed" ? "¡Recompensa Canjeada!" : "¡Sello Agregado!"}

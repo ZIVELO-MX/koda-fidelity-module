@@ -64,4 +64,16 @@ export const authService: AuthService = {
     const session = await this.getSession()
     return session?.user ?? null
   },
+
+  async sendMagicLink(email: string, options?: { redirectTo?: string }) {
+    const supabase = await createClient()
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: options?.redirectTo,
+      },
+    })
+    if (error) throw error
+  },
 }
