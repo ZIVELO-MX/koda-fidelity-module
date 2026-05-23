@@ -1,17 +1,56 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Check, Building2, Mail, Globe, Bell, Shield } from "lucide-react"
+import { Check, Building2, Mail, Shield, Loader2, Globe, Bell } from "lucide-react"
 
 export default function SettingsPage() {
+  const [businessName, setBusinessName] = useState("")
+  const [email, setEmail] = useState("")
   const [saved, setSaved] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
 
-  const handleSave = () => {
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+  useEffect(() => {
+    fetch("/api/business")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.business) {
+          setBusinessName(data.business.name)
+          setEmail(data.business.email)
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      const res = await fetch("/api/business", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: businessName }),
+      })
+      if (res.ok) {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      }
+    } catch {
+      // ignore
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
   }
 
   return (
@@ -37,7 +76,7 @@ export default function SettingsPage() {
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="businessName">Nombre del Negocio</Label>
-              <Input id="businessName" defaultValue="The Daily Grind" />
+              <Input id="businessName" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="businessType">Tipo de Negocio</Label>
@@ -68,7 +107,7 @@ export default function SettingsPage() {
         </div>
         <div className="space-y-2">
           <Label htmlFor="email">Correo Electrónico</Label>
-          <Input id="email" type="email" defaultValue="owner@dailygrind.com" />
+          <Input id="email" type="email" value={email} disabled />
         </div>
       </div>
 
