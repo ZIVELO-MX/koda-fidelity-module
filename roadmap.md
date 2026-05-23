@@ -46,27 +46,7 @@
 - [ ] Configurar variables de entorno en Vercel
 - [ ] Apuntar dominio desde Cloudflare a Vercel
 
-### Fase 1 — Wallet Passes (Apple Wallet)
-
-- [x] Investigar formato PKPass (archivo .pkpass con manifest.json, pass.json, imágenes)
-- [x] Crear endpoint `/api/passes/apple/:cardId` que genere y firme un PKPass
-- [x] Integrar botón "Añadir a Apple Wallet" en el flujo `join/[cardId]`
-- [x] Generar imágenes placeholder para el pase (icon, logo, strip, thumbnail)
-- [x] Crear modo desarrollo (APPLE_WALLET_DEV_MODE=true) para pruebas sin certificado
-- [ ] Generar certificado Apple Wallet (Pass Type ID + certificado de firma) — requiere Apple Developer Account ($99/año)
-- [ ] Implementar lógica de actualización de passes (stamps update via push)
-- [ ] Probar pases en dispositivo real / simulador
-
-### Fase 2 — Wallet Passes (Google Wallet)
-
-- [ ] Investigar Google Wallet API (JWT + issuer class/object)
-- [ ] Configurar cuenta Google Pay & Wallet Console
-- [ ] Crear endpoint `/api/passes/google/:cardId` que genere JWT firmado
-- [ ] Implementar clase y objeto de loyalty card en Google Wallet
-- [ ] Integrar botón "Añadir a Google Wallet" en el flujo `join/[cardId]`
-- [ ] Probar pases en Android / emulador
-
-### Fase 3 — Backend real + API Routes
+### Fase 1 — Backend real + API Routes
 
 - [ ] Migrar todas las páginas a datos reales desde Supabase
 - [ ] Crear API routes REST:
@@ -79,7 +59,7 @@
 - [ ] Autenticar rutas con Supabase Auth (middleware)
 - [ ] Proteger rutas del dashboard con session check
 
-### Fase 4 — Dashboard completo
+### Fase 2 — Dashboard completo
 
 - [ ] Dashboard home con datos reales (stats, actividad reciente)
 - [ ] CRUD de tarjetas de fidelidad
@@ -88,7 +68,7 @@
 - [ ] Personalización de marca (logo, color) persistente
 - [ ] Configuración del negocio
 
-### Fase 5 — Flujo de sellado (Scan)
+### Fase 3 — Flujo de sellado (Scan)
 
 - [ ] Implementar escáner QR real (cámara) en `/scan`
 - [ ] Conectar escaneo con endpoint de sellado
@@ -96,13 +76,34 @@
 - [ ] Mostrar cliente encontrado y progreso actual
 - [ ] Botón "Agregar Sello" + "Canjear Recompensa" funcionales
 
-### Fase 6 — Landing page + polish
+### Fase 4 — Landing page + polish
 
 - [ ] Conectar landing page a datos reales (precios, features)
 - [ ] SEO básico (meta tags, Open Graph)
 - [ ] Analíticas con Vercel Analytics
 - [ ] Modo responsive completo
 - [ ] Estados vacíos, carga, error en todas las páginas
+
+### Post-MVP — Wallet Passes (Apple Wallet + Google Wallet)
+
+> Las wallets se habilitarán después del MVP. El MVP funciona full en navegador como PWA.
+
+- [x] Investigar formato PKPass (archivo .pkpass con manifest.json, pass.json, imágenes)
+- [x] Crear endpoint `/api/passes/apple/:cardId` que genere y firme un PKPass
+- [x] Integrar botón "Añadir a Apple Wallet" en el flujo `join/[cardId]`
+- [x] Generar imágenes placeholder para el pase (icon, logo, strip, thumbnail)
+- [x] Crear modo desarrollo (APPLE_WALLET_DEV_MODE=true) para pruebas sin certificado
+- [x] Investigar Google Wallet API (JWT + issuer class/object)
+- [x] Crear endpoint `/api/passes/google/:cardId` que genere JWT firmado
+- [x] Implementar clase y objeto de loyalty card en Google Wallet
+- [x] Integrar botón "Añadir a Google Wallet" en el flujo `join/[cardId]`
+- [x] Configurar cuenta Google Pay & Wallet Console (Issuer ID + service account)
+- [x] Mejorar diseño visual del pase (logo, hero image, secondary points, colores)
+- [ ] Probar pases en Android / emulador
+- [ ] Generar certificado Apple Wallet (Pass Type ID + certificado de firma) — requiere Apple Developer Account ($99/año)
+- [ ] Implementar lógica de actualización de passes (stamps update via push)
+- [ ] Probar pases en dispositivo real / simulador
+- [ ] Publicar en Wallet Console (Google) para quitar modo prueba
 
 ---
 
@@ -170,11 +171,12 @@ model StampLog {
 
 ---
 
-## Prioridades inmediatas (próximas semanas)
+## Prioridades inmediatas (MVP)
 
-1. **Wallet Passes (Google Wallet)** — implementar pases para Android (solo requiere Google Cloud, gratis)
-2. **Backend real** — API routes REST protegidas con Supabase Auth
-3. **Dashboard con datos reales** — migrar de mock a Supabase
-4. **Auth: crear usuario test + probar login end-to-end**
-5. **Apple Wallet: certificado real** — cuando se tenga Apple Developer Account
-6. **Dashboard + Scan** — conectar todo el flujo end-to-end
+> MVP: app web full en navegador como PWA. Wallets van post-MVP.
+
+1. **Backend real** — API routes REST protegidas con Supabase Auth
+2. **Dashboard con datos reales** — migrar de mock a Supabase
+3. **Flujo de sellado (Scan)** — escáner QR + sellado + canje
+4. **Landing page + polish** — responsive, SEO, estados vacío/carga/error
+5. **PWA** — manifest, service worker, instalable
