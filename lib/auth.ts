@@ -9,10 +9,13 @@ export interface AuthSession {
   accessToken: string
 }
 
+export type AuthProvider = "supabase" | "custom"
+
 export interface AuthService {
   getSession(): Promise<AuthSession | null>
   signIn(email: string, password: string): Promise<AuthSession>
   signUp(email: string, password: string, name: string): Promise<AuthSession>
   signOut(): Promise<void>
   getUser(): Promise<AuthUser | null>
+  sendMagicLink(email: string, options?: { redirectTo?: string }): Promise<void>
 }

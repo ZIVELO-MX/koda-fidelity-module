@@ -37,6 +37,7 @@ model LoyaltyCard {
 model Customer {
   id           String     @id @default(cuid())
   name         String
+  email        String?
   cardId       String
   card         LoyaltyCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
   stamps       Int        @default(0)

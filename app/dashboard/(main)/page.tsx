@@ -67,12 +67,20 @@ export default async function DashboardPage() {
           <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground">¡Bienvenido, {business.name}! Esto es lo que está pasando.</p>
         </div>
-        <Link href="/dashboard/cards/new">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Crear Tarjeta
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/dashboard/scan">
+            <Button variant="outline">
+              <Stamp className="h-4 w-4 mr-2" />
+              Escáner
+            </Button>
+          </Link>
+          <Link href="/dashboard/cards/new">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Crear Tarjeta
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
