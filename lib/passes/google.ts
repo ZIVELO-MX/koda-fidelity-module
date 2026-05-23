@@ -7,7 +7,7 @@ const DEV_MODE = process.env.GOOGLE_WALLET_DEV_MODE === "true"
 const ISSUER_ID = process.env.GOOGLE_WALLET_ISSUER_ID || ""
 const SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_WALLET_SERVICE_ACCOUNT_EMAIL || ""
 const SERVICE_ACCOUNT_KEY_FILE = process.env.GOOGLE_WALLET_SERVICE_ACCOUNT_KEY_FILE || ""
-const ORIGINS = (process.env.GOOGLE_WALLET_ORIGINS || "http://localhost:3000,https://localhost:3000")
+const ORIGINS = (process.env.GOOGLE_WALLET_ORIGINS || "http://localhost:3000,http://192.168.1.188:3000")
   .split(",")
   .map((s) => s.trim())
 
