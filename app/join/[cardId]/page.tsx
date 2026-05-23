@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
-import { Check, Mail, Loader2, ArrowLeft, Smartphone } from "lucide-react"
+import { Check, Mail, Loader2, ArrowLeft, Smartphone, Clock } from "lucide-react"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
 
 type Step = "loading" | "error" | "form" | "sent" | "ready"
@@ -46,7 +46,9 @@ export default function JoinCardPage() {
   const [emailError, setEmailError] = useState(false)
   const [nameError, setNameError] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
+  const [cooldown, setCooldown] = useState(0)
   const checkedSession = useRef(false)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     const init = async () => {
@@ -98,6 +100,45 @@ export default function JoinCardPage() {
     init()
   }, [cardId])
 
+  useEffect(() => {
+    const last = localStorage.getItem(`join-last-sent-${cardId}`)
+    if (last) {
+      const elapsed = Math.floor((Date.now() - Number(last)) / 1000)
+      if (elapsed < 60) {
+        setCooldown(60 - elapsed)
+      } else {
+        localStorage.removeItem(`join-last-sent-${cardId}`)
+      }
+    }
+  }, [cardId])
+
+  useEffect(() => {
+    if (cooldown > 0) {
+      intervalRef.current = setInterval(() => {
+        setCooldown((prev) => {
+          const next = prev - 1
+          if (next <= 0) {
+            localStorage.removeItem(`join-last-sent-${cardId}`)
+            if (intervalRef.current) clearInterval(intervalRef.current)
+            intervalRef.current = null
+          }
+          return next
+        })
+      }, 1000)
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
+    }
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
+    }
+  }, [cooldown, cardId])
+
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     setSendError(null)
@@ -132,6 +173,7 @@ export default function JoinCardPage() {
 
       const { customerId } = await res.json()
       sessionStorage.setItem(`pending-${cardId}`, customerId)
+      localStorage.setItem(`join-last-sent-${cardId}`, String(Date.now()))
 
       const supabase = createBrowserSupabase()
       const { error } = await supabase.auth.signInWithOtp({
@@ -145,7 +187,13 @@ export default function JoinCardPage() {
 
       setStep("sent")
     } catch (err) {
-      setSendError(err instanceof Error ? err.message : "Error al enviar el enlace")
+      const msg = err instanceof Error ? err.message : ""
+      if (msg.includes("rate_limit") || msg.includes("over_request")) {
+        setCooldown(60)
+        setSendError("Espera un momento antes de pedir otro enlace")
+      } else {
+        setSendError(msg || "Error al enviar el enlace")
+      }
     } finally {
       setSending(false)
     }
@@ -379,9 +427,11 @@ export default function JoinCardPage() {
 
               {sendError && <p className="text-sm text-red-500 text-center">{sendError}</p>}
 
-              <Button type="submit" className="w-full" size="lg" disabled={sending}>
+              <Button type="submit" className="w-full" size="lg" disabled={sending || cooldown > 0}>
                 {sending ? (
                   <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                ) : cooldown > 0 ? (
+                  <><Clock className="h-4 w-4 mr-2" /> Espera {cooldown}s</>
                 ) : (
                   "Obtener Tarjeta"
                 )}
