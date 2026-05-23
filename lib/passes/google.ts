@@ -7,9 +7,7 @@ const DEV_MODE = process.env.GOOGLE_WALLET_DEV_MODE === "true"
 const ISSUER_ID = process.env.GOOGLE_WALLET_ISSUER_ID || ""
 const SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_WALLET_SERVICE_ACCOUNT_EMAIL || ""
 const SERVICE_ACCOUNT_KEY_FILE = process.env.GOOGLE_WALLET_SERVICE_ACCOUNT_KEY_FILE || ""
-const ORIGINS = (process.env.GOOGLE_WALLET_ORIGINS || "http://localhost:3000,http://192.168.1.188:3000")
-  .split(",")
-  .map((s) => s.trim())
+const ENV_ORIGINS = process.env.GOOGLE_WALLET_ORIGINS
 
 function classId(cardId: string): string {
   return `${ISSUER_ID}.koda_loyalty_${cardId}`
@@ -183,6 +181,10 @@ export async function generateLoyaltyPassJwt(params: GeneratePassJwtParams): Pro
   const signingKey = await getSigningKey()
   const now = Math.floor(Date.now() / 1000)
 
+  const origins = ENV_ORIGINS
+    ? ENV_ORIGINS.split(",").map((s) => s.trim())
+    : [baseUrl.replace(/\/$/, "")]
+
   const token = jwt.sign(
     {
       iss: getIssuer(),
@@ -193,7 +195,7 @@ export async function generateLoyaltyPassJwt(params: GeneratePassJwtParams): Pro
         loyaltyClasses: [loyaltyClass],
         loyaltyObjects: [loyaltyObject],
       },
-      origins: ORIGINS,
+      origins,
     },
     signingKey,
     { algorithm: DEV_MODE ? "HS256" : "RS256" },
