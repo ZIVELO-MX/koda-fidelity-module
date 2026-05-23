@@ -46,12 +46,17 @@ export default function JoinCardPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const [nameError, setNameError] = useState(false)
+
   const handleSubmitName = (e: React.FormEvent) => {
     e.preventDefault()
     const name = new FormData(e.currentTarget as HTMLFormElement).get("customerName") as string
     if (name?.trim()) {
       setCustomerName(name.trim())
+      setNameError(false)
       setStep("wallet")
+    } else {
+      setNameError(true)
     }
   }
 
@@ -140,7 +145,11 @@ export default function JoinCardPage() {
                             placeholder="Ingresa tu nombre"
                             className="text-base"
                             autoComplete="name"
+                            aria-invalid={nameError}
                           />
+                          {nameError && (
+                            <p className="text-sm text-red-500">El nombre es obligatorio</p>
+                          )}
                         </div>
                         <Button
                           type="submit"
