@@ -50,6 +50,9 @@ certificates/*.pem
 certificates/*.p12
 certificates/*.der
 
+# --- Generated pass images (build artifacts) ---
+public/passes/*.png
+
 # --- Playwright ---
 playwright-report/
 test-results/
