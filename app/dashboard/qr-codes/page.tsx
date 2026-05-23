@@ -2,35 +2,70 @@
 
 import { QRCodeSVG } from "qrcode.react"
 import { Button } from "@/components/ui/button"
-import { Download, Printer, Copy, ExternalLink, Check } from "lucide-react"
-import { useState } from "react"
+import { Download, Printer, Copy, ExternalLink, Check, Loader2 } from "lucide-react"
+import { useState, useEffect } from "react"
+import Link from "next/link"
 
-const qrCodes = [
-  {
-    id: "1",
-    cardName: "Coffee Rewards",
-    url: "https://koda.app/join/coffee-rewards",
-    color: "#f97316",
-    scans: 234,
-    lastScan: "5 min ago",
-  },
-  {
-    id: "2",
-    cardName: "Lunch Special",
-    url: "https://koda.app/join/lunch-special",
-    color: "#3b82f6",
-    scans: 89,
-    lastScan: "2 hours ago",
-  },
-]
+interface CardQR {
+  id: string
+  name: string
+  brandColor: string
+}
 
 export default function QRCodesPage() {
+  const [cards, setCards] = useState<CardQR[]>([])
+  const [loading, setLoading] = useState(true)
+  const [baseUrl, setBaseUrl] = useState("")
   const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  useEffect(() => {
+    setBaseUrl(window.location.origin)
+    fetch("/api/cards")
+      .then((res) => res.json())
+      .then((data) => setCards(data.cards || []))
+      .catch(() => setCards([]))
+      .finally(() => setLoading(false))
+  }, [])
 
   const copyToClipboard = (url: string, id: string) => {
     navigator.clipboard.writeText(url)
     setCopiedId(id)
     setTimeout(() => setCopiedId(null), 2000)
+  }
+
+  const downloadQR = (cardName: string, url: string, color: string) => {
+    const canvas = document.createElement("canvas")
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    canvas.width = 400
+    canvas.height = 500
+    ctx.fillStyle = "#ffffff"
+    ctx.fillRect(0, 0, 400, 500)
+
+    ctx.fillStyle = color
+    ctx.fillRect(0, 0, 400, 8)
+
+    ctx.fillStyle = "#000000"
+    ctx.font = "bold 20px sans-serif"
+    ctx.textAlign = "center"
+    ctx.fillText(cardName, 200, 50)
+
+    const img = new Image()
+    const svg = document.getElementById(`qr-${cardName}`)?.querySelector("svg")
+    if (svg) {
+      const svgData = new XMLSerializer().serializeToString(svg)
+      const imgData = `data:image/svg+xml;base64,${btoa(svgData)}`
+      const imgObj = new Image()
+      imgObj.onload = () => {
+        ctx.drawImage(imgObj, 100, 70, 200, 200)
+        const link = document.createElement("a")
+        link.download = `${cardName}-qr.png`
+        link.href = canvas.toDataURL("image/png")
+        link.click()
+      }
+      imgObj.src = imgData
+    }
   }
 
   return (
@@ -42,89 +77,97 @@ export default function QRCodesPage() {
       </div>
 
       {/* QR Codes Grid */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {qrCodes.map((qr) => (
-          <div
-            key={qr.id}
-            className="bg-card rounded-2xl border border-border overflow-hidden"
-          >
-            {/* Color bar */}
-            <div className="h-2" style={{ backgroundColor: qr.color }} />
-            
-            <div className="p-6">
-              {/* Card info */}
-              <div className="flex items-center gap-3 mb-6">
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold"
-                  style={{ backgroundColor: qr.color }}
-                >
-                  {qr.cardName.charAt(0)}
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : cards.length === 0 ? (
+        <div className="text-center py-20">
+          <h3 className="text-lg font-semibold text-foreground mb-2">No hay tarjetas</h3>
+          <p className="text-muted-foreground mb-6">Crea una tarjeta de lealtad para generar su código QR</p>
+          <Link href="/dashboard/cards/new">
+            <Button>Crear Tarjeta</Button>
+          </Link>
+        </div>
+      ) : (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {cards.map((card) => {
+            const url = `${baseUrl}/join/${card.id}`
+            return (
+              <div
+                key={card.id}
+                className="bg-card rounded-2xl border border-border overflow-hidden"
+              >
+                <div className="h-2" style={{ backgroundColor: card.brandColor }} />
+                
+                <div className="p-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold"
+                      style={{ backgroundColor: card.brandColor }}
+                    >
+                      {card.name.charAt(0)}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground">{card.name}</h3>
+                    </div>
+                  </div>
+
+                  <div id={`qr-${card.name}`} className="bg-white rounded-2xl p-6 flex items-center justify-center mb-6 border border-border">
+                    <QRCodeSVG
+                      value={url}
+                      size={180}
+                      level="H"
+                      fgColor={card.brandColor}
+                    />
+                  </div>
+
+                  <div className="bg-muted/50 rounded-xl p-3 mb-4">
+                    <p className="text-xs text-muted-foreground mb-1">URL de destino</p>
+                    <p className="text-sm text-foreground font-mono truncate">{url}</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="outline" className="w-full" onClick={() => downloadQR(card.name, url, card.brandColor)}>
+                      <Download className="h-4 w-4 mr-2" />
+                      Descargar
+                    </Button>
+                    <Button variant="outline" className="w-full" onClick={() => window.print()}>
+                      <Printer className="h-4 w-4 mr-2" />
+                      Imprimir
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <Button 
+                      variant="ghost" 
+                      className="w-full"
+                      onClick={() => copyToClipboard(url, card.id)}
+                    >
+                      {copiedId === card.id ? (
+                        <>
+                          <Check className="h-4 w-4 mr-2" />
+                          ¡Copiado!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copiar URL
+                        </>
+                      )}
+                    </Button>
+                    <Link href={`/join/${card.id}`}>
+                      <Button variant="ghost" className="w-full">
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Vista Previa
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-foreground">{qr.cardName}</h3>
-                  <p className="text-xs text-muted-foreground">{qr.scans} escaneos totales</p>
-                </div>
               </div>
-
-              {/* QR Code */}
-              <div className="bg-white rounded-2xl p-6 flex items-center justify-center mb-6 border border-border">
-                <QRCodeSVG
-                  value={qr.url}
-                  size={180}
-                  level="H"
-                  fgColor={qr.color}
-                />
-              </div>
-
-              {/* URL */}
-              <div className="bg-muted/50 rounded-xl p-3 mb-4">
-                <p className="text-xs text-muted-foreground mb-1">URL de destino</p>
-                <p className="text-sm text-foreground font-mono truncate">{qr.url}</p>
-              </div>
-
-              {/* Stats */}
-              <div className="flex items-center justify-between text-sm text-muted-foreground mb-6">
-                <span>Último escaneo: {qr.lastScan}</span>
-              </div>
-
-              {/* Actions */}
-              <div className="grid grid-cols-2 gap-2">
-                <Button variant="outline" className="w-full">
-                  <Download className="h-4 w-4 mr-2" />
-                  Descargar
-                </Button>
-                <Button variant="outline" className="w-full">
-                  <Printer className="h-4 w-4 mr-2" />
-                  Imprimir
-                </Button>
-              </div>
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                <Button 
-                  variant="ghost" 
-                  className="w-full"
-                  onClick={() => copyToClipboard(qr.url, qr.id)}
-                >
-                  {copiedId === qr.id ? (
-                    <>
-                      <Check className="h-4 w-4 mr-2" />
-                      ¡Copiado!
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4 mr-2" />
-                      Copiar URL
-                    </>
-                  )}
-                </Button>
-                <Button variant="ghost" className="w-full">
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Vista Previa
-                </Button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+            )
+          })}
+        </div>
+      )}
 
       {/* Print Tips */}
       <div className="bg-muted/30 rounded-2xl p-6 border border-border">
