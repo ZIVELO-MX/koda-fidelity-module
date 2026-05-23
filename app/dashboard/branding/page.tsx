@@ -1,28 +1,67 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Upload, Check } from "lucide-react"
+import { Upload, Check, Loader2 } from "lucide-react"
 
 const colorPresets = [
-  "#f97316", // Orange
-  "#3b82f6", // Blue
-  "#10b981", // Green
-  "#8b5cf6", // Purple
-  "#ec4899", // Pink
-  "#f59e0b", // Amber
+  "#f97316",
+  "#3b82f6",
+  "#10b981",
+  "#8b5cf6",
+  "#ec4899",
+  "#f59e0b",
 ]
 
 export default function BrandingPage() {
   const [brandColor, setBrandColor] = useState("#f97316")
-  const [businessName, setBusinessName] = useState("Tu Negocio")
+  const [businessName, setBusinessName] = useState("")
+  const [logoUrl, setLogoUrl] = useState("")
   const [saved, setSaved] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
 
-  const handleSave = () => {
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+  useEffect(() => {
+    fetch("/api/business")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.business) {
+          setBusinessName(data.business.name)
+          setBrandColor(data.business.brandColor || "#f97316")
+          setLogoUrl(data.business.logoUrl || "")
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      const res = await fetch("/api/business", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: businessName, brandColor, logoUrl: logoUrl || null }),
+      })
+      if (res.ok) {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      }
+    } catch {
+      // ignore
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
   }
 
   return (
@@ -148,8 +187,10 @@ export default function BrandingPage() {
 
       {/* Save Button */}
       <div className="flex justify-end">
-        <Button onClick={handleSave} className="px-8">
-          {saved ? (
+        <Button onClick={handleSave} className="px-8" disabled={saving}>
+          {saving ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : saved ? (
             <>
               <Check className="h-4 w-4 mr-2" />
               ¡Guardado!
