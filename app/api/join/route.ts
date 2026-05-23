@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { handleApiError, ValidationError, NotFoundError } from "@/lib/api-utils"
 
+const cardInclude = {
+  card: {
+    select: {
+      name: true,
+      stampsRequired: true,
+      reward: true,
+      brandColor: true,
+      business: { select: { name: true, brandColor: true, logoUrl: true } },
+    },
+  },
+} as const
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -50,35 +62,30 @@ export async function GET(request: NextRequest) {
     const email = searchParams.get("email")
     const cardId = searchParams.get("cardId")
 
-    const where: Record<string, unknown> = {}
-    if (id) where.id = id
-    else if (email && cardId) {
-      where.email = email
-      where.cardId = cardId
-    } else {
-      throw new ValidationError("Proporciona ?id= o ?email=&cardId=")
+    if (id) {
+      const customer = await prisma.customer.findUnique({
+        where: { id },
+        include: cardInclude,
+      })
+      if (!customer) throw new NotFoundError("Cliente no encontrado")
+      return NextResponse.json({ customer })
     }
 
-    const customer = await prisma.customer.findFirst({
-      where,
-      include: {
-        card: {
-          select: {
-            name: true,
-            stampsRequired: true,
-            reward: true,
-            brandColor: true,
-            business: { select: { name: true, brandColor: true, logoUrl: true } },
-          },
-        },
-      },
-    })
+    if (email) {
+      const where: Record<string, unknown> = { email }
+      if (cardId) where.cardId = cardId
 
-    if (!customer) {
-      throw new NotFoundError("Cliente no encontrado")
+      const customers = await prisma.customer.findMany({
+        where,
+        include: cardInclude,
+        orderBy: { createdAt: "desc" },
+      })
+
+      if (customers.length === 0) throw new NotFoundError("Cliente no encontrado")
+      return NextResponse.json({ customers })
     }
 
-    return NextResponse.json({ customer })
+    throw new ValidationError("Proporciona ?id= o ?email=")
   } catch (error) {
     return handleApiError(error)
   }
