@@ -53,7 +53,9 @@ export async function POST(
     },
   })
 
-  const baseUrl = process.env.GOOGLE_WALLET_IMAGE_BASE_URL || request.nextUrl.origin
+  const host = request.headers.get("host") || "localhost:3000"
+  const proto = request.headers.get("x-forwarded-proto") || "http"
+  const baseUrl = `${proto}://${host}`
 
   const jwtToken = await generateLoyaltyPassJwt({
     customerId: customer.id,
