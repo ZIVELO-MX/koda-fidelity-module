@@ -59,11 +59,11 @@
 
 ### Fase 2 — Wallet Passes (Google Wallet)
 
-- [ ] Investigar Google Wallet API (JWT + issuer class/object)
-- [ ] Configurar cuenta Google Pay & Wallet Console
-- [ ] Crear endpoint `/api/passes/google/:cardId` que genere JWT firmado
-- [ ] Implementar clase y objeto de loyalty card en Google Wallet
-- [ ] Integrar botón "Añadir a Google Wallet" en el flujo `join/[cardId]`
+- [x] Investigar Google Wallet API (JWT + issuer class/object)
+- [x] Crear endpoint `/api/passes/google/:cardId` que genere JWT firmado
+- [x] Implementar clase y objeto de loyalty card en Google Wallet
+- [x] Integrar botón "Añadir a Google Wallet" en el flujo `join/[cardId]`
+- [ ] Configurar cuenta Google Pay & Wallet Console (Issuer ID + service account)
 - [ ] Probar pases en Android / emulador
 
 ### Fase 3 — Backend real + API Routes
