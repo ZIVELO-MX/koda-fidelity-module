@@ -37,6 +37,8 @@ class MockAuthService implements AuthService {
     const session = await this.getSession()
     return session?.user ?? null
   }
+
+  async sendMagicLink(_email: string, _options?: { redirectTo?: string }) {}
 }
 
 function createSut() {
@@ -110,6 +112,7 @@ describe("AuthService interface contract", () => {
         if (!session) return null
         return session.user
       }
+      async sendMagicLink(_email: string, _options?: { redirectTo?: string }) {}
     })()
     const user = await auth.getUser()
     expect(user).toBeNull()

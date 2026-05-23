@@ -34,6 +34,7 @@ CREATE TABLE "LoyaltyCard" (
 CREATE TABLE "Customer" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
+    "email" TEXT,
     "cardId" TEXT NOT NULL,
     "stamps" INTEGER NOT NULL DEFAULT 0,
     "applePassId" TEXT,

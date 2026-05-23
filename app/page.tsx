@@ -1,9 +1,22 @@
 import Link from "next/link"
+import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Smartphone, QrCode, Wallet, CheckCircle2, Zap, Shield, BarChart3 } from "lucide-react"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 
-export default function LandingPage() {
+export default async function LandingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | undefined }>
+}) {
+  const params = await searchParams
+  if (params.error || params.error_code) {
+    const qs = new URLSearchParams()
+    if (params.error) qs.set("error", params.error)
+    if (params.error_code) qs.set("error_code", params.error_code)
+    if (params.error_description) qs.set("error_description", params.error_description)
+    redirect(`/auth/error?${qs.toString()}`)
+  }
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
