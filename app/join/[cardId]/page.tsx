@@ -10,6 +10,16 @@ import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { Check, Mail, Loader2, ArrowLeft, Smartphone, Clock } from "lucide-react"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
 
+const RATE_LIMIT_REGEX = /rate[\s_-]limit|over_request|429/i
+const SECONDS_REGEX = /(\d+)\s*(?:seconds?|sec)/i
+
+function getRateLimitCooldown(err: unknown): number {
+  if (!(err instanceof Error)) return 90
+  const seconds = err.message.match(SECONDS_REGEX)
+  if (seconds) return Math.min(Number(seconds[1]), 300)
+  return 90
+}
+
 type Step = "loading" | "error" | "form" | "sent" | "ready"
 
 interface JoinCustomer {
@@ -119,7 +129,6 @@ export default function JoinCardPage() {
           const next = prev - 1
           if (next <= 0) {
             localStorage.removeItem("magic-link-cooldown")
-            setSendError(null)
             if (intervalRef.current) clearInterval(intervalRef.current)
             intervalRef.current = null
           }
@@ -139,6 +148,12 @@ export default function JoinCardPage() {
       }
     }
   }, [cooldown, cardId])
+
+  useEffect(() => {
+    if (cooldown === 0) {
+      setSendError(null)
+    }
+  }, [cooldown])
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
@@ -188,10 +203,11 @@ export default function JoinCardPage() {
       setStep("sent")
     } catch (err) {
       const msg = err instanceof Error ? err.message : ""
-      if (/rate[\s_-]limit|over_request/i.test(msg)) {
-        const until = Date.now() + 60000
+      if (RATE_LIMIT_REGEX.test(msg)) {
+        const seconds = getRateLimitCooldown(err)
+        const until = Date.now() + seconds * 1000
         localStorage.setItem("magic-link-cooldown", String(until))
-        setCooldown(60)
+        setCooldown(seconds)
         setSendError("Espera un momento antes de pedir otro enlace")
       } else {
         setSendError(msg || "Error al enviar el enlace")
