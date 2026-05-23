@@ -25,17 +25,13 @@ function getIssuer(): string {
 }
 
 async function getSigningKey(): Promise<string> {
-  if (DEV_MODE) {
-    return "dev-secret"
-  }
-
+  if (DEV_MODE) return "dev-secret"
   if (!SERVICE_ACCOUNT_KEY_FILE) {
     throw new Error(
       "GOOGLE_WALLET_SERVICE_ACCOUNT_KEY_FILE not configured. " +
         "Download your service account JSON key and set this env var.",
     )
   }
-
   const keyPath = path.resolve(process.cwd(), SERVICE_ACCOUNT_KEY_FILE)
   const keyRaw = await fs.readFile(keyPath, "utf-8")
   return JSON.parse(keyRaw).private_key
@@ -57,6 +53,13 @@ export function getConfigError(): string | null {
   return getConfigIssue()
 }
 
+function heroImageName(brandColor: string): string {
+  const color = brandColor.toLowerCase()
+  if (color.includes("f97316") || color.includes("ff6b35") || color.includes("orange")) return "hero-orange.png"
+  if (color.includes("3b82f6") || color.includes("blue")) return "hero-blue.png"
+  return "hero-orange.png"
+}
+
 interface GeneratePassJwtParams {
   customerId: string
   cardId: string
@@ -67,6 +70,7 @@ interface GeneratePassJwtParams {
   stamps: number
   stampsRequired: number
   brandColor: string
+  baseUrl: string
 }
 
 export async function generateLoyaltyPassJwt(params: GeneratePassJwtParams): Promise<string> {
@@ -80,21 +84,33 @@ export async function generateLoyaltyPassJwt(params: GeneratePassJwtParams): Pro
     stamps,
     stampsRequired,
     brandColor,
+    baseUrl,
   } = params
 
   const stampsRemaining = Math.max(0, stampsRequired - stamps)
+  const progress = Math.round((stamps / stampsRequired) * 100)
 
   const loyaltyClass = {
     id: classId(cardId),
     issuerName: businessName,
     programName: cardName,
-    reviewStatus: "underReview",
+    reviewStatus: "underReview" as const,
     hexBackgroundColor: brandColor,
+    hexFontColor: "#ffffff",
     localizedIssuerName: {
-      defaultValue: {
-        language: "es-MX",
-        value: businessName,
+      defaultValue: { language: "es-MX", value: businessName },
+    },
+    logo: {
+      sourceUri: {
+        uri: `${baseUrl}/passes/google-logo.png`,
       },
+      contentDescription: { defaultValue: { language: "es-MX", value: businessName } },
+    },
+    cardTitleImage: {
+      sourceUri: {
+        uri: `${baseUrl}/passes/google-logo.png`,
+      },
+      contentDescription: { defaultValue: { language: "es-MX", value: cardName } },
     },
     messages: [],
     locations: [],
@@ -103,31 +119,48 @@ export async function generateLoyaltyPassJwt(params: GeneratePassJwtParams): Pro
   const loyaltyObject = {
     id: objectId(cardId, customerId),
     classId: classId(cardId),
-    state: "active",
+    state: "active" as const,
     accountId: customerId,
     accountName: customerName,
-    loyaltyPoints: {
-      balance: {
-        int: stamps,
+    heroImage: {
+      sourceUri: {
+        uri: `${baseUrl}/passes/${heroImageName(brandColor)}`,
       },
-      label: "Sellos",
+      contentDescription: { defaultValue: { language: "es-MX", value: businessName } },
+    },
+    loyaltyPoints: {
+      balance: { int: stamps },
+      label: "Sellos obtenidos",
+    },
+    secondaryLoyaltyPoints: {
+      balance: { int: stampsRemaining },
+      label: "Sellos restantes",
     },
     barcode: {
-      type: "qrCode",
+      type: "qrCode" as const,
       value: customerId,
+      alternateText: "Muestra este código al canjear",
     },
     textModulesData: [
+      {
+        id: "progress",
+        header: "Progreso",
+        body: `${stamps}/${stampsRequired} sellos — ${progress}%`,
+      },
       {
         id: "reward",
         header: "Premio",
         body: reward,
       },
-      {
-        id: "stamps_remaining",
-        header: "Sellos restantes",
-        body: `${stampsRemaining}`,
-      },
     ],
+    linksModuleData: {
+      uris: [
+        {
+          uri: `${baseUrl}/join/${cardId}`,
+          description: "Ver detalles del programa",
+        },
+      ],
+    },
   }
 
   const signingKey = await getSigningKey()
@@ -156,7 +189,7 @@ export function getSaveUrl(jwtToken: string): string {
   return `https://pay.google.com/gp/v/save/${jwtToken}`
 }
 
-export async function generateLoyaltyPassJwtFromCustomer(customerId: string): Promise<string> {
+export async function generateLoyaltyPassJwtFromCustomer(customerId: string, baseUrl: string): Promise<string> {
   const customer = await prisma.customer.findUnique({
     where: { id: customerId },
     include: { card: { include: { business: true } } },
@@ -174,5 +207,6 @@ export async function generateLoyaltyPassJwtFromCustomer(customerId: string): Pr
     stamps: customer.stamps,
     stampsRequired: customer.card.stampsRequired,
     brandColor: customer.card.brandColor || customer.card.business.brandColor,
+    baseUrl,
   })
 }

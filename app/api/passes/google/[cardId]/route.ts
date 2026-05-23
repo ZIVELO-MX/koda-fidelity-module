@@ -53,6 +53,9 @@ export async function POST(
     },
   })
 
+  const origin = request.headers.get("origin") || request.nextUrl.origin
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || origin
+
   const jwtToken = await generateLoyaltyPassJwt({
     customerId: customer.id,
     cardId: loyaltyCard.id,
@@ -63,6 +66,7 @@ export async function POST(
     stamps: customer.stamps,
     stampsRequired: loyaltyCard.stampsRequired,
     brandColor: loyaltyCard.brandColor,
+    baseUrl,
   })
 
   await prisma.customer.update({
