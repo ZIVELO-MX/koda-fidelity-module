@@ -1,6 +1,7 @@
+import "dotenv/config"
 import { createAdminClient } from "../lib/supabase-admin"
 
-const TEST_EMAIL = "test@kodafidelity.com"
+const TEST_EMAIL = "owner@dailygrind.com"
 const TEST_PASSWORD = "Test123!"
 const TEST_NAME = "Café de Prueba"
 
