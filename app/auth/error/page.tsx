@@ -9,6 +9,17 @@ import { Label } from "@/components/ui/label"
 import { Mail, AlertCircle, Clock, Loader2, ArrowLeft } from "lucide-react"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
 
+const RATE_LIMIT_REGEX = /rate[\s_-]limit|over_request|429/i
+const SECONDS_REGEX = /(\d+)\s*(?:seconds?|sec)/i
+
+function getRateLimitCooldown(err: unknown): number {
+  if (!(err instanceof Error)) return 90
+  const seconds = err.message.match(SECONDS_REGEX)
+  if (seconds) return Math.min(Number(seconds[1]), 300)
+  return 90
+}
+
+
 export default function AuthErrorPage() {
   const sp = useSearchParams()
   const errorCode = sp.get("error_code") || ""
@@ -82,13 +93,15 @@ export default function AuthErrorPage() {
         },
       })
       if (error) throw error
-      localStorage.setItem("magic-link-cooldown", String(Date.now() + 60000))
-      setCooldown(60)
+      localStorage.setItem("magic-link-cooldown", String(Date.now() + 90000))
+      setCooldown(90)
       setSent(true)
     } catch (err) {
       const msg = err instanceof Error ? err.message : ""
-      if (/rate[\s_-]limit|over_request/i.test(msg)) {
-        setCooldown(60)
+      if (RATE_LIMIT_REGEX.test(msg)) {
+        const seconds = getRateLimitCooldown(err)
+        localStorage.setItem("magic-link-cooldown", String(Date.now() + seconds * 1000))
+        setCooldown(seconds)
       }
     } finally {
       setSending(false)
