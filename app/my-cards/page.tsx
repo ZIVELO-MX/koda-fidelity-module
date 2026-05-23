@@ -63,13 +63,13 @@ export default function MyCardsPage() {
   }, [])
 
   useEffect(() => {
-    const last = localStorage.getItem("mycards-last-sent")
-    if (last) {
-      const elapsed = Math.floor((Date.now() - Number(last)) / 1000)
-      if (elapsed < 60) {
-        setCooldown(60 - elapsed)
+    const val = localStorage.getItem("magic-link-cooldown")
+    if (val) {
+      const remaining = Math.floor((Number(val) - Date.now()) / 1000)
+      if (remaining > 0) {
+        setCooldown(remaining)
       } else {
-        localStorage.removeItem("mycards-last-sent")
+        localStorage.removeItem("magic-link-cooldown")
       }
     }
   }, [])
@@ -80,7 +80,8 @@ export default function MyCardsPage() {
         setCooldown((prev) => {
           const next = prev - 1
           if (next <= 0) {
-            localStorage.removeItem("mycards-last-sent")
+            localStorage.removeItem("magic-link-cooldown")
+            setSendError(null)
             if (intervalRef.current) clearInterval(intervalRef.current)
             intervalRef.current = null
           }
@@ -122,11 +123,12 @@ export default function MyCardsPage() {
         },
       })
       if (error) throw error
-      localStorage.setItem("mycards-last-sent", String(Date.now()))
       setState("sent")
     } catch (err) {
       const msg = err instanceof Error ? err.message : ""
-      if (msg.includes("rate_limit") || msg.includes("over_request")) {
+      if (/rate[\s_-]limit|over_request/i.test(msg)) {
+        const until = Date.now() + 60000
+        localStorage.setItem("magic-link-cooldown", String(until))
         setCooldown(60)
         setSendError("Espera un momento antes de pedir otro enlace")
       } else {
