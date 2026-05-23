@@ -1,12 +1,10 @@
-import { loadEnvConfig } from "@next/env"
+import "dotenv/config"
 import sharp from "sharp"
 import path from "node:path"
 import fs from "node:fs/promises"
 import { fileURLToPath } from "node:url"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-loadEnvConfig(path.join(__dirname, ".."))
-
 const PASSES_DIR = path.join(__dirname, "..", "public", "passes")
 const ICON_SVG = path.join(__dirname, "..", "public", "icon.svg")
 

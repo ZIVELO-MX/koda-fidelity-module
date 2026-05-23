@@ -1,44 +1,43 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
-import { Check, Smartphone } from "lucide-react"
+import { Check, Smartphone, Loader2 } from "lucide-react"
 
-// Mock data - in a real app this would come from a database
-const cardData: Record<string, {
-  businessName: string
-  cardName: string
+interface CardInfo {
+  id: string
+  name: string
+  description: string | null
   reward: string
-  maxStamps: number
-  expirationDate: string
+  stampsRequired: number
   brandColor: string
-}> = {
-  "card-coffee": {
-    businessName: "The Daily Grind",
-    cardName: "Coffee Rewards",
-    reward: "Free Coffee",
-    maxStamps: 10,
-    expirationDate: "Dec 31, 2026",
-    brandColor: "#f97316",
-  },
-  "card-lunch": {
-    businessName: "Bistro 42",
-    cardName: "Lunch Special",
-    reward: "Free Dessert",
-    maxStamps: 8,
-    expirationDate: "Dec 31, 2026",
-    brandColor: "#3b82f6",
-  },
+  expiresAt: string | null
+  businessName: string
+  businessBrandColor: string
+  businessLogoUrl: string | null
 }
 
 export default function JoinCardPage() {
   const params = useParams()
   const cardId = params.cardId as string
-  const card = cardData[cardId as keyof typeof cardData] || cardData["card-coffee"]
+  const [card, setCard] = useState<CardInfo | null>(null)
+  const [loadingCard, setLoadingCard] = useState(true)
+  const [cardError, setCardError] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch(`/api/cards/${cardId}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Tarjeta no encontrada")
+        return res.json()
+      })
+      .then((data) => setCard(data.card))
+      .catch((err) => setCardError(err.message))
+      .finally(() => setLoadingCard(false))
+  }, [cardId])
 
   const [step, setStep] = useState<"name" | "wallet">("name")
   const [customerName, setCustomerName] = useState("")
@@ -89,6 +88,23 @@ export default function JoinCardPage() {
     }
   }
 
+  if (loadingCard) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (cardError || !card) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+        <h1 className="text-2xl font-bold text-foreground mb-2">Tarjeta no encontrada</h1>
+        <p className="text-muted-foreground">{cardError || "El enlace no es válido"}</p>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
@@ -119,9 +135,9 @@ export default function JoinCardPage() {
                       businessName={card.businessName}
                       customerName={customerName || "Your Name"}
                       currentStamps={0}
-                      maxStamps={card.maxStamps}
+                      maxStamps={card.stampsRequired}
                       reward={card.reward}
-                      expirationDate={card.expirationDate}
+                      expirationDate={card.expiresAt ? new Date(card.expiresAt).toLocaleDateString("es-US", { month: "short", day: "numeric", year: "numeric" }) : undefined}
                       brandColor={card.brandColor}
                       showQR={false}
                     />
@@ -130,10 +146,10 @@ export default function JoinCardPage() {
                   {/* Form */}
                   <div className="bg-card rounded-2xl p-6 border border-border">
                     <h1 className="text-xl font-bold text-foreground text-center mb-2">
-                      Join {card.cardName}
+                      Join {card.name}
                     </h1>
                     <p className="text-sm text-muted-foreground text-center mb-6">
-                      Collect {card.maxStamps} stamps and get {card.reward.toLowerCase()}!
+                      Collect {card.stampsRequired} stamps and get {card.reward.toLowerCase()}!
                     </p>
 
                       <form onSubmit={handleSubmitName} className="space-y-4">
@@ -169,9 +185,9 @@ export default function JoinCardPage() {
                       businessName={card.businessName}
                       customerName={customerName}
                       currentStamps={0}
-                      maxStamps={card.maxStamps}
+                      maxStamps={card.stampsRequired}
                       reward={card.reward}
-                      expirationDate={card.expirationDate}
+                      expirationDate={card.expiresAt ? new Date(card.expiresAt).toLocaleDateString("es-US", { month: "short", day: "numeric", year: "numeric" }) : undefined}
                       brandColor={card.brandColor}
                       showQR={false}
                     />
@@ -259,9 +275,9 @@ export default function JoinCardPage() {
                   businessName={card.businessName}
                   customerName={customerName}
                   currentStamps={0}
-                  maxStamps={card.maxStamps}
+                  maxStamps={card.stampsRequired}
                   reward={card.reward}
-                  expirationDate={card.expirationDate}
+                  expirationDate={card.expiresAt ? new Date(card.expiresAt).toLocaleDateString("es-US", { month: "short", day: "numeric", year: "numeric" }) : undefined}
                   brandColor={card.brandColor}
                   showQR={true}
                 />
