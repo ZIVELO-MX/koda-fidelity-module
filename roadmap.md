@@ -63,7 +63,8 @@
 - [x] Crear endpoint `/api/passes/google/:cardId` que genere JWT firmado
 - [x] Implementar clase y objeto de loyalty card en Google Wallet
 - [x] Integrar botón "Añadir a Google Wallet" en el flujo `join/[cardId]`
-- [ ] Configurar cuenta Google Pay & Wallet Console (Issuer ID + service account)
+- [x] Configurar cuenta Google Pay & Wallet Console (Issuer ID + service account)
+- [x] Mejorar diseño visual del pase (logo, hero image, secondary points, colores)
 - [ ] Probar pases en Android / emulador
 
 ### Fase 3 — Backend real + API Routes

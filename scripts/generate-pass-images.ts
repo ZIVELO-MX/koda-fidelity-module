@@ -18,38 +18,55 @@ async function main() {
   // logo.png: 320x100px (@2x for max ~160x50pt logo area)
   await sharp(svgBuffer).resize(320, 320).png().toFile(path.join(PASSES_DIR, "logo.png"))
 
-  // strip.png: 640x220px (@2x for 320x110pt strip area)
-  await sharp({
-    create: {
-      width: 640,
-      height: 220,
-      channels: 4,
-      background: { r: 255, g: 255, b: 255, alpha: 0 },
-    },
-  }).png().toFile(path.join(PASSES_DIR, "strip.png"))
+  // Google Wallet hero image: 1200x300px (recommended aspect ratio 4:1)
+  const heroOrange = await heroImage("#f97316", svgBuffer)
+  await heroOrange.png().toFile(path.join(PASSES_DIR, "hero-orange.png"))
 
-  // thumbnail.png: 180x180px (@2x for 90x90pt)
-  await sharp(svgBuffer).resize(180, 180).png().toFile(path.join(PASSES_DIR, "thumbnail.png"))
+  const heroBlue = await heroImage("#3b82f6", svgBuffer)
+  await heroBlue.png().toFile(path.join(PASSES_DIR, "hero-blue.png"))
 
-  // footer.png: 572x30px (@2x for 286x15pt)
-  await sharp({
-    create: {
-      width: 572,
-      height: 30,
-      channels: 4,
-      background: { r: 0, b: 0, g: 0, alpha: 0 },
-    },
-  }).png().toFile(path.join(PASSES_DIR, "footer.png"))
+  // Google Wallet logo: 400x400px
+  await sharp(svgBuffer).resize(400, 400).png().toFile(path.join(PASSES_DIR, "google-logo.png"))
 
-  // background.png: 640x480px (@2x)
-  await sharp({
+  console.log("Pass images generated in", PASSES_DIR)
+}
+
+async function heroImage(color: string, logo: Buffer): Promise<sharp.Sharp> {
+  const hex = color.replace("#", "")
+  const r = Number.parseInt(hex.slice(0, 2), 16)
+  const g = Number.parseInt(hex.slice(2, 4), 16)
+  const b = Number.parseInt(hex.slice(4, 6), 16)
+
+  const logoResized = await sharp(logo).resize(200, 200).toBuffer()
+
+  const overlay = await sharp({
     create: {
-      width: 640,
-      height: 480,
+      width: 1200,
+      height: 300,
       channels: 4,
-      background: { r: 255, g: 255, b: 255, alpha: 0 },
+      background: { r, g, b, alpha: 1 },
     },
-  }).png().toFile(path.join(PASSES_DIR, "background.png"))
+  })
+    .composite([
+      {
+        input: logoResized,
+        top: 50,
+        left: 500,
+      },
+      {
+        input: Buffer.from(
+          `<svg width="1200" height="300">
+            <rect x="0" y="0" width="1200" height="300" fill="rgba(0,0,0,0.1)" rx="16"/>
+          </svg>`,
+        ),
+        top: 0,
+        left: 0,
+      },
+    ])
+    .png()
+    .toBuffer()
+
+  return sharp(overlay)
 
   console.log("Pass images generated in", PASSES_DIR)
 }
