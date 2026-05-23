@@ -101,13 +101,13 @@ export default function JoinCardPage() {
   }, [cardId])
 
   useEffect(() => {
-    const last = localStorage.getItem(`join-last-sent-${cardId}`)
-    if (last) {
-      const elapsed = Math.floor((Date.now() - Number(last)) / 1000)
-      if (elapsed < 60) {
-        setCooldown(60 - elapsed)
+    const val = localStorage.getItem("magic-link-cooldown")
+    if (val) {
+      const remaining = Math.floor((Number(val) - Date.now()) / 1000)
+      if (remaining > 0) {
+        setCooldown(remaining)
       } else {
-        localStorage.removeItem(`join-last-sent-${cardId}`)
+        localStorage.removeItem("magic-link-cooldown")
       }
     }
   }, [cardId])
@@ -118,7 +118,8 @@ export default function JoinCardPage() {
         setCooldown((prev) => {
           const next = prev - 1
           if (next <= 0) {
-            localStorage.removeItem(`join-last-sent-${cardId}`)
+            localStorage.removeItem("magic-link-cooldown")
+            setSendError(null)
             if (intervalRef.current) clearInterval(intervalRef.current)
             intervalRef.current = null
           }
@@ -173,7 +174,6 @@ export default function JoinCardPage() {
 
       const { customerId } = await res.json()
       sessionStorage.setItem(`pending-${cardId}`, customerId)
-      localStorage.setItem(`join-last-sent-${cardId}`, String(Date.now()))
 
       const supabase = createBrowserSupabase()
       const { error } = await supabase.auth.signInWithOtp({
@@ -188,7 +188,9 @@ export default function JoinCardPage() {
       setStep("sent")
     } catch (err) {
       const msg = err instanceof Error ? err.message : ""
-      if (msg.includes("rate_limit") || msg.includes("over_request")) {
+      if (/rate[\s_-]limit|over_request/i.test(msg)) {
+        const until = Date.now() + 60000
+        localStorage.setItem("magic-link-cooldown", String(until))
         setCooldown(60)
         setSendError("Espera un momento antes de pedir otro enlace")
       } else {

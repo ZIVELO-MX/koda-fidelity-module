@@ -43,12 +43,11 @@ export default function AuthErrorPage() {
   }, [isRateLimit])
 
   useEffect(() => {
-    const lastSent = localStorage.getItem(`magic-link-sent-${email}`)
-    if (lastSent) {
-      const elapsed = Math.floor((Date.now() - Number(lastSent)) / 1000)
-      if (elapsed < 60) {
-        setCooldown(60 - elapsed)
-        const remaining = 60 - elapsed
+    const val = localStorage.getItem("magic-link-cooldown")
+    if (val) {
+      const remaining = Math.floor((Number(val) - Date.now()) / 1000)
+      if (remaining > 0) {
+        setCooldown(remaining)
         timerRef.current = setInterval(() => {
           setCooldown((c) => {
             if (c <= 1) {
@@ -58,10 +57,9 @@ export default function AuthErrorPage() {
             return c - 1
           })
         }, 1000)
+      } else {
+        localStorage.removeItem("magic-link-cooldown")
       }
-    }
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current)
     }
   }, [email])
 
@@ -84,12 +82,12 @@ export default function AuthErrorPage() {
         },
       })
       if (error) throw error
-      localStorage.setItem(`magic-link-sent-${email.trim()}`, String(Date.now()))
+      localStorage.setItem("magic-link-cooldown", String(Date.now() + 60000))
       setCooldown(60)
       setSent(true)
     } catch (err) {
       const msg = err instanceof Error ? err.message : ""
-      if (msg.includes("rate_limit") || msg.includes("over_request")) {
+      if (/rate[\s_-]limit|over_request/i.test(msg)) {
         setCooldown(60)
       }
     } finally {
