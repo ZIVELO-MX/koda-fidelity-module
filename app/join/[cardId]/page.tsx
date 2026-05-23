@@ -30,6 +30,15 @@ export default function JoinCardPage() {
   const cardId = params.cardId as string
   const [step, setStep] = useState<Step>("loading")
   const [customer, setCustomer] = useState<JoinCustomer | null>(null)
+  const [cardData, setCardData] = useState<{
+    name: string
+    stampsRequired: number
+    reward: string
+    brandColor: string
+    businessName: string
+    businessBrandColor: string
+    businessLogoUrl: string | null
+  } | null>(null)
   const [cardError, setCardError] = useState<string | null>(null)
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
@@ -47,6 +56,8 @@ export default function JoinCardPage() {
         setStep("error")
         return
       }
+      const cardJson = await cardRes.json()
+      setCardData(cardJson.card)
 
       const supabase = createBrowserSupabase()
       const { data: { session } } = await supabase.auth.getSession()
@@ -151,7 +162,7 @@ export default function JoinCardPage() {
         businessBrandColor: customer.card.business.brandColor,
         businessLogoUrl: customer.card.business.logoUrl,
       }
-    : null
+    : cardData
 
   if (step === "loading") {
     return (
@@ -248,9 +259,9 @@ export default function JoinCardPage() {
               Escanea este código QR en el negocio para acumular sellos
             </p>
 
-            <Link href="/">
+            <Link href="/my-cards">
               <Button variant="outline" className="w-full">
-                Volver al inicio
+                Ver todas mis tarjetas
               </Button>
             </Link>
           </div>
