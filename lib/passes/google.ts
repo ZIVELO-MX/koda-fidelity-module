@@ -53,6 +53,21 @@ export function getConfigError(): string | null {
   return getConfigIssue()
 }
 
+function isPrivateUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname
+    return (
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host.startsWith("192.168.") ||
+      host.startsWith("10.") ||
+      host.startsWith("172.")
+    )
+  } catch {
+    return true
+  }
+}
+
 function heroImageName(brandColor: string): string {
   const color = brandColor.toLowerCase()
   if (color.includes("f97316") || color.includes("ff6b35") || color.includes("orange")) return "hero-orange.png"
@@ -90,44 +105,39 @@ export async function generateLoyaltyPassJwt(params: GeneratePassJwtParams): Pro
   const stampsRemaining = Math.max(0, stampsRequired - stamps)
   const progress = Math.round((stamps / stampsRequired) * 100)
 
-  const loyaltyClass = {
+  const hasPublicImages = !isPrivateUrl(baseUrl)
+
+  const loyaltyClass: Record<string, unknown> = {
     id: classId(cardId),
     issuerName: businessName,
     programName: cardName,
-    reviewStatus: "underReview" as const,
+    reviewStatus: "underReview",
     hexBackgroundColor: brandColor,
     hexFontColor: "#ffffff",
     localizedIssuerName: {
       defaultValue: { language: "es-MX", value: businessName },
     },
-    logo: {
-      sourceUri: {
-        uri: `${baseUrl}/passes/google-logo.png`,
-      },
-      contentDescription: { defaultValue: { language: "es-MX", value: businessName } },
-    },
-    cardTitleImage: {
-      sourceUri: {
-        uri: `${baseUrl}/passes/google-logo.png`,
-      },
-      contentDescription: { defaultValue: { language: "es-MX", value: cardName } },
-    },
     messages: [],
     locations: [],
   }
 
-  const loyaltyObject = {
+  if (hasPublicImages) {
+    loyaltyClass.logo = {
+      sourceUri: { uri: `${baseUrl}/passes/google-logo.png` },
+      contentDescription: { defaultValue: { language: "es-MX", value: businessName } },
+    }
+    loyaltyClass.cardTitleImage = {
+      sourceUri: { uri: `${baseUrl}/passes/google-logo.png` },
+      contentDescription: { defaultValue: { language: "es-MX", value: cardName } },
+    }
+  }
+
+  const loyaltyObject: Record<string, unknown> = {
     id: objectId(cardId, customerId),
     classId: classId(cardId),
-    state: "active" as const,
+    state: "active",
     accountId: customerId,
     accountName: customerName,
-    heroImage: {
-      sourceUri: {
-        uri: `${baseUrl}/passes/${heroImageName(brandColor)}`,
-      },
-      contentDescription: { defaultValue: { language: "es-MX", value: businessName } },
-    },
     loyaltyPoints: {
       balance: { int: stamps },
       label: "Sellos obtenidos",
@@ -137,7 +147,7 @@ export async function generateLoyaltyPassJwt(params: GeneratePassJwtParams): Pro
       label: "Sellos restantes",
     },
     barcode: {
-      type: "qrCode" as const,
+      type: "qrCode",
       value: customerId,
       alternateText: "Muestra este código al canjear",
     },
@@ -161,6 +171,13 @@ export async function generateLoyaltyPassJwt(params: GeneratePassJwtParams): Pro
         },
       ],
     },
+  }
+
+  if (hasPublicImages) {
+    loyaltyObject.heroImage = {
+      sourceUri: { uri: `${baseUrl}/passes/${heroImageName(brandColor)}` },
+      contentDescription: { defaultValue: { language: "es-MX", value: businessName } },
+    }
   }
 
   const signingKey = await getSigningKey()
