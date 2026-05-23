@@ -9,8 +9,15 @@ import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { Check, Smartphone } from "lucide-react"
 
 // Mock data - in a real app this would come from a database
-const cardData = {
-  "coffee-rewards": {
+const cardData: Record<string, {
+  businessName: string
+  cardName: string
+  reward: string
+  maxStamps: number
+  expirationDate: string
+  brandColor: string
+}> = {
+  "card-coffee": {
     businessName: "The Daily Grind",
     cardName: "Coffee Rewards",
     reward: "Free Coffee",
@@ -18,7 +25,7 @@ const cardData = {
     expirationDate: "Dec 31, 2026",
     brandColor: "#f97316",
   },
-  "lunch-special": {
+  "card-lunch": {
     businessName: "Bistro 42",
     cardName: "Lunch Special",
     reward: "Free Dessert",
@@ -31,7 +38,7 @@ const cardData = {
 export default function JoinCardPage() {
   const params = useParams()
   const cardId = params.cardId as string
-  const card = cardData[cardId as keyof typeof cardData] || cardData["coffee-rewards"]
+  const card = cardData[cardId as keyof typeof cardData] || cardData["card-coffee"]
 
   const [step, setStep] = useState<"name" | "wallet">("name")
   const [customerName, setCustomerName] = useState("")
@@ -41,7 +48,9 @@ export default function JoinCardPage() {
 
   const handleSubmitName = (e: React.FormEvent) => {
     e.preventDefault()
-    if (customerName.trim()) {
+    const name = new FormData(e.currentTarget as HTMLFormElement).get("customerName") as string
+    if (name?.trim()) {
+      setCustomerName(name.trim())
       setStep("wallet")
     }
   }
@@ -122,27 +131,25 @@ export default function JoinCardPage() {
                       Collect {card.maxStamps} stamps and get {card.reward.toLowerCase()}!
                     </p>
 
-                    <form onSubmit={handleSubmitName} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Tu Nombre</Label>
-                        <Input
-                          id="name"
-                          placeholder="Ingresa tu nombre"
-                          value={customerName}
-                          onChange={(e) => setCustomerName(e.target.value)}
-                          autoFocus
-                          className="text-base"
-                        />
-                      </div>
-                      <Button
-                        type="submit"
-                        className="w-full"
-                        size="lg"
-                        disabled={!customerName.trim()}
-                      >
-                        Continuar
-                      </Button>
-                    </form>
+                      <form onSubmit={handleSubmitName} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="name">Tu Nombre</Label>
+                          <Input
+                            id="name"
+                            name="customerName"
+                            placeholder="Ingresa tu nombre"
+                            className="text-base"
+                            autoComplete="name"
+                          />
+                        </div>
+                        <Button
+                          type="submit"
+                          className="w-full"
+                          size="lg"
+                        >
+                          Continuar
+                        </Button>
+                      </form>
                   </div>
                 </div>
               ) : (
