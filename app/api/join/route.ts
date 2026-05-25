@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
-import { handleApiError, ValidationError, NotFoundError, UnauthorizedError } from "@/lib/api-utils"
+import { getBusinessFromSession, handleApiError, ValidationError, NotFoundError, UnauthorizedError } from "@/lib/api-utils"
 
 /**
  * @openapi
@@ -181,11 +181,22 @@ export async function GET(request: NextRequest) {
     const cardId = searchParams.get("cardId")
 
     if (id) {
+      const business = await getBusinessFromSession()
+
       const customer = await prisma.customer.findUnique({
         where: { id },
         include: cardInclude,
       })
       if (!customer) throw new NotFoundError("Cliente no encontrado")
+
+      const card = await prisma.loyaltyCard.findUnique({
+        where: { id: customer.cardId },
+        select: { businessId: true },
+      })
+      if (!card || card.businessId !== business.id) {
+        throw new NotFoundError("Cliente no encontrado")
+      }
+
       return NextResponse.json({ customer })
     }
 

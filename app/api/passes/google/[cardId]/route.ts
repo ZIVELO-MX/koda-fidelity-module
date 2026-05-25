@@ -84,13 +84,7 @@ export async function POST(
 
   const body = await request.json()
   const customerName = body.customerName as string | undefined
-
-  if (!customerName?.trim()) {
-    return NextResponse.json(
-      { error: "customerName is required" },
-      { status: 400 },
-    )
-  }
+  const existingCustomerId = body.customerId as string | undefined
 
   const loyaltyCard = await prisma.loyaltyCard.findUnique({
     where: { id: cardId },
@@ -104,13 +98,34 @@ export async function POST(
     )
   }
 
-  const customer = await prisma.customer.create({
-    data: {
-      name: customerName.trim(),
-      cardId: loyaltyCard.id,
-      stamps: 0,
-    },
-  })
+  let customer
+
+  if (existingCustomerId) {
+    customer = await prisma.customer.findUnique({
+      where: { id: existingCustomerId },
+    })
+    if (!customer || customer.cardId !== cardId) {
+      return NextResponse.json(
+        { error: "Customer not found" },
+        { status: 404 },
+      )
+    }
+  } else {
+    if (!customerName?.trim()) {
+      return NextResponse.json(
+        { error: "customerName is required" },
+        { status: 400 },
+      )
+    }
+
+    customer = await prisma.customer.create({
+      data: {
+        name: customerName.trim(),
+        cardId: loyaltyCard.id,
+        stamps: 0,
+      },
+    })
+  }
 
   const host = request.headers.get("host") || "localhost:3000"
   const proto = request.headers.get("x-forwarded-proto") || "http"
@@ -129,10 +144,12 @@ export async function POST(
     baseUrl,
   })
 
-  await prisma.customer.update({
-    where: { id: customer.id },
-    data: { googlePassId: customer.id },
-  })
+  if (!customer.googlePassId) {
+    await prisma.customer.update({
+      where: { id: customer.id },
+      data: { googlePassId: customer.id },
+    })
+  }
 
   return NextResponse.json({
     saveUrl: getSaveUrl(jwtToken),
