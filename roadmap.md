@@ -142,6 +142,12 @@
 - Google Wallet: requiere configuración en Google Pay & Wallet Console
 - Apple Wallet: requiere Apple Developer Account ($99/año) + certificados
 
+### Post-MVP — SMTP / Remitente personalizado
+
+- [ ] Configurar SMTP custom en Supabase (Resend, SendGrid, etc.)
+- [ ] Cambiar remitente de `noreply@app.xxxxx.supabase.co` a `noreply@koda.app`
+- [ ] Personalizar templates restantes (Confirmación, Cambio de contraseña, Cambio de email)
+
 ### Post-MVP — Wallet Passes (Deshabilitado)
 
 > Las wallets se deshabilitaron temporalmente. Se muestran como "Próximamente" en el join flow.
