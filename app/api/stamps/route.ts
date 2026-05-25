@@ -2,6 +2,70 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getBusinessFromSession, handleApiError, ValidationError, NotFoundError } from "@/lib/api-utils"
 
+/**
+ * @openapi
+ * /api/stamps:
+ *   post:
+ *     tags:
+ *       - Sellos
+ *     summary: Agregar sello o canjear recompensa
+ *     description: |
+ *       Agrega un sello a la tarjeta de un cliente o canjea la recompensa.
+ *       - type: "stamp" → agrega 1 sello
+ *       - type: "redeem" → canjea (resetea sellos a 0)
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - customerId
+ *             properties:
+ *               customerId:
+ *                 type: string
+ *                 description: ID del cliente
+ *               type:
+ *                 type: string
+ *                 enum: [stamp, redeem]
+ *                 default: stamp
+ *                 description: Tipo de operación
+ *     responses:
+ *       200:
+ *         description: Operación exitosa
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 customer:
+ *                   $ref: '#/components/schemas/Customer'
+ *                 event:
+ *                   type: string
+ *                   enum: [stamp, redeem]
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Error de validación
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: No autorizado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Cliente no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 export async function POST(request: NextRequest) {
   try {
     const business = await getBusinessFromSession()

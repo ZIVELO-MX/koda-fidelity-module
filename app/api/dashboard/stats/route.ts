@@ -2,6 +2,30 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getBusinessFromSession, handleApiError } from "@/lib/api-utils"
 
+/**
+ * @openapi
+ * /api/dashboard/stats:
+ *   get:
+ *     tags:
+ *       - Dashboard
+ *     summary: Estadísticas del dashboard
+ *     description: Retorna estadísticas generales del negocio autenticado.
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Estadísticas del dashboard
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/DashboardStats'
+ *       401:
+ *         description: No autorizado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 export async function GET() {
   try {
     const business = await getBusinessFromSession()
