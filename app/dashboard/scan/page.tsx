@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { QRScanner } from "@/components/scan/qr-scanner"
@@ -17,7 +18,6 @@ import {
   Loader2,
   Scan,
 } from "lucide-react"
-import { useRouter } from "next/navigation"
 
 interface SearchCustomer {
   id: string
@@ -30,8 +30,9 @@ interface SearchCustomer {
 
 type ScanState = "idle" | "scanning" | "found" | "stamped" | "redeemed"
 
-export default function ScanPage() {
-  const router = useRouter()
+function ScanPageInner() {
+  const searchParams = useSearchParams()
+  const cardIdFilter = searchParams.get("cardId")
   const [scanState, setScanState] = useState<ScanState>("idle")
   const [selectedCustomer, setSelectedCustomer] = useState<SearchCustomer | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
@@ -51,7 +52,9 @@ export default function ScanPage() {
     const timer = setTimeout(async () => {
       setSearching(true)
       try {
-        const res = await fetch(`/api/customers?q=${encodeURIComponent(searchQuery)}`)
+        const params = new URLSearchParams({ q: searchQuery })
+        if (cardIdFilter) params.set("cardId", cardIdFilter)
+        const res = await fetch(`/api/customers?${params}`)
         const data = await res.json()
         setSearchResults(data.customers || [])
       } catch {
@@ -62,7 +65,7 @@ export default function ScanPage() {
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [searchQuery])
+  }, [searchQuery, cardIdFilter])
 
   const handleScanResult = async (customerId: string) => {
     setScanState("scanning")
@@ -410,5 +413,13 @@ export default function ScanPage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function ScanPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}>
+      <ScanPageInner />
+    </Suspense>
   )
 }
