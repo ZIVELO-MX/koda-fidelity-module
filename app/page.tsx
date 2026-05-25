@@ -4,6 +4,7 @@ import type { Metadata } from "next"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Smartphone, QrCode, Wallet, CheckCircle2, Zap, Shield, BarChart3, Check } from "lucide-react"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
+import { LandingMobileNav } from "@/components/landing-mobile-nav"
 import { siteConfig } from "@/lib/site-config"
 
 export const metadata: Metadata = {
@@ -73,18 +74,19 @@ export default async function LandingPage({
                 Precios
               </Link>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <Link href="/login">
                 <Button variant="ghost" className="hidden sm:inline-flex">
                   Iniciar Sesión
                 </Button>
               </Link>
-              <Link href="/signup">
+              <Link href="/signup" className="hidden sm:inline-flex">
                 <Button>
                   Comenzar
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
+              <LandingMobileNav />
             </div>
           </div>
         </div>
@@ -263,7 +265,7 @@ export default async function LandingPage({
                 key={index}
                 className={`relative bg-card rounded-2xl p-8 border ${
                   tier.highlighted
-                    ? "border-primary shadow-lg shadow-primary/10 scale-105 md:scale-110"
+                    ? "border-primary shadow-lg shadow-primary/10 md:scale-110"
                     : "border-border"
                 }`}
               >
