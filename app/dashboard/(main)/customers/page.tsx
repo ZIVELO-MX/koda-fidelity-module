@@ -18,7 +18,12 @@ function timeAgo(date: Date): string {
   return `hace ${days}d`
 }
 
-export default async function CustomersPage() {
+export default async function CustomersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>
+}) {
+  const { q } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -35,7 +40,10 @@ export default async function CustomersPage() {
   }
 
   const customers = await prisma.customer.findMany({
-    where: { card: { businessId: business.id } },
+    where: {
+      card: { businessId: business.id },
+      ...(q?.trim() ? { name: { contains: q.trim(), mode: "insensitive" } } : {}),
+    },
     include: {
       card: { select: { name: true, stampsRequired: true, reward: true } },
       _count: { select: { stampsLog: { where: { type: "redeem" } } } },
@@ -50,15 +58,22 @@ export default async function CustomersPage() {
         <p className="text-muted-foreground">Consulta y gestiona los miembros de tu programa de lealtad</p>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4">
+      <form action="" method="GET" className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
+            name="q"
             placeholder="Buscar clientes..."
+            defaultValue={q}
             className="pl-10"
           />
         </div>
-      </div>
+        {q && (
+          <Link href="/dashboard/customers">
+            <Button variant="ghost" type="button">Limpiar</Button>
+          </Link>
+        )}
+      </form>
 
       {customers.length === 0 ? (
         <div className="text-center py-20">
