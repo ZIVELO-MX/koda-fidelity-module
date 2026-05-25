@@ -2,17 +2,22 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ServiceWorkerRegister } from '@/components/service-worker-register'
+import { siteConfig } from '@/lib/site-config'
 import './globals.css'
 
-const inter = Inter({ 
+const inter = Inter({
   subsets: ['latin'],
   variable: '--font-sans',
 })
 
 export const metadata: Metadata = {
-  title: 'Koda Fidelity - Tarjetas de Fidelidad Digitales',
-  description: 'Tarjetas de fidelidad digitales para Apple Wallet y Google Wallet. Convierte clientes recurrentes en clientes leales con Koda.',
-  generator: 'v0.app',
+  metadataBase: new URL(siteConfig.url),
+  title: {
+    default: `${siteConfig.name} - Tarjetas de Fidelidad Digitales`,
+    template: `%s | ${siteConfig.name}`,
+  },
+  description: siteConfig.description,
+  keywords: siteConfig.keywords,
   manifest: '/manifest.webmanifest',
   icons: {
     icon: [
@@ -31,8 +36,42 @@ export const metadata: Metadata = {
     ],
     apple: '/apple-icon.png',
   },
+  openGraph: {
+    title: `${siteConfig.name} - Tarjetas de Fidelidad Digitales`,
+    description: siteConfig.description,
+    url: siteConfig.url,
+    siteName: siteConfig.name,
+    locale: siteConfig.locale,
+    type: 'website',
+    images: [
+      {
+        url: siteConfig.ogImage,
+        width: 1200,
+        height: 630,
+        alt: siteConfig.name,
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `${siteConfig.name} - Tarjetas de Fidelidad Digitales`,
+    description: siteConfig.description,
+    images: [siteConfig.ogImage],
+    creator: siteConfig.creator,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   other: {
-    'theme-color': '#f97316',
+    'theme-color': siteConfig.defaultBrandColor,
   },
 }
 

@@ -96,10 +96,10 @@
 - [x] `/dashboard/scan` sin nav bar (ruta fuera del layout dashboard)
 - [x] Tests: 84 tests, 0 errores de tipo
 
-### Fase 4 — Landing page + polish (Pendiente)
+### Fase 4 — Landing page + polish (En progreso)
 
-- [ ] Conectar landing page a datos reales (precios, features)
-- [ ] SEO básico (meta tags, Open Graph)
+- [x] Conectar landing page a datos reales (precios, features)
+- [x] SEO básico (meta tags, Open Graph, OG dinámico por negocio)
 - [ ] Analíticas con Vercel Analytics
 - [ ] Modo responsive completo
 - [ ] Estados vacíos, carga, error en todas las páginas
@@ -199,8 +199,8 @@ model StampLog {
 
 ## Prioridades inmediatas
 
-> Fase 1-3 completadas. Próximo: Fase 4 (landing + polish).
+> Fase 1-3 completadas. Fase 4 en progreso (2/6 completados).
 
-1. **Landing page + polish** — responsive, SEO, estados vacío/carga/error
+1. **Landing page + polish** — ✅ datos reales, ✅ SEO/OG, falta: responsive, estados carga/vacío/error
 2. **Phone magic links** — agregar `phone` a Customer + SMS auth
 3. **Wallet passes** — re-habilitar cuando se requiera
