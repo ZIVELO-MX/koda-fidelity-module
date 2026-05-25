@@ -18,7 +18,13 @@ function timeAgo(date: Date): string {
   return `hace ${days}d`
 }
 
-export default async function CustomersPage() {
+export default async function CustomersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>
+}) {
+  const { q } = await searchParams
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -34,8 +40,16 @@ export default async function CustomersPage() {
     redirect("/login")
   }
 
+  const where: Record<string, unknown> = {
+    card: { businessId: business.id },
+  }
+
+  if (q?.trim()) {
+    where.name = { contains: q.trim(), mode: "insensitive" }
+  }
+
   const customers = await prisma.customer.findMany({
-    where: { card: { businessId: business.id } },
+    where,
     include: {
       card: { select: { name: true, stampsRequired: true, reward: true } },
       _count: { select: { stampsLog: { where: { type: "redeem" } } } },
@@ -53,20 +67,30 @@ export default async function CustomersPage() {
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar clientes..."
-            className="pl-10"
-          />
+          <form action="" method="GET">
+            <Input
+              name="q"
+              placeholder="Buscar clientes..."
+              className="pl-10"
+              defaultValue={q ?? ""}
+            />
+          </form>
         </div>
       </div>
 
       {customers.length === 0 ? (
         <div className="text-center py-20">
-          <h3 className="text-lg font-semibold text-foreground mb-2">Aún no tienes clientes</h3>
-          <p className="text-muted-foreground mb-6">Los clientes se registrarán al unirse a tus tarjetas</p>
-          <Link href="/dashboard/cards">
-            <Button variant="outline">Ver tarjetas</Button>
-          </Link>
+          <h3 className="text-lg font-semibold text-foreground mb-2">
+            {q ? "No se encontraron clientes" : "Aún no tienes clientes"}
+          </h3>
+          <p className="text-muted-foreground mb-6">
+            {q ? "Intenta con otro término de búsqueda" : "Los clientes se registrarán al unirse a tus tarjetas"}
+          </p>
+          {!q && (
+            <Link href="/dashboard/cards">
+              <Button variant="outline">Ver tarjetas</Button>
+            </Link>
+          )}
         </div>
       ) : (
         <div className="bg-card rounded-2xl border border-border overflow-hidden">

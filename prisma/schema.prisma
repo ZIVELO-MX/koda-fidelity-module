@@ -14,6 +14,11 @@ model Business {
   brandColor   String        @default("#ff6b35")
   logoUrl      String?
   email        String        @unique
+  businessType String?
+  address      String?
+  phone        String?
+  website      String?
+  instagram    String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   loyaltyCards LoyaltyCard[]

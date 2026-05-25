@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -42,7 +42,20 @@ export default function CreateCardPage() {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
+  const validateStep = (step: number): boolean => {
+    const newErrors: Record<string, string> = {}
+    if (step === 1) {
+      if (!formData.cardName.trim()) newErrors.cardName = "El nombre de la tarjeta es obligatorio"
+      if (!formData.reward.trim()) newErrors.reward = "La recompensa es obligatoria"
+    }
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
   const nextStep = () => {
+    if (!validateStep(currentStep)) return
     if (currentStep < 3) setCurrentStep(currentStep + 1)
   }
 
@@ -150,14 +163,16 @@ export default function CreateCardPage() {
               </div>
 
               <div className="space-y-4">
-                <div className="space-y-2">
+                  <div className="space-y-2">
                   <Label htmlFor="cardName">Nombre de la Tarjeta</Label>
                   <Input
                     id="cardName"
                     placeholder="Ej: Café Rewards"
                     value={formData.cardName}
-                    onChange={(e) => updateFormData("cardName", e.target.value)}
+                    onChange={(e) => { updateFormData("cardName", e.target.value); setErrors((prev) => ({ ...prev, cardName: "" })) }}
+                    aria-invalid={!!errors.cardName}
                   />
+                  {errors.cardName && <p className="text-sm text-red-500">{errors.cardName}</p>}
                   <p className="text-xs text-muted-foreground">
                     Este es el nombre que los clientes verán en su tarjeta
                   </p>
@@ -169,8 +184,10 @@ export default function CreateCardPage() {
                     id="reward"
                     placeholder="Ej: Café Gratis"
                     value={formData.reward}
-                    onChange={(e) => updateFormData("reward", e.target.value)}
+                    onChange={(e) => { updateFormData("reward", e.target.value); setErrors((prev) => ({ ...prev, reward: "" })) }}
+                    aria-invalid={!!errors.reward}
                   />
+                  {errors.reward && <p className="text-sm text-red-500">{errors.reward}</p>}
                   <p className="text-xs text-muted-foreground">
                     ¿Qué obtienen los clientes al completar la tarjeta?
                   </p>

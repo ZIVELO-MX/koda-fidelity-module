@@ -105,6 +105,38 @@
 - [ ] Estados vacíos, carga, error en todas las páginas
 - [ ] Agregar campo `phone` a Customer para SMS magic links (futuro)
 
+### Fase 5 — Auditoría y correcciones (Completada)
+
+> Correcciones basadas en auditoría `docs/auditoria-botones-y-datos-hardcodeados.md`
+
+- [x] F-01: Endpoints Wallet aceptan customerId existente (botones siguen como "Próximamente")
+- [x] F-02: GET /api/join?id= protegido con sesión de negocio
+- [x] F-03: Corregido contrato data.customer → data.customers[0] en join flow
+- [x] F-04: Extendido modelo Business con businessType, address, phone, website, instagram
+- [x] F-05: Logo upload funcional (base64) con preview en Branding
+- [x] F-06: Búsqueda de clientes conectada via searchParams (GET ?q=)
+- [x] F-07: Validación por paso en wizard de creación de tarjeta
+- [x] F-08 a F-15: Menús muertos eliminados, campana quitada, docs enlazado, QR fijo, DELETE con error
+- [x] F-16/F-17: Footer y 404 con links reales (mailto en lugar de #)
+- [x] F-19: aria-label en botones icono (sidebar móvil, scan)
+- [x] F-20: Overlay móvil con role="dialog", Escape key, aria-modal
+- [x] F-21: Settings email disabled (no editable desde API actual)
+- [x] Búsqueda por nombre en tarjetas (GET ?q=) en /dashboard/cards
+- [x] Botón "Sellar" por tarjeta que enlaza a /dashboard/scan?cardId=
+- [x] Filtro por cardId en /dashboard/scan al venir desde tarjetas
+- [x] Actividad Reciente en dashboard con scroll horizontal y tarjetas compactas
+
+### Pendiente (ocultado por no funcional)
+
+> Items de la UI que se ocultaron porque el backend/servicio no está listo:
+
+- Notificaciones push/email (toggles eliminados de Settings)
+- Cambio de contraseña (botón eliminado de Settings)
+- Menú de acciones en clientes y tarjetas (MoreVertical eliminado)
+- Campana de notificaciones (eliminada del header)
+- Google Wallet: requiere configuración en Google Pay & Wallet Console
+- Apple Wallet: requiere Apple Developer Account ($99/año) + certificados
+
 ### Post-MVP — Wallet Passes (Deshabilitado)
 
 > Las wallets se deshabilitaron temporalmente. Se muestran como "Próximamente" en el join flow.
