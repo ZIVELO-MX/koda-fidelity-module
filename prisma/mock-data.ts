@@ -5,6 +5,11 @@ export const mockData = {
       name: "The Daily Grind",
       brandColor: "#f97316",
       email: "owner@dailygrind.com",
+      businessType: "Coffee Shop",
+      address: "123 Main St, Portland, OR",
+      phone: "(555) 123-4567",
+      website: "https://thedailygrind.com",
+      instagram: "@thedailygrind",
       loyaltyCards: {
         create: [
           {
@@ -23,6 +28,11 @@ export const mockData = {
       name: "Bistro 42",
       brandColor: "#3b82f6",
       email: "hello@bistro42.com",
+      businessType: "Restaurant",
+      address: "456 Oak Ave, Portland, OR",
+      phone: "(555) 987-6543",
+      website: "https://bistro42.com",
+      instagram: "@bistro42",
       loyaltyCards: {
         create: [
           {
