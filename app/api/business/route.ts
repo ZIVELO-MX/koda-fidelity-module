@@ -2,6 +2,79 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getBusinessFromSession, handleApiError, ValidationError } from "@/lib/api-utils"
 
+/**
+ * @openapi
+ * /api/business:
+ *   get:
+ *     tags:
+ *       - Negocio
+ *     summary: Obtener perfil del negocio
+ *     description: Retorna el perfil del negocio autenticado. Requiere sesión activa.
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Perfil del negocio
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 business:
+ *                   $ref: '#/components/schemas/Business'
+ *       401:
+ *         description: No autorizado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *   put:
+ *     tags:
+ *       - Negocio
+ *     summary: Actualizar perfil del negocio
+ *     description: Actualiza los datos del negocio autenticado.
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Nombre del negocio
+ *               brandColor:
+ *                 type: string
+ *                 description: Color de marca en hex
+ *                 example: "#ff6b35"
+ *               logoUrl:
+ *                 type: string
+ *                 description: URL del logo
+ *     responses:
+ *       200:
+ *         description: Negocio actualizado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 business:
+ *                   $ref: '#/components/schemas/Business'
+ *       400:
+ *         description: Error de validación
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: No autorizado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 export async function GET() {
   try {
     const business = await getBusinessFromSession()

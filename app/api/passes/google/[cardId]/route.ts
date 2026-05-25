@@ -7,6 +7,65 @@ import {
   getConfigError,
 } from "@/lib/passes/google"
 
+/**
+ * @openapi
+ * /api/passes/google/{cardId}:
+ *   post:
+ *     tags:
+ *       - Pases Digitales
+ *     summary: Generar URL de Google Wallet
+ *     description: Crea un cliente y genera un JWT firmado para guardar en Google Wallet.
+ *     parameters:
+ *       - in: path
+ *         name: cardId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de la tarjeta de lealtad
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - customerName
+ *             properties:
+ *               customerName:
+ *                 type: string
+ *                 description: Nombre del cliente
+ *     responses:
+ *       200:
+ *         description: URL para guardar en Google Wallet
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 saveUrl:
+ *                   type: string
+ *                   description: URL para guardar el pase
+ *                 customerId:
+ *                   type: string
+ *       400:
+ *         description: Nombre del cliente requerido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Tarjeta no encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       501:
+ *         description: Google Wallet no configurado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ cardId: string }> },
