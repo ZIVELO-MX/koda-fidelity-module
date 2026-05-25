@@ -24,7 +24,6 @@ export default async function CustomersPage({
   searchParams: Promise<{ q?: string }>
 }) {
   const { q } = await searchParams
-
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -66,7 +65,7 @@ export default async function CustomersPage({
 
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <form action="" method="GET">
             <Input
               name="q"
@@ -76,6 +75,11 @@ export default async function CustomersPage({
             />
           </form>
         </div>
+        {q && (
+          <Link href="/dashboard/customers">
+            <Button variant="ghost" type="button">Limpiar</Button>
+          </Link>
+        )}
       </div>
 
       {customers.length === 0 ? (
