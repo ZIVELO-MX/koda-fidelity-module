@@ -106,9 +106,11 @@ export function DashboardSidebar() {
               <p className="text-xs text-muted-foreground mb-3">
                 Revisa nuestros docs o contacta soporte
               </p>
-              <Button size="sm" variant="secondary" className="w-full text-xs">
-                Ver Documentación
-              </Button>
+              <Link href="/docs">
+                <Button size="sm" variant="secondary" className="w-full text-xs">
+                  Ver Documentación
+                </Button>
+              </Link>
             </div>
             <form action={logout}>
               <Button size="sm" variant="ghost" className="w-full text-xs text-muted-foreground hover:text-destructive">

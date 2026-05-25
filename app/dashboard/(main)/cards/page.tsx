@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Plus, MoreVertical, QrCode, Users, Stamp } from "lucide-react"
+import { Plus, QrCode, Users, Stamp } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 
@@ -67,7 +67,7 @@ export default async function CardsPage() {
                 style={{ backgroundColor: card.brandColor }}
               />
               <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-start justify-between mb-4">
                   <div
                     className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg"
                     style={{ backgroundColor: card.brandColor }}
@@ -78,9 +78,6 @@ export default async function CardsPage() {
                     <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-green-100 text-green-700">
                       Activa
                     </span>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
                   </div>
                 </div>
 
