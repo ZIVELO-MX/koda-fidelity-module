@@ -16,6 +16,8 @@ export default function SettingsPage() {
   const [email, setEmail] = useState("")
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -32,7 +34,7 @@ export default function SettingsPage() {
           setInstagram(data.business.instagram ?? "@tunegocio")
         }
       })
-      .catch(() => {})
+      .catch(() => setFetchError(true))
       .finally(() => setLoading(false))
   }, [])
 
@@ -53,10 +55,14 @@ export default function SettingsPage() {
       })
       if (res.ok) {
         setSaved(true)
+        setSaveError(null)
         setTimeout(() => setSaved(false), 2000)
+      } else {
+        const data = await res.json()
+        throw new Error(data.error || "Error al guardar")
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Error al guardar")
     } finally {
       setSaving(false)
     }
@@ -66,6 +72,16 @@ export default function SettingsPage() {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (fetchError) {
+    return (
+      <div className="text-center py-20">
+        <h3 className="text-lg font-semibold text-foreground mb-2">Error al cargar</h3>
+        <p className="text-muted-foreground mb-6">No pudimos cargar la configuración.</p>
+        <Button onClick={() => window.location.reload()}>Reintentar</Button>
       </div>
     )
   }
@@ -147,11 +163,13 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={saving} className="px-8">
-          {loading ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          ) : saved ? (
+      {/* Save Button */}
+      <div className="flex flex-col items-end gap-3">
+        {saveError && (
+          <p className="text-sm text-red-500 text-right">{saveError}</p>
+        )}
+        <Button onClick={handleSave} className="px-8" disabled={saving}>
+          {saved ? (
             <>
               <Check className="h-4 w-4 mr-2" />
               ¡Guardado!
