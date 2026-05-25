@@ -4,10 +4,15 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Check, Building2, Mail, Shield, Loader2, Globe, Bell } from "lucide-react"
+import { Check, Building2, Mail, Loader2, Globe } from "lucide-react"
 
 export default function SettingsPage() {
   const [businessName, setBusinessName] = useState("")
+  const [businessType, setBusinessType] = useState("")
+  const [address, setAddress] = useState("")
+  const [phone, setPhone] = useState("")
+  const [website, setWebsite] = useState("")
+  const [instagram, setInstagram] = useState("")
   const [email, setEmail] = useState("")
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -20,6 +25,11 @@ export default function SettingsPage() {
         if (data.business) {
           setBusinessName(data.business.name)
           setEmail(data.business.email)
+          setBusinessType(data.business.businessType ?? "Coffee Shop")
+          setAddress(data.business.address ?? "Calle Principal 123, Ciudad, Estado")
+          setPhone(data.business.phone ?? "(555) 123-4567")
+          setWebsite(data.business.website ?? "https://tunegocio.com")
+          setInstagram(data.business.instagram ?? "@tunegocio")
         }
       })
       .catch(() => {})
@@ -32,7 +42,14 @@ export default function SettingsPage() {
       const res = await fetch("/api/business", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: businessName }),
+        body: JSON.stringify({
+          name: businessName,
+          businessType,
+          address,
+          phone,
+          website,
+          instagram,
+        }),
       })
       if (res.ok) {
         setSaved(true)
@@ -55,13 +72,11 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-8 max-w-2xl">
-      {/* Page Header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground">Configuración</h1>
         <p className="text-muted-foreground">Gestiona tu cuenta y configuración del negocio</p>
       </div>
 
-      {/* Business Information */}
       <div className="bg-card rounded-2xl p-6 border border-border">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -80,21 +95,20 @@ export default function SettingsPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="businessType">Tipo de Negocio</Label>
-              <Input id="businessType" defaultValue="Coffee Shop" />
+              <Input id="businessType" value={businessType} onChange={(e) => setBusinessType(e.target.value)} />
             </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="address">Dirección</Label>
-            <Input id="address" defaultValue="Calle Principal 123, Ciudad, Estado" />
+            <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="phone">Teléfono</Label>
-            <Input id="phone" defaultValue="(555) 123-4567" />
+            <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
           </div>
         </div>
       </div>
 
-      {/* Contact Email */}
       <div className="bg-card rounded-2xl p-6 border border-border">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -111,7 +125,6 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Website */}
       <div className="bg-card rounded-2xl p-6 border border-border">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -125,69 +138,28 @@ export default function SettingsPage() {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="website">Sitio Web</Label>
-            <Input id="website" placeholder="https://tunegocio.com" />
+            <Input id="website" value={website} onChange={(e) => setWebsite(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="instagram">Instagram</Label>
-            <Input id="instagram" placeholder="@tunegocio" />
+            <Input id="instagram" value={instagram} onChange={(e) => setInstagram(e.target.value)} />
           </div>
         </div>
       </div>
 
-      {/* Notifications */}
-      <div className="bg-card rounded-2xl p-6 border border-border">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Bell className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h2 className="font-semibold text-foreground">Notificaciones</h2>
-            <p className="text-sm text-muted-foreground">Cómo quieres ser notificado</p>
-          </div>
-        </div>
-        <div className="space-y-4">
-          {[
-            { label: "Nuevo cliente se une", description: "Notifícame cuando alguien se una a tu programa de lealtad" },
-            { label: "Recompensa canjeada", description: "Notifícame cuando un cliente canjee una recompensa" },
-            { label: "Resumen semanal", description: "Recibe un resumen semanal de tu programa de lealtad" },
-          ].map((item, index) => (
-            <div key={index} className="flex items-center justify-between py-2">
-              <div>
-                <p className="font-medium text-foreground">{item.label}</p>
-                <p className="text-sm text-muted-foreground">{item.description}</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" className="sr-only peer" defaultChecked={index < 2} />
-                <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-primary after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-              </label>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Security */}
-      <div className="bg-card rounded-2xl p-6 border border-border">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Shield className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h2 className="font-semibold text-foreground">Seguridad</h2>
-            <p className="text-sm text-muted-foreground">Protege tu cuenta</p>
-          </div>
-        </div>
-        <div className="space-y-4">
-          <Button variant="outline">Cambiar Contraseña</Button>
-        </div>
-      </div>
-
-      {/* Save Button */}
       <div className="flex justify-end">
-        <Button onClick={handleSave} className="px-8">
-          {saved ? (
+        <Button onClick={handleSave} disabled={saving} className="px-8">
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : saved ? (
             <>
               <Check className="h-4 w-4 mr-2" />
               ¡Guardado!
+            </>
+          ) : saving ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              Guardando...
             </>
           ) : (
             "Guardar Cambios"
