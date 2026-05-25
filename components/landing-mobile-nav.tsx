@@ -28,6 +28,10 @@ export function LandingMobileNav() {
         <div
           className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm md:hidden"
           onClick={() => setOpen(false)}
+          onKeyDown={(e) => { if (e.key === "Escape") setOpen(false) }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Navegación móvil"
         />
       )}
 

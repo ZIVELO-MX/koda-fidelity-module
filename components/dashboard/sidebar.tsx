@@ -44,6 +44,7 @@ export function DashboardSidebar() {
           variant="ghost"
           size="icon"
           onClick={() => setMobileOpen(!mobileOpen)}
+          aria-label={mobileOpen ? "Cerrar menú" : "Abrir menú"}
         >
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </Button>
@@ -54,6 +55,10 @@ export function DashboardSidebar() {
         <div
           className="lg:hidden fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm"
           onClick={() => setMobileOpen(false)}
+          onKeyDown={(e) => { if (e.key === "Escape") setMobileOpen(false) }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Navegación móvil"
         />
       )}
 
