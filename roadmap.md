@@ -100,9 +100,9 @@
 
 - [x] Conectar landing page a datos reales (precios, features)
 - [x] SEO básico (meta tags, Open Graph, OG dinámico por negocio)
+- [x] Modo responsive completo (hamburger menu, pricing scale, overflow, skeleton)
+- [x] Estados vacíos, carga, error en todas las páginas (error boundary, skeleton, error+carga en qr/branding/settings, try/catch server, alert→toast)
 - [ ] Analíticas con Vercel Analytics
-- [ ] Modo responsive completo
-- [ ] Estados vacíos, carga, error en todas las páginas
 - [ ] Agregar campo `phone` a Customer para SMS magic links (futuro)
 
 ### Post-MVP — Wallet Passes (Deshabilitado)
@@ -199,8 +199,8 @@ model StampLog {
 
 ## Prioridades inmediatas
 
-> Fase 1-3 completadas. Fase 4 en progreso (2/6 completados).
+> Fase 1-3 completadas. Fase 4 en progreso (4/6 completados).
 
-1. **Landing page + polish** — ✅ datos reales, ✅ SEO/OG, falta: responsive, estados carga/vacío/error
+1. **Landing page + polish** — ✅ datos reales, ✅ SEO/OG, ✅ responsive, ✅ estados UI
 2. **Phone magic links** — agregar `phone` a Customer + SMS auth
 3. **Wallet passes** — re-habilitar cuando se requiera
