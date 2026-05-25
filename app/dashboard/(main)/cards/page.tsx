@@ -138,7 +138,7 @@ export default async function CardsPage() {
 
           <Link
             href="/dashboard/cards/new"
-            className="bg-muted/30 rounded-2xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-muted/50 transition-all flex flex-col items-center justify-center text-center p-8 min-h-[400px]"
+            className="bg-muted/30 rounded-2xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-muted/50 transition-all flex flex-col items-center justify-center text-center p-8 min-h-[200px] sm:min-h-[400px]"
           >
             <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
               <Plus className="h-8 w-8 text-primary" />

@@ -60,7 +60,7 @@ export function DashboardSidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 z-40 h-full w-64 bg-card border-r border-border transition-transform duration-300 ease-in-out lg:translate-x-0",
+          "fixed top-0 left-0 z-40 h-full w-64 max-w-[calc(100vw-2rem)] bg-card border-r border-border transition-transform duration-300 ease-in-out lg:translate-x-0",
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
