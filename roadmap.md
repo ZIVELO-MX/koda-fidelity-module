@@ -125,6 +125,11 @@
 - [x] Botón "Sellar" por tarjeta que enlaza a /dashboard/scan?cardId=
 - [x] Filtro por cardId en /dashboard/scan al venir desde tarjetas
 - [x] Actividad Reciente en dashboard con scroll horizontal y tarjetas compactas
+- [x] Template HTML personalizado para magic link de Supabase (docs/email-templates/magic-link.html)
+- [x] Docs de configuración de correos electrónicos (docs/email-config.md)
+- [x] Buscador de clientes en detalle de tarjeta (/dashboard/cards/[id]?q=)
+- [x] Botón "Sellar/Canjear" por fila de cliente en detalle de tarjeta (StampButton con router.refresh)
+- [x] Verificado: Next.js 16 usa proxy.ts (no middleware.ts) como convención nativa
 
 ### Pendiente (ocultado por no funcional)
 
@@ -136,6 +141,12 @@
 - Campana de notificaciones (eliminada del header)
 - Google Wallet: requiere configuración en Google Pay & Wallet Console
 - Apple Wallet: requiere Apple Developer Account ($99/año) + certificados
+
+### Post-MVP — SMTP / Remitente personalizado
+
+- [ ] Configurar SMTP custom en Supabase (Resend, SendGrid, etc.)
+- [ ] Cambiar remitente de `noreply@app.xxxxx.supabase.co` a `noreply@koda.app`
+- [ ] Personalizar templates restantes (Confirmación, Cambio de contraseña, Cambio de email)
 
 ### Post-MVP — Wallet Passes (Deshabilitado)
 
@@ -231,8 +242,9 @@ model StampLog {
 
 ## Prioridades inmediatas
 
-> Fase 1-3 completadas. Fase 4 en progreso (4/6 completados).
+> Fase 1-5 completadas. Fase 4 en progreso (4/6 completados).
 
 1. **Landing page + polish** — ✅ datos reales, ✅ SEO/OG, ✅ responsive, ✅ estados UI
 2. **Phone magic links** — agregar `phone` a Customer + SMS auth
 3. **Wallet passes** — re-habilitar cuando se requiera
+4. **TypeScript errors** — resolver los 44 errores silenciados por `ignoreBuildErrors: true` en `next.config.mjs`
