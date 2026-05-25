@@ -5,7 +5,7 @@ import { StatCard } from "@/components/dashboard/stat-card"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
-import { CreditCard, Users, Stamp, TrendingUp, Plus, ArrowRight } from "lucide-react"
+import { CreditCard, Users, Stamp, TrendingUp, Plus, ArrowRight, AlertCircle } from "lucide-react"
 
 function timeAgo(date: Date): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
@@ -20,45 +20,46 @@ function timeAgo(date: Date): string {
 }
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user?.email) {
-    redirect("/login")
-  }
+    if (!user?.email) {
+      redirect("/login")
+    }
 
-  const business = await prisma.business.findUnique({
-    where: { email: user.email },
-  })
+    const business = await prisma.business.findUnique({
+      where: { email: user.email },
+    })
 
-  if (!business) {
-    redirect("/login")
-  }
+    if (!business) {
+      redirect("/login")
+    }
 
-  const cards = await prisma.loyaltyCard.findMany({
-    where: { businessId: business.id },
-    include: {
-      _count: { select: { customers: true } },
-      customers: { select: { stamps: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  })
+    const cards = await prisma.loyaltyCard.findMany({
+      where: { businessId: business.id },
+      include: {
+        _count: { select: { customers: true } },
+        customers: { select: { stamps: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    })
 
-  const allLogs = await prisma.stampLog.findMany({
-    where: {
-      customer: { card: { businessId: business.id } },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 10,
-    include: {
-      customer: { select: { name: true, card: { select: { name: true } } } },
-    },
-  })
+    const allLogs = await prisma.stampLog.findMany({
+      where: {
+        customer: { card: { businessId: business.id } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      include: {
+        customer: { select: { name: true, card: { select: { name: true } } } },
+      },
+    })
 
-  const activeCards = cards.length
-  const totalCustomers = cards.reduce((sum, c) => sum + c._count.customers, 0)
-  const stampsGiven = cards.reduce((sum, c) => sum + c.customers.reduce((s, cust) => s + cust.stamps, 0), 0)
-  const redemptions = allLogs.filter((l) => l.type === "redeem").length
+    const activeCards = cards.length
+    const totalCustomers = cards.reduce((sum, c) => sum + c._count.customers, 0)
+    const stampsGiven = cards.reduce((sum, c) => sum + c.customers.reduce((s, cust) => s + cust.stamps, 0), 0)
+    const redemptions = allLogs.filter((l) => l.type === "redeem").length
 
   return (
     <div className="space-y-8">
@@ -228,4 +229,20 @@ export default async function DashboardPage() {
       </div>
     </div>
   )
+  } catch {
+    return (
+      <div className="text-center py-20 space-y-4">
+        <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto">
+          <AlertCircle className="h-8 w-8 text-red-600" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-foreground mb-2">Error al cargar el Dashboard</h2>
+          <p className="text-muted-foreground">Ocurrió un error inesperado. Intenta de nuevo.</p>
+        </div>
+        <Link href="/dashboard">
+          <Button>Reintentar</Button>
+        </Link>
+      </div>
+    )
+  }
 }

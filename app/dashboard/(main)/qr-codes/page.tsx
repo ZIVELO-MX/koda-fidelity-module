@@ -15,6 +15,7 @@ interface CardQR {
 export default function QRCodesPage() {
   const [cards, setCards] = useState<CardQR[]>([])
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState(false)
   const [baseUrl, setBaseUrl] = useState("")
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
@@ -23,7 +24,7 @@ export default function QRCodesPage() {
     fetch("/api/cards")
       .then((res) => res.json())
       .then((data) => setCards(data.cards || []))
-      .catch(() => setCards([]))
+      .catch(() => setFetchError(true))
       .finally(() => setLoading(false))
   }, [])
 
@@ -80,6 +81,12 @@ export default function QRCodesPage() {
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : fetchError ? (
+        <div className="text-center py-20">
+          <h3 className="text-lg font-semibold text-foreground mb-2">Error al cargar</h3>
+          <p className="text-muted-foreground mb-6">No pudimos cargar tus tarjetas. Intenta de nuevo.</p>
+          <Button onClick={() => window.location.reload()}>Reintentar</Button>
         </div>
       ) : cards.length === 0 ? (
         <div className="text-center py-20">
