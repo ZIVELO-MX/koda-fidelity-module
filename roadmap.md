@@ -244,7 +244,14 @@ model StampLog {
 
 > Fase 1-5 completadas. Fase 4 en progreso (4/6 completados).
 
-1. **Landing page + polish** — ✅ datos reales, ✅ SEO/OG, ✅ responsive, ✅ estados UI
-2. **Phone magic links** — agregar `phone` a Customer + SMS auth
-3. **Wallet passes** — re-habilitar cuando se requiera
-4. **TypeScript errors** — resolver los 44 errores silenciados por `ignoreBuildErrors: true` en `next.config.mjs`
+### Pre-lanzamiento
+
+1. **🔴 TypeScript errors** — resolver los 44 errores (rama `feat/ts-errors`, ver `docs/ts-errors-summary.md`)
+2. **🔴 Configurar dominio** — Vercel + Cloudflare (DNS, SSL, variables de entorno)
+3. **🟡 SMTP personalizado** — cambiar remitente de `@supabase.co` a `noreply@koda.app`
+4. **🟢 Template magic link** — pegar `docs/email-templates/magic-link.html` en Supabase Dashboard
+
+### Post-MVP
+
+5. **Phone magic links** — agregar `phone` a Customer + SMS auth
+6. **Wallet passes** — re-habilitar cuando se requiera
