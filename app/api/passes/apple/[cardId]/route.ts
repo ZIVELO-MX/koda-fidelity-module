@@ -2,6 +2,57 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { generateLoyaltyPass } from "@/lib/passes/apple"
 
+/**
+ * @openapi
+ * /api/passes/apple/{cardId}:
+ *   post:
+ *     tags:
+ *       - Pases Digitales
+ *     summary: Generar pase de Apple Wallet
+ *     description: Crea un cliente y genera un archivo .pkpass para Apple Wallet.
+ *     parameters:
+ *       - in: path
+ *         name: cardId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de la tarjeta de lealtad
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - customerName
+ *             properties:
+ *               customerName:
+ *                 type: string
+ *                 description: Nombre del cliente
+ *     responses:
+ *       200:
+ *         description: Archivo .pkpass generado
+ *         content:
+ *           application/vnd.apple.pkpass:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       400:
+ *         description: Nombre del cliente requerido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *       404:
+ *         description: Tarjeta no encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ cardId: string }> },

@@ -2,6 +2,163 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getBusinessFromSession, handleApiError, NotFoundError, ValidationError } from "@/lib/api-utils"
 
+/**
+ * @openapi
+ * /api/cards/{id}:
+ *   get:
+ *     tags:
+ *       - Tarjetas
+ *     summary: Obtener tarjeta de lealtad
+ *     description: Retorna los detalles de una tarjeta de lealtad pública (no requiere auth).
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de la tarjeta
+ *     responses:
+ *       200:
+ *         description: Detalles de la tarjeta
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 card:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                     description:
+ *                       type: string
+ *                       nullable: true
+ *                     reward:
+ *                       type: string
+ *                     stampsRequired:
+ *                       type: integer
+ *                     brandColor:
+ *                       type: string
+ *                     expiresAt:
+ *                       type: string
+ *                       format: date-time
+ *                       nullable: true
+ *                     businessName:
+ *                       type: string
+ *                     businessBrandColor:
+ *                       type: string
+ *                     businessLogoUrl:
+ *                       type: string
+ *                       nullable: true
+ *       404:
+ *         description: Tarjeta no encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *   put:
+ *     tags:
+ *       - Tarjetas
+ *     summary: Actualizar tarjeta de lealtad
+ *     description: Actualiza los datos de una tarjeta existente. Requiere ser dueño del negocio.
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de la tarjeta
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               reward:
+ *                 type: string
+ *               stampsRequired:
+ *                 type: integer
+ *               brandColor:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *                 nullable: true
+ *               expiresAt:
+ *                 type: string
+ *                 format: date-time
+ *                 nullable: true
+ *     responses:
+ *       200:
+ *         description: Tarjeta actualizada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 card:
+ *                   $ref: '#/components/schemas/LoyaltyCard'
+ *       400:
+ *         description: Error de validación
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: No autorizado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Tarjeta no encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *   delete:
+ *     tags:
+ *       - Tarjetas
+ *     summary: Eliminar tarjeta de lealtad
+ *     description: Elimina una tarjeta y todos sus clientes asociados. Requiere ser dueño del negocio.
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de la tarjeta
+ *     responses:
+ *       200:
+ *         description: Tarjeta eliminada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *       401:
+ *         description: No autorizado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Tarjeta no encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },

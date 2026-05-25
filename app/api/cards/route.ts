@@ -2,6 +2,94 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getBusinessFromSession, handleApiError, ValidationError } from "@/lib/api-utils"
 
+/**
+ * @openapi
+ * /api/cards:
+ *   get:
+ *     tags:
+ *       - Tarjetas
+ *     summary: Listar tarjetas de lealtad
+ *     description: Retorna todas las tarjetas de lealtad del negocio autenticado con estadísticas.
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de tarjetas
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 cards:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/LoyaltyCardWithStats'
+ *       401:
+ *         description: No autorizado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *   post:
+ *     tags:
+ *       - Tarjetas
+ *     summary: Crear tarjeta de lealtad
+ *     description: Crea una nueva tarjeta de lealtad para el negocio.
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - reward
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Nombre de la tarjeta
+ *               reward:
+ *                 type: string
+ *                 description: Recompensa al completar
+ *               stampsRequired:
+ *                 type: integer
+ *                 description: Sellos requeridos (1-100)
+ *                 default: 10
+ *               brandColor:
+ *                 type: string
+ *                 description: Color de marca en hex
+ *               description:
+ *                 type: string
+ *                 description: Descripción opcional
+ *               expiresAt:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Fecha de expiración opcional
+ *     responses:
+ *       201:
+ *         description: Tarjeta creada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 card:
+ *                   $ref: '#/components/schemas/LoyaltyCard'
+ *       400:
+ *         description: Error de validación
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: No autorizado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 export async function GET() {
   try {
     const business = await getBusinessFromSession()
