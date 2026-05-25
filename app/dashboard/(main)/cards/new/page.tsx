@@ -64,9 +64,11 @@ export default function CreateCardPage() {
   }
 
   const [saving, setSaving] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
 
   const handleCreate = async () => {
     setSaving(true)
+    setCreateError(null)
     try {
       const res = await fetch("/api/cards", {
         method: "POST",
@@ -88,7 +90,7 @@ export default function CreateCardPage() {
 
       router.push("/dashboard/cards")
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Error al crear la tarjeta")
+      setCreateError(err instanceof Error ? err.message : "Error al crear la tarjeta")
     } finally {
       setSaving(false)
     }
@@ -352,8 +354,14 @@ export default function CreateCardPage() {
             </div>
           )}
 
+          {createError && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3 mt-6">
+              <p className="text-sm text-red-700">{createError}</p>
+            </div>
+          )}
+
           {/* Navigation */}
-          <div className="flex items-center justify-between mt-8 pt-6 border-t border-border">
+          <div className="flex items-center justify-between mt-6 pt-6 border-t border-border">
             <Button
               variant="outline"
               onClick={prevStep}
