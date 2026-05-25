@@ -140,7 +140,7 @@ export default async function CardDetailPage({
                       </div>
                     </td>
                     <td className="px-6 py-3">
-                      <div className="flex items-center gap-3 max-w-[180px]">
+                      <div className="flex items-center gap-3 min-w-[100px] max-w-[180px]">
                         <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                           <div
                             className="h-full bg-primary rounded-full transition-all"
