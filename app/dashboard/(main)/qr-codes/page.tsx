@@ -29,12 +29,14 @@ export default function QRCodesPage() {
   }, [])
 
   const copyToClipboard = (url: string, id: string) => {
-    navigator.clipboard.writeText(url)
+    navigator.clipboard.writeText(url).catch(() => {
+      // Clipboard not available
+    })
     setCopiedId(id)
     setTimeout(() => setCopiedId(null), 2000)
   }
 
-  const downloadQR = (cardName: string, url: string, color: string) => {
+  const downloadQR = (cardId: string, cardName: string, url: string, color: string) => {
     const canvas = document.createElement("canvas")
     const ctx = canvas.getContext("2d")
     if (!ctx) return
@@ -53,7 +55,7 @@ export default function QRCodesPage() {
     ctx.fillText(cardName, 200, 50)
 
     const img = new Image()
-    const svg = document.getElementById(`qr-${cardName}`)?.querySelector("svg")
+    const svg = document.getElementById(`qr-${cardId}`)?.querySelector("svg")
     if (svg) {
       const svgData = new XMLSerializer().serializeToString(svg)
       const imgData = `data:image/svg+xml;base64,${btoa(svgData)}`
@@ -120,7 +122,7 @@ export default function QRCodesPage() {
                     </div>
                   </div>
 
-                  <div id={`qr-${card.name}`} className="bg-white rounded-2xl p-6 flex items-center justify-center mb-6 border border-border">
+                  <div id={`qr-${card.id}`} className="bg-white rounded-2xl p-6 flex items-center justify-center mb-6 border border-border">
                     <QRCodeSVG
                       value={url}
                       size={180}
@@ -135,7 +137,7 @@ export default function QRCodesPage() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
-                    <Button variant="outline" className="w-full" onClick={() => downloadQR(card.name, url, card.brandColor)}>
+                    <Button variant="outline" className="w-full" onClick={() => downloadQR(card.id, card.name, url, card.brandColor)}>
                       <Download className="h-4 w-4 mr-2" />
                       Descargar
                     </Button>

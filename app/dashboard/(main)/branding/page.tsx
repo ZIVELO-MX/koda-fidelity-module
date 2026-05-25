@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -24,6 +24,7 @@ export default function BrandingPage() {
   const [fetchError, setFetchError] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     fetch("/api/business")
@@ -38,6 +39,17 @@ export default function BrandingPage() {
       .catch(() => setFetchError(true))
       .finally(() => setLoading(false))
   }, [])
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string
+      setLogoUrl(dataUrl)
+    }
+    reader.readAsDataURL(file)
+  }
 
   const handleSave = async () => {
     setSaving(true)
@@ -93,19 +105,35 @@ export default function BrandingPage() {
         <h2 className="font-semibold text-foreground mb-4">Logo del Negocio</h2>
         <div className="flex items-start gap-6">
           <div
-            className="w-24 h-24 rounded-2xl flex items-center justify-center text-white text-3xl font-bold flex-shrink-0"
+            className="w-24 h-24 rounded-2xl flex items-center justify-center text-white text-3xl font-bold flex-shrink-0 overflow-hidden"
             style={{ backgroundColor: brandColor }}
           >
-            {businessName.charAt(0)}
+            {logoUrl ? (
+              <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
+            ) : (
+              businessName.charAt(0)
+            )}
           </div>
           <div className="flex-1">
             <p className="text-sm text-muted-foreground mb-4">
               Sube un logo cuadrado (recomendado: 512x512px). Aparecerá en tus tarjetas de lealtad y páginas para clientes.
             </p>
-            <Button variant="outline">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleLogoUpload}
+            />
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
               <Upload className="h-4 w-4 mr-2" />
-              Subir Logo
+              {logoUrl ? "Cambiar Logo" : "Subir Logo"}
             </Button>
+            {logoUrl && (
+              <Button variant="ghost" size="sm" className="ml-2 text-destructive" onClick={() => setLogoUrl("")}>
+                Quitar
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -179,10 +207,14 @@ export default function BrandingPage() {
         <div className="bg-muted/30 rounded-xl p-6">
           <div className="flex items-center gap-4 mb-4">
             <div
-              className="w-14 h-14 rounded-xl flex items-center justify-center text-white text-xl font-bold"
+              className="w-14 h-14 rounded-xl flex items-center justify-center text-white text-xl font-bold overflow-hidden"
               style={{ backgroundColor: brandColor }}
             >
-              {businessName.charAt(0)}
+              {logoUrl ? (
+                <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
+              ) : (
+                businessName.charAt(0)
+              )}
             </div>
             <div>
               <p className="font-semibold text-foreground text-lg">{businessName || "Tu Negocio"}</p>

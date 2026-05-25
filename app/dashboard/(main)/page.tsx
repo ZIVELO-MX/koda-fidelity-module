@@ -144,17 +144,29 @@ export default async function DashboardPage() {
         </div>
 
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-foreground">Actividad Reciente</h2>
-          <div className="bg-card rounded-2xl border border-border overflow-hidden">
-            <div className="divide-y divide-border">
-              {allLogs.length === 0 ? (
-                <div className="p-6 text-center text-sm text-muted-foreground">
-                  Aún no hay actividad. Crea una tarjeta y comparte el código QR.
-                </div>
-              ) : (
-                allLogs.map((log) => (
-                  <div key={log.id} className="p-4 hover:bg-muted/50 transition-colors">
-                    <div className="flex items-start gap-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-foreground">Actividad Reciente</h2>
+            <Link
+              href="/dashboard/customers"
+              className="text-sm text-primary hover:underline flex items-center gap-1"
+            >
+              Ver toda
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+          <div className="bg-card rounded-2xl border border-border p-4">
+            {allLogs.length === 0 ? (
+              <div className="text-center text-sm text-muted-foreground py-6">
+                Aún no hay actividad. Crea una tarjeta y comparte el código QR.
+              </div>
+            ) : (
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
+                {allLogs.map((log) => (
+                  <div
+                    key={log.id}
+                    className="flex-shrink-0 w-56 bg-muted/30 rounded-xl p-4 hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3 mb-3">
                       <div
                         className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
                           log.type === "stamp"
@@ -172,28 +184,21 @@ export default async function DashboardPage() {
                         <p className="text-sm font-medium text-foreground truncate">
                           {log.customer.name}
                         </p>
-                        <p className="text-xs text-muted-foreground">
-                          {log.type === "stamp" ? "Recibió un sello" : "Canjeó recompensa"}
-                          {" - "}{log.customer.card.name}
+                        <p className="text-xs text-muted-foreground truncate">
+                          {log.customer.card.name}
                         </p>
                       </div>
-                      <span className="text-xs text-muted-foreground flex-shrink-0">
-                        {timeAgo(log.createdAt)}
-                      </span>
                     </div>
+                    <p className="text-sm">
+                      {log.type === "stamp" ? "🎯 Recibió un sello" : "🎁 Canjeó recompensa"}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {timeAgo(log.createdAt)}
+                    </p>
                   </div>
-                ))
-              )}
-            </div>
-            <div className="p-4 bg-muted/30 border-t border-border">
-              <Link
-                href="/dashboard/customers"
-                className="text-sm text-primary hover:underline flex items-center justify-center gap-1"
-              >
-                Ver toda la actividad
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

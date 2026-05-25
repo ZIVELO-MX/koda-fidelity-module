@@ -39,11 +39,16 @@ export default async function CustomersPage({
     redirect("/login")
   }
 
+  const where: Record<string, unknown> = {
+    card: { businessId: business.id },
+  }
+
+  if (q?.trim()) {
+    where.name = { contains: q.trim(), mode: "insensitive" }
+  }
+
   const customers = await prisma.customer.findMany({
-    where: {
-      card: { businessId: business.id },
-      ...(q?.trim() ? { name: { contains: q.trim(), mode: "insensitive" } } : {}),
-    },
+    where,
     include: {
       card: { select: { name: true, stampsRequired: true, reward: true } },
       _count: { select: { stampsLog: { where: { type: "redeem" } } } },
@@ -58,30 +63,38 @@ export default async function CustomersPage({
         <p className="text-muted-foreground">Consulta y gestiona los miembros de tu programa de lealtad</p>
       </div>
 
-      <form action="" method="GET" className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            name="q"
-            placeholder="Buscar clientes..."
-            defaultValue={q}
-            className="pl-10"
-          />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <form action="" method="GET">
+            <Input
+              name="q"
+              placeholder="Buscar clientes..."
+              className="pl-10"
+              defaultValue={q ?? ""}
+            />
+          </form>
         </div>
         {q && (
           <Link href="/dashboard/customers">
             <Button variant="ghost" type="button">Limpiar</Button>
           </Link>
         )}
-      </form>
+      </div>
 
       {customers.length === 0 ? (
         <div className="text-center py-20">
-          <h3 className="text-lg font-semibold text-foreground mb-2">Aún no tienes clientes</h3>
-          <p className="text-muted-foreground mb-6">Los clientes se registrarán al unirse a tus tarjetas</p>
-          <Link href="/dashboard/cards">
-            <Button variant="outline">Ver tarjetas</Button>
-          </Link>
+          <h3 className="text-lg font-semibold text-foreground mb-2">
+            {q ? "No se encontraron clientes" : "Aún no tienes clientes"}
+          </h3>
+          <p className="text-muted-foreground mb-6">
+            {q ? "Intenta con otro término de búsqueda" : "Los clientes se registrarán al unirse a tus tarjetas"}
+          </p>
+          {!q && (
+            <Link href="/dashboard/cards">
+              <Button variant="outline">Ver tarjetas</Button>
+            </Link>
+          )}
         </div>
       ) : (
         <div className="bg-card rounded-2xl border border-border overflow-hidden">

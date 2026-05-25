@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Home, Coffee, RotateCcw } from "lucide-react"
+import { Home, Coffee } from "lucide-react"
 
 export default function NotFound() {
   return (
@@ -58,10 +58,10 @@ export default function NotFound() {
         <p className="text-xs text-muted-foreground">
           Si crees que esto es un error,
           {" "}
-          <Link href="#" className="underline hover:text-primary transition-colors">
-            mándanos un sello de queja
-          </Link>
-          . Lo canjeamos por una disculpa.
+          <a href="mailto:soporte@koda.app" className="underline hover:text-primary transition-colors">
+            contáctanos
+          </a>
+          .
         </p>
       </div>
     </div>

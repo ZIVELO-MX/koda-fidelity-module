@@ -171,9 +171,9 @@ export const siteConfig = {
   footer: {
     tagline: "Parte del ecosistema Koda POS. Hecho para pequeños negocios.",
     links: [
-      { label: "Privacidad", href: "#" },
-      { label: "Términos", href: "#" },
-      { label: "Soporte", href: "#" },
+      { label: "Privacidad", href: "/privacy" },
+      { label: "Términos", href: "/terms" },
+      { label: "Soporte", href: "mailto:soporte@koda.app" },
     ],
   },
 }

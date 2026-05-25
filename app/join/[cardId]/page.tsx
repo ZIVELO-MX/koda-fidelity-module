@@ -80,25 +80,11 @@ export default function JoinCardPage() {
         )
         if (custRes.ok) {
           const data = await custRes.json()
-          if (data.customer) {
-            setCustomer(data.customer)
+          if (data.customers?.length > 0) {
+            setCustomer(data.customers[0])
             setStep("ready")
             checkedSession.current = true
             return
-          }
-        }
-
-        const pendingId = sessionStorage.getItem(`pending-${cardId}`)
-        if (pendingId) {
-          const custRes2 = await fetch(`/api/join?id=${encodeURIComponent(pendingId)}`)
-          if (custRes2.ok) {
-            const data = await custRes2.json()
-            if (data.customer) {
-              setCustomer(data.customer)
-              setStep("ready")
-              checkedSession.current = true
-              return
-            }
           }
         }
       }
