@@ -121,6 +121,10 @@
 - [x] F-19: aria-label en botones icono (sidebar móvil, scan)
 - [x] F-20: Overlay móvil con role="dialog", Escape key, aria-modal
 - [x] F-21: Settings email disabled (no editable desde API actual)
+- [x] Búsqueda por nombre en tarjetas (GET ?q=) en /dashboard/cards
+- [x] Botón "Sellar" por tarjeta que enlaza a /dashboard/scan?cardId=
+- [x] Filtro por cardId en /dashboard/scan al venir desde tarjetas
+- [x] Actividad Reciente en dashboard con scroll horizontal y tarjetas compactas
 
 ### Pendiente (ocultado por no funcional)
 

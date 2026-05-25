@@ -69,6 +69,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const q = searchParams.get("q")?.trim()
+    const cardId = searchParams.get("cardId")?.trim()
 
     const where: Record<string, unknown> = {
       card: { businessId: business.id },
@@ -76,6 +77,10 @@ export async function GET(request: NextRequest) {
 
     if (q) {
       where.name = { contains: q, mode: "insensitive" }
+    }
+
+    if (cardId) {
+      where.cardId = cardId
     }
 
     const customers = await prisma.customer.findMany({

@@ -1,11 +1,18 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Plus, QrCode, Users, Stamp } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Plus, QrCode, Users, Stamp, Search } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 
-export default async function CardsPage() {
+export default async function CardsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>
+}) {
+  const { q } = await searchParams
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -21,8 +28,16 @@ export default async function CardsPage() {
     redirect("/login")
   }
 
+  const where: Record<string, unknown> = {
+    businessId: business.id,
+  }
+
+  if (q?.trim()) {
+    where.name = { contains: q.trim(), mode: "insensitive" }
+  }
+
   const cards = await prisma.loyaltyCard.findMany({
-    where: { businessId: business.id },
+    where,
     include: {
       _count: { select: { customers: true } },
       customers: { select: { stamps: true } },
@@ -44,16 +59,35 @@ export default async function CardsPage() {
           </Button>
         </Link>
       </div>
+
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <form action="" method="GET">
+          <Input
+            name="q"
+            placeholder="Buscar tarjetas..."
+            className="pl-10"
+            defaultValue={q ?? ""}
+          />
+        </form>
+      </div>
+
       {cards.length === 0 ? (
         <div className="text-center py-20">
-          <h3 className="text-lg font-semibold text-foreground mb-2">Aún no tienes tarjetas</h3>
-          <p className="text-muted-foreground mb-6">Crea tu primera tarjeta de lealtad para empezar</p>
-          <Link href="/dashboard/cards/new">
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Crear Tarjeta
-            </Button>
-          </Link>
+          <h3 className="text-lg font-semibold text-foreground mb-2">
+            {q ? "No se encontraron tarjetas" : "Aún no tienes tarjetas"}
+          </h3>
+          <p className="text-muted-foreground mb-6">
+            {q ? "Intenta con otro término de búsqueda" : "Crea tu primera tarjeta de lealtad para empezar"}
+          </p>
+          {!q && (
+            <Link href="/dashboard/cards/new">
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Crear Tarjeta
+              </Button>
+            </Link>
+          )}
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -67,7 +101,7 @@ export default async function CardsPage() {
                 style={{ backgroundColor: card.brandColor }}
               />
               <div className="p-6">
-                  <div className="flex items-start justify-between mb-4">
+                <div className="flex items-start justify-between mb-4">
                   <div
                     className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg"
                     style={{ backgroundColor: card.brandColor }}
@@ -123,9 +157,10 @@ export default async function CardsPage() {
                       Ver Detalles
                     </Button>
                   </Link>
-                  <Link href="/dashboard/qr-codes">
-                    <Button variant="ghost" size="icon">
-                      <QrCode className="h-4 w-4" />
+                  <Link href={`/dashboard/scan?cardId=${card.id}`}>
+                    <Button variant="default" className="flex-1">
+                      <Stamp className="h-4 w-4 mr-2" />
+                      Sellar
                     </Button>
                   </Link>
                 </div>
