@@ -44,6 +44,7 @@ export function DashboardSidebar() {
           variant="ghost"
           size="icon"
           onClick={() => setMobileOpen(!mobileOpen)}
+          aria-label={mobileOpen ? "Cerrar menú" : "Abrir menú"}
         >
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </Button>
@@ -54,6 +55,10 @@ export function DashboardSidebar() {
         <div
           className="lg:hidden fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm"
           onClick={() => setMobileOpen(false)}
+          onKeyDown={(e) => { if (e.key === "Escape") setMobileOpen(false) }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Navegación móvil"
         />
       )}
 
@@ -106,9 +111,11 @@ export function DashboardSidebar() {
               <p className="text-xs text-muted-foreground mb-3">
                 Revisa nuestros docs o contacta soporte
               </p>
-              <Button size="sm" variant="secondary" className="w-full text-xs">
-                Ver Documentación
-              </Button>
+              <Link href="/docs">
+                <Button size="sm" variant="secondary" className="w-full text-xs">
+                  Ver Documentación
+                </Button>
+              </Link>
             </div>
             <form action={logout}>
               <Button size="sm" variant="ghost" className="w-full text-xs text-muted-foreground hover:text-destructive">
