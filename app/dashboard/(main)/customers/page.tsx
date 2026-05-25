@@ -116,7 +116,7 @@ export default async function CustomersPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="flex-1 max-w-[120px]">
+                        <div className="flex-1 min-w-[80px] max-w-[120px]">
                           <div className="h-2 bg-muted rounded-full overflow-hidden">
                             <div
                               className="h-full bg-primary rounded-full transition-all"

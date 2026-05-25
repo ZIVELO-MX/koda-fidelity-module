@@ -387,7 +387,7 @@ export default function JoinCardPage() {
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-8">
         <div className="w-full max-w-md space-y-8">
           {cardInfo ? (
-            <div className="scale-90 origin-top">
+            <div className="scale-75 sm:scale-90 origin-top">
               <LoyaltyCardPreview
                 businessName={cardInfo.businessName}
                 businessLogo={cardInfo.businessLogoUrl ?? undefined}
