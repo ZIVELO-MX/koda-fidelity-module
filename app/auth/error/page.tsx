@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useEffect, useRef } from "react"
+import { Suspense, useState, useCallback, useEffect, useRef } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -19,8 +19,19 @@ function getRateLimitCooldown(err: unknown): number {
   return 90
 }
 
-
 export default function AuthErrorPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    }>
+      <AuthErrorContent />
+    </Suspense>
+  )
+}
+
+function AuthErrorContent() {
   const sp = useSearchParams()
   const errorCode = sp.get("error_code") || ""
   const errorDesc = sp.get("error_description") || ""

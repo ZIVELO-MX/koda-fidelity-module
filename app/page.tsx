@@ -1,8 +1,41 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
+import type { Metadata } from "next"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Smartphone, QrCode, Wallet, CheckCircle2, Zap, Shield, BarChart3 } from "lucide-react"
+import { ArrowRight, Smartphone, QrCode, Wallet, CheckCircle2, Zap, Shield, BarChart3, Check } from "lucide-react"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
+import { siteConfig } from "@/lib/site-config"
+
+export const metadata: Metadata = {
+  title: `${siteConfig.name} - Tarjetas de Fidelidad Digitales`,
+  description: siteConfig.description,
+  openGraph: {
+    title: `${siteConfig.name} - Tarjetas de Fidelidad Digitales`,
+    description: siteConfig.description,
+    url: siteConfig.url,
+    siteName: siteConfig.name,
+    locale: siteConfig.locale,
+    type: "website",
+    images: [
+      {
+        url: siteConfig.ogImage,
+        width: 1200,
+        height: 630,
+        alt: siteConfig.name,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${siteConfig.name} - Tarjetas de Fidelidad Digitales`,
+    description: siteConfig.description,
+    images: [siteConfig.ogImage],
+  },
+}
+
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  Wallet, QrCode, Zap, Shield, BarChart3, Smartphone,
+}
 
 export default async function LandingPage({
   searchParams,
@@ -65,15 +98,14 @@ export default async function LandingPage({
             <div className="space-y-8">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
                 <Zap className="h-4 w-4" />
-                Lealtad Digital Hecha Simple
+                {siteConfig.hero.tagline}
               </div>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight text-balance">
-                Convierte clientes recurrentes en{" "}
-                <span className="text-primary">clientes leales</span>
+                {siteConfig.hero.title}
+                <span className="text-primary">{siteConfig.hero.titleHighlight}</span>
               </h1>
               <p className="text-lg text-muted-foreground max-w-xl leading-relaxed">
-                Tarjetas de fidelidad digitales para Apple Wallet y Google Wallet. Sin apps que descargar. 
-                Sin cuentas que crear. Solo escanea, guarda y recompensa.
+                {siteConfig.hero.subtitle}
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/signup">
@@ -107,12 +139,12 @@ export default async function LandingPage({
               <div className="relative">
                 <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 to-primary/5 rounded-[40px] blur-3xl" />
                 <LoyaltyCardPreview
-                  businessName="The Daily Grind"
-                  currentStamps={6}
-                  maxStamps={10}
-                  reward="Free Coffee"
+                  businessName={siteConfig.hero.demoCard.businessName}
+                  currentStamps={siteConfig.hero.demoCard.currentStamps}
+                  maxStamps={siteConfig.hero.demoCard.maxStamps}
+                  reward={siteConfig.hero.demoCard.reward}
                   expirationDate="Dec 31, 2026"
-                  brandColor="#f97316"
+                  brandColor={siteConfig.hero.demoCard.brandColor}
                   className="relative"
                 />
               </div>
@@ -133,42 +165,26 @@ export default async function LandingPage({
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                icon: QrCode,
-                step: "01",
-                title: "Crea tu Tarjeta",
-                description: "Diseña una tarjeta de lealtad con tus colores y logo. Define tu recompensa y la cantidad de sellos.",
-              },
-              {
-                icon: Smartphone,
-                step: "02",
-                title: "Clientes Escanean y Guardan",
-                description: "Imprime tu código QR. Los clientes lo escanean y guardan la tarjeta al instante en Apple o Google Wallet.",
-              },
-              {
-                icon: Wallet,
-                step: "03",
-                title: "Recompensa la Lealtad",
-                description: "Escanea las tarjetas de clientes para agregar sellos. Cuando alcanzan la meta, canjean su recompensa.",
-              },
-            ].map((item, index) => (
-              <div
-                key={index}
-                className="relative bg-card rounded-2xl p-8 border border-border shadow-sm hover:shadow-lg transition-shadow group"
-              >
-                <div className="absolute -top-4 -left-4 w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold shadow-lg">
-                  {item.step}
-                </div>
-                <div className="pt-4">
-                  <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 transition-colors">
-                    <item.icon className="h-7 w-7 text-primary" />
+            {siteConfig.howItWorks.map((item, index) => {
+              const Icon = iconMap[item.icon]
+              return (
+                <div
+                  key={index}
+                  className="relative bg-card rounded-2xl p-8 border border-border shadow-sm hover:shadow-lg transition-shadow group"
+                >
+                  <div className="absolute -top-4 -left-4 w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold shadow-lg">
+                    {item.step}
                   </div>
-                  <h3 className="text-xl font-semibold text-foreground mb-3">{item.title}</h3>
-                  <p className="text-muted-foreground leading-relaxed">{item.description}</p>
+                  <div className="pt-4">
+                    <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 transition-colors">
+                      {Icon && <Icon className="h-7 w-7 text-primary" />}
+                    </div>
+                    <h3 className="text-xl font-semibold text-foreground mb-3">{item.title}</h3>
+                    <p className="text-muted-foreground leading-relaxed">{item.description}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </section>
@@ -185,49 +201,21 @@ export default async function LandingPage({
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              {
-                icon: Wallet,
-                title: "Integración con Wallet",
-                description: "Soporte nativo para Apple Wallet y Google Wallet. Las tarjetas se actualizan en tiempo real.",
-              },
-              {
-                icon: QrCode,
-                title: "Flujo con QR",
-                description: "Sin apps necesarias. Los clientes escanean un código QR y listo.",
-              },
-              {
-                icon: Zap,
-                title: "Configuración Instantánea",
-                description: "Crea tu primera tarjeta de lealtad en menos de 2 minutos.",
-              },
-              {
-                icon: Shield,
-                title: "Seguro y Privado",
-                description: "Los datos del cliente están protegidos. Sin cuenta requerida para clientes.",
-              },
-              {
-                icon: BarChart3,
-                title: "Analíticas Simples",
-                description: "Monitorea sellos, canjes y la actividad de tus clientes.",
-              },
-              {
-                icon: Smartphone,
-                title: "Mobile-First",
-                description: "Optimizado para la forma en que los clientes interactúan con los negocios.",
-              },
-            ].map((feature, index) => (
-              <div
-                key={index}
-                className="bg-card rounded-2xl p-6 border border-border hover:border-primary/30 transition-colors group"
-              >
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/15 transition-colors">
-                  <feature.icon className="h-6 w-6 text-primary" />
+            {siteConfig.features.map((feature, index) => {
+              const Icon = iconMap[feature.icon]
+              return (
+                <div
+                  key={index}
+                  className="bg-card rounded-2xl p-6 border border-border hover:border-primary/30 transition-colors group"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/15 transition-colors">
+                    {Icon && <Icon className="h-6 w-6 text-primary" />}
+                  </div>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
                 </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </section>
@@ -244,12 +232,7 @@ export default async function LandingPage({
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { emoji: "☕", name: "Cafeterías", example: "Compra 9, llévate 1 gratis" },
-              { emoji: "🍕", name: "Restaurantes", example: "Postre gratis después de 5 visitas" },
-              { emoji: "💇", name: "Barberías", example: "10mo corte gratis" },
-              { emoji: "🛒", name: "Tiendas Locales", example: "Acumula puntos en tus compras" },
-            ].map((useCase, index) => (
+            {siteConfig.useCases.map((useCase, index) => (
               <div
                 key={index}
                 className="bg-card rounded-2xl p-6 border border-border text-center hover:shadow-md transition-shadow"
@@ -263,20 +246,78 @@ export default async function LandingPage({
         </div>
       </section>
 
+      {/* Pricing */}
+      <section id="pricing" className="py-20 lg:py-28">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+              Precios simples para crecer
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              Sin costos ocultos. Sin sorpresas. Escala tu programa de lealtad al ritmo de tu negocio.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {siteConfig.pricing.map((tier, index) => (
+              <div
+                key={index}
+                className={`relative bg-card rounded-2xl p-8 border ${
+                  tier.highlighted
+                    ? "border-primary shadow-lg shadow-primary/10 scale-105 md:scale-110"
+                    : "border-border"
+                }`}
+              >
+                {tier.highlighted && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-primary text-primary-foreground text-xs font-semibold rounded-full">
+                    Popular
+                  </div>
+                )}
+                <div className="pt-2">
+                  <h3 className="text-xl font-bold text-foreground mb-1">{tier.name}</h3>
+                  <p className="text-sm text-muted-foreground mb-4">{tier.description}</p>
+                  <div className="mb-6">
+                    <span className="text-4xl font-bold text-foreground">{tier.price}</span>
+                    {tier.period && (
+                      <span className="text-muted-foreground text-sm ml-1">{tier.period}</span>
+                    )}
+                  </div>
+                  <ul className="space-y-3 mb-8">
+                    {tier.features.map((feature, fIndex) => (
+                      <li key={fIndex} className="flex items-start gap-3 text-sm">
+                        <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                        <span className="text-muted-foreground">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link href={tier.href}>
+                    <Button
+                      variant={tier.highlighted ? "default" : "outline"}
+                      className="w-full"
+                      size="lg"
+                    >
+                      {tier.cta}
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-20 lg:py-28">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-3xl p-12 lg:p-16 border border-primary/20">
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              ¿Listo para construir lealtad?
+              {siteConfig.cta.title}
             </h2>
             <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
-              Comienza tu prueba gratis hoy. Sin tarjeta de crédito. 
-              Crea tu primera tarjeta de lealtad en minutos.
+              {siteConfig.cta.description}
             </p>
-            <Link href="/signup">
+            <Link href={siteConfig.cta.href}>
               <Button size="lg" className="text-base px-10">
-                Comenzar Gratis
+                {siteConfig.cta.cta}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
@@ -292,21 +333,21 @@ export default async function LandingPage({
               <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                 <span className="text-primary-foreground font-bold text-sm">K</span>
               </div>
-              <span className="font-semibold text-foreground">Koda Fidelity</span>
+              <span className="font-semibold text-foreground">{siteConfig.name}</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Parte del ecosistema Koda POS. Hecho para pequeños negocios.
+              {siteConfig.footer.tagline}
             </p>
             <div className="flex items-center gap-6">
-              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Privacidad
-              </Link>
-              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Términos
-              </Link>
-              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Soporte
-              </Link>
+              {siteConfig.footer.links.map((link, index) => (
+                <Link
+                  key={index}
+                  href={link.href}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {link.label}
+                </Link>
+              ))}
             </div>
           </div>
         </div>
