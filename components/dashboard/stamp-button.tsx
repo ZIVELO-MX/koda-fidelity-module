@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Stamp, Loader2, Check, Gift } from "lucide-react"
 
@@ -19,6 +20,7 @@ export function StampButton({
   maxStamps,
   reward,
 }: StampButtonProps) {
+  const router = useRouter()
   const [state, setState] = useState<StampState>("idle")
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
@@ -41,6 +43,7 @@ export function StampButton({
       }
 
       setState(data.event === "redeem" ? "redeemed" : "stamped")
+      router.refresh()
 
       setTimeout(() => setState("idle"), 2000)
     } catch (err) {
