@@ -2,13 +2,12 @@ export const siteConfig = {
   name: "Koda Fidelity",
   shortName: "Koda",
   description:
-    "Tarjetas de fidelidad digitales para Apple Wallet y Google Wallet. Convierte clientes recurrentes en clientes leales con Koda.",
+    "Tarjetas digitales de lealtad con QR para pequeños negocios. Crea tu programa, comparte la tarjeta y registra sellos desde Koda.",
   url: process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000",
   ogImage: "/og-default.png",
   keywords: [
-    "tarjetas de fidelidad digitales",
-    "apple wallet",
-    "google wallet",
+    "tarjetas de lealtad digitales",
+    "tarjetas de fidelidad",
     "lealtad digital",
     "programa de fidelidad",
     "koda pos",
@@ -16,6 +15,7 @@ export const siteConfig = {
     "tarjetas de lealtad",
     "sellos digitales",
     "fidelización clientes",
+    "qr lealtad",
   ],
   creator: "@zivelo",
   locale: "es_MX",
@@ -27,7 +27,7 @@ export const siteConfig = {
     title: "Convierte clientes recurrentes en ",
     titleHighlight: "clientes leales",
     subtitle:
-      "Tarjetas de fidelidad digitales para Apple Wallet y Google Wallet. Sin apps que descargar. Sin cuentas que crear. Solo escanea, guarda y recompensa.",
+      "Tarjetas digitales de lealtad con QR y enlace seguro. Crea tu tarjeta, comparte el código y registra sellos desde tu dashboard.",
     demoCard: {
       businessName: "The Daily Grind",
       currentStamps: 6,
@@ -48,9 +48,9 @@ export const siteConfig = {
     {
       icon: "Smartphone",
       step: "02",
-      title: "Clientes Escanean y Guardan",
+      title: "Clientes Reciben su Tarjeta",
       description:
-        "Imprime tu código QR. Los clientes lo escanean y guardan la tarjeta al instante en Apple o Google Wallet.",
+        "Escanean el QR y reciben un enlace seguro por email para acceder a su tarjeta digital.",
     },
     {
       icon: "Wallet",
@@ -63,16 +63,16 @@ export const siteConfig = {
 
   features: [
     {
-      icon: "Wallet",
-      title: "Integración con Wallet",
+      icon: "Smartphone",
+      title: "Portal con Enlace Seguro",
       description:
-        "Soporte nativo para Apple Wallet y Google Wallet. Las tarjetas se actualizan en tiempo real.",
+        "Los clientes acceden a su tarjeta digital mediante un enlace mágico enviado por email, sin necesidad de contraseña.",
     },
     {
       icon: "QrCode",
       title: "Flujo con QR",
       description:
-        "Sin apps necesarias. Los clientes escanean un código QR y listo.",
+        "Sin apps necesarias. Los clientes escanean un código QR y reciben su tarjeta al instante.",
     },
     {
       icon: "Zap",
@@ -82,9 +82,9 @@ export const siteConfig = {
     },
     {
       icon: "Shield",
-      title: "Seguro y Privado",
+      title: "Acceso Seguro",
       description:
-        "Los datos del cliente están protegidos. Sin cuenta requerida para clientes.",
+        "Los datos del cliente están protegidos. El acceso es por email mediante enlace de un solo uso.",
     },
     {
       icon: "BarChart3",
@@ -93,10 +93,10 @@ export const siteConfig = {
         "Monitorea sellos, canjes y la actividad de tus clientes.",
     },
     {
-      icon: "Smartphone",
-      title: "Mobile-First",
+      icon: "CheckCircle2",
+      title: "Sellado desde Dashboard",
       description:
-        "Optimizado para la forma en que los clientes interactúan con los negocios.",
+        "Escanea el QR del cliente y agrega o canjea sellos directamente desde el panel.",
     },
   ],
 
@@ -107,65 +107,17 @@ export const siteConfig = {
     { emoji: "🛒", name: "Tiendas Locales", example: "Acumula puntos en tus compras" },
   ],
 
-  pricing: [
-    {
-      name: "Gratis",
-      price: "$0",
-      description: "Perfecto para probar y empezar con la lealtad digital.",
-      features: [
-        "1 tarjeta de lealtad activa",
-        "Hasta 50 clientes",
-        "Marca personalizada (color + logo)",
-        "Código QR para compartir",
-        "Apple Wallet y Google Wallet",
-      ],
-      cta: "Comenzar Gratis",
-      href: "/signup",
-      highlighted: false,
-    },
-    {
-      name: "Pro",
-      price: "$249",
-      period: "/mes",
-      description: "Para negocios que quieren crecer con sus clientes.",
-      features: [
-        "Tarjetas de lealtad ilimitadas",
-        "Clientes ilimitados",
-        "Marca personalizada (color + logo)",
-        "Códigos QR individuales por tarjeta",
-        "Apple Wallet y Google Wallet",
-        "Analíticas avanzadas",
-        "Soporte prioritario",
-      ],
-      cta: "Probar Gratis",
-      href: "/signup",
-      highlighted: true,
-    },
-    {
-      name: "Premium",
-      price: "$499",
-      period: "/mes",
-      description: "Para cadenas y negocios con múltiples sucursales.",
-      features: [
-        "Todo en Pro",
-        "Múltiples sucursales",
-        "Dashboard centralizado",
-        "API personalizada",
-        "Onboarding dedicado",
-        "SLA garantizado",
-      ],
-      cta: "Contactar",
-      href: "/signup",
-      highlighted: false,
-    },
-  ],
+  pricing: {
+    title: "Precios por definir",
+    description: "Nuestra oferta comercial se publicará próximamente. Mientras tanto, puedes iniciar sesión si ya tienes acceso.",
+  },
 
   cta: {
     title: "¿Listo para construir lealtad?",
     description:
-      "Comienza tu prueba gratis hoy. Sin tarjeta de crédito. Crea tu primera tarjeta de lealtad en minutos.",
-    cta: "Comenzar Gratis",
-    href: "/signup",
+      "Inicia sesión y crea tu primera tarjeta de lealtad digital en minutos.",
+    cta: "Iniciar Sesión",
+    href: "/login",
   },
 
   footer: {
