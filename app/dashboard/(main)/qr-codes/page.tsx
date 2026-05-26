@@ -28,12 +28,14 @@ export default function QRCodesPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  const copyToClipboard = (url: string, id: string) => {
-    navigator.clipboard.writeText(url).catch(() => {
+  const copyToClipboard = async (url: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopiedId(id)
+      setTimeout(() => setCopiedId(null), 2000)
+    } catch {
       // Clipboard not available
-    })
-    setCopiedId(id)
-    setTimeout(() => setCopiedId(null), 2000)
+    }
   }
 
   const downloadQR = (cardId: string, cardName: string, url: string, color: string) => {
@@ -63,7 +65,7 @@ export default function QRCodesPage() {
       imgObj.onload = () => {
         ctx.drawImage(imgObj, 100, 70, 200, 200)
         const link = document.createElement("a")
-        link.download = `${cardName}-qr.png`
+        link.download = `koda-${cardId}-qr.png`
         link.href = canvas.toDataURL("image/png")
         link.click()
       }

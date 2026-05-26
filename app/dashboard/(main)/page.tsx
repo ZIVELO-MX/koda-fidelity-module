@@ -203,35 +203,41 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="bg-card rounded-2xl border border-border p-6">
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-          <div className="max-w-md">
-            <h2 className="text-lg font-semibold text-foreground mb-2">
-              Tu tarjeta, en su billetera
-            </h2>
-            <p className="text-muted-foreground mb-4">
-              Así es como tus clientes ven su tarjeta de lealtad en Apple Wallet o Google Wallet.
-            </p>
-            <Link href="/dashboard/cards/new">
-              <Button variant="outline">
-                Personalizar Diseño
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            </Link>
+      {cards.length > 0 && (() => {
+        const card = cards[0]
+        const sampleCustomer = card.customers[0]
+        return (
+          <div className="bg-card rounded-2xl border border-border p-6">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+              <div className="max-w-md">
+                <h2 className="text-lg font-semibold text-foreground mb-2">
+                  Tu tarjeta, en su billetera
+                </h2>
+                <p className="text-muted-foreground mb-4">
+                  Así es como tus clientes ven su tarjeta de lealtad en Apple Wallet o Google Wallet.
+                </p>
+                <Link href="/dashboard/cards/new">
+                  <Button variant="outline">
+                    Personalizar Diseño
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+              <div className="w-full max-w-xs">
+                <LoyaltyCardPreview
+                  businessName={business.name}
+                  customerName={sampleCustomer ? "Tus Clientes" : "Tus Clientes"}
+                  currentStamps={card.customers.length > 0 ? Math.max(...card.customers.map(c => c.stamps)) : 0}
+                  maxStamps={card.stampsRequired}
+                  reward={card.reward}
+                  expirationDate={card.expiresAt ? card.expiresAt.toLocaleDateString("es-MX") : "Sin vencimiento"}
+                  brandColor={card.brandColor}
+                />
+              </div>
+            </div>
           </div>
-          <div className="w-full max-w-xs">
-            <LoyaltyCardPreview
-              businessName={business.name}
-              customerName="Cliente Feliz"
-              currentStamps={7}
-              maxStamps={10}
-              reward="Recompensa Gratis"
-              expirationDate="Dec 31, 2026"
-              brandColor={business.brandColor}
-            />
-          </div>
-        </div>
-      </div>
+        )
+      })()}
     </div>
   )
   } catch {
