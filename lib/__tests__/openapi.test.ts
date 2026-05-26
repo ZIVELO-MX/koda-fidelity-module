@@ -1,8 +1,19 @@
 import { describe, it, expect } from "vitest"
 import { getOpenApiSpec } from "@/lib/openapi"
 
+type OpenApiSpec = {
+  openapi: string
+  info: { title: string; version: string }
+  paths: Record<string, Record<string, unknown>>
+  components: {
+    schemas: Record<string, unknown>
+    securitySchemes: Record<string, { type: string; in: string }>
+  }
+  servers: Array<{ url: string }>
+}
+
 describe("OpenAPI spec", () => {
-  const spec = getOpenApiSpec()
+  const spec = getOpenApiSpec() as OpenApiSpec
 
   it("generates a valid OpenAPI 3.1 spec", () => {
     expect(spec.openapi).toBe("3.1.0")
