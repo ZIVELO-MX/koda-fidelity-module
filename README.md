@@ -1,6 +1,6 @@
 # Koda Fidelity
 
-Módulo SaaS de tarjetas de fidelidad digitales para **Apple Wallet** y **Google Wallet**.
+Módulo SaaS de tarjetas de fidelidad digitales con **QR y magic link** para pequeños negocios.
 
 Parte del ecosistema **Koda POS**. Ayuda a pequeños negocios a retener clientes sin tarjetas físicas.
 
@@ -14,7 +14,7 @@ Parte del ecosistema **Koda POS**. Ayuda a pequeños negocios a retener clientes
 | DB          | Supabase (PostgreSQL)       |
 | ORM         | Prisma                      |
 | Auth        | Supabase Auth               |
-| Wallet      | Generación propia (PKPass/JWT) |
+| Wallet      | Próximamente (PKPass/JWT)   |
 
 ## Pages
 
