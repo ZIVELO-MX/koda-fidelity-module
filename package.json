@@ -23,15 +23,6 @@
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@prisma/client",
-      "@prisma/engines",
-      "esbuild",
-      "prisma",
-      "sharp"
-    ]
-  },
   "dependencies": {
     "@googleapis/walletobjects": "^12.0.0",
     "@radix-ui/react-accordion": "1.2.12",
