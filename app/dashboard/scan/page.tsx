@@ -45,7 +45,7 @@ function ScanPageInner() {
 
   useEffect(() => {
     if (!searchQuery.trim()) {
-      setSearchResults([])
+      queueMicrotask(() => setSearchResults([]))
       return
     }
 

@@ -20,12 +20,12 @@ export default function QRCodesPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
   useEffect(() => {
-    setBaseUrl(window.location.origin)
+    queueMicrotask(() => setBaseUrl(window.location.origin))
     fetch("/api/cards")
       .then((res) => res.json())
-      .then((data) => setCards(data.cards || []))
-      .catch(() => setFetchError(true))
-      .finally(() => setLoading(false))
+      .then((data) => queueMicrotask(() => setCards(data.cards || [])))
+      .catch(() => queueMicrotask(() => setFetchError(true)))
+      .finally(() => queueMicrotask(() => setLoading(false)))
   }, [])
 
   const copyToClipboard = async (url: string, id: string) => {
