@@ -2,7 +2,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import type { Metadata } from "next"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Smartphone, QrCode, Wallet, CheckCircle2, Zap, Shield, BarChart3, Check } from "lucide-react"
+import { ArrowRight, Smartphone, QrCode, Wallet, CheckCircle2, Zap, Shield, BarChart3 } from "lucide-react"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { LandingMobileNav } from "@/components/landing-mobile-nav"
 import { siteConfig } from "@/lib/site-config"
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
 }
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  Wallet, QrCode, Zap, Shield, BarChart3, Smartphone,
+  Wallet, QrCode, Zap, Shield, BarChart3, Smartphone, CheckCircle2,
 }
 
 export default async function LandingPage({
@@ -80,12 +80,6 @@ export default async function LandingPage({
                   Iniciar Sesión
                 </Button>
               </Link>
-              <Link href="/signup" className="hidden sm:inline-flex">
-                <Button>
-                  Comenzar
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
               <LandingMobileNav />
             </div>
           </div>
@@ -110,31 +104,21 @@ export default async function LandingPage({
                 {siteConfig.hero.subtitle}
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/signup">
+                <Link href="#how-it-works">
                   <Button size="lg" className="w-full sm:w-auto text-base px-8">
-                    Prueba Gratis
+                    Ver Cómo Funciona
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
-                <Link href="#how-it-works">
+                <Link href="/login">
                   <Button size="lg" variant="outline" className="w-full sm:w-auto text-base px-8">
-                    Ver Cómo Funciona
+                    Iniciar Sesión
                   </Button>
                 </Link>
               </div>
-              <div className="flex flex-wrap items-center gap-6 pt-4">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-primary" />
-                  <span className="text-sm text-muted-foreground">Gratis para empezar</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-primary" />
-                  <span className="text-sm text-muted-foreground">Sin tarjeta de crédito</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-primary" />
-                  <span className="text-sm text-muted-foreground">Configuración en 2 min</span>
-                </div>
+              <div className="flex items-center pt-4">
+                <CheckCircle2 className="h-5 w-5 text-primary mr-2" />
+                <span className="text-sm text-muted-foreground">Configuración en 2 minutos</span>
               </div>
             </div>
             <div className="relative lg:pl-8">
@@ -251,58 +235,13 @@ export default async function LandingPage({
       {/* Pricing */}
       <section id="pricing" className="py-20 lg:py-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-16">
+          <div className="max-w-xl mx-auto text-center bg-card rounded-2xl p-12 border border-border">
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Precios simples para crecer
+              {siteConfig.pricing.title}
             </h2>
             <p className="text-lg text-muted-foreground">
-              Sin costos ocultos. Sin sorpresas. Escala tu programa de lealtad al ritmo de tu negocio.
+              {siteConfig.pricing.description}
             </p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {siteConfig.pricing.map((tier, index) => (
-              <div
-                key={index}
-                className={`relative bg-card rounded-2xl p-8 border ${
-                  tier.highlighted
-                    ? "border-primary shadow-lg shadow-primary/10 md:scale-110"
-                    : "border-border"
-                }`}
-              >
-                {tier.highlighted && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-primary text-primary-foreground text-xs font-semibold rounded-full">
-                    Popular
-                  </div>
-                )}
-                <div className="pt-2">
-                  <h3 className="text-xl font-bold text-foreground mb-1">{tier.name}</h3>
-                  <p className="text-sm text-muted-foreground mb-4">{tier.description}</p>
-                  <div className="mb-6">
-                    <span className="text-4xl font-bold text-foreground">{tier.price}</span>
-                    {tier.period && (
-                      <span className="text-muted-foreground text-sm ml-1">{tier.period}</span>
-                    )}
-                  </div>
-                  <ul className="space-y-3 mb-8">
-                    {tier.features.map((feature, fIndex) => (
-                      <li key={fIndex} className="flex items-start gap-3 text-sm">
-                        <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                        <span className="text-muted-foreground">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Link href={tier.href}>
-                    <Button
-                      variant={tier.highlighted ? "default" : "outline"}
-                      className="w-full"
-                      size="lg"
-                    >
-                      {tier.cta}
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       </section>
