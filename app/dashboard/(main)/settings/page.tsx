@@ -27,11 +27,11 @@ export default function SettingsPage() {
         if (data.business) {
           setBusinessName(data.business.name)
           setEmail(data.business.email)
-          setBusinessType(data.business.businessType ?? "Coffee Shop")
-          setAddress(data.business.address ?? "Calle Principal 123, Ciudad, Estado")
-          setPhone(data.business.phone ?? "(555) 123-4567")
-          setWebsite(data.business.website ?? "https://tunegocio.com")
-          setInstagram(data.business.instagram ?? "@tunegocio")
+          setBusinessType(data.business.businessType ?? "")
+          setAddress(data.business.address ?? "")
+          setPhone(data.business.phone ?? "")
+          setWebsite(data.business.website ?? "")
+          setInstagram(data.business.instagram ?? "")
         }
       })
       .catch(() => setFetchError(true))

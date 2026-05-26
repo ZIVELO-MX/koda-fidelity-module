@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -35,8 +35,19 @@ export default function CreateCardPage() {
     expirationDate: "",
     description: "",
     brandColor: "#f97316",
-    businessName: "Tu Negocio",
+    businessName: "",
   })
+
+  useEffect(() => {
+    fetch("/api/business")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.business?.name) {
+          setFormData((prev) => ({ ...prev, businessName: data.business.name }))
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const updateFormData = (field: string, value: string | number) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
