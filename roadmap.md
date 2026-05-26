@@ -102,7 +102,11 @@
 - [x] SEO básico (meta tags, Open Graph, OG dinámico por negocio)
 - [x] Modo responsive completo (hamburger menu, pricing scale, overflow, skeleton)
 - [x] Estados vacíos, carga, error en todas las páginas (error boundary, skeleton, error+carga en qr/branding/settings, try/catch server, alert→toast)
-- [ ] Analíticas con Vercel Analytics
+- [x] Analíticas con Vercel Analytics (carga en producción desde `app/layout.tsx`)
+- [x] Documentar alineación de landing con MVP vigente (`docs/landing-mvp-alignment.md`)
+- [x] Crear test plan de aceptación para la alineación (`docs/test-plan-landing-mvp-alignment.md`)
+- [ ] Implementar landing alineada: QR/magic link activo, Wallet "Próximamente", pricing por definir y solo login público
+- [ ] Alinear `docs/idea.md`, `README.md` y metadatos públicos con el MVP actualizado
 - [ ] Agregar campo `phone` a Customer para SMS magic links (futuro)
 
 ### Fase 5 — Auditoría y correcciones (Completada)
@@ -173,6 +177,21 @@
 - [ ] Publicar en Wallet Console (Google) para quitar modo prueba
 - [ ] Re-habilitar wallets cuando estén listas
 
+### Definición vigente del MVP y solución de alineación
+
+> La tarjeta digital web con QR, acceso mediante magic link y sellado desde el
+> dashboard forman el MVP lanzable. Apple Wallet y Google Wallet permanecen
+> fuera de alcance hasta su reactivación post-MVP. Pricing aún no está definido.
+
+Para cerrar la discrepancia entre producto implementado y mensajes públicos:
+
+1. Implementar los cambios de contenido y navegación descritos en `docs/landing-mvp-alignment.md`.
+2. Mantener el preview de tarjeta como funcionalidad activa y etiquetar solo Wallet como "Próximamente".
+3. Sustituir planes, montos y CTAs comerciales por un bloque "Precios por definir".
+4. Retirar CTAs públicos de registro mientras `INVITE_ONLY=true`; exponer solo inicio de sesión.
+5. Alinear `docs/idea.md`, `README.md`, metadata de landing y metadata de join al alcance vigente.
+6. Ejecutar `docs/test-plan-landing-mvp-alignment.md` antes de considerar listo el lanzamiento.
+
 ---
 
 ## Notas técnicas
@@ -242,14 +261,23 @@ model StampLog {
 
 ## Prioridades inmediatas
 
-> Fase 1-5 completadas. Fase 4 en progreso (4/6 completados).
+> Fases 1-5 funcionales. La Fase 4 requiere alinear mensajes públicos y cerrar gates de lanzamiento.
 
 ### Pre-lanzamiento
 
-1. **🔴 TypeScript errors** — resolver los 44 errores (rama `feat/ts-errors`, ver `docs/ts-errors-summary.md`)
-2. **🔴 Configurar dominio** — Vercel + Cloudflare (DNS, SSL, variables de entorno)
-3. **🟡 SMTP personalizado** — cambiar remitente de `@supabase.co` a `noreply@koda.app`
-4. **🟢 Template magic link** — pegar `docs/email-templates/magic-link.html` en Supabase Dashboard
+1. **🔴 Alinear landing al MVP** — implementar `docs/landing-mvp-alignment.md` y validar con `docs/test-plan-landing-mvp-alignment.md`.
+2. **🔴 Configurar dominio y entorno** — Vercel + Cloudflare (DNS, SSL, variables de entorno).
+3. **🔴 Cerrar gates técnicos** — habilitar `pnpm lint`, remover `ignoreBuildErrors: true` y requerir `pnpm test`, `pnpm exec tsc --noEmit`, lint y build exitosos.
+4. **🟡 Alinear documentación pública** — actualizar `docs/idea.md`, `README.md` y metadata para declarar QR/magic link activo y Wallet próximo.
+5. **🟡 SMTP personalizado** — cambiar remitente de `@supabase.co` a `noreply@koda.app`.
+6. **🟢 Template magic link** — pegar `docs/email-templates/magic-link.html` en Supabase Dashboard.
+
+### Verificaciones actuales
+
+- [x] `pnpm exec tsc --noEmit` pasa al 2026-05-25; `docs/ts-errors-summary.md` queda como histórico y no como bloqueo activo.
+- [x] Vercel Analytics ya está integrado en `app/layout.tsx`.
+- [ ] `pnpm lint` debe repararse: el comando existe, pero ESLint no está instalado/configurado.
+- [ ] El build debe dejar de omitir errores TypeScript en `next.config.mjs`.
 
 ### Post-MVP
 
