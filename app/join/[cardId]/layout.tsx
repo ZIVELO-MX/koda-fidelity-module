@@ -22,7 +22,7 @@ export async function generateMetadata({
 
   const ogImageUrl = `/join/${cardId}/opengraph-image`
   const title = `Únete a ${card.business.name} - ${siteConfig.name}`
-  const description = `Obtén tu tarjeta de lealtad de ${card.business.name}. ${card.stampsRequired} sellos → ${card.reward}. Guarda en Apple Wallet y Google Wallet.`
+  const description = `Obtén tu tarjeta de lealtad de ${card.business.name}. ${card.stampsRequired} sellos → ${card.reward}.`
 
   return {
     title,

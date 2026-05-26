@@ -98,13 +98,13 @@ export default function JoinCardPage() {
 
   useEffect(() => {
     const val = localStorage.getItem("magic-link-cooldown")
-    if (val) {
-      const remaining = Math.floor((Number(val) - Date.now()) / 1000)
-      if (remaining > 0) {
-        setCooldown(remaining)
-      } else {
-        localStorage.removeItem("magic-link-cooldown")
-      }
+    if (!val) return
+
+    const remaining = Math.floor((Number(val) - Date.now()) / 1000)
+    if (remaining > 0) {
+      queueMicrotask(() => setCooldown(remaining))
+    } else {
+      localStorage.removeItem("magic-link-cooldown")
     }
   }, [cardId])
 
@@ -137,7 +137,7 @@ export default function JoinCardPage() {
 
   useEffect(() => {
     if (cooldown === 0) {
-      setSendError(null)
+      queueMicrotask(() => setSendError(null))
     }
   }, [cooldown])
 
