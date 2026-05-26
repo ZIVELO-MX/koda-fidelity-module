@@ -176,6 +176,6 @@ const options: swaggerJsdoc.Options = {
   apis: ["./app/api/**/route.ts"],
 }
 
-export function getOpenApiSpec() {
-  return swaggerJsdoc(options)
+export function getOpenApiSpec(): Record<string, unknown> {
+  return swaggerJsdoc(options) as Record<string, unknown>
 }
