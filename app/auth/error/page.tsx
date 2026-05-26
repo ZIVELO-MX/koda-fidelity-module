@@ -47,8 +47,31 @@ function AuthErrorContent() {
   const isRateLimit = errorCode === "rate_limit"
 
   useEffect(() => {
-    if (isRateLimit) {
-      setCooldown(60)
+    if (!isRateLimit) return
+
+    queueMicrotask(() => setCooldown(60))
+    timerRef.current = setInterval(() => {
+      setCooldown((c) => {
+        if (c <= 1) {
+          if (timerRef.current) clearInterval(timerRef.current)
+          return 0
+        }
+        return c - 1
+      })
+    }, 1000)
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current)
+    }
+  }, [isRateLimit])
+
+  useEffect(() => {
+    const val = localStorage.getItem("magic-link-cooldown")
+    if (!val) return
+
+    const remaining = Math.floor((Number(val) - Date.now()) / 1000)
+    if (remaining > 0) {
+      queueMicrotask(() => setCooldown(remaining))
       timerRef.current = setInterval(() => {
         setCooldown((c) => {
           if (c <= 1) {
@@ -58,32 +81,14 @@ function AuthErrorContent() {
           return c - 1
         })
       }, 1000)
+    } else {
+      localStorage.removeItem("magic-link-cooldown")
     }
+
     return () => {
       if (timerRef.current) clearInterval(timerRef.current)
     }
-  }, [isRateLimit])
-
-  useEffect(() => {
-    const val = localStorage.getItem("magic-link-cooldown")
-    if (val) {
-      const remaining = Math.floor((Number(val) - Date.now()) / 1000)
-      if (remaining > 0) {
-        setCooldown(remaining)
-        timerRef.current = setInterval(() => {
-          setCooldown((c) => {
-            if (c <= 1) {
-              if (timerRef.current) clearInterval(timerRef.current)
-              return 0
-            }
-            return c - 1
-          })
-        }, 1000)
-      } else {
-        localStorage.removeItem("magic-link-cooldown")
-      }
-    }
-  }, [email])
+  }, [])
 
   const handleResend = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
