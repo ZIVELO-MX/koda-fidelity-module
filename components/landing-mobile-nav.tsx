@@ -51,14 +51,8 @@ export function LandingMobileNav() {
               {link.label}
             </Link>
           ))}
-          <hr className="my-2 border-border" />
           <Link href="/login" onClick={() => setOpen(false)}>
-            <Button variant="ghost" className="w-full justify-start">
-              Iniciar Sesión
-            </Button>
-          </Link>
-          <Link href="/signup" onClick={() => setOpen(false)}>
-            <Button className="w-full">Comenzar</Button>
+            <Button className="w-full">Iniciar Sesión</Button>
           </Link>
         </nav>
       </div>
