@@ -1,6 +1,7 @@
 "use client"
 
 import { useActionState } from "react"
+import Image from "next/image"
 import Link from "next/link"
 import { login, type AuthResult } from "@/lib/actions/auth"
 import { Button } from "@/components/ui/button"
@@ -17,9 +18,13 @@ export function LoginForm() {
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
         <div className="flex justify-center mb-4">
-          <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-xl">K</span>
-          </div>
+          <Image
+            src="/short-logo.svg"
+            alt="Koda"
+            width={48}
+            height={48}
+            className="size-12"
+          />
         </div>
         <CardTitle className="text-2xl">Iniciar Sesión</CardTitle>
         <CardDescription>Accede a tu panel de administración</CardDescription>
