@@ -177,22 +177,13 @@ export default async function Image({
           fontSize: 16,
         }}
       >
-        <div
-          style={{
-            width: 28,
-            height: 28,
-            borderRadius: 6,
-            background: textColor,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: bgColor,
-            fontWeight: 800,
-            fontSize: 18,
-          }}
-        >
-          K
-        </div>
+        <img
+          src={`${siteConfig.url}/short-logo.svg`}
+          alt={siteConfig.shortName}
+          width={28}
+          height={28}
+          style={{ borderRadius: 6 }}
+        />
         <span>{siteConfig.shortName}</span>
       </div>
     </div>,
