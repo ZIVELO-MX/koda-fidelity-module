@@ -4,7 +4,7 @@ export const siteConfig = {
   description:
     "Tarjetas digitales de lealtad con QR para pequeños negocios. Crea tu programa, comparte la tarjeta y registra sellos desde Koda.",
   url: process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000",
-  ogImage: "/og-default.png",
+  ogImage: "/opengraph-image",
   keywords: [
     "tarjetas de lealtad digitales",
     "tarjetas de fidelidad",
