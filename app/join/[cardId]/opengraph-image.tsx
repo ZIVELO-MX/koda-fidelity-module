@@ -1,5 +1,4 @@
 import { ImageResponse } from "next/og"
-import { prisma } from "@/lib/prisma"
 import { siteConfig } from "@/lib/site-config"
 
 export const runtime = "edge"
@@ -28,6 +27,15 @@ function isLight(hex: string): boolean {
   return (r * 299 + g * 587 + b * 114) / 1000 > 128
 }
 
+type CardQueryResult = {
+  id: string
+  name: string
+  reward: string
+  stampsRequired: number
+  brandColor: string | null
+  business: { name: string }
+}
+
 export default async function Image({
   params,
 }: {
@@ -35,10 +43,19 @@ export default async function Image({
 }) {
   const { cardId } = await params
 
-  const card = await prisma.loyaltyCard.findUnique({
-    where: { id: cardId },
-    include: { business: true },
-  })
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const res = await fetch(
+    `${supabaseUrl}/rest/v1/loyalty_card?select=*,business(name)&id=eq.${cardId}`,
+    {
+      headers: {
+        apikey: serviceRoleKey!,
+        Authorization: `Bearer ${serviceRoleKey!}`,
+      },
+    },
+  )
+  const rows: CardQueryResult[] = await res.json()
+  const card = rows[0]
 
   if (!card) {
     return new ImageResponse(
