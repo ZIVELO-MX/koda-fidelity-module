@@ -153,6 +153,10 @@
 - [ ] Cambiar remitente de `noreply@app.xxxxx.supabase.co` a `noreply@koda.app`
 - [ ] Personalizar templates restantes (Confirmación, Cambio de contraseña, Cambio de email)
 
+### Issues conocidos
+
+- **📷 Cámara en escáner QR no funciona** — el componente `QRScanner` (`/dashboard/scan`) intenta usar la cámara pero falla. Pendiente de diagnosticar si es problema de permisos, librería o compatibilidad.
+
 ### Post-MVP — Wallet Passes (Deshabilitado)
 
 > Las wallets se deshabilitaron temporalmente. Se muestran como "Próximamente" en el join flow.
