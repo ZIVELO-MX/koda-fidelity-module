@@ -293,3 +293,4 @@ model StampLog {
 
 5. **Phone magic links** — agregar `phone` a Customer + SMS auth
 6. **Wallet passes** — re-habilitar cuando se requiera
+7. **Multi-usuario con roles por negocio** — modelo `User` con permisos (admin, editor, viewer) vinculado a `Business`, login con selección de negocio, auditoría de acciones
