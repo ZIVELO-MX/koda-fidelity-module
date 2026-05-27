@@ -169,8 +169,7 @@ export default function JoinCardPage() {
       })
 
       if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || "Error al registrarte")
+        throw new Error("No fue posible registrarte")
       }
 
       const { customerId } = await res.json()
@@ -196,7 +195,7 @@ export default function JoinCardPage() {
         setCooldown(seconds)
         setSendError("Espera un momento antes de pedir otro enlace")
       } else {
-        setSendError(msg || "Error al enviar el enlace")
+        setSendError("No fue posible enviar el enlace")
       }
     } finally {
       setSending(false)
@@ -327,7 +326,7 @@ export default function JoinCardPage() {
       <div className="min-h-screen bg-background flex flex-col">
         <header className="border-b border-border bg-card">
           <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-center">
-            <span className="font-semibold text-foreground">Revisa tu email</span>
+            <span className="font-semibold text-foreground">Revisa tu correo electrónico</span>
           </div>
         </header>
 
@@ -426,7 +425,7 @@ export default function JoinCardPage() {
                   autoComplete="email"
                   aria-invalid={emailError}
                 />
-                {emailError && <p className="text-sm text-red-500">Ingresa un email válido</p>}
+                {emailError && <p className="text-sm text-red-500">Ingresa un correo electrónico válido</p>}
               </div>
 
               {sendError && <p className="text-sm text-red-500 text-center">{sendError}</p>}

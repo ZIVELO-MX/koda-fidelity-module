@@ -50,7 +50,7 @@ export const siteConfig = {
       step: "02",
       title: "Clientes Reciben su Tarjeta",
       description:
-        "Escanean el QR y reciben un enlace seguro por email para acceder a su tarjeta digital.",
+        "Escanean el QR y reciben un enlace seguro por correo electrónico para acceder a su tarjeta digital.",
     },
     {
       icon: "Wallet",
@@ -66,7 +66,7 @@ export const siteConfig = {
       icon: "Smartphone",
       title: "Portal con Enlace Seguro",
       description:
-        "Los clientes acceden a su tarjeta digital mediante un enlace mágico enviado por email, sin necesidad de contraseña.",
+        "Los clientes acceden a su tarjeta digital mediante un enlace mágico enviado por correo electrónico, sin necesidad de contraseña.",
     },
     {
       icon: "QrCode",
@@ -84,7 +84,7 @@ export const siteConfig = {
       icon: "Shield",
       title: "Acceso Seguro",
       description:
-        "Los datos del cliente están protegidos. El acceso es por email mediante enlace de un solo uso.",
+        "Los datos del cliente están protegidos. El acceso es por correo electrónico mediante un enlace de un solo uso.",
     },
     {
       icon: "BarChart3",
@@ -94,7 +94,7 @@ export const siteConfig = {
     },
     {
       icon: "CheckCircle2",
-      title: "Sellado desde Dashboard",
+      title: "Sellado desde el panel",
       description:
         "Escanea el QR del cliente y agrega o canjea sellos directamente desde el panel.",
     },

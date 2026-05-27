@@ -7,7 +7,7 @@ const options: swaggerJsdoc.Options = {
       title: "Koda Fidelity API",
       version: "1.0.0",
       description:
-        "API del módulo de fidelidad de Koda POS. Gestiona tarjetas de lealtad, clientes, sellos y pases digitales para Apple Wallet y Google Wallet.",
+        "API for the Koda POS loyalty module. Manages loyalty cards, customers, stamps, and digital passes for Apple Wallet and Google Wallet.",
       contact: {
         name: "Koda Fidelity",
         url: "https://koda.app",
@@ -16,11 +16,11 @@ const options: swaggerJsdoc.Options = {
     servers: [
       {
         url: "https://koda-fidelity.vercel.app",
-        description: "Producción",
+        description: "Production",
       },
       {
         url: "http://localhost:3000",
-        description: "Desarrollo",
+        description: "Development",
       },
     ],
     components: {
@@ -30,29 +30,29 @@ const options: swaggerJsdoc.Options = {
           in: "cookie",
           name: "sb-auth-token",
           description:
-            "Autenticación mediante cookie de sesión de Supabase (para rutas protegidas del negocio).",
+            "Authentication through the Supabase session cookie for protected business routes.",
         },
       },
       schemas: {
         Business: {
           type: "object",
           properties: {
-            id: { type: "string", description: "ID único del negocio" },
-            name: { type: "string", description: "Nombre del negocio" },
+            id: { type: "string", description: "Unique business ID" },
+            name: { type: "string", description: "Business name" },
             email: {
               type: "string",
               format: "email",
-              description: "Email del negocio (vinculado a Supabase Auth)",
+              description: "Business email linked to Supabase Auth",
             },
             brandColor: {
               type: "string",
-              description: "Color de marca en hex",
+              description: "Brand color in hexadecimal format",
               example: "#ff6b35",
             },
             logoUrl: {
               type: "string",
               nullable: true,
-              description: "URL del logo",
+              description: "Logo URL",
             },
             createdAt: {
               type: "string",
@@ -69,16 +69,16 @@ const options: swaggerJsdoc.Options = {
           properties: {
             id: { type: "string" },
             businessId: { type: "string" },
-            name: { type: "string", description: "Nombre de la tarjeta" },
+            name: { type: "string", description: "Card name" },
             description: {
               type: "string",
               nullable: true,
-              description: "Descripción",
+              description: "Description",
             },
-            reward: { type: "string", description: "Recompensa al completar" },
+            reward: { type: "string", description: "Reward on completion" },
             stampsRequired: {
               type: "integer",
-              description: "Sellos requeridos para canjear",
+              description: "Stamps required to redeem",
               example: 10,
             },
             brandColor: { type: "string", example: "#ff6b35" },
@@ -100,11 +100,11 @@ const options: swaggerJsdoc.Options = {
               properties: {
                 customers: {
                   type: "integer",
-                  description: "Cantidad de clientes",
+                  description: "Customer count",
                 },
                 totalStamps: {
                   type: "integer",
-                  description: "Total de sellos acumulados",
+                  description: "Total accumulated stamps",
                 },
               },
             },
@@ -124,7 +124,7 @@ const options: swaggerJsdoc.Options = {
             updatedAt: { type: "string", format: "date-time" },
             card: {
               $ref: "#/components/schemas/LoyaltyCard",
-              description: "Tarjeta asociada",
+              description: "Associated card",
             },
           },
         },
@@ -167,7 +167,7 @@ const options: swaggerJsdoc.Options = {
         Error: {
           type: "object",
           properties: {
-            error: { type: "string", description: "Mensaje de error" },
+            error: { type: "string", description: "Error message" },
           },
         },
       },

@@ -65,7 +65,7 @@ export default async function DashboardPage() {
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+          <h1 className="text-2xl font-bold text-foreground">Panel</h1>
           <p className="text-muted-foreground">¡Bienvenido, {business.name}! Esto es lo que está pasando.</p>
         </div>
         <div className="flex gap-2">
@@ -247,7 +247,7 @@ export default async function DashboardPage() {
           <AlertCircle className="h-8 w-8 text-red-600" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-foreground mb-2">Error al cargar el Dashboard</h2>
+          <h2 className="text-xl font-bold text-foreground mb-2">Error al cargar el panel</h2>
           <p className="text-muted-foreground">Ocurrió un error inesperado. Intenta de nuevo.</p>
         </div>
         <Link href="/dashboard">

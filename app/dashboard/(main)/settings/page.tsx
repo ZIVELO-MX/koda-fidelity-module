@@ -58,8 +58,7 @@ export default function SettingsPage() {
         setSaveError(null)
         setTimeout(() => setSaved(false), 2000)
       } else {
-        const data = await res.json()
-        throw new Error(data.error || "Error al guardar")
+        throw new Error("No fue posible guardar los cambios")
       }
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Error al guardar")
@@ -131,7 +130,7 @@ export default function SettingsPage() {
             <Mail className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h2 className="font-semibold text-foreground">Email de Contacto</h2>
+            <h2 className="font-semibold text-foreground">Correo electrónico de contacto</h2>
             <p className="text-sm text-muted-foreground">Donde enviamos actualizaciones importantes</p>
           </div>
         </div>

@@ -148,7 +148,7 @@ export default function MyCardsPage() {
         setCooldown(seconds)
         setSendError("Espera un momento antes de pedir otro enlace")
       } else {
-        setSendError(msg || "Error al enviar el enlace")
+        setSendError("No fue posible enviar el enlace")
       }
     } finally {
       setSending(false)
@@ -199,7 +199,7 @@ export default function MyCardsPage() {
                   className="text-base"
                   aria-invalid={emailError}
                 />
-                {emailError && <p className="text-sm text-red-500">Ingresa un email válido</p>}
+                {emailError && <p className="text-sm text-red-500">Ingresa un correo electrónico válido</p>}
               </div>
 
               {sendError && <p className="text-sm text-red-500 text-center">{sendError}</p>}
@@ -225,7 +225,7 @@ export default function MyCardsPage() {
       <div className="min-h-screen bg-background flex flex-col">
         <header className="border-b border-border bg-card">
           <div className="max-w-lg mx-auto px-4 py-4">
-            <span className="font-semibold text-foreground">Revisa tu email</span>
+            <span className="font-semibold text-foreground">Revisa tu correo electrónico</span>
           </div>
         </header>
 

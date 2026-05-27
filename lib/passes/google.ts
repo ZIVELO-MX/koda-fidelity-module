@@ -38,9 +38,9 @@ async function getSigningKey(): Promise<string> {
 
 function getConfigIssue(): string | null {
   if (DEV_MODE) return null
-  if (!ISSUER_ID) return "GOOGLE_WALLET_ISSUER_ID no está configurado"
-  if (!SERVICE_ACCOUNT_EMAIL) return "GOOGLE_WALLET_SERVICE_ACCOUNT_EMAIL no está configurado"
-  if (!SERVICE_ACCOUNT_KEY_FILE) return "GOOGLE_WALLET_SERVICE_ACCOUNT_KEY_FILE no está configurado"
+  if (!ISSUER_ID) return "GOOGLE_WALLET_ISSUER_ID is not configured"
+  if (!SERVICE_ACCOUNT_EMAIL) return "GOOGLE_WALLET_SERVICE_ACCOUNT_EMAIL is not configured"
+  if (!SERVICE_ACCOUNT_KEY_FILE) return "GOOGLE_WALLET_SERVICE_ACCOUNT_KEY_FILE is not configured"
   return null
 }
 

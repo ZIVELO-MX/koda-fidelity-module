@@ -7,12 +7,12 @@ import { getBusinessFromSession, handleApiError, ValidationError, NotFoundError 
  * /api/stamps:
  *   post:
  *     tags:
- *       - Sellos
- *     summary: Agregar sello o canjear recompensa
+ *       - Stamps
+ *     summary: Add stamp or redeem reward
  *     description: |
- *       Agrega un sello a la tarjeta de un cliente o canjea la recompensa.
- *       - type: "stamp" → agrega 1 sello
- *       - type: "redeem" → canjea (resetea sellos a 0)
+ *       Adds a stamp to a customer's card or redeems the reward.
+ *       - type: "stamp" adds one stamp
+ *       - type: "redeem" redeems the reward and resets stamps to zero
  *     security:
  *       - cookieAuth: []
  *     requestBody:
@@ -26,15 +26,15 @@ import { getBusinessFromSession, handleApiError, ValidationError, NotFoundError 
  *             properties:
  *               customerId:
  *                 type: string
- *                 description: ID del cliente
+ *                 description: Customer ID
  *               type:
  *                 type: string
  *                 enum: [stamp, redeem]
  *                 default: stamp
- *                 description: Tipo de operación
+ *                 description: Operation type
  *     responses:
  *       200:
- *         description: Operación exitosa
+ *         description: Successful operation
  *         content:
  *           application/json:
  *             schema:
@@ -48,19 +48,19 @@ import { getBusinessFromSession, handleApiError, ValidationError, NotFoundError 
  *                 message:
  *                   type: string
  *       400:
- *         description: Error de validación
+ *         description: Validation error
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       401:
- *         description: No autorizado
+ *         description: Unauthorized
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       404:
- *         description: Cliente no encontrado
+ *         description: Customer not found
  *         content:
  *           application/json:
  *             schema:
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
 
     if (!body.customerId || typeof body.customerId !== "string") {
-      throw new ValidationError("ID del cliente es obligatorio")
+      throw new ValidationError("Customer ID is required")
     }
 
     const type = body.type === "redeem" ? "redeem" : "stamp"
@@ -86,16 +86,16 @@ export async function POST(request: NextRequest) {
     })
 
     if (!customer) {
-      throw new NotFoundError("Cliente no encontrado")
+      throw new NotFoundError("Customer not found")
     }
 
     if (customer.card.businessId !== business.id) {
-      throw new NotFoundError("Cliente no encontrado")
+      throw new NotFoundError("Customer not found")
     }
 
     if (type === "stamp") {
       if (customer.stamps >= customer.card.stampsRequired) {
-        throw new ValidationError("El cliente ya completó su tarjeta. Debe canjear primero.")
+        throw new ValidationError("Customer has completed the card and must redeem first.")
       }
 
       const updated = await prisma.customer.update({
@@ -114,14 +114,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         customer: updated,
         event: "stamp",
-        message: `${customer.name} ahora tiene ${updated.stamps} sellos`,
+        message: `${customer.name} now has ${updated.stamps} stamps`,
       })
     }
 
     if (type === "redeem") {
       if (customer.stamps < customer.card.stampsRequired) {
         throw new ValidationError(
-          `El cliente necesita ${customer.card.stampsRequired - customer.stamps} sellos más para canjear`,
+          `Customer needs ${customer.card.stampsRequired - customer.stamps} more stamps to redeem`,
         )
       }
 
@@ -141,11 +141,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         customer: updated,
         event: "redeem",
-        message: `${customer.name} canjeó ${customer.card.reward}`,
+        message: `${customer.name} redeemed ${customer.card.reward}`,
       })
     }
 
-    throw new ValidationError("Tipo de operación inválido")
+    throw new ValidationError("Invalid operation type")
   } catch (error) {
     return handleApiError(error)
   }
