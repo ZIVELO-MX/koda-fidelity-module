@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, Suspense } from "react"
+import Image from "next/image"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -153,9 +154,13 @@ function ScanPageInner() {
             <span className="text-sm">Dashboard</span>
           </Link>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">K</span>
-            </div>
+            <Image
+              src="/short-logo.svg"
+              alt="Koda"
+              width={32}
+              height={32}
+              className="size-8 shrink-0"
+            />
             <span className="font-semibold text-foreground">Escáner de Sellos</span>
           </div>
           <div className="w-20" />

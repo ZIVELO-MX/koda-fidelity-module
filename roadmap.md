@@ -107,6 +107,7 @@
 - [x] Crear test plan de aceptación para la alineación (`docs/test-plan-landing-mvp-alignment.md`)
 - [x] Implementar landing alineada: QR/magic link activo, Wallet "Próximamente", pricing por definir y solo login público
 - [x] Alinear `README.md` y metadatos públicos con el MVP actualizado
+- [x] Reemplazar icono inline "K" por `short-logo.svg` en toda la UI (navbar, sidebar, login, scan, OG image)
 - [ ] Agregar campo `phone` a Customer para SMS magic links (futuro)
 
 ### Fase 5 — Auditoría y correcciones (Completada)
