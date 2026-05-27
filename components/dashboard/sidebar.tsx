@@ -11,6 +11,7 @@ import {
   QrCode,
   Palette,
   Settings,
+  BookOpen,
   Menu,
   X,
 } from "lucide-react"
@@ -25,6 +26,7 @@ const navigation = [
   { name: "Códigos QR", href: "/dashboard/qr-codes", icon: QrCode },
   { name: "Marca", href: "/dashboard/branding", icon: Palette },
   { name: "Configuración", href: "/dashboard/settings", icon: Settings },
+  { name: "Documentación", href: "/docs", icon: BookOpen },
 ]
 
 export function DashboardSidebar() {
@@ -115,17 +117,6 @@ export function DashboardSidebar() {
 
           {/* Bottom section */}
           <div className="p-4 border-t border-border space-y-2">
-            <div className="rounded-xl bg-muted/50 p-4">
-              <p className="text-xs font-medium text-foreground mb-1">¿Necesitas ayuda?</p>
-              <p className="text-xs text-muted-foreground mb-3">
-                Revisa nuestros docs o contacta soporte
-              </p>
-              <Link href="/docs">
-                <Button size="sm" variant="secondary" className="w-full text-xs">
-                  Ver Documentación
-                </Button>
-              </Link>
-            </div>
             <form action={logout}>
               <Button size="sm" variant="ghost" className="w-full text-xs text-muted-foreground hover:text-destructive">
                 Cerrar Sesión
