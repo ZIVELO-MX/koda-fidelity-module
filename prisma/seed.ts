@@ -6,6 +6,11 @@ const prisma = new PrismaClient()
 async function main() {
   console.log("Seeding database...")
 
+  await prisma.stampLog.deleteMany()
+  await prisma.customer.deleteMany()
+  await prisma.loyaltyCard.deleteMany()
+  await prisma.business.deleteMany()
+
   for (const biz of mockData.businesses) {
     await prisma.business.create({ data: biz })
     console.log(`  ✓ Business: ${biz.name}`)
