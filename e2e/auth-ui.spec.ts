@@ -23,7 +23,7 @@ test.describe("Auth UI", () => {
     await page.getByLabel("Correo electrónico").fill("wrong@email.com")
     await page.getByLabel("Contraseña").fill("wrongpassword")
     await page.getByRole("button", { name: "Iniciar Sesión" }).click()
-    await expect(page.getByText("Invalid login credentials")).toBeVisible({ timeout: 10000 })
+    await expect(page.getByText("No fue posible iniciar sesión. Verifica tus datos.")).toBeVisible({ timeout: 10000 })
   })
 
   test("unauthenticated access to dashboard redirects to login", async ({ page }) => {

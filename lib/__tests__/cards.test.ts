@@ -16,13 +16,13 @@ interface CardInput {
 
 function validateCard(input: CardInput): void {
   if (!input.name || typeof input.name !== "string" || !input.name.trim()) {
-    throw new ValidationError("El nombre de la tarjeta es obligatorio")
+    throw new ValidationError("Card name is required")
   }
   if (!input.reward || typeof input.reward !== "string" || !input.reward.trim()) {
-    throw new ValidationError("La recompensa es obligatoria")
+    throw new ValidationError("Reward is required")
   }
   if (typeof input.stampsRequired !== "number" || input.stampsRequired < 1 || input.stampsRequired > 100) {
-    throw new ValidationError("Los sellos requeridos deben estar entre 1 y 100")
+    throw new ValidationError("Required stamps must be between 1 and 100")
   }
 }
 

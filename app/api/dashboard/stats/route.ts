@@ -8,19 +8,19 @@ import { getBusinessFromSession, handleApiError } from "@/lib/api-utils"
  *   get:
  *     tags:
  *       - Dashboard
- *     summary: Estadísticas del dashboard
- *     description: Retorna estadísticas generales del negocio autenticado.
+ *     summary: Dashboard statistics
+ *     description: Returns summary statistics for the authenticated business.
  *     security:
  *       - cookieAuth: []
  *     responses:
  *       200:
- *         description: Estadísticas del dashboard
+ *         description: Dashboard statistics
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/DashboardStats'
  *       401:
- *         description: No autorizado
+ *         description: Unauthorized
  *         content:
  *           application/json:
  *             schema:

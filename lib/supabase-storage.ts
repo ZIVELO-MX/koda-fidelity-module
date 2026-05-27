@@ -4,7 +4,7 @@ const BUCKET = process.env.SUPABASE_STORAGE_BUCKET || "pass-images"
 
 function getStorageUrl(): string {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  if (!url) throw new Error("NEXT_PUBLIC_SUPABASE_URL no está configurado")
+  if (!url) throw new Error("NEXT_PUBLIC_SUPABASE_URL is not configured")
   return url
 }
 

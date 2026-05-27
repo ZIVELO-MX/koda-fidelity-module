@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button"
 import { logout } from "@/lib/actions/auth"
 
 const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Panel", href: "/dashboard", icon: LayoutDashboard },
   { name: "Tarjetas de Lealtad", href: "/dashboard/cards", icon: CreditCard },
   { name: "Clientes", href: "/dashboard/customers", icon: Users },
   { name: "Códigos QR", href: "/dashboard/qr-codes", icon: QrCode },

@@ -153,7 +153,7 @@ export function LoyaltyCardPreview({
         style={{ backgroundColor: "rgba(0,0,0,0.1)" }}
       >
         {expirationDate && <span className="text-white/60">Vence: {expirationDate}</span>}
-        <span className="text-white/60 ml-auto">Powered by Koda</span>
+        <span className="text-white/60 ml-auto">Con tecnología de Koda</span>
       </div>
     </div>
   )

@@ -7,19 +7,19 @@ import { getBusinessFromSession, handleApiError, NotFoundError, ValidationError 
  * /api/cards/{id}:
  *   get:
  *     tags:
- *       - Tarjetas
- *     summary: Obtener tarjeta de lealtad
- *     description: Retorna los detalles de una tarjeta de lealtad pública (no requiere auth).
+ *       - Cards
+ *     summary: Get loyalty card
+ *     description: Returns public loyalty card details without requiring authentication.
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: ID de la tarjeta
+ *         description: Card ID
  *     responses:
  *       200:
- *         description: Detalles de la tarjeta
+ *         description: Card details
  *         content:
  *           application/json:
  *             schema:
@@ -53,16 +53,16 @@ import { getBusinessFromSession, handleApiError, NotFoundError, ValidationError 
  *                       type: string
  *                       nullable: true
  *       404:
- *         description: Tarjeta no encontrada
+ *         description: Card not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *   put:
  *     tags:
- *       - Tarjetas
- *     summary: Actualizar tarjeta de lealtad
- *     description: Actualiza los datos de una tarjeta existente. Requiere ser dueño del negocio.
+ *       - Cards
+ *     summary: Update loyalty card
+ *     description: Updates an existing card. Requires ownership of the business.
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -71,7 +71,7 @@ import { getBusinessFromSession, handleApiError, NotFoundError, ValidationError 
  *         required: true
  *         schema:
  *           type: string
- *         description: ID de la tarjeta
+ *         description: Card ID
  *     requestBody:
  *       required: true
  *       content:
@@ -96,7 +96,7 @@ import { getBusinessFromSession, handleApiError, NotFoundError, ValidationError 
  *                 nullable: true
  *     responses:
  *       200:
- *         description: Tarjeta actualizada
+ *         description: Updated card
  *         content:
  *           application/json:
  *             schema:
@@ -105,28 +105,28 @@ import { getBusinessFromSession, handleApiError, NotFoundError, ValidationError 
  *                 card:
  *                   $ref: '#/components/schemas/LoyaltyCard'
  *       400:
- *         description: Error de validación
+ *         description: Validation error
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       401:
- *         description: No autorizado
+ *         description: Unauthorized
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       404:
- *         description: Tarjeta no encontrada
+ *         description: Card not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *   delete:
  *     tags:
- *       - Tarjetas
- *     summary: Eliminar tarjeta de lealtad
- *     description: Elimina una tarjeta y todos sus clientes asociados. Requiere ser dueño del negocio.
+ *       - Cards
+ *     summary: Delete loyalty card
+ *     description: Deletes a card and all associated customers. Requires ownership of the business.
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -135,10 +135,10 @@ import { getBusinessFromSession, handleApiError, NotFoundError, ValidationError 
  *         required: true
  *         schema:
  *           type: string
- *         description: ID de la tarjeta
+ *         description: Card ID
  *     responses:
  *       200:
- *         description: Tarjeta eliminada
+ *         description: Deleted card
  *         content:
  *           application/json:
  *             schema:
@@ -147,13 +147,13 @@ import { getBusinessFromSession, handleApiError, NotFoundError, ValidationError 
  *                 success:
  *                   type: boolean
  *       401:
- *         description: No autorizado
+ *         description: Unauthorized
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       404:
- *         description: Tarjeta no encontrada
+ *         description: Card not found
  *         content:
  *           application/json:
  *             schema:
@@ -176,7 +176,7 @@ export async function GET(
     })
 
     if (!card) {
-      throw new NotFoundError("Tarjeta no encontrada")
+      throw new NotFoundError("Loyalty card not found")
     }
 
     return NextResponse.json({
@@ -208,20 +208,20 @@ export async function PUT(
 
     const existing = await prisma.loyaltyCard.findUnique({ where: { id } })
     if (!existing || existing.businessId !== business.id) {
-      throw new NotFoundError("Tarjeta no encontrada")
+      throw new NotFoundError("Loyalty card not found")
     }
 
     const body = await request.json()
 
     if (body.name !== undefined && (!body.name || typeof body.name !== "string" || !body.name.trim())) {
-      throw new ValidationError("El nombre de la tarjeta es obligatorio")
+      throw new ValidationError("Card name is required")
     }
     if (body.reward !== undefined && (!body.reward || typeof body.reward !== "string" || !body.reward.trim())) {
-      throw new ValidationError("La recompensa es obligatoria")
+      throw new ValidationError("Reward is required")
     }
     if (body.stampsRequired !== undefined) {
       const s = Number(body.stampsRequired)
-      if (s < 1 || s > 100) throw new ValidationError("Los sellos requeridos deben estar entre 1 y 100")
+      if (s < 1 || s > 100) throw new ValidationError("Required stamps must be between 1 and 100")
     }
 
     const card = await prisma.loyaltyCard.update({
@@ -252,7 +252,7 @@ export async function DELETE(
 
     const existing = await prisma.loyaltyCard.findUnique({ where: { id } })
     if (!existing || existing.businessId !== business.id) {
-      throw new NotFoundError("Tarjeta no encontrada")
+      throw new NotFoundError("Loyalty card not found")
     }
 
     await prisma.loyaltyCard.delete({ where: { id } })

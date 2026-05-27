@@ -12,14 +12,14 @@ interface CardUpdateInput {
 
 function validateCardUpdate(input: CardUpdateInput): void {
   if (input.name !== undefined && (!input.name || typeof input.name !== "string" || !input.name.trim())) {
-    throw new ValidationError("El nombre de la tarjeta es obligatorio")
+    throw new ValidationError("Card name is required")
   }
   if (input.reward !== undefined && (!input.reward || typeof input.reward !== "string" || !input.reward.trim())) {
-    throw new ValidationError("La recompensa es obligatoria")
+    throw new ValidationError("Reward is required")
   }
   if (input.stampsRequired !== undefined) {
     const s = Number(input.stampsRequired)
-    if (s < 1 || s > 100) throw new ValidationError("Los sellos requeridos deben estar entre 1 y 100")
+    if (s < 1 || s > 100) throw new ValidationError("Required stamps must be between 1 and 100")
   }
 }
 
