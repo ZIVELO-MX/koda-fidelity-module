@@ -26,7 +26,7 @@ function processStamp(params: StampParams): StampResult {
         success: false,
         newStamps: currentStamps,
         event: type,
-        error: "El cliente ya completó su tarjeta. Debe canjear primero.",
+        error: "Customer has completed the card and must redeem first.",
       }
     }
     return { success: true, newStamps: currentStamps + 1, event: "stamp" }
@@ -38,7 +38,7 @@ function processStamp(params: StampParams): StampResult {
         success: false,
         newStamps: currentStamps,
         event: type,
-        error: `El cliente necesita ${stampsRequired - currentStamps} sellos más para canjear`,
+        error: `Customer needs ${stampsRequired - currentStamps} more stamps to redeem`,
       }
     }
     return { success: true, newStamps: 0, event: "redeem" }
@@ -65,7 +65,7 @@ describe("stamp business logic", () => {
     it("rejects stamp when card is already full", () => {
       const result = processStamp({ currentStamps: 10, stampsRequired: 10, type: "stamp" })
       expect(result.success).toBe(false)
-      expect(result.error).toContain("completó")
+      expect(result.error).toContain("completed")
     })
 
     it("rejects stamp when over the limit", () => {
@@ -91,7 +91,7 @@ describe("stamp business logic", () => {
     it("rejects redeem when stamps are insufficient", () => {
       const result = processStamp({ currentStamps: 3, stampsRequired: 10, type: "redeem" })
       expect(result.success).toBe(false)
-      expect(result.error).toContain("necesita")
+      expect(result.error).toContain("needs")
     })
 
     it("rejects redeem at zero stamps", () => {

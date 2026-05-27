@@ -17,8 +17,8 @@ export async function login(_prev: AuthResult, formData: FormData): Promise<Auth
 
   try {
     await authService.signIn(email, password)
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error al iniciar sesión" }
+  } catch {
+    return { error: "No fue posible iniciar sesión. Verifica tus datos." }
   }
 
   revalidatePath("/dashboard")
@@ -45,7 +45,7 @@ export async function signup(_prev: AuthResult, formData: FormData): Promise<Aut
     if (message === "Confirmation email sent") {
       return { success: true }
     }
-    return { error: message }
+    return { error: "No fue posible crear la cuenta. Revisa tus datos." }
   }
 
   if (session?.user) {

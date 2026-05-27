@@ -7,16 +7,16 @@ import { generateLoyaltyPass } from "@/lib/passes/apple"
  * /api/passes/apple/{cardId}:
  *   post:
  *     tags:
- *       - Pases Digitales
- *     summary: Generar pase de Apple Wallet
- *     description: Crea un cliente y genera un archivo .pkpass para Apple Wallet.
+ *       - Digital Passes
+ *     summary: Generate Apple Wallet pass
+ *     description: Creates a customer and generates an Apple Wallet .pkpass file.
  *     parameters:
  *       - in: path
  *         name: cardId
  *         required: true
  *         schema:
  *           type: string
- *         description: ID de la tarjeta de lealtad
+ *         description: Loyalty card ID
  *     requestBody:
  *       required: true
  *       content:
@@ -28,17 +28,17 @@ import { generateLoyaltyPass } from "@/lib/passes/apple"
  *             properties:
  *               customerName:
  *                 type: string
- *                 description: Nombre del cliente
+ *                 description: Customer name
  *     responses:
  *       200:
- *         description: Archivo .pkpass generado
+ *         description: Generated .pkpass file
  *         content:
  *           application/vnd.apple.pkpass:
  *             schema:
  *               type: string
  *               format: binary
  *       400:
- *         description: Nombre del cliente requerido
+ *         description: Customer name required
  *         content:
  *           application/json:
  *             schema:
@@ -47,7 +47,7 @@ import { generateLoyaltyPass } from "@/lib/passes/apple"
  *                 error:
  *                   type: string
  *       404:
- *         description: Tarjeta no encontrada
+ *         description: Card not found
  *         content:
  *           application/json:
  *             schema:

@@ -34,7 +34,6 @@ export default function AuthErrorPage() {
 function AuthErrorContent() {
   const sp = useSearchParams()
   const errorCode = sp.get("error_code") || ""
-  const errorDesc = sp.get("error_description") || ""
 
   const [email, setEmail] = useState("")
   const [sending, setSending] = useState(false)
@@ -129,7 +128,7 @@ function AuthErrorContent() {
       <div className="min-h-screen bg-background flex flex-col">
         <header className="border-b border-border bg-card">
           <div className="max-w-lg mx-auto px-4 py-4">
-            <span className="font-semibold text-foreground">Revisa tu email</span>
+            <span className="font-semibold text-foreground">Revisa tu correo electrónico</span>
           </div>
         </header>
 
@@ -208,7 +207,7 @@ function AuthErrorContent() {
                 ? "El enlace mágico que clickeaste ya no es válido. Solicita uno nuevo abajo."
                 : isRateLimit
                 ? "Has solicitado demasiados enlaces en poco tiempo. Espera un minuto antes de intentar de nuevo."
-                : errorDesc || "Ocurrió un error al iniciar sesión. Intenta de nuevo."}
+                : "Ocurrió un error al iniciar sesión. Intenta de nuevo."}
             </p>
           </div>
 
@@ -227,7 +226,7 @@ function AuthErrorContent() {
                   className="text-base"
                   aria-invalid={emailError}
                 />
-                {emailError && <p className="text-sm text-red-500">Ingresa un email válido</p>}
+                {emailError && <p className="text-sm text-red-500">Ingresa un correo electrónico válido</p>}
               </div>
 
               <Button

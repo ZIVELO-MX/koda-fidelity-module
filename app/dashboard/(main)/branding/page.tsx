@@ -64,8 +64,7 @@ export default function BrandingPage() {
         setSaveError(null)
         setTimeout(() => setSaved(false), 2000)
       } else {
-        const data = await res.json()
-        throw new Error(data.error || "Error al guardar")
+        throw new Error("No fue posible guardar los cambios")
       }
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Error al guardar")

@@ -7,14 +7,14 @@ import { getBusinessFromSession, handleApiError, ValidationError } from "@/lib/a
  * /api/cards:
  *   get:
  *     tags:
- *       - Tarjetas
- *     summary: Listar tarjetas de lealtad
- *     description: Retorna todas las tarjetas de lealtad del negocio autenticado con estadísticas.
+ *       - Cards
+ *     summary: List loyalty cards
+ *     description: Returns all loyalty cards for the authenticated business with statistics.
  *     security:
  *       - cookieAuth: []
  *     responses:
  *       200:
- *         description: Lista de tarjetas
+ *         description: Card list
  *         content:
  *           application/json:
  *             schema:
@@ -25,16 +25,16 @@ import { getBusinessFromSession, handleApiError, ValidationError } from "@/lib/a
  *                   items:
  *                     $ref: '#/components/schemas/LoyaltyCardWithStats'
  *       401:
- *         description: No autorizado
+ *         description: Unauthorized
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *   post:
  *     tags:
- *       - Tarjetas
- *     summary: Crear tarjeta de lealtad
- *     description: Crea una nueva tarjeta de lealtad para el negocio.
+ *       - Cards
+ *     summary: Create loyalty card
+ *     description: Creates a new loyalty card for the business.
  *     security:
  *       - cookieAuth: []
  *     requestBody:
@@ -49,27 +49,27 @@ import { getBusinessFromSession, handleApiError, ValidationError } from "@/lib/a
  *             properties:
  *               name:
  *                 type: string
- *                 description: Nombre de la tarjeta
+ *                 description: Card name
  *               reward:
  *                 type: string
- *                 description: Recompensa al completar
+ *                 description: Reward on completion
  *               stampsRequired:
  *                 type: integer
- *                 description: Sellos requeridos (1-100)
+ *                 description: Required stamps (1-100)
  *                 default: 10
  *               brandColor:
  *                 type: string
- *                 description: Color de marca en hex
+ *                 description: Brand color in hexadecimal format
  *               description:
  *                 type: string
- *                 description: Descripción opcional
+ *                 description: Optional description
  *               expiresAt:
  *                 type: string
  *                 format: date-time
- *                 description: Fecha de expiración opcional
+ *                 description: Optional expiration date
  *     responses:
  *       201:
- *         description: Tarjeta creada
+ *         description: Created card
  *         content:
  *           application/json:
  *             schema:
@@ -78,13 +78,13 @@ import { getBusinessFromSession, handleApiError, ValidationError } from "@/lib/a
  *                 card:
  *                   $ref: '#/components/schemas/LoyaltyCard'
  *       400:
- *         description: Error de validación
+ *         description: Validation error
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       401:
- *         description: No autorizado
+ *         description: Unauthorized
  *         content:
  *           application/json:
  *             schema:
@@ -130,15 +130,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
 
     if (!body.name || typeof body.name !== "string" || !body.name.trim()) {
-      throw new ValidationError("El nombre de la tarjeta es obligatorio")
+      throw new ValidationError("Card name is required")
     }
     if (!body.reward || typeof body.reward !== "string" || !body.reward.trim()) {
-      throw new ValidationError("La recompensa es obligatoria")
+      throw new ValidationError("Reward is required")
     }
 
     const stampsRequired = typeof body.stampsRequired === "number" ? body.stampsRequired : 10
     if (stampsRequired < 1 || stampsRequired > 100) {
-      throw new ValidationError("Los sellos requeridos deben estar entre 1 y 100")
+      throw new ValidationError("Required stamps must be between 1 and 100")
     }
 
     const card = await prisma.loyaltyCard.create({

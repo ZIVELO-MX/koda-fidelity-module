@@ -29,7 +29,7 @@ test.describe("Auth Flow", () => {
     await page.getByRole("button", { name: "Iniciar Sesión" }).click()
 
     await page.waitForURL("**/dashboard", { timeout: 15000 })
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Panel" })).toBeVisible()
   })
 
   test("session persists after page reload", async ({ page }) => {
@@ -41,7 +41,7 @@ test.describe("Auth Flow", () => {
 
     await page.reload()
     await page.waitForURL("**/dashboard")
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Panel" })).toBeVisible()
   })
 
   test("logout redirects to login", async ({ page }) => {

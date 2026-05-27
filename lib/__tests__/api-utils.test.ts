@@ -20,7 +20,7 @@ describe("api-utils error classes", () => {
   it("UnauthorizedError has correct name and message", () => {
     const err = new UnauthorizedError()
     expect(err.name).toBe("UnauthorizedError")
-    expect(err.message).toBe("No autorizado")
+    expect(err.message).toBe("Unauthorized")
   })
 
   it("NotFoundError has correct name and custom message", () => {

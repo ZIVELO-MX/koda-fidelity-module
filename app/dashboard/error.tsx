@@ -28,7 +28,7 @@ export default function DashboardError({
             Reintentar
           </Button>
           <Button variant="outline" onClick={() => window.location.href = "/dashboard"}>
-            Ir al Dashboard
+            Ir al panel
           </Button>
         </div>
       </div>

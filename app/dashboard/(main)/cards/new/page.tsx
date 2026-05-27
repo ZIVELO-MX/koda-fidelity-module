@@ -95,8 +95,7 @@ export default function CreateCardPage() {
       })
 
       if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || "Error al crear la tarjeta")
+        throw new Error("No fue posible crear la tarjeta")
       }
 
       router.push("/dashboard/cards")
@@ -116,7 +115,7 @@ export default function CreateCardPage() {
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Cards
+          Volver a tarjetas
         </Link>
         <h1 className="text-2xl font-bold text-foreground">Crear Tarjeta de Lealtad</h1>
         <p className="text-muted-foreground">Configura una nueva tarjeta de lealtad en pocos pasos</p>
@@ -180,7 +179,7 @@ export default function CreateCardPage() {
                   <Label htmlFor="cardName">Nombre de la Tarjeta</Label>
                   <Input
                     id="cardName"
-                    placeholder="Ej: Café Rewards"
+                    placeholder="Ej.: Recompensas Café"
                     value={formData.cardName}
                     onChange={(e) => { updateFormData("cardName", e.target.value); setErrors((prev) => ({ ...prev, cardName: "" })) }}
                     aria-invalid={!!errors.cardName}

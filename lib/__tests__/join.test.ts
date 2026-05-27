@@ -9,13 +9,13 @@ interface JoinInput {
 
 function validateJoin(input: JoinInput): void {
   if (!input.name || typeof input.name !== "string" || !input.name.trim()) {
-    throw new ValidationError("El nombre es obligatorio")
+    throw new ValidationError("Name is required")
   }
   if (!input.email || typeof input.email !== "string" || !input.email.includes("@")) {
-    throw new ValidationError("Email inválido")
+    throw new ValidationError("Invalid email")
   }
   if (!input.cardId || typeof input.cardId !== "string") {
-    throw new ValidationError("ID de tarjeta inválido")
+    throw new ValidationError("Invalid card ID")
   }
 }
 

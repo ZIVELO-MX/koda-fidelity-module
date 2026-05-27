@@ -4,7 +4,7 @@ import { NextResponse } from "next/server"
 
 export class UnauthorizedError extends Error {
   constructor() {
-    super("No autorizado")
+    super("Unauthorized")
     this.name = "UnauthorizedError"
   }
 }
@@ -36,7 +36,7 @@ export async function getBusinessFromSession() {
   })
 
   if (!business) {
-    throw new NotFoundError("Negocio no encontrado")
+    throw new NotFoundError("Business not found")
   }
 
   return business
@@ -53,5 +53,5 @@ export function handleApiError(error: unknown) {
     return NextResponse.json({ error: error.message }, { status: 400 })
   }
   console.error("API Error:", error)
-  return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 })
+  return NextResponse.json({ error: "Internal server error" }, { status: 500 })
 }

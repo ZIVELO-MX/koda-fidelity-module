@@ -134,7 +134,7 @@ export default async function LandingPage({
                   currentStamps={siteConfig.hero.demoCard.currentStamps}
                   maxStamps={siteConfig.hero.demoCard.maxStamps}
                   reward={siteConfig.hero.demoCard.reward}
-                  expirationDate="Dec 31, 2026"
+                  expirationDate="31 dic 2026"
                   brandColor={siteConfig.hero.demoCard.brandColor}
                   className="relative"
                 />

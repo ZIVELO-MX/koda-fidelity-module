@@ -8,9 +8,9 @@ import { getBusinessFromSession, handleApiError, ValidationError, NotFoundError,
  * /api/join:
  *   post:
  *     tags:
- *       - Membresía
- *     summary: Unirse a una tarjeta de lealtad
- *     description: Registra un nuevo cliente en una tarjeta de lealtad. Si ya existe el email en la tarjeta, retorna el cliente existente.
+ *       - Membership
+ *     summary: Join a loyalty card
+ *     description: Registers a customer for a loyalty card. Returns the existing customer when the email is already registered for that card.
  *     requestBody:
  *       required: true
  *       content:
@@ -24,17 +24,17 @@ import { getBusinessFromSession, handleApiError, ValidationError, NotFoundError,
  *             properties:
  *               name:
  *                 type: string
- *                 description: Nombre del cliente
+ *                 description: Customer name
  *               email:
  *                 type: string
  *                 format: email
- *                 description: Email del cliente
+ *                 description: Customer email
  *               cardId:
  *                 type: string
- *                 description: ID de la tarjeta de lealtad
+ *                 description: Loyalty card ID
  *     responses:
  *       200:
- *         description: Cliente ya existente o creado
+ *         description: Existing or created customer
  *         content:
  *           application/json:
  *             schema:
@@ -44,51 +44,51 @@ import { getBusinessFromSession, handleApiError, ValidationError, NotFoundError,
  *                   type: string
  *                 existing:
  *                   type: boolean
- *                   description: true si ya existía, false si es nuevo
+ *                   description: true when already registered, false when newly created
  *       400:
- *         description: Error de validación
+ *         description: Validation error
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       404:
- *         description: Tarjeta no encontrada
+ *         description: Card not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *   get:
  *     tags:
- *       - Membresía
- *     summary: Buscar cliente por ID o email
+ *       - Membership
+ *     summary: Find customer by ID or email
  *     description: |
- *       Busca un cliente por su ID (público) o por email (requiere auth).
- *       - ?id=xxx → búsqueda pública por ID
- *       - ?email=xxx → requiere sesión, retorna todos los customers con ese email
- *       - ?email=xxx&cardId=xxx → filtra también por tarjeta
+ *       Finds a customer by ID or email.
+ *       - ?id=xxx requires an authenticated business session
+ *       - ?email=xxx requires the matching authenticated customer and returns all cards for that email
+ *       - ?email=xxx&cardId=xxx also filters by card
  *     parameters:
  *       - in: query
  *         name: id
  *         required: false
  *         schema:
  *           type: string
- *         description: ID del cliente
+ *         description: Customer ID
  *       - in: query
  *         name: email
  *         required: false
  *         schema:
  *           type: string
  *           format: email
- *         description: Email del cliente (requiere auth)
+ *         description: Customer email (requires authentication)
  *       - in: query
  *         name: cardId
  *         required: false
  *         schema:
  *           type: string
- *         description: ID de la tarjeta (filtro adicional con email)
+ *         description: Card ID (optional filter used with email)
  *     responses:
  *       200:
- *         description: Cliente(s) encontrado(s)
+ *         description: Found customer or customers
  *         content:
  *           application/json:
  *             schema:
@@ -101,19 +101,19 @@ import { getBusinessFromSession, handleApiError, ValidationError, NotFoundError,
  *                   items:
  *                     $ref: '#/components/schemas/Customer'
  *       400:
- *         description: Faltan parámetros
+ *         description: Missing parameters
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       401:
- *         description: No autorizado (para búsqueda por email)
+ *         description: Unauthorized for email lookup
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       404:
- *         description: Cliente no encontrado
+ *         description: Customer not found
  *         content:
  *           application/json:
  *             schema:
@@ -138,18 +138,18 @@ export async function POST(request: NextRequest) {
     const { name, email, cardId } = body
 
     if (!name || typeof name !== "string" || !name.trim()) {
-      throw new ValidationError("El nombre es obligatorio")
+      throw new ValidationError("Name is required")
     }
     if (!email || typeof email !== "string" || !email.includes("@")) {
-      throw new ValidationError("Email inválido")
+      throw new ValidationError("Invalid email")
     }
     if (!cardId || typeof cardId !== "string") {
-      throw new ValidationError("ID de tarjeta inválido")
+      throw new ValidationError("Invalid card ID")
     }
 
     const card = await prisma.loyaltyCard.findUnique({ where: { id: cardId } })
     if (!card) {
-      throw new NotFoundError("Tarjeta no encontrada")
+      throw new NotFoundError("Loyalty card not found")
     }
 
     const existing = await prisma.customer.findFirst({
@@ -187,14 +187,14 @@ export async function GET(request: NextRequest) {
         where: { id },
         include: cardInclude,
       })
-      if (!customer) throw new NotFoundError("Cliente no encontrado")
+      if (!customer) throw new NotFoundError("Customer not found")
 
       const card = await prisma.loyaltyCard.findUnique({
         where: { id: customer.cardId },
         select: { businessId: true },
       })
       if (!card || card.businessId !== business.id) {
-        throw new NotFoundError("Cliente no encontrado")
+        throw new NotFoundError("Customer not found")
       }
 
       return NextResponse.json({ customer })
@@ -216,11 +216,11 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: "desc" },
       })
 
-      if (customers.length === 0) throw new NotFoundError("Cliente no encontrado")
+      if (customers.length === 0) throw new NotFoundError("Customer not found")
       return NextResponse.json({ customers })
     }
 
-    throw new ValidationError("Proporciona ?id= o ?email=")
+    throw new ValidationError("Provide either ?id= or ?email=")
   } catch (error) {
     return handleApiError(error)
   }
