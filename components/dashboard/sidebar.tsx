@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -35,9 +36,13 @@ export function DashboardSidebar() {
       {/* Mobile menu button */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 bg-card border-b border-border">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-sm">K</span>
-          </div>
+          <Image
+            src="/short-logo.svg"
+            alt="Koda"
+            width={32}
+            height={32}
+            className="size-8 shrink-0"
+          />
           <span className="font-semibold text-foreground">Koda</span>
         </Link>
         <Button
@@ -72,9 +77,13 @@ export function DashboardSidebar() {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center gap-2 px-6 py-5 border-b border-border">
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">K</span>
-            </div>
+            <Image
+              src="/short-logo.svg"
+              alt="Koda"
+              width={36}
+              height={36}
+              className="size-9 shrink-0"
+            />
             <div className="flex flex-col">
               <span className="font-semibold text-foreground">Koda Fidelity</span>
               <span className="text-xs text-muted-foreground">Plataforma de Lealtad</span>

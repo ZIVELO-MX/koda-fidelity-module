@@ -1,13 +1,10 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
-  <title id="title">Fidelity Card Icon</title>
+  <title id="title">Koda Fidelity</title>
   <desc id="desc">
     Orange background with white circle and rounded orange star
   </desc>
-<!--Fondo naranja-->
   <rect width="512" height="512" rx="112" fill="#ff6b35"/>
-<!--Círculo blanco-->
   <circle cx="256" cy="256" r="164" fill="#ffffff"/>
-<!--Estrella naranja con bordes redondeados-->
   <path d="M256 140
        Q262 140 268 154
        L291 204
