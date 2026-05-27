@@ -7,14 +7,14 @@ import { getBusinessFromSession, handleApiError, ValidationError } from "@/lib/a
  * /api/business:
  *   get:
  *     tags:
- *       - Negocio
- *     summary: Obtener perfil del negocio
- *     description: Retorna el perfil del negocio autenticado. Requiere sesión activa.
+ *       - Business
+ *     summary: Get business profile
+ *     description: Returns the authenticated business profile. Requires an active session.
  *     security:
  *       - cookieAuth: []
  *     responses:
  *       200:
- *         description: Perfil del negocio
+ *         description: Business profile
  *         content:
  *           application/json:
  *             schema:
@@ -23,16 +23,16 @@ import { getBusinessFromSession, handleApiError, ValidationError } from "@/lib/a
  *                 business:
  *                   $ref: '#/components/schemas/Business'
  *       401:
- *         description: No autorizado
+ *         description: Unauthorized
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *   put:
  *     tags:
- *       - Negocio
- *     summary: Actualizar perfil del negocio
- *     description: Actualiza los datos del negocio autenticado.
+ *       - Business
+ *     summary: Update business profile
+ *     description: Updates the authenticated business data.
  *     security:
  *       - cookieAuth: []
  *     requestBody:
@@ -44,17 +44,17 @@ import { getBusinessFromSession, handleApiError, ValidationError } from "@/lib/a
  *             properties:
  *               name:
  *                 type: string
- *                 description: Nombre del negocio
+ *                 description: Business name
  *               brandColor:
  *                 type: string
- *                 description: Color de marca en hex
+ *                 description: Brand color in hexadecimal format
  *                 example: "#ff6b35"
  *               logoUrl:
  *                 type: string
- *                 description: URL del logo
+ *                 description: Logo URL
  *     responses:
  *       200:
- *         description: Negocio actualizado
+ *         description: Updated business
  *         content:
  *           application/json:
  *             schema:
@@ -63,13 +63,13 @@ import { getBusinessFromSession, handleApiError, ValidationError } from "@/lib/a
  *                 business:
  *                   $ref: '#/components/schemas/Business'
  *       400:
- *         description: Error de validación
+ *         description: Validation error
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       401:
- *         description: No autorizado
+ *         description: Unauthorized
  *         content:
  *           application/json:
  *             schema:
@@ -90,7 +90,7 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
 
     if (body.name !== undefined && (!body.name || typeof body.name !== "string" || !body.name.trim())) {
-      throw new ValidationError("El nombre del negocio es obligatorio")
+      throw new ValidationError("Business name is required")
     }
 
     const updated = await prisma.business.update({

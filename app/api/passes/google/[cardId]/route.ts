@@ -12,16 +12,16 @@ import {
  * /api/passes/google/{cardId}:
  *   post:
  *     tags:
- *       - Pases Digitales
- *     summary: Generar URL de Google Wallet
- *     description: Crea un cliente y genera un JWT firmado para guardar en Google Wallet.
+ *       - Digital Passes
+ *     summary: Generate Google Wallet URL
+ *     description: Creates a customer and generates a signed JWT for Google Wallet.
  *     parameters:
  *       - in: path
  *         name: cardId
  *         required: true
  *         schema:
  *           type: string
- *         description: ID de la tarjeta de lealtad
+ *         description: Loyalty card ID
  *     requestBody:
  *       required: true
  *       content:
@@ -33,10 +33,10 @@ import {
  *             properties:
  *               customerName:
  *                 type: string
- *                 description: Nombre del cliente
+ *                 description: Customer name
  *     responses:
  *       200:
- *         description: URL para guardar en Google Wallet
+ *         description: Google Wallet save URL
  *         content:
  *           application/json:
  *             schema:
@@ -44,23 +44,23 @@ import {
  *               properties:
  *                 saveUrl:
  *                   type: string
- *                   description: URL para guardar el pase
+ *                   description: Pass save URL
  *                 customerId:
  *                   type: string
  *       400:
- *         description: Nombre del cliente requerido
+ *         description: Customer name required
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       404:
- *         description: Tarjeta no encontrada
+ *         description: Card not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       501:
- *         description: Google Wallet no configurado
+ *         description: Google Wallet not configured
  *         content:
  *           application/json:
  *             schema:
@@ -75,7 +75,7 @@ export async function POST(
   if (!isConfigured()) {
     return NextResponse.json(
       {
-        error: "Google Wallet no está configurado",
+        error: "Google Wallet is not configured",
         detail: getConfigError(),
       },
       { status: 501 },

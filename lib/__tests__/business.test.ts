@@ -9,10 +9,10 @@ interface BusinessUpdateInput {
 
 function validateBusinessUpdate(input: BusinessUpdateInput): void {
   if (input.name !== undefined && (!input.name || typeof input.name !== "string" || !input.name.trim())) {
-    throw new ValidationError("El nombre del negocio es obligatorio")
+    throw new ValidationError("Business name is required")
   }
   if (input.brandColor !== undefined && !/^#[0-9a-fA-F]{6}$/.test(input.brandColor)) {
-    throw new ValidationError("El color debe ser un hexadecimal válido")
+    throw new ValidationError("Color must be a valid hexadecimal value")
   }
 }
 

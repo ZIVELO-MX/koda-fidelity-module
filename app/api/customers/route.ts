@@ -7,9 +7,9 @@ import { getBusinessFromSession, handleApiError } from "@/lib/api-utils"
  * /api/customers:
  *   get:
  *     tags:
- *       - Clientes
- *     summary: Buscar clientes
- *     description: Retorna los clientes del negocio autenticado. Opcionalmente filtra por nombre.
+ *       - Customers
+ *     summary: Search customers
+ *     description: Returns customers of the authenticated business, optionally filtered by name.
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -18,10 +18,10 @@ import { getBusinessFromSession, handleApiError } from "@/lib/api-utils"
  *         required: false
  *         schema:
  *           type: string
- *         description: Término de búsqueda por nombre (case-insensitive)
+ *         description: Case-insensitive name search term
  *     responses:
  *       200:
- *         description: Lista de clientes
+ *         description: Customer list
  *         content:
  *           application/json:
  *             schema:
@@ -57,7 +57,7 @@ import { getBusinessFromSession, handleApiError } from "@/lib/api-utils"
  *                         type: string
  *                         format: date-time
  *       401:
- *         description: No autorizado
+ *         description: Unauthorized
  *         content:
  *           application/json:
  *             schema:

@@ -38,9 +38,7 @@ export function StampButton({
 
       const data = await res.json()
 
-      if (!res.ok) {
-        throw new Error(data.error || "Error al procesar")
-      }
+      if (!res.ok) throw new Error("No fue posible procesar la operación")
 
       setState(data.event === "redeem" ? "redeemed" : "stamped")
       router.refresh()

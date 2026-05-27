@@ -75,9 +75,7 @@ function ScanPageInner() {
 
     try {
       const res = await fetch(`/api/join?id=${encodeURIComponent(customerId)}`)
-      if (!res.ok) {
-        throw new Error("Cliente no encontrado")
-      }
+      if (!res.ok) throw new Error("Cliente no encontrado")
       const data = await res.json()
       const c = data.customer
       setSelectedCustomer({
@@ -110,9 +108,7 @@ function ScanPageInner() {
 
       const data = await res.json()
 
-      if (!res.ok) {
-        throw new Error(data.error || "Error al procesar")
-      }
+      if (!res.ok) throw new Error("No fue posible procesar la operación")
 
       if (data.event === "redeem") {
         setSelectedCustomer({ ...selectedCustomer, stamps: 0 })
@@ -151,7 +147,7 @@ function ScanPageInner() {
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="h-5 w-5" />
-            <span className="text-sm">Dashboard</span>
+            <span className="text-sm">Panel</span>
           </Link>
           <div className="flex items-center gap-2">
             <Image

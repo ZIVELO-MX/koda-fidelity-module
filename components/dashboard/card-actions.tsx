@@ -28,8 +28,7 @@ export function CardActions({ cardId }: CardActionsProps) {
     if (res.ok) {
       router.push("/dashboard/cards")
     } else {
-      const data = await res.json().catch(() => ({}))
-      setError(data.error || "Error al eliminar la tarjeta")
+      setError("No fue posible eliminar la tarjeta")
       setDeleting(false)
     }
   }
