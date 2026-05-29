@@ -6,7 +6,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Mail, AlertCircle, Loader2, ArrowLeft } from "lucide-react"
+import { Mail, AlertCircle, Loader2, ArrowLeft, Clock } from "lucide-react"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
 
 export default function AuthErrorPage() {
