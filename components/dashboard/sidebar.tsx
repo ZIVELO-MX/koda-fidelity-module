@@ -15,6 +15,14 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { logout } from "@/lib/actions/auth"
+import { ProfilePanel } from "./profile-panel"
+import { useState } from "react"
+
+interface DashboardSidebarProps {
+  userEmail: string
+  businessName: string
+  brandColor: string
+}
 
 const desktopNavigation = [
   { name: "Panel", href: "/dashboard", icon: LayoutDashboard },
@@ -34,14 +42,14 @@ const mobileNavigation = [
   { name: "Marca", href: "/dashboard/branding", icon: Palette },
 ]
 
-export function DashboardSidebar() {
+export function DashboardSidebar({ userEmail, businessName, brandColor }: DashboardSidebarProps) {
   const pathname = usePathname()
+  const [profileOpen, setProfileOpen] = useState(false)
 
   return (
     <>
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex fixed top-0 left-0 z-40 h-full w-64 max-w-[calc(100vw-2rem)] bg-card border-r border-border flex-col">
-        {/* Logo */}
         <div className="flex items-center gap-2 px-6 py-5 border-b border-border">
           <Image
             src="/short-logo.svg"
@@ -56,7 +64,6 @@ export function DashboardSidebar() {
           </div>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {desktopNavigation.map((item) => {
             const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
@@ -78,7 +85,6 @@ export function DashboardSidebar() {
           })}
         </nav>
 
-        {/* Bottom section */}
         <div className="p-4 border-t border-border space-y-2">
           <form action={logout}>
             <Button size="sm" variant="ghost" className="w-full text-xs text-muted-foreground hover:text-destructive">
@@ -111,8 +117,33 @@ export function DashboardSidebar() {
               </Link>
             )
           })}
+          <button
+            onClick={() => setProfileOpen(true)}
+            className="flex flex-col items-center justify-center gap-0.5 min-w-0 px-2 py-1 rounded-lg transition-colors text-muted-foreground"
+          >
+            <div
+              className="h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+              style={{ backgroundColor: brandColor }}
+            >
+              {businessName.charAt(0).toUpperCase()}
+            </div>
+            <span className="text-[10px] font-medium leading-tight truncate w-full text-center">
+              Perfil
+            </span>
+          </button>
         </div>
       </nav>
+
+      {/* Mobile profile panel */}
+      {profileOpen && (
+        <ProfilePanel
+          userEmail={userEmail}
+          businessName={businessName}
+          brandColor={brandColor}
+          onClose={() => setProfileOpen(false)}
+          fullScreen
+        />
+      )}
     </>
   )
 }
