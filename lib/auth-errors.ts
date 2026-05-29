@@ -11,7 +11,7 @@ export function getFriendlyAuthError(error: string, errorCode: string): AuthErro
       description: "El enlace mágico que clickeaste ya no es válido. Solicita uno nuevo abajo.",
     }
   }
-  if (errorCode === "rate_limit" || message.includes("rate_limit") || message.includes("over_email_send_rate_limit") || message.includes("too many")) {
+  if (errorCode === "rate_limit" || message.includes("rate_limit") || message.includes("rate limit") || message.includes("over_email_send_rate_limit") || message.includes("too many")) {
     return {
       title: "Demasiados Intentos",
       description: "Has solicitado demasiados enlaces en poco tiempo. Espera un minuto antes de intentar de nuevo.",
@@ -34,11 +34,19 @@ export function getFriendlyAuthError(error: string, errorCode: string): AuthErro
 
 export function getFriendlySendError(err: unknown): string {
   const message = err instanceof Error ? err.message : ""
-  if (message.includes("rate_limit") || message.includes("over_email_send_rate_limit")) {
+  const code = (err as any)?.code ?? ""
+
+  if (
+    code === "over_email_send_rate_limit" ||
+    message.includes("rate_limit") ||
+    message.includes("rate limit") ||
+    message.includes("over_email_send_rate_limit") ||
+    message.includes("too many")
+  ) {
     return "Has solicitado demasiados enlaces. Espera un momento antes de intentar de nuevo."
   }
   if (message.includes("invalid") || message.includes("not found")) {
     return "Correo electrónico no válido. Verifica e intenta de nuevo."
   }
-  return "No fue posible enviar el enlace"
+  return "No fue posible enviar el enlace."
 }

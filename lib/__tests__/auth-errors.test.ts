@@ -24,6 +24,11 @@ describe("getFriendlyAuthError", () => {
     expect(result?.title).toBe("Demasiados Intentos")
   })
 
+  it("returns rate limit error when message contains 'rate limit' with space", () => {
+    const result = getFriendlyAuthError("email rate limit exceeded", "")
+    expect(result?.title).toBe("Demasiados Intentos")
+  })
+
   it("returns invalid link error for invalid token", () => {
     const result = getFriendlyAuthError("Invalid token", "")
     expect(result?.title).toBe("Enlace No Válido")
@@ -57,6 +62,16 @@ describe("getFriendlySendError", () => {
 
   it("returns rate limit message for over_email_send_rate_limit", () => {
     expect(getFriendlySendError(new Error("over_email_send_rate_limit"))).toContain("demasiados")
+  })
+
+  it("returns rate limit message for 'email rate limit exceeded' (Supabase exact error)", () => {
+    expect(getFriendlySendError(new Error("email rate limit exceeded"))).toContain("demasiados")
+  })
+
+  it("returns rate limit message for error with code over_email_send_rate_limit", () => {
+    const err = new Error("some other message")
+    ;(err as any).code = "over_email_send_rate_limit"
+    expect(getFriendlySendError(err)).toContain("demasiados")
   })
 
   it("returns invalid email message for invalid email", () => {
