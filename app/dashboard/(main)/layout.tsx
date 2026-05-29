@@ -11,7 +11,7 @@ export default function DashboardLayout({
       <DashboardSidebar />
       <div className="lg:pl-64">
         <DashboardHeader />
-        <main className="p-6 pt-20 lg:pt-6">{children}</main>
+        <main className="p-6 pt-16 lg:pt-6 pb-20 lg:pb-6">{children}</main>
       </div>
     </div>
   )
