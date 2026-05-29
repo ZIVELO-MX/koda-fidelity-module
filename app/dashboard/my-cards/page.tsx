@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { Mail, Loader2, ArrowLeft, Smartphone } from "lucide-react"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
+import { getFriendlySendError } from "@/lib/auth-errors"
 
 interface MyCard {
   id: string
@@ -84,8 +85,8 @@ export default function DashboardMyCardsPage() {
       })
       if (error) throw error
       setState("sent")
-    } catch {
-      setSendError("No fue posible enviar el enlace")
+    } catch (err) {
+      setSendError(getFriendlySendError(err))
     } finally {
       setSending(false)
     }
