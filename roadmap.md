@@ -154,6 +154,10 @@
 - [x] Reemplazar `html5-qrcode` por `@yudiel/react-qr-scanner` — estabiliza el escáner QR con la API nativa Barcode Detection + fallback ZXing
 - [x] Agregar tests de componente para QRScanner (15 tests)
 - [x] Desactivar cooldown de magic links durante beta del MVP (se re-activará post-MVP)
+- [x] Mover my-cards a `/dashboard/my-cards` — ruta unificada para clientes y business
+- [x] Refactor abstracción Supabase: centralizar imports en `lib/supabase-req-res.ts`
+- [x] Login inteligente: detecta business email → password, customer email → magic link
+- [x] Actividad reciente: limitado a 3 items en mobile
 - [ ] Agregar campo `phone` a Customer para SMS magic links (futuro)
 
 ### Post-MVP — SMTP / Remitente personalizado

@@ -7,7 +7,15 @@ import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
-export type AuthResult = { error?: string; success?: true }
+export type AuthResult = { error?: string; success?: true; isBusiness?: boolean }
+
+export async function checkBusinessEmail(email: string): Promise<boolean> {
+  const business = await prisma.business.findUnique({
+    where: { email },
+    select: { id: true },
+  })
+  return business !== null
+}
 
 export async function login(_prev: AuthResult, formData: FormData): Promise<AuthResult> {
   const email = formData.get("email") as string
@@ -60,6 +68,17 @@ export async function signup(_prev: AuthResult, formData: FormData): Promise<Aut
   }
 
   return { success: true }
+}
+
+export async function sendLoginMagicLink(email: string): Promise<AuthResult> {
+  try {
+    await authService.sendMagicLink(email, {
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/dashboard/my-cards`,
+    })
+    return { success: true }
+  } catch {
+    return { error: "No fue posible enviar el enlace" }
+  }
 }
 
 export async function logout() {
