@@ -153,6 +153,7 @@
 
 - [x] Reemplazar `html5-qrcode` por `@yudiel/react-qr-scanner` — estabiliza el escáner QR con la API nativa Barcode Detection + fallback ZXing
 - [x] Agregar tests de componente para QRScanner (15 tests)
+- [x] Desactivar cooldown de magic links durante beta del MVP (se re-activará post-MVP)
 - [ ] Agregar campo `phone` a Customer para SMS magic links (futuro)
 
 ### Post-MVP — SMTP / Remitente personalizado
@@ -300,11 +301,13 @@ model StampLog {
 - [x] `docs/idea.md` y `docs/deploy.md` eliminados (obsoletos).
 - [x] QR scanner estabilizado (reemplazo de librería).
 - [x] Tests de componente agregados para QRScanner.
+- [x] Cooldown de magic links desactivado (beta). Se re-activarán límites de tasa post-MVP.
 - [ ] `pnpm lint` debe repararse: el comando existe, pero ESLint no está instalado/configurado.
 - [ ] El build debe dejar de omitir errores TypeScript en `next.config.mjs`.
 
 ### Post-MVP
 
-5. **Phone magic links** — agregar `phone` a Customer + SMS auth
+5. **Re-activar cooldown de magic links** — restaurar límites de tasa con configuración por entorno
+6. **Phone magic links** — agregar `phone` a Customer + SMS auth
 6. **Wallet passes** — re-habilitar cuando se requiera
 7. **Multi-usuario con roles por negocio** — modelo `User` con permisos (admin, editor, viewer) vinculado a `Business`, login con selección de negocio, auditoría de acciones
