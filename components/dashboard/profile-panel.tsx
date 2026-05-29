@@ -1,6 +1,7 @@
 "use client"
 
-import { Mail, LogOut, X, ArrowLeft } from "lucide-react"
+import Link from "next/link"
+import { Mail, LogOut, X, ArrowLeft, Smartphone } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { logout } from "@/lib/actions/auth"
 
@@ -44,6 +45,15 @@ export function ProfilePanel({
         <Mail className="h-4 w-4" />
         {userEmail}
       </div>
+
+      <Link
+        href="/dashboard/my-cards"
+        onClick={onClose}
+        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <Smartphone className="h-4 w-4" />
+        Mis Tarjetas
+      </Link>
 
       <form action={logout}>
         <Button
@@ -90,6 +100,14 @@ export function ProfilePanel({
           <p className="font-semibold text-foreground">{businessName}</p>
           <p className="text-xs text-muted-foreground mt-1">{userEmail}</p>
         </div>
+        <Link
+          href="/dashboard/my-cards"
+          onClick={onClose}
+          className="flex items-center justify-center gap-2 w-full py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-muted"
+        >
+          <Smartphone className="h-4 w-4" />
+          Mis Tarjetas
+        </Link>
         <form action={logout} className="w-full">
           <Button
             variant="outline"
