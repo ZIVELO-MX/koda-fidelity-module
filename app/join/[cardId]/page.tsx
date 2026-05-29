@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { Check, Mail, Loader2, ArrowLeft, Smartphone } from "lucide-react"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
+import { getFriendlySendError } from "@/lib/auth-errors"
 
 type Step = "loading" | "error" | "form" | "sent" | "ready"
 
@@ -132,7 +133,7 @@ export default function JoinCardPage() {
 
       setStep("sent")
     } catch (err) {
-      setSendError("No fue posible enviar el enlace")
+      setSendError(getFriendlySendError(err))
     } finally {
       setSending(false)
     }
