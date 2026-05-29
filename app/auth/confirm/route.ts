@@ -8,7 +8,9 @@ export async function GET(request: NextRequest) {
   const redirect_to = searchParams.get("redirect_to")
 
   if (!token_hash || !type) {
-    return NextResponse.redirect(new URL("/auth/error", request.url))
+    return NextResponse.redirect(
+      new URL("/auth/error?error_code=missing_params", request.url),
+    )
   }
 
   const redirectUrl = new URL(redirect_to || "/dashboard/my-cards", request.url)
@@ -22,12 +24,18 @@ export async function GET(request: NextRequest) {
   })
 
   if (error) {
-    console.error("Auth confirm error:", error.message)
+    console.error("[auth/confirm] verifyOtp failed:", {
+      message: error.message,
+      code: (error as any)?.code,
+      status: (error as any)?.status,
+    })
+
+    const errorCode = (error as any)?.code || ""
+    const errorParams = new URLSearchParams({ error: error.message })
+    if (errorCode) errorParams.set("error_code", errorCode)
+
     return NextResponse.redirect(
-      new URL(
-        `/auth/error?error=${encodeURIComponent(error.message)}`,
-        request.url,
-      ),
+      new URL(`/auth/error?${errorParams.toString()}`, request.url),
     )
   }
 

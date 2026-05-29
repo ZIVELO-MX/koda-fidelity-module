@@ -41,8 +41,13 @@ export function LoginForm() {
           setStep("sent")
         }
       }
-    } catch {
-      setError("Ocurrió un error. Intenta de nuevo.")
+    } catch (err) {
+      const message = err instanceof Error ? err.message : ""
+      if (message.includes("rate_limit") || message.includes("over_email_send_rate_limit")) {
+        setError("Has solicitado demasiados enlaces. Espera un momento e intenta de nuevo.")
+      } else {
+        setError("Ocurrió un error. Intenta de nuevo.")
+      }
     } finally {
       setPending(false)
     }
