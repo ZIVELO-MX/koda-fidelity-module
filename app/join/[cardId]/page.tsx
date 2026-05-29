@@ -7,18 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
-import { Check, Mail, Loader2, ArrowLeft, Smartphone, Clock } from "lucide-react"
+import { Check, Mail, Loader2, ArrowLeft, Smartphone } from "lucide-react"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
-
-const RATE_LIMIT_REGEX = /rate[\s_-]limit|over_request|429/i
-const SECONDS_REGEX = /(\d+)\s*(?:seconds?|sec)/i
-
-function getRateLimitCooldown(err: unknown): number {
-  if (!(err instanceof Error)) return 90
-  const seconds = err.message.match(SECONDS_REGEX)
-  if (seconds) return Math.min(Number(seconds[1]), 300)
-  return 90
-}
 
 type Step = "loading" | "error" | "form" | "sent" | "ready"
 
@@ -56,9 +46,7 @@ export default function JoinCardPage() {
   const [emailError, setEmailError] = useState(false)
   const [nameError, setNameError] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
-  const [cooldown, setCooldown] = useState(0)
   const checkedSession = useRef(false)
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     const init = async () => {
@@ -96,50 +84,7 @@ export default function JoinCardPage() {
     init()
   }, [cardId])
 
-  useEffect(() => {
-    const val = localStorage.getItem("magic-link-cooldown")
-    if (!val) return
-
-    const remaining = Math.floor((Number(val) - Date.now()) / 1000)
-    if (remaining > 0) {
-      queueMicrotask(() => setCooldown(remaining))
-    } else {
-      localStorage.removeItem("magic-link-cooldown")
-    }
-  }, [cardId])
-
-  useEffect(() => {
-    if (cooldown > 0) {
-      intervalRef.current = setInterval(() => {
-        setCooldown((prev) => {
-          const next = prev - 1
-          if (next <= 0) {
-            localStorage.removeItem("magic-link-cooldown")
-            if (intervalRef.current) clearInterval(intervalRef.current)
-            intervalRef.current = null
-          }
-          return next
-        })
-      }, 1000)
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
-      }
-    }
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
-      }
-    }
-  }, [cooldown, cardId])
-
-  useEffect(() => {
-    if (cooldown === 0) {
-      queueMicrotask(() => setSendError(null))
-    }
-  }, [cooldown])
+  // cooldown desactivado durante beta del MVP
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
@@ -187,16 +132,7 @@ export default function JoinCardPage() {
 
       setStep("sent")
     } catch (err) {
-      const msg = err instanceof Error ? err.message : ""
-      if (RATE_LIMIT_REGEX.test(msg)) {
-        const seconds = getRateLimitCooldown(err)
-        const until = Date.now() + seconds * 1000
-        localStorage.setItem("magic-link-cooldown", String(until))
-        setCooldown(seconds)
-        setSendError("Espera un momento antes de pedir otro enlace")
-      } else {
-        setSendError("No fue posible enviar el enlace")
-      }
+      setSendError("No fue posible enviar el enlace")
     } finally {
       setSending(false)
     }
@@ -430,11 +366,9 @@ export default function JoinCardPage() {
 
               {sendError && <p className="text-sm text-red-500 text-center">{sendError}</p>}
 
-              <Button type="submit" className="w-full" size="lg" disabled={sending || cooldown > 0}>
+              <Button type="submit" className="w-full" size="lg" disabled={sending}>
                 {sending ? (
                   <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                ) : cooldown > 0 ? (
-                  <><Clock className="h-4 w-4 mr-2" /> Espera {cooldown}s</>
                 ) : (
                   "Obtener Tarjeta"
                 )}
