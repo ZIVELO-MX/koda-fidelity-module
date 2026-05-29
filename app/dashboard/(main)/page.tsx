@@ -5,7 +5,7 @@ import { StatCard } from "@/components/dashboard/stat-card"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
-import { CreditCard, Users, Stamp, TrendingUp, Plus, ArrowRight, AlertCircle } from "lucide-react"
+import { CreditCard, Users, Stamp, TrendingUp, Plus, ArrowRight, AlertCircle, Eye } from "lucide-react"
 
 function timeAgo(date: Date): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
@@ -99,40 +99,49 @@ export default async function DashboardPage() {
               Ver todas
             </Link>
           </div>
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {cards.map((card) => (
               <div
                 key={card.id}
-                className="bg-card rounded-2xl p-5 border border-border hover:shadow-md transition-shadow"
+                className="bg-card rounded-2xl border border-border hover:shadow-md transition-shadow overflow-hidden"
               >
-                <div className="flex items-start justify-between mb-4">
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold"
-                    style={{ backgroundColor: card.brandColor }}
-                  >
-                    {card.name.charAt(0)}
+                <div className="p-5">
+                  <div className="flex items-start justify-between mb-4">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shrink-0"
+                      style={{ backgroundColor: card.brandColor }}
+                    >
+                      {card.name.charAt(0)}
+                    </div>
+                    <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full ml-2">
+                      Activa
+                    </span>
                   </div>
-                  <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
-                    Activa
-                  </span>
+                  <h3 className="font-semibold text-foreground mb-1 truncate">{card.name}</h3>
+                  <p className="text-sm text-muted-foreground mb-4 truncate">
+                    {card.stampsRequired} sellos para {card.reward}
+                  </p>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      <span className="font-medium text-foreground">{card._count.customers}</span> clientes
+                    </span>
+                    <span className="text-muted-foreground">
+                      <span className="font-medium text-foreground">{card.customers.reduce((s, c) => s + c.stamps, 0)}</span> sellos
+                    </span>
+                  </div>
                 </div>
-                <h3 className="font-semibold text-foreground mb-1">{card.name}</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  {card.stampsRequired} sellos para {card.reward}
-                </p>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    <span className="font-medium text-foreground">{card._count.customers}</span> clientes
-                  </span>
-                  <span className="text-muted-foreground">
-                    <span className="font-medium text-foreground">{card.customers.reduce((s, c) => s + c.stamps, 0)}</span> sellos
-                  </span>
-                </div>
+                <Link
+                  href={`/dashboard/cards/${card.id}`}
+                  className="flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-primary border-t border-border hover:bg-primary/5 transition-colors"
+                >
+                  <Eye className="h-4 w-4" />
+                  Ver tarjeta
+                </Link>
               </div>
             ))}
             <Link
               href="/dashboard/cards/new"
-              className="bg-muted/50 rounded-2xl p-5 border-2 border-dashed border-border hover:border-primary/50 hover:bg-muted transition-colors flex flex-col items-center justify-center text-center min-h-[180px]"
+              className="bg-muted/50 rounded-2xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-muted transition-colors flex flex-col items-center justify-center text-center p-5 min-h-[200px]"
             >
               <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
                 <Plus className="h-6 w-6 text-primary" />
@@ -207,7 +216,7 @@ export default async function DashboardPage() {
         const card = cards[0]
         const sampleCustomer = card.customers[0]
         return (
-          <div className="bg-card rounded-2xl border border-border p-6">
+          <div className="bg-card rounded-2xl border border-border p-4 sm:p-6 overflow-hidden">
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
               <div className="max-w-md">
                 <h2 className="text-lg font-semibold text-foreground mb-2">
@@ -223,7 +232,7 @@ export default async function DashboardPage() {
                   </Button>
                 </Link>
               </div>
-              <div className="w-full max-w-xs">
+              <div className="w-full max-w-full sm:max-w-xs overflow-hidden">
                 <LoyaltyCardPreview
                   businessName={business.name}
                   customerName={sampleCustomer ? "Tus Clientes" : "Tus Clientes"}
@@ -238,6 +247,20 @@ export default async function DashboardPage() {
           </div>
         )
       })()}
+
+      {/* Mobile: link to docs */}
+      <div className="lg:hidden">
+        <Link
+          href="/docs"
+          className="flex items-center justify-between p-4 bg-card rounded-2xl border border-border hover:shadow-md transition-shadow"
+        >
+          <div>
+            <p className="font-medium text-foreground">Documentación</p>
+            <p className="text-sm text-muted-foreground">Conoce más sobre la plataforma</p>
+          </div>
+          <ArrowRight className="h-5 w-5 text-muted-foreground shrink-0" />
+        </Link>
+      </div>
     </div>
   )
   } catch {
