@@ -18,9 +18,13 @@ export default async function DocsLayout({
     select: { name: true, brandColor: true },
   })
 
+  if (!business) {
+    redirect("/dashboard/my-cards")
+  }
+
   const userEmail = user.email
-  const businessName = business?.name ?? ""
-  const brandColor = business?.brandColor ?? "#ea580c"
+  const businessName = business.name
+  const brandColor = business.brandColor
 
   return (
     <div className="min-h-screen bg-background">
