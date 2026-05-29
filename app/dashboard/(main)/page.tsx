@@ -99,11 +99,11 @@ export default async function DashboardPage() {
               Ver todas
             </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0">
             {cards.map((card) => (
               <div
                 key={card.id}
-                className="bg-card rounded-2xl border border-border hover:shadow-md transition-shadow overflow-hidden"
+                className="bg-card rounded-2xl border border-border hover:shadow-md transition-shadow overflow-hidden min-w-0"
               >
                 <div className="p-5">
                   <div className="flex items-start justify-between mb-4">
@@ -169,11 +169,11 @@ export default async function DashboardPage() {
                 Aún no hay actividad. Crea una tarjeta y comparte el código QR.
               </div>
             ) : (
-              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
+              <div className="flex flex-col lg:flex-row gap-3 lg:overflow-x-auto pb-2 lg:scrollbar-thin">
                 {allLogs.map((log) => (
                   <div
                     key={log.id}
-                    className="flex-shrink-0 w-56 bg-muted/30 rounded-xl p-4 hover:bg-muted/50 transition-colors"
+                    className="lg:flex-shrink-0 lg:w-56 bg-muted/30 rounded-xl p-4 hover:bg-muted/50 transition-colors"
                   >
                     <div className="flex items-center gap-3 mb-3">
                       <div

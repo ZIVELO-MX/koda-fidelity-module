@@ -47,7 +47,7 @@ export function ProfilePanel({
       </div>
 
       <Link
-        href="/my-cards"
+        href="/dashboard/my-cards"
         onClick={onClose}
         className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
@@ -101,7 +101,7 @@ export function ProfilePanel({
           <p className="text-xs text-muted-foreground mt-1">{userEmail}</p>
         </div>
         <Link
-          href="/my-cards"
+          href="/dashboard/my-cards"
           onClick={onClose}
           className="flex items-center justify-center gap-2 w-full py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-muted"
         >
