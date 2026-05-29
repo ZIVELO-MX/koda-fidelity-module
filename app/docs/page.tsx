@@ -265,7 +265,7 @@ export default function DocsPage() {
           {layouts.map((layout) => (
             <div
               key={layout.title}
-              className="rounded-xl border border-border bg-card p-5 space-y-4"
+              className="rounded-xl border border-border bg-card p-5 space-y-4 overflow-hidden"
             >
               <div className="space-y-1">
                 <h3 className="font-medium">{layout.title}</h3>
