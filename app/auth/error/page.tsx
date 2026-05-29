@@ -1,23 +1,13 @@
 "use client"
 
-import { Suspense, useState, useCallback, useEffect, useRef } from "react"
+import { Suspense, useState, useCallback } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Mail, AlertCircle, Clock, Loader2, ArrowLeft } from "lucide-react"
+import { Mail, AlertCircle, Loader2, ArrowLeft } from "lucide-react"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
-
-const RATE_LIMIT_REGEX = /rate[\s_-]limit|over_request|429/i
-const SECONDS_REGEX = /(\d+)\s*(?:seconds?|sec)/i
-
-function getRateLimitCooldown(err: unknown): number {
-  if (!(err instanceof Error)) return 90
-  const seconds = err.message.match(SECONDS_REGEX)
-  if (seconds) return Math.min(Number(seconds[1]), 300)
-  return 90
-}
 
 export default function AuthErrorPage() {
   return (
@@ -38,56 +28,10 @@ function AuthErrorContent() {
   const [email, setEmail] = useState("")
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
-  const [cooldown, setCooldown] = useState(0)
   const [emailError, setEmailError] = useState(false)
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const isExpired = errorCode === "otp_expired"
   const isRateLimit = errorCode === "rate_limit"
-
-  useEffect(() => {
-    if (!isRateLimit) return
-
-    queueMicrotask(() => setCooldown(60))
-    timerRef.current = setInterval(() => {
-      setCooldown((c) => {
-        if (c <= 1) {
-          if (timerRef.current) clearInterval(timerRef.current)
-          return 0
-        }
-        return c - 1
-      })
-    }, 1000)
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current)
-    }
-  }, [isRateLimit])
-
-  useEffect(() => {
-    const val = localStorage.getItem("magic-link-cooldown")
-    if (!val) return
-
-    const remaining = Math.floor((Number(val) - Date.now()) / 1000)
-    if (remaining > 0) {
-      queueMicrotask(() => setCooldown(remaining))
-      timerRef.current = setInterval(() => {
-        setCooldown((c) => {
-          if (c <= 1) {
-            if (timerRef.current) clearInterval(timerRef.current)
-            return 0
-          }
-          return c - 1
-        })
-      }, 1000)
-    } else {
-      localStorage.removeItem("magic-link-cooldown")
-    }
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current)
-    }
-  }, [])
 
   const handleResend = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
@@ -108,16 +52,9 @@ function AuthErrorContent() {
         },
       })
       if (error) throw error
-      localStorage.setItem("magic-link-cooldown", String(Date.now() + 90000))
-      setCooldown(90)
       setSent(true)
     } catch (err) {
-      const msg = err instanceof Error ? err.message : ""
-      if (RATE_LIMIT_REGEX.test(msg)) {
-        const seconds = getRateLimitCooldown(err)
-        localStorage.setItem("magic-link-cooldown", String(Date.now() + seconds * 1000))
-        setCooldown(seconds)
-      }
+      // cooldown desactivado durante beta del MVP
     } finally {
       setSending(false)
     }
@@ -144,16 +81,12 @@ function AuthErrorContent() {
               </p>
             </div>
             <div className="text-sm text-muted-foreground">
-              {cooldown > 0 ? (
-                <p>Espera {cooldown}s para reenviar</p>
-              ) : (
-                <button
-                  onClick={() => setSent(false)}
-                  className="text-primary hover:underline"
-                >
-                  Reenviar de nuevo
-                </button>
-              )}
+              <button
+                onClick={() => setSent(false)}
+                className="text-primary hover:underline"
+              >
+                Reenviar de nuevo
+              </button>
             </div>
             <Link href="/my-cards">
               <Button variant="outline" className="w-full">
@@ -233,15 +166,10 @@ function AuthErrorContent() {
                 type="submit"
                 className="w-full"
                 size="lg"
-                disabled={sending || cooldown > 0}
+                disabled={sending}
               >
                 {sending ? (
                   <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                ) : cooldown > 0 ? (
-                  <>
-                    <Clock className="h-5 w-5 mr-2" />
-                    Espera {cooldown}s
-                  </>
                 ) : (
                   "Reenviar enlace mágico"
                 )}
