@@ -170,10 +170,10 @@ export default async function DashboardPage() {
               </div>
             ) : (
               <div className="flex flex-col lg:flex-row gap-3 lg:overflow-x-auto pb-2 lg:scrollbar-thin">
-                {allLogs.map((log) => (
+                {allLogs.map((log, i) => (
                   <div
                     key={log.id}
-                    className="lg:flex-shrink-0 lg:w-56 bg-muted/30 rounded-xl p-4 hover:bg-muted/50 transition-colors"
+                    className={`${i >= 3 ? "hidden lg:flex" : ""} lg:flex-shrink-0 lg:w-56 bg-muted/30 rounded-xl p-4 hover:bg-muted/50 transition-colors`}
                   >
                     <div className="flex items-center gap-3 mb-3">
                       <div
