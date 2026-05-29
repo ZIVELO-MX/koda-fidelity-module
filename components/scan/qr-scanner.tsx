@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useRef } from "react"
-import { Html5Qrcode } from "html5-qrcode"
+import { useState, useCallback } from "react"
+import { Scanner } from "@yudiel/react-qr-scanner"
+import type { IDetectedBarcode, IScannerError } from "@yudiel/react-qr-scanner"
 
 interface QRScannerProps {
   onScan: (customerId: string) => void
@@ -9,49 +10,44 @@ interface QRScannerProps {
 }
 
 export function QRScanner({ onScan, onError }: QRScannerProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const scannerRef = useRef<Html5Qrcode | null>(null)
-  const onScanRef = useRef(onScan)
-  const onErrorRef = useRef(onError)
-  onScanRef.current = onScan
-  onErrorRef.current = onError
+  const [paused, setPaused] = useState(false)
 
-  useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
+  const handleScan = useCallback((detectedCodes: IDetectedBarcode[]) => {
+    const code = detectedCodes[0]
+    if (!code) return
 
-    const scannerId = `qr-scanner-${Math.random().toString(36).slice(2)}`
-    el.id = scannerId
+    const customerId = code.rawValue.trim()
+    if (!customerId) return
 
-    const scanner = new Html5Qrcode(scannerId)
-    scannerRef.current = scanner
+    setPaused(true)
+    onScan(customerId)
+  }, [onScan])
 
-    scanner
-      .start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        (decodedText) => {
-          const customerId = decodedText.trim()
-          if (customerId.length > 10) {
-            scanner.stop().catch(() => {})
-            onScanRef.current(customerId)
-          }
-        },
-        () => {},
-      )
-      .catch((err) => {
-        onErrorRef.current?.(err?.message || "Error al acceder a la cámara")
-      })
-
-    return () => {
-      scanner.stop().catch(() => {})
+  const handleError = useCallback((error: IScannerError) => {
+    const messages: Record<string, string> = {
+      "permission-denied": "Permiso de cámara denegado",
+      "no-camera": "No se detectó ninguna cámara",
+      "in-use": "La cámara está siendo usada por otra aplicación",
+      "insecure-context": "Se requiere HTTPS para acceder a la cámara",
+      unsupported: "Escáner no soportado en este navegador",
     }
-  }, [])
+    onError?.(messages[error.kind] || error.message || "Error al acceder a la cámara")
+  }, [onError])
 
   return (
-    <div
-      ref={containerRef}
-      className="aspect-square max-h-[300px] w-full rounded-3xl overflow-hidden bg-muted"
-    />
+    <div className="aspect-square max-h-[300px] w-full rounded-3xl overflow-hidden bg-muted relative">
+      <Scanner
+        formats={["qr_code"]}
+        onScan={handleScan}
+        onError={handleError}
+        paused={paused}
+        components={{ finder: true }}
+        styles={{
+          container: { width: "100%", height: "100%" },
+          video: { objectFit: "cover" },
+        }}
+        allowMultiple={false}
+      />
+    </div>
   )
 }

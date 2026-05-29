@@ -96,7 +96,7 @@
 - [x] `/dashboard/scan` sin nav bar (ruta fuera del layout dashboard)
 - [x] Tests: 84 tests, 0 errores de tipo
 
-### Fase 4 — Landing page + polish (En progreso)
+### Fase 4 — Landing page + polish ✅ Completada
 
 - [x] Conectar landing page a datos reales (precios, features)
 - [x] SEO básico (meta tags, Open Graph, OG dinámico por negocio)
@@ -108,9 +108,8 @@
 - [x] Implementar landing alineada: QR/magic link activo, Wallet "Próximamente", pricing por definir y solo login público
 - [x] Alinear `README.md` y metadatos públicos con el MVP actualizado
 - [x] Reemplazar icono inline "K" por `short-logo.svg` en toda la UI (navbar, sidebar, login, scan, OG image)
-- [ ] Agregar campo `phone` a Customer para SMS magic links (futuro)
 
-### Fase 5 — Auditoría y correcciones (Completada)
+### Fase 5 — Auditoría y correcciones ✅ Completada
 
 > Correcciones basadas en auditoría `docs/auditoria-botones-y-datos-hardcodeados.md`
 
@@ -147,6 +146,15 @@
 - Google Wallet: requiere configuración en Google Pay & Wallet Console
 - Apple Wallet: requiere Apple Developer Account ($99/año) + certificados
 
+### Fase 6 — Mejora del MVP (En progreso)
+
+> El MVP base está completo (Fases 0-5). Esta fase agrupa mejoras técnicas y de UX
+> sobre el producto existente, sin cambiar el alcance del MVP.
+
+- [x] Reemplazar `html5-qrcode` por `@yudiel/react-qr-scanner` — estabiliza el escáner QR con la API nativa Barcode Detection + fallback ZXing
+- [x] Agregar tests de componente para QRScanner (15 tests)
+- [ ] Agregar campo `phone` a Customer para SMS magic links (futuro)
+
 ### Post-MVP — SMTP / Remitente personalizado
 
 - [ ] Configurar SMTP custom en Supabase (Resend, SendGrid, etc.)
@@ -155,7 +163,7 @@
 
 ### Issues conocidos
 
-- **📷 Cámara en escáner QR no funciona** — el componente `QRScanner` (`/dashboard/scan`) intenta usar la cámara pero falla. Pendiente de diagnosticar si es problema de permisos, librería o compatibilidad.
+- ~~**📷 Cámara en escáner QR no funciona**~~ ✅ Resuelto — se reemplazó `html5-qrcode` por `@yudiel/react-qr-scanner` (usa Barcode Detection API con fallback ZXing). Ver PR `fix/qr-scanner-library`.
 
 ### Post-MVP — Wallet Passes (Deshabilitado)
 
@@ -272,7 +280,7 @@ model StampLog {
 
 ## Prioridades inmediatas
 
-> Fases 1-5 funcionales. La Fase 4 requiere alinear mensajes públicos y cerrar gates de lanzamiento.
+> MVP base funcional (Fases 0-5). Actualmente en Fase 6 — mejora del MVP.
 
 ### Pre-lanzamiento
 
@@ -290,6 +298,8 @@ model StampLog {
 - [x] Vercel Analytics ya está integrado en `app/layout.tsx`.
 - [x] Landing alineada (site-config, page, mobile-nav, join layout, README).
 - [x] `docs/idea.md` y `docs/deploy.md` eliminados (obsoletos).
+- [x] QR scanner estabilizado (reemplazo de librería).
+- [x] Tests de componente agregados para QRScanner.
 - [ ] `pnpm lint` debe repararse: el comando existe, pero ESLint no está instalado/configurado.
 - [ ] El build debe dejar de omitir errores TypeScript en `next.config.mjs`.
 
