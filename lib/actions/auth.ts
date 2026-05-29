@@ -6,6 +6,7 @@ import { config } from "@/lib/config"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
+import { getFriendlySendError } from "@/lib/auth-errors"
 
 export type AuthResult = { error?: string; success?: true; isBusiness?: boolean }
 
@@ -25,7 +26,8 @@ export async function login(_prev: AuthResult, formData: FormData): Promise<Auth
 
   try {
     await authService.signIn(email, password)
-  } catch {
+  } catch (err) {
+    console.error("[login] Error signing in:", err)
     return { error: "No fue posible iniciar sesión. Verifica tus datos." }
   }
 
@@ -76,8 +78,9 @@ export async function sendLoginMagicLink(email: string): Promise<AuthResult> {
       redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/dashboard/my-cards`,
     })
     return { success: true }
-  } catch {
-    return { error: "No fue posible enviar el enlace" }
+  } catch (err) {
+    console.error("[sendLoginMagicLink] Error sending magic link:", err)
+    return { error: getFriendlySendError(err) }
   }
 }
 
