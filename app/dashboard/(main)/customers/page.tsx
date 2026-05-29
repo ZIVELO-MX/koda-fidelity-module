@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Search, Stamp, Gift, Calendar } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { StampButton } from "@/components/dashboard/stamp-button"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 
@@ -175,7 +176,14 @@ export default async function CustomersPage({
                         <span className="text-sm text-foreground">{customer._count.stampsLog}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-right" />
+                    <td className="px-6 py-4 text-right">
+                      <StampButton
+                        customerId={customer.id}
+                        currentStamps={customer.stamps}
+                        maxStamps={customer.card.stampsRequired}
+                        reward={customer.card.reward}
+                      />
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -305,9 +305,27 @@ model StampLog {
 - [ ] `pnpm lint` debe repararse: el comando existe, pero ESLint no está instalado/configurado.
 - [ ] El build debe dejar de omitir errores TypeScript en `next.config.mjs`.
 
-### Post-MVP
+### Post-MVP — Magic Links
 
-5. **Re-activar cooldown de magic links** — restaurar límites de tasa con configuración por entorno
-6. **Phone magic links** — agregar `phone` a Customer + SMS auth
-6. **Wallet passes** — re-habilitar cuando se requiera
-7. **Multi-usuario con roles por negocio** — modelo `User` con permisos (admin, editor, viewer) vinculado a `Business`, login con selección de negocio, auditoría de acciones
+- [ ] Re-activar cooldown de magic links — restaurar límites de tasa con configuración por entorno
+- [ ] Phone magic links — agregar `phone` a Customer + SMS auth
+
+### Post-MVP — Wallet Passes
+
+- [ ] Re-habilitar wallets (Apple y Google) cuando se requiera
+- [ ] Probar pases en Android / emulador
+- [ ] Generar certificado Apple Wallet (Pass Type ID + certificado de firma)
+- [ ] Publicar en Wallet Console (Google) para quitar modo prueba
+
+### Post-MVP — Usuarios y Permisos
+
+> Sistema multi-usuario con roles por negocio para que dueños puedan invitar
+> colaboradores con diferentes niveles de acceso.
+
+- [ ] Modelo `User` con email, nombre, rol y referencia a `Business`
+- [ ] Roles: `admin` (dueño, control total), `editor` (crear/editar tarjetas, sellar), `viewer` (solo leer reportes)
+- [ ] Login con selección de negocio si el usuario pertenece a más de uno
+- [ ] Pantalla de invitación: dueño envía magic link con rol asignado
+- [ ] Registro de auditoría: quién hizo qué acción (selló, canjeó, editó)
+- [ ] Restringir acciones según rol en API routes y UI
+- [ ] Migración de `Business.email` como owner implícito al nuevo modelo User
