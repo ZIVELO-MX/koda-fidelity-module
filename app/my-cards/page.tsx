@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Mail, Loader2, ArrowLeft, Smartphone } from "lucide-react"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
+import { getFriendlySendError } from "@/lib/auth-errors"
 
 type PageState = "loading" | "email" | "sent"
 
@@ -56,8 +57,8 @@ export default function MyCardsPage() {
       })
       if (error) throw error
       setState("sent")
-    } catch {
-      setSendError("No fue posible enviar el enlace")
+    } catch (err) {
+      setSendError(getFriendlySendError(err))
     } finally {
       setSending(false)
     }

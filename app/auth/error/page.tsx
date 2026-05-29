@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useState, useCallback } from "react"
+import { Suspense, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Mail, AlertCircle, Loader2, ArrowLeft, Clock } from "lucide-react"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
+import { getFriendlyAuthError, getFriendlySendError } from "@/lib/auth-errors"
 
 export default function AuthErrorPage() {
   return (
@@ -24,17 +25,24 @@ export default function AuthErrorPage() {
 function AuthErrorContent() {
   const sp = useSearchParams()
   const errorCode = sp.get("error_code") || ""
+  const errorMessage = sp.get("error") || ""
+  const errorDescription = sp.get("error_description") || ""
 
   const [email, setEmail] = useState("")
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [emailError, setEmailError] = useState(false)
+  const [resendError, setResendError] = useState<string | null>(null)
 
   const isExpired = errorCode === "otp_expired"
   const isRateLimit = errorCode === "rate_limit"
 
-  const handleResend = useCallback(async (e: React.FormEvent) => {
+  const knownError = !isExpired && !isRateLimit && (errorMessage || errorCode)
+  const friendlyError = knownError ? getFriendlyAuthError(errorMessage, errorCode) : null
+
+  const handleResend = async (e: React.FormEvent) => {
     e.preventDefault()
+    setResendError(null)
     if (!email.trim() || !email.includes("@")) {
       setEmailError(true)
       return
@@ -54,11 +62,11 @@ function AuthErrorContent() {
       if (error) throw error
       setSent(true)
     } catch (err) {
-      // cooldown desactivado durante beta del MVP
+      setResendError(getFriendlySendError(err))
     } finally {
       setSending(false)
     }
-  }, [email])
+  }
 
   if (sent) {
     return (
@@ -115,32 +123,28 @@ function AuthErrorContent() {
           <div className="bg-card rounded-2xl p-6 border border-border text-center space-y-4">
             <div
               className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto ${
-                isExpired ? "bg-amber-100" : isRateLimit ? "bg-red-100" : "bg-muted"
+                isExpired ? "bg-amber-100" : isRateLimit ? "bg-red-100" : friendlyError ? "bg-orange-100" : "bg-muted"
               }`}
             >
-              {isExpired ? (
+              {isExpired || (friendlyError?.title === "Enlace Expirado") ? (
                 <Clock className="h-8 w-8 text-amber-600" />
-              ) : isRateLimit ? (
+              ) : isRateLimit || (friendlyError?.title === "Demasiados Intentos") ? (
                 <AlertCircle className="h-8 w-8 text-red-600" />
               ) : (
-                <AlertCircle className="h-8 w-8 text-muted-foreground" />
+                <AlertCircle className={`h-8 w-8 ${friendlyError ? "text-orange-600" : "text-muted-foreground"}`} />
               )}
             </div>
 
             <h1 className="text-xl font-bold text-foreground">
-              {isExpired
-                ? "Enlace Expirado"
-                : isRateLimit
-                ? "Demasiados Intentos"
-                : "Error de Autenticación"}
+              {friendlyError?.title ?? (isExpired ? "Enlace Expirado" : isRateLimit ? "Demasiados Intentos" : "Error de Autenticación")}
             </h1>
 
             <p className="text-muted-foreground">
-              {isExpired
+              {friendlyError?.description ?? (isExpired
                 ? "El enlace mágico que clickeaste ya no es válido. Solicita uno nuevo abajo."
                 : isRateLimit
                 ? "Has solicitado demasiados enlaces en poco tiempo. Espera un minuto antes de intentar de nuevo."
-                : "Ocurrió un error al iniciar sesión. Intenta de nuevo."}
+                : errorDescription || errorMessage || "Ocurrió un error al iniciar sesión. Intenta de nuevo.")}
             </p>
           </div>
 
@@ -155,11 +159,12 @@ function AuthErrorContent() {
                   type="email"
                   placeholder="ejemplo@correo.com"
                   value={email}
-                  onChange={(e) => { setEmail(e.target.value); setEmailError(false) }}
+                  onChange={(e) => { setEmail(e.target.value); setEmailError(false); setResendError(null) }}
                   className="text-base"
-                  aria-invalid={emailError}
+                  aria-invalid={emailError || !!resendError}
                 />
                 {emailError && <p className="text-sm text-red-500">Ingresa un correo electrónico válido</p>}
+                {resendError && <p className="text-sm text-red-500">{resendError}</p>}
               </div>
 
               <Button
