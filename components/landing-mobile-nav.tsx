@@ -52,7 +52,10 @@ export function LandingMobileNav() {
             </Link>
           ))}
           <Link href="/login" onClick={() => setOpen(false)}>
-            <Button className="w-full">Iniciar Sesión</Button>
+            <Button variant="outline" className="w-full">Iniciar Sesión</Button>
+          </Link>
+          <Link href="/my-cards" onClick={() => setOpen(false)}>
+            <Button className="w-full">Ver mis tarjetas</Button>
           </Link>
         </nav>
       </div>
