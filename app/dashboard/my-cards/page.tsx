@@ -233,15 +233,43 @@ export default function DashboardMyCardsPage() {
             </span>
           </div>
 
+          <div className="lg:hidden">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="w-full text-red-500 hover:text-red-600 border-red-200 hover:border-red-300" size="lg">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Cerrar Sesión
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Cerrar Sesión</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    ¿Estás seguro de que deseas cerrar sesión?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={async () => await logout()}
+                    className="bg-red-500 hover:bg-red-600"
+                  >
+                    Cerrar Sesión
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+
           {cards.map((c) => {
             const isExpanded = expandedCards.has(c.id)
             return (
               <div key={c.id} className="bg-card rounded-2xl border border-border overflow-hidden">
-                <button
-                  onClick={() => toggleCard(c.id)}
-                  className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors lg:cursor-default lg:hover:bg-transparent"
-                  aria-expanded={isExpanded}
-                >
+                  <button
+                    onClick={() => toggleCard(c.id)}
+                    className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+                    aria-expanded={isExpanded}
+                  >
                   <div className="flex items-center gap-3 min-w-0">
                     <div
                       className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shrink-0"
@@ -256,7 +284,7 @@ export default function DashboardMyCardsPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="lg:hidden">
+                  <div>
                     <ChevronDown
                       className={`h-5 w-5 text-muted-foreground shrink-0 transition-transform duration-300 ${
                         isExpanded ? "rotate-180" : ""
@@ -266,7 +294,7 @@ export default function DashboardMyCardsPage() {
                 </button>
                 <div
                   className={`grid transition-all duration-300 ease-in-out ${
-                    isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0 lg:grid-rows-[1fr] lg:opacity-100"
+                    isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
                   }`}
                 >
                   <div className="overflow-hidden">
