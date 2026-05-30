@@ -11,6 +11,9 @@ import { siteConfig } from "@/lib/site-config"
 export const metadata: Metadata = {
   title: `${siteConfig.name} - Tarjetas de Fidelidad Digitales`,
   description: siteConfig.description,
+  keywords: siteConfig.keywords,
+  robots: { index: true, follow: true },
+  alternates: { canonical: siteConfig.url },
   openGraph: {
     title: `${siteConfig.name} - Tarjetas de Fidelidad Digitales`,
     description: siteConfig.description,
@@ -112,10 +115,10 @@ export default async function LandingPage({
                 {siteConfig.hero.subtitle}
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button asChild size="lg" className="w-full sm:w-auto text-base px-8">
+                <Button asChild size="lg" className="group w-full sm:w-auto text-base px-8 active:scale-[0.97] transition-transform">
                   <Link href="#how-it-works">
                     Ver Cómo Funciona
-                    <ArrowRight className="ml-2 h-5 w-5" />
+                    <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-150 group-hover:translate-x-1" />
                   </Link>
                 </Button>
                 <Button asChild size="lg" variant="outline" className="w-full sm:w-auto text-base px-8">
@@ -131,7 +134,7 @@ export default async function LandingPage({
             </div>
             <div className="relative lg:pl-8">
               <div className="relative">
-                <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 to-primary/5 rounded-[40px] blur-3xl pointer-events-none" />
+                <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 to-primary/5 rounded-[40px] blur-2xl pointer-events-none" />
                 <LoyaltyCardPreview
                   businessName={siteConfig.hero.demoCard.businessName}
                   currentStamps={siteConfig.hero.demoCard.currentStamps}
@@ -164,7 +167,7 @@ export default async function LandingPage({
               return (
                 <div
                   key={index}
-                  className="relative bg-card rounded-2xl p-8 border border-border shadow-sm hover:shadow-lg transition-shadow group"
+                  className="relative bg-card rounded-2xl p-8 border border-border shadow-sm hover:shadow-lg hover:-translate-y-1 transition-[box-shadow,transform] duration-200 group"
                 >
                   <div className="absolute -top-4 -left-4 w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold shadow-lg">
                     {item.step}
@@ -200,7 +203,7 @@ export default async function LandingPage({
               return (
                 <div
                   key={index}
-                  className="bg-card rounded-2xl p-6 border border-border hover:border-primary/30 transition-colors group"
+                  className="bg-card rounded-2xl p-6 border border-border hover:border-primary/30 hover:-translate-y-0.5 transition-[border-color,transform] duration-200 group"
                 >
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/15 transition-colors">
                     {Icon && <Icon className="h-6 w-6 text-primary" />}
@@ -229,9 +232,9 @@ export default async function LandingPage({
             {siteConfig.useCases.map((useCase, index) => (
               <div
                 key={index}
-                className="bg-card rounded-2xl p-6 border border-border text-center hover:shadow-md transition-shadow"
+                className="group bg-card rounded-2xl p-6 border border-border text-center hover:shadow-md hover:-translate-y-0.5 transition-[box-shadow,transform] duration-200"
               >
-                <div className="text-4xl mb-4">{useCase.emoji}</div>
+                <div className="text-4xl mb-4 transition-transform duration-150 [@media(hover:hover)]:group-hover:scale-110">{useCase.emoji}</div>
                 <h3 className="font-semibold text-foreground mb-2">{useCase.name}</h3>
                 <p className="text-sm text-muted-foreground">{useCase.example}</p>
               </div>
@@ -264,10 +267,10 @@ export default async function LandingPage({
             <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
             Accede a todas tus tarjetas, revisa tu progreso y canjea tus recompensas desde un solo lugar.
             </p>
-            <Button asChild size="lg" className="text-base px-10">
+            <Button asChild size="lg" className="group text-base px-10 active:scale-[0.97] transition-transform">
               <Link href="/my-cards">
                 Ir a Mis Tarjetas
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-150 group-hover:translate-x-1" />
               </Link>
             </Button>
           </div>
@@ -284,10 +287,10 @@ export default async function LandingPage({
             <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
               {siteConfig.cta.description}
             </p>
-            <Button asChild size="lg" className="text-base px-10">
+            <Button asChild size="lg" className="group text-base px-10 active:scale-[0.97] transition-transform">
               <Link href={siteConfig.cta.href}>
                 {siteConfig.cta.cta}
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-150 group-hover:translate-x-1" />
               </Link>
             </Button>
           </div>
