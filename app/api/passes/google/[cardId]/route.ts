@@ -98,33 +98,21 @@ export async function POST(
     )
   }
 
-  let customer
+  if (!existingCustomerId) {
+    return NextResponse.json(
+      { error: "customerId is required" },
+      { status: 400 },
+    )
+  }
 
-  if (existingCustomerId) {
-    customer = await prisma.customer.findUnique({
-      where: { id: existingCustomerId },
-    })
-    if (!customer || customer.cardId !== cardId) {
-      return NextResponse.json(
-        { error: "Customer not found" },
-        { status: 404 },
-      )
-    }
-  } else {
-    if (!customerName?.trim()) {
-      return NextResponse.json(
-        { error: "customerName is required" },
-        { status: 400 },
-      )
-    }
-
-    customer = await prisma.customer.create({
-      data: {
-        name: customerName.trim(),
-        cardId: loyaltyCard.id,
-        stamps: 0,
-      },
-    })
+  const customer = await prisma.customer.findUnique({
+    where: { id: existingCustomerId },
+  })
+  if (!customer || customer.cardId !== cardId) {
+    return NextResponse.json(
+      { error: "Customer not found" },
+      { status: 404 },
+    )
   }
 
   const host = request.headers.get("host") || "localhost:3000"

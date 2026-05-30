@@ -42,9 +42,10 @@ import { getBusinessFromSession, handleApiError, ValidationError, NotFoundError,
  *               properties:
  *                 customerId:
  *                   type: string
+ *                   description: Only present when existing is false (new customer)
  *                 existing:
  *                   type: boolean
- *                   description: true when already registered, false when newly created
+ *                   description: true when already registered (customerId omitted), false when newly created
  *       400:
  *         description: Validation error
  *         content:
@@ -156,7 +157,7 @@ export async function POST(request: NextRequest) {
       where: { email, cardId },
     })
     if (existing) {
-      return NextResponse.json({ customerId: existing.id, existing: true })
+      return NextResponse.json({ existing: true })
     }
 
     const customer = await prisma.customer.create({

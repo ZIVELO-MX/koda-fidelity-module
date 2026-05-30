@@ -8,6 +8,7 @@ const DEV_MODE = process.env.GOOGLE_WALLET_DEV_MODE === "true"
 const ISSUER_ID = process.env.GOOGLE_WALLET_ISSUER_ID || ""
 const SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_WALLET_SERVICE_ACCOUNT_EMAIL || ""
 const SERVICE_ACCOUNT_KEY_FILE = process.env.GOOGLE_WALLET_SERVICE_ACCOUNT_KEY_FILE || ""
+const SERVICE_ACCOUNT_KEY_JSON = process.env.GOOGLE_WALLET_SERVICE_ACCOUNT_KEY_JSON || ""
 const ENV_ORIGINS = process.env.GOOGLE_WALLET_ORIGINS
 
 function classId(cardId: string): string {
@@ -25,13 +26,19 @@ function getIssuer(): string {
 
 async function getSigningKey(): Promise<string> {
   if (DEV_MODE) return "dev-secret"
+  if (SERVICE_ACCOUNT_KEY_JSON) {
+    return JSON.parse(SERVICE_ACCOUNT_KEY_JSON).private_key
+  }
   if (!SERVICE_ACCOUNT_KEY_FILE) {
     throw new Error(
-      "GOOGLE_WALLET_SERVICE_ACCOUNT_KEY_FILE not configured. " +
-        "Download your service account JSON key and set this env var.",
+      "Set GOOGLE_WALLET_SERVICE_ACCOUNT_KEY_JSON (preferred) or GOOGLE_WALLET_SERVICE_ACCOUNT_KEY_FILE.",
     )
   }
   const keyPath = path.resolve(process.cwd(), SERVICE_ACCOUNT_KEY_FILE)
+  const certsDir = path.resolve(process.cwd(), "certificates")
+  if (!keyPath.startsWith(certsDir + path.sep)) {
+    throw new Error("GOOGLE_WALLET_SERVICE_ACCOUNT_KEY_FILE must be inside the certificates/ directory.")
+  }
   const keyRaw = await fs.readFile(keyPath, "utf-8")
   return JSON.parse(keyRaw).private_key
 }
@@ -40,12 +47,14 @@ function getConfigIssue(): string | null {
   if (DEV_MODE) return null
   if (!ISSUER_ID) return "GOOGLE_WALLET_ISSUER_ID is not configured"
   if (!SERVICE_ACCOUNT_EMAIL) return "GOOGLE_WALLET_SERVICE_ACCOUNT_EMAIL is not configured"
-  if (!SERVICE_ACCOUNT_KEY_FILE) return "GOOGLE_WALLET_SERVICE_ACCOUNT_KEY_FILE is not configured"
+  if (!SERVICE_ACCOUNT_KEY_JSON && !SERVICE_ACCOUNT_KEY_FILE)
+    return "GOOGLE_WALLET_SERVICE_ACCOUNT_KEY_JSON (or KEY_FILE) is not configured"
   return null
 }
 
 export function isConfigured(): boolean {
-  return DEV_MODE || (!!ISSUER_ID && !!SERVICE_ACCOUNT_EMAIL && !!SERVICE_ACCOUNT_KEY_FILE)
+  const hasKey = !!SERVICE_ACCOUNT_KEY_JSON || !!SERVICE_ACCOUNT_KEY_FILE
+  return DEV_MODE || (!!ISSUER_ID && !!SERVICE_ACCOUNT_EMAIL && hasKey)
 }
 
 export function getConfigError(): string | null {
