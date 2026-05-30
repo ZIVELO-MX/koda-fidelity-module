@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { GoogleButton } from "@/components/auth/google-button"
-import { ArrowLeft, Mail, Loader2, Smartphone, ChevronDown, ChevronUp, LogOut } from "lucide-react"
+import { ArrowLeft, Mail, Loader2, Smartphone, ChevronDown, ChevronUp, LogOut, Wallet, Download, Trash2 } from "lucide-react"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
 import { getFriendlySendError } from "@/lib/auth-errors"
 import { logout } from "@/lib/actions/auth"
@@ -314,13 +314,16 @@ export default function DashboardMyCardsPage() {
                         Muestra este código QR en el negocio para acumular sellos
                       </p>
                       <div className="flex flex-col gap-2 pt-2">
-                        <Button variant="outline" size="sm" disabled className="w-full text-muted-foreground/50 border-dashed">
+                        <Button variant="outline" size="sm" disabled className="w-full text-muted-foreground/50 border-dashed gap-2">
+                          <Wallet className="h-4 w-4" />
                           Agregar a Wallet — Próximamente
                         </Button>
-                        <Button variant="outline" size="sm" disabled className="w-full text-muted-foreground/50 border-dashed">
+                        <Button variant="outline" size="sm" disabled className="w-full text-muted-foreground/50 border-dashed gap-2">
+                          <Download className="h-4 w-4" />
                           Descargar Tarjeta — Próximamente
                         </Button>
-                        <Button variant="outline" size="sm" disabled className="w-full text-muted-foreground/50 border-dashed">
+                        <Button variant="outline" size="sm" disabled className="w-full text-muted-foreground/50 border-dashed gap-2">
+                          <Trash2 className="h-4 w-4" />
                           Eliminar Tarjeta — Próximamente
                         </Button>
                       </div>
