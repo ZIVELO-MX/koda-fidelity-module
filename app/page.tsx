@@ -58,7 +58,7 @@ export default async function LandingPage({
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+      <nav className="hidden sm:block sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
@@ -250,6 +250,26 @@ export default async function LandingPage({
             <p className="text-lg text-muted-foreground">
               {siteConfig.pricing.description}
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Customer CTA Section */}
+      <section className="py-20 lg:py-28 bg-muted/30">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="bg-card rounded-3xl p-12 lg:p-16 border border-border shadow-sm">
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+              ¿Ya tienes tu tarjeta de lealtad?
+            </h2>
+            <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
+            Accede a todas tus tarjetas, revisa tu progreso y canjea tus recompensas desde un solo lugar.
+            </p>
+            <Link href="/my-cards">
+              <Button size="lg" className="text-base px-10">
+                Ir a Mis Tarjetas
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
