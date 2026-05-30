@@ -83,11 +83,11 @@ export default async function LandingPage({
               </Link>
             </div>
             <div className="flex items-center gap-2">
-              <Link href="/login">
-                <Button variant="ghost" className="hidden sm:inline-flex">
+              <Button asChild variant="ghost" className="hidden sm:inline-flex">
+                <Link href="/login">
                   Iniciar Sesión
-                </Button>
-              </Link>
+                </Link>
+              </Button>
               <LandingMobileNav />
             </div>
           </div>
@@ -112,17 +112,17 @@ export default async function LandingPage({
                 {siteConfig.hero.subtitle}
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="#how-it-works">
-                  <Button size="lg" className="w-full sm:w-auto text-base px-8">
+                <Button asChild size="lg" className="w-full sm:w-auto text-base px-8">
+                  <Link href="#how-it-works">
                     Ver Cómo Funciona
                     <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </Link>
-                <Link href="/login">
-                  <Button size="lg" variant="outline" className="w-full sm:w-auto text-base px-8">
+                  </Link>
+                </Button>
+                <Button asChild size="lg" variant="outline" className="w-full sm:w-auto text-base px-8">
+                  <Link href="/login">
                     Iniciar Sesión
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </div>
               <div className="flex items-center pt-4">
                 <CheckCircle2 className="h-5 w-5 text-primary mr-2" />
@@ -264,12 +264,12 @@ export default async function LandingPage({
             <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
             Accede a todas tus tarjetas, revisa tu progreso y canjea tus recompensas desde un solo lugar.
             </p>
-            <Link href="/my-cards">
-              <Button size="lg" className="text-base px-10">
+            <Button asChild size="lg" className="text-base px-10">
+              <Link href="/my-cards">
                 Ir a Mis Tarjetas
                 <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
         </div>
       </section>
@@ -284,12 +284,12 @@ export default async function LandingPage({
             <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
               {siteConfig.cta.description}
             </p>
-            <Link href={siteConfig.cta.href}>
-              <Button size="lg" className="text-base px-10">
+            <Button asChild size="lg" className="text-base px-10">
+              <Link href={siteConfig.cta.href}>
                 {siteConfig.cta.cta}
                 <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
         </div>
       </section>
