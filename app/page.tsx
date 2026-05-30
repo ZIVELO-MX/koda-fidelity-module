@@ -96,7 +96,7 @@ export default async function LandingPage({
 
       {/* Hero Section */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 pointer-events-none" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <div className="space-y-8">
@@ -131,7 +131,7 @@ export default async function LandingPage({
             </div>
             <div className="relative lg:pl-8">
               <div className="relative">
-                <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 to-primary/5 rounded-[40px] blur-3xl" />
+                <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 to-primary/5 rounded-[40px] blur-3xl pointer-events-none" />
                 <LoyaltyCardPreview
                   businessName={siteConfig.hero.demoCard.businessName}
                   currentStamps={siteConfig.hero.demoCard.currentStamps}
