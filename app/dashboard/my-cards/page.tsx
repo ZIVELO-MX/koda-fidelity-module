@@ -35,6 +35,7 @@ export default function DashboardMyCardsPage() {
   const [emailError, setEmailError] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
   const [sessionEmail, setSessionEmail] = useState<string | null>(null)
+  const [hasDashboard, setHasDashboard] = useState(false)
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set())
 
   const toggleCard = useCallback((cardId: string) => {
@@ -56,6 +57,12 @@ export default function DashboardMyCardsPage() {
 
       if (session?.user?.email) {
         setSessionEmail(session.user.email)
+        try {
+          const bizRes = await fetch("/api/business")
+          if (bizRes.ok) setHasDashboard(true)
+        } catch {
+          // not a business user
+        }
         try {
           const res = await fetch(`/api/join?email=${encodeURIComponent(session.user.email)}`)
           if (res.ok) {
@@ -195,7 +202,7 @@ export default function DashboardMyCardsPage() {
     <div className="min-h-screen bg-background flex flex-col">
       <main className="flex-1 px-4 py-8">
         <div className="max-w-lg mx-auto space-y-6">
-          {sessionEmail && (
+          {hasDashboard && (
             <div className="flex items-center justify-between mb-2">
               <Link
                 href="/dashboard"
