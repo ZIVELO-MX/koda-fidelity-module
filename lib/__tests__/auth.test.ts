@@ -39,6 +39,8 @@ class MockAuthService implements AuthService {
   }
 
   async sendMagicLink(_email: string, _options?: { redirectTo?: string }) {}
+
+  async signInWithOAuth(_provider: string, _options?: { redirectTo?: string }) {}
 }
 
 function createSut() {
@@ -113,6 +115,7 @@ describe("AuthService interface contract", () => {
         return session.user
       }
       async sendMagicLink(_email: string, _options?: { redirectTo?: string }) {}
+      async signInWithOAuth(_provider: string, _options?: { redirectTo?: string }) {}
     })()
     const user = await auth.getUser()
     expect(user).toBeNull()
