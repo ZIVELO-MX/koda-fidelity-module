@@ -313,9 +313,17 @@ export default function DashboardMyCardsPage() {
                       <p className="text-xs text-muted-foreground text-center">
                         Muestra este código QR en el negocio para acumular sellos
                       </p>
-                      <Button variant="outline" size="sm" disabled className="w-full text-muted-foreground/50 border-dashed">
-                        Eliminar Tarjeta — Próximamente
-                      </Button>
+                      <div className="flex flex-col gap-2 pt-2">
+                        <Button variant="outline" size="sm" disabled className="w-full text-muted-foreground/50 border-dashed">
+                          Agregar a Wallet — Próximamente
+                        </Button>
+                        <Button variant="outline" size="sm" disabled className="w-full text-muted-foreground/50 border-dashed">
+                          Descargar Tarjeta — Próximamente
+                        </Button>
+                        <Button variant="outline" size="sm" disabled className="w-full text-muted-foreground/50 border-dashed">
+                          Eliminar Tarjeta — Próximamente
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
