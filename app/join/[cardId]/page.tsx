@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
+import { GoogleButton } from "@/components/auth/google-button"
 import { Check, Mail, Loader2, ArrowLeft, Smartphone } from "lucide-react"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
 import { getFriendlySendError } from "@/lib/auth-errors"
@@ -64,8 +65,11 @@ export default function JoinCardPage() {
       const { data: { session } } = await supabase.auth.getSession()
 
       if (session?.user?.email) {
+        const email = session.user.email
+        const name = session.user.user_metadata?.name || email.split("@")[0]
+
         const custRes = await fetch(
-          `/api/join?email=${encodeURIComponent(session.user.email)}&cardId=${encodeURIComponent(cardId)}`,
+          `/api/join?email=${encodeURIComponent(email)}&cardId=${encodeURIComponent(cardId)}`,
         )
         if (custRes.ok) {
           const data = await custRes.json()
@@ -74,6 +78,40 @@ export default function JoinCardPage() {
             setStep("ready")
             checkedSession.current = true
             return
+          }
+        }
+
+        const pendingId = sessionStorage.getItem(`pending-${cardId}`)
+        if (pendingId) {
+          const custRes2 = await fetch(`/api/join?id=${encodeURIComponent(pendingId)}`)
+          if (custRes2.ok) {
+            const data = await custRes2.json()
+            if (data.customer) {
+              setCustomer(data.customer)
+              setStep("ready")
+              checkedSession.current = true
+              sessionStorage.removeItem(`pending-${cardId}`)
+              return
+            }
+          }
+        }
+
+        const createRes = await fetch("/api/join", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, cardId }),
+        })
+        if (createRes.ok) {
+          const data = await createRes.json()
+          const custRes3 = await fetch(`/api/join?email=${encodeURIComponent(email)}&cardId=${encodeURIComponent(cardId)}`)
+          if (custRes3.ok) {
+            const data3 = await custRes3.json()
+            if (data3.customers?.length > 0) {
+              setCustomer(data3.customers[0])
+              setStep("ready")
+              checkedSession.current = true
+              return
+            }
           }
         }
       }
@@ -329,11 +367,22 @@ export default function JoinCardPage() {
 
           <div className="bg-card rounded-2xl p-6 border border-border">
             <h1 className="text-xl font-bold text-foreground text-center mb-1">
-              Regístrate
+              Obtén tu tarjeta de lealtad
             </h1>
             <p className="text-sm text-muted-foreground text-center mb-6">
-              Ingresa tus datos para obtener tu tarjeta de lealtad
+              Un solo clic y tendrás tu tarjeta lista
             </p>
+
+            <GoogleButton redirectTo={`/join/${cardId}`} />
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">o con correo electrónico</span>
+              </div>
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
@@ -371,13 +420,13 @@ export default function JoinCardPage() {
                 {sending ? (
                   <Loader2 className="h-5 w-5 animate-spin mr-2" />
                 ) : (
-                  "Obtener Tarjeta"
+                  "Enviar enlace mágico"
                 )}
               </Button>
             </form>
 
             <p className="text-xs text-muted-foreground text-center mt-4">
-              Te enviaremos un enlace mágico a tu correo para confirmar tu identidad.
+              Te enviaremos un enlace por correo para confirmar tu identidad.
             </p>
           </div>
         </div>

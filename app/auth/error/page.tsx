@@ -6,6 +6,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { GoogleButton } from "@/components/auth/google-button"
 import { Mail, AlertCircle, Loader2, ArrowLeft, Clock } from "lucide-react"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
 import { getFriendlyAuthError, getFriendlySendError } from "@/lib/auth-errors"
@@ -148,7 +149,17 @@ function AuthErrorContent() {
             </p>
           </div>
 
-          <div className="bg-card rounded-2xl p-6 border border-border space-y-4">
+          {isRateLimit && (
+            <div className="bg-card rounded-2xl p-6 border border-border space-y-4">
+              <h2 className="font-semibold text-foreground text-center">Prueba con Google</h2>
+              <p className="text-sm text-muted-foreground text-center">
+                El límite de enlaces por correo está agotado. Usa Google para acceder al instante.
+              </p>
+              <GoogleButton redirectTo="/my-cards" />
+            </div>
+          )}
+
+          <div className={`bg-card rounded-2xl p-6 border border-border space-y-4 ${isRateLimit ? "opacity-60" : ""}`}>
             <h2 className="font-semibold text-foreground">Reenviar enlace mágico</h2>
 
             <form onSubmit={handleResend} className="space-y-4">

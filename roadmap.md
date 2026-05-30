@@ -18,7 +18,7 @@
 | Deploy      | Vercel + Cloudflare (DNS/WAF)  |
 | DB          | Supabase (PostgreSQL)          |
 | ORM         | Prisma                         |
-| Auth        | Supabase Auth (magic link)     |
+| Auth        | Supabase Auth (Google OAuth + magic link) |
 | Wallet      | Deshabilitado — "Próximamente" |
 
 ---
@@ -158,7 +158,32 @@
 - [x] Refactor abstracción Supabase: centralizar imports en `lib/supabase-req-res.ts`
 - [x] Login inteligente: detecta business email → password, customer email → magic link
 - [x] Actividad reciente: limitado a 3 items en mobile
+- [x] Google OAuth — reemplazar magic link como método principal de auth de clientes
+- [x] Botón "Continuar con Google" en join flow, my-cards, página de error
+- [x] Ruta /auth/callback para intercambio de código OAuth
+- [x] Cooldown de magic links por email (2 min entre envíos)
+- [x] Manejo de error rate limit con sugerencia de usar Google
 - [ ] Agregar campo `phone` a Customer para SMS magic links (futuro)
+
+### Deuda Técnica — Magic Links por Email
+
+El plan Free de Supabase limita el envío de emails a 30/hora por proyecto.
+Esto es insostenible para producción porque:
+- Cada cliente que se registra consume un email
+- 2 negocios con actividad moderada agotan el límite en minutos
+- Todos los usuarios ven error "No fue posible enviar el enlace"
+- No hay forma de aumentar este límite sin migrar a Pro ($25/mes)
+
+**Mitigación actual:**
+- Google OAuth como método principal (sin rate limits, 1 clic)
+- Magic link queda como respaldo para quien no use Google
+- Cooldown de 2 min entre envíos por email
+- Mensajes de error claros que sugieren usar Google
+
+**Solución definitiva (Post-MVP):**
+- Migrar a Supabase Pro ($25/mes) o
+- Configurar SMTP custom (SendGrid, Resend) para enviar emails
+  desde nuestro propio dominio sin pasar por los rate limits de Supabase
 
 ### Post-MVP — SMTP / Remitente personalizado
 

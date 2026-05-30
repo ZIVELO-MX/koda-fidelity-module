@@ -17,16 +17,19 @@ describe("getFriendlyAuthError", () => {
   it("returns rate limit error for rate_limit code", () => {
     const result = getFriendlyAuthError("", "rate_limit")
     expect(result?.title).toBe("Demasiados Intentos")
+    expect(result!.description).toContain("Google")
   })
 
   it("returns rate limit error when message contains 'rate_limit'", () => {
     const result = getFriendlyAuthError("over_email_send_rate_limit", "")
     expect(result?.title).toBe("Demasiados Intentos")
+    expect(result!.description).toContain("Google")
   })
 
   it("returns rate limit error when message contains 'rate limit' with space", () => {
     const result = getFriendlyAuthError("email rate limit exceeded", "")
     expect(result?.title).toBe("Demasiados Intentos")
+    expect(result!.description).toContain("Google")
   })
 
   it("returns invalid link error for invalid token", () => {
@@ -57,21 +60,26 @@ describe("getFriendlyAuthError", () => {
 
 describe("getFriendlySendError", () => {
   it("returns rate limit message for rate_limit error", () => {
-    expect(getFriendlySendError(new Error("rate_limit exceeded"))).toContain("demasiados")
+    const msg = getFriendlySendError(new Error("rate_limit exceeded"))
+    expect(msg).toContain("Google")
+    expect(msg).toContain("agotado")
   })
 
   it("returns rate limit message for over_email_send_rate_limit", () => {
-    expect(getFriendlySendError(new Error("over_email_send_rate_limit"))).toContain("demasiados")
+    const msg = getFriendlySendError(new Error("over_email_send_rate_limit"))
+    expect(msg).toContain("Google")
   })
 
   it("returns rate limit message for 'email rate limit exceeded' (Supabase exact error)", () => {
-    expect(getFriendlySendError(new Error("email rate limit exceeded"))).toContain("demasiados")
+    const msg = getFriendlySendError(new Error("email rate limit exceeded"))
+    expect(msg).toContain("Google")
   })
 
   it("returns rate limit message for error with code over_email_send_rate_limit", () => {
     const err = new Error("some other message")
     ;(err as any).code = "over_email_send_rate_limit"
-    expect(getFriendlySendError(err)).toContain("demasiados")
+    const msg = getFriendlySendError(err)
+    expect(msg).toContain("Google")
   })
 
   it("returns invalid email message for invalid email", () => {
