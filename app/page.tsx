@@ -45,6 +45,9 @@ export default async function LandingPage({
   searchParams: Promise<{ [key: string]: string | undefined }>
 }) {
   const params = await searchParams
+  if (params.code) {
+    redirect(`/auth/callback?code=${encodeURIComponent(params.code)}&next=${encodeURIComponent(params.next || "/dashboard/my-cards")}`)
+  }
   if (params.error || params.error_code) {
     const qs = new URLSearchParams()
     if (params.error) qs.set("error", params.error)
