@@ -27,14 +27,14 @@ export function LandingMobileNav() {
       {open && (
         <>
           <div
-            className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm"
+            className="fixed inset-0 z-40 bg-card"
             onClick={() => setOpen(false)}
             onKeyDown={(e) => { if (e.key === "Escape") setOpen(false) }}
             role="dialog"
             aria-modal="true"
             aria-label="Navegación móvil"
           />
-          <div className="absolute left-0 right-0 top-full z-50 bg-card border-t border-border shadow-lg">
+          <div className="absolute left-0 right-0 top-full z-50 bg-card border-t border-border shadow-lg animate-in slide-in-from-top-2 fade-in duration-200">
             <nav className="flex flex-col p-4 space-y-2">
               {links.map((link) => (
                 <Link
