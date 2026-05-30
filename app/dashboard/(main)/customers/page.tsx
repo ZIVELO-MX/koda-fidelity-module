@@ -59,9 +59,16 @@ export default async function CustomersPage({
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Clientes</h1>
-        <p className="text-muted-foreground">Consulta y gestiona los miembros de tu programa de lealtad</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Clientes</h1>
+          <p className="text-muted-foreground">Consulta y gestiona los miembros de tu programa de lealtad</p>
+        </div>
+        <Button asChild variant="outline" className="w-full sm:w-auto">
+          <Link href="/dashboard/my-cards">
+            Ver mis tarjetas
+          </Link>
+        </Button>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
@@ -77,9 +84,9 @@ export default async function CustomersPage({
           </form>
         </div>
         {q && (
-          <Link href="/dashboard/customers">
-            <Button variant="ghost" type="button">Limpiar</Button>
-          </Link>
+          <Button asChild variant="ghost" type="button">
+            <Link href="/dashboard/customers">Limpiar</Link>
+          </Button>
         )}
       </div>
 
@@ -92,9 +99,9 @@ export default async function CustomersPage({
             {q ? "Intenta con otro término de búsqueda" : "Los clientes se registrarán al unirse a tus tarjetas"}
           </p>
           {!q && (
-            <Link href="/dashboard/cards">
-              <Button variant="outline">Ver tarjetas</Button>
-            </Link>
+            <Button asChild variant="outline">
+              <Link href="/dashboard/cards">Ver tarjetas</Link>
+            </Button>
           )}
         </div>
       ) : (
