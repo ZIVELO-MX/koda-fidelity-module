@@ -15,6 +15,7 @@ interface LoyaltyCardPreviewProps {
   className?: string
   showQR?: boolean
   qrValue?: string
+  onMemberClick?: () => void
 }
 
 export function LoyaltyCardPreview({
@@ -29,6 +30,7 @@ export function LoyaltyCardPreview({
   className,
   showQR = true,
   qrValue = "https://koda.app/card/demo",
+  onMemberClick,
 }: LoyaltyCardPreviewProps) {
   const stamps = Array.from({ length: maxStamps }, (_, i) => i < currentStamps)
   const progress = Math.round((currentStamps / maxStamps) * 100)
@@ -66,8 +68,12 @@ export function LoyaltyCardPreview({
 
         {/* Customer name */}
         <div
-          className="rounded-xl px-4 py-3 mb-2"
+          className={`rounded-xl px-4 py-3 mb-2 ${onMemberClick ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`}
           style={{ backgroundColor: "rgba(255,255,255,0.12)" }}
+          onClick={onMemberClick}
+          role={onMemberClick ? "button" : undefined}
+          tabIndex={onMemberClick ? 0 : undefined}
+          onKeyDown={onMemberClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onMemberClick() } } : undefined}
         >
           <p className="text-white/60 text-xs mb-0.5">Miembro</p>
           <p className="font-medium text-white">{customerName}</p>

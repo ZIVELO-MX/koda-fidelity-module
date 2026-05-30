@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { GoogleButton } from "@/components/auth/google-button"
-import { Check, Mail, Loader2, ArrowLeft, Smartphone } from "lucide-react"
+import { Check, Mail, Loader2, ArrowLeft, Smartphone, ChevronDown } from "lucide-react"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
 import { getFriendlySendError } from "@/lib/auth-errors"
 
@@ -49,6 +49,7 @@ export default function JoinCardPage() {
   const [nameError, setNameError] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
   const checkedSession = useRef(false)
+  const formRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const init = async () => {
@@ -122,6 +123,10 @@ export default function JoinCardPage() {
 
     init()
   }, [cardId])
+
+  const scrollToForm = useCallback(() => {
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }, [])
 
   // cooldown desactivado durante beta del MVP
 
@@ -357,6 +362,7 @@ export default function JoinCardPage() {
                 reward={cardInfo.reward}
                 brandColor={cardInfo.brandColor}
                 showQR={false}
+                onMemberClick={scrollToForm}
               />
             </div>
           ) : (
@@ -365,7 +371,14 @@ export default function JoinCardPage() {
             </div>
           )}
 
-          <div className="bg-card rounded-2xl p-6 border border-border">
+          {/* Scroll indicator */}
+          <div className="flex flex-col items-center gap-2 text-muted-foreground animate-bounce">
+            <ChevronDown className="h-6 w-6" />
+            <span className="text-xs font-medium">Completa tus datos abajo</span>
+            <ChevronDown className="h-6 w-6" />
+          </div>
+
+          <div ref={formRef} className="bg-card rounded-2xl p-6 border border-border">
             <h1 className="text-xl font-bold text-foreground text-center mb-1">
               Obtén tu tarjeta de lealtad
             </h1>

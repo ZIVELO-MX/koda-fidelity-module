@@ -142,6 +142,7 @@ export function DashboardSidebar({ userEmail, businessName, brandColor }: Dashbo
           brandColor={brandColor}
           onClose={() => setProfileOpen(false)}
           fullScreen
+          showMyCards={false}
         />
       )}
     </>
