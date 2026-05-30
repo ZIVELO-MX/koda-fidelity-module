@@ -233,7 +233,7 @@ export default function DashboardMyCardsPage() {
             </span>
           </div>
 
-          <div className="lg:hidden">
+          <div className="hidden lg:block">
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" className="w-full text-red-500 hover:text-red-600 border-red-200 hover:border-red-300" size="lg">
@@ -313,6 +313,9 @@ export default function DashboardMyCardsPage() {
                       <p className="text-xs text-muted-foreground text-center">
                         Muestra este código QR en el negocio para acumular sellos
                       </p>
+                      <Button variant="outline" size="sm" disabled className="w-full text-muted-foreground/50 border-dashed">
+                        Eliminar Tarjeta — Próximamente
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -329,7 +332,7 @@ export default function DashboardMyCardsPage() {
             </div>
           )}
 
-          <div className="pt-6 border-t border-border">
+          <div className="pt-6 border-t border-border lg:hidden">
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" className="w-full text-red-500 hover:text-red-600 border-red-200 hover:border-red-300" size="lg">
