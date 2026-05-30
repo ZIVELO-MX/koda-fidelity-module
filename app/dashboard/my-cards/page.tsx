@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { GoogleButton } from "@/components/auth/google-button"
-import { Mail, Loader2, ArrowLeft, Smartphone } from "lucide-react"
+import { ArrowLeft, Mail, Loader2, Smartphone, ChevronDown, ChevronUp } from "lucide-react"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
 import { getFriendlySendError } from "@/lib/auth-errors"
 
@@ -35,6 +35,20 @@ export default function DashboardMyCardsPage() {
   const [emailError, setEmailError] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
   const [sessionEmail, setSessionEmail] = useState<string | null>(null)
+  const [hasDashboard, setHasDashboard] = useState(false)
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set())
+
+  const toggleCard = useCallback((cardId: string) => {
+    setExpandedCards((prev) => {
+      const next = new Set(prev)
+      if (next.has(cardId)) {
+        next.delete(cardId)
+      } else {
+        next.add(cardId)
+      }
+      return next
+    })
+  }, [])
 
   useEffect(() => {
     const checkSession = async () => {
@@ -43,6 +57,12 @@ export default function DashboardMyCardsPage() {
 
       if (session?.user?.email) {
         setSessionEmail(session.user.email)
+        try {
+          const bizRes = await fetch("/api/business")
+          if (bizRes.ok) setHasDashboard(true)
+        } catch {
+          // not a business user
+        }
         try {
           const res = await fetch(`/api/join?email=${encodeURIComponent(session.user.email)}`)
           if (res.ok) {
@@ -104,15 +124,6 @@ export default function DashboardMyCardsPage() {
   if (state === "email") {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <header className="border-b border-border bg-card">
-          <div className="max-w-lg mx-auto px-4 py-4 flex items-center gap-2">
-            <Link href="/" className="text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-            <span className="font-semibold text-foreground">Mis Tarjetas</span>
-          </div>
-        </header>
-
         <main className="flex-1 flex flex-col items-center justify-center px-4 py-8">
           <div className="w-full max-w-md bg-card rounded-2xl p-6 border border-border space-y-6">
             <div className="text-center">
@@ -170,12 +181,6 @@ export default function DashboardMyCardsPage() {
   if (state === "sent") {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <header className="border-b border-border bg-card">
-          <div className="max-w-lg mx-auto px-4 py-4">
-            <span className="font-semibold text-foreground">Revisa tu correo electrónico</span>
-          </div>
-        </header>
-
         <main className="flex-1 flex flex-col items-center justify-center px-4 py-8">
           <div className="w-full max-w-md text-center space-y-6">
             <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
@@ -193,41 +198,87 @@ export default function DashboardMyCardsPage() {
     )
   }
 
-  const backHref = sessionEmail ? "/dashboard" : "/"
-
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="border-b border-border bg-card">
-        <div className="max-w-lg mx-auto px-4 py-4 flex items-center gap-2">
-          <Link href={backHref} className="text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <span className="font-semibold text-foreground">
-            Mis Tarjetas ({cards.length})
-          </span>
-        </div>
-      </header>
-
       <main className="flex-1 px-4 py-8">
         <div className="max-w-lg mx-auto space-y-6">
-          {cards.map((c) => (
-            <div key={c.id} className="bg-card rounded-2xl p-6 border border-border space-y-4">
-              <LoyaltyCardPreview
-                businessName={c.card.business.name}
-                businessLogo={c.card.business.logoUrl ?? undefined}
-                customerName={c.name}
-                currentStamps={c.stamps}
-                maxStamps={c.card.stampsRequired}
-                reward={c.card.reward}
-                brandColor={c.card.brandColor}
-                showQR={true}
-                qrValue={c.id}
-              />
-              <p className="text-xs text-muted-foreground text-center">
-                Muestra este código QR en el negocio para acumular sellos
-              </p>
+          {hasDashboard && (
+            <div className="flex items-center justify-between mb-2">
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Volver al dashboard
+              </Link>
             </div>
-          ))}
+          )}
+
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-bold text-foreground">Tus tarjetas</h1>
+            <span className="text-sm text-muted-foreground bg-muted px-2.5 py-0.5 rounded-full">
+              {cards.length}
+            </span>
+          </div>
+
+          {cards.map((c) => {
+            const isExpanded = expandedCards.has(c.id)
+            return (
+              <div key={c.id} className="bg-card rounded-2xl border border-border overflow-hidden">
+                <button
+                  onClick={() => toggleCard(c.id)}
+                  className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors lg:cursor-default lg:hover:bg-transparent"
+                  aria-expanded={isExpanded}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shrink-0"
+                      style={{ backgroundColor: c.card.brandColor }}
+                    >
+                      {c.card.business.name.charAt(0)}
+                    </div>
+                    <div className="text-left min-w-0">
+                      <p className="font-semibold text-foreground truncate">{c.card.business.name}</p>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {c.stamps}/{c.card.stampsRequired} sellos
+                      </p>
+                    </div>
+                  </div>
+                  <div className="lg:hidden">
+                    <ChevronDown
+                      className={`h-5 w-5 text-muted-foreground shrink-0 transition-transform duration-300 ${
+                        isExpanded ? "rotate-180" : ""
+                      }`}
+                    />
+                  </div>
+                </button>
+                <div
+                  className={`grid transition-all duration-300 ease-in-out ${
+                    isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0 lg:grid-rows-[1fr] lg:opacity-100"
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="px-4 pb-4 space-y-4">
+                      <LoyaltyCardPreview
+                        businessName={c.card.business.name}
+                        businessLogo={c.card.business.logoUrl ?? undefined}
+                        customerName={c.name}
+                        currentStamps={c.stamps}
+                        maxStamps={c.card.stampsRequired}
+                        reward={c.card.reward}
+                        brandColor={c.card.brandColor}
+                        showQR={true}
+                        qrValue={c.id}
+                      />
+                      <p className="text-xs text-muted-foreground text-center">
+                        Muestra este código QR en el negocio para acumular sellos
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
 
           {cards.length === 0 && (
             <div className="text-center py-20">

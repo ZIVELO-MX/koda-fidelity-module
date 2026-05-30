@@ -58,10 +58,10 @@ export default async function LandingPage({
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+      <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2">
               <Image
                 src="/short-logo.svg"
                 alt={siteConfig.shortName}
@@ -70,7 +70,7 @@ export default async function LandingPage({
                 className="size-9 shrink-0"
               />
               <span className="font-semibold text-lg text-foreground">Koda Fidelity</span>
-            </div>
+            </Link>
             <div className="hidden md:flex items-center gap-8">
               <Link href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Funciones
@@ -83,11 +83,11 @@ export default async function LandingPage({
               </Link>
             </div>
             <div className="flex items-center gap-2">
-              <Link href="/login">
-                <Button variant="ghost" className="hidden sm:inline-flex">
+              <Button asChild variant="ghost" className="hidden sm:inline-flex">
+                <Link href="/login">
                   Iniciar Sesión
-                </Button>
-              </Link>
+                </Link>
+              </Button>
               <LandingMobileNav />
             </div>
           </div>
@@ -96,7 +96,7 @@ export default async function LandingPage({
 
       {/* Hero Section */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 pointer-events-none" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <div className="space-y-8">
@@ -112,17 +112,17 @@ export default async function LandingPage({
                 {siteConfig.hero.subtitle}
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="#how-it-works">
-                  <Button size="lg" className="w-full sm:w-auto text-base px-8">
+                <Button asChild size="lg" className="w-full sm:w-auto text-base px-8">
+                  <Link href="#how-it-works">
                     Ver Cómo Funciona
                     <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </Link>
-                <Link href="/login">
-                  <Button size="lg" variant="outline" className="w-full sm:w-auto text-base px-8">
+                  </Link>
+                </Button>
+                <Button asChild size="lg" variant="outline" className="w-full sm:w-auto text-base px-8">
+                  <Link href="/login">
                     Iniciar Sesión
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </div>
               <div className="flex items-center pt-4">
                 <CheckCircle2 className="h-5 w-5 text-primary mr-2" />
@@ -131,7 +131,7 @@ export default async function LandingPage({
             </div>
             <div className="relative lg:pl-8">
               <div className="relative">
-                <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 to-primary/5 rounded-[40px] blur-3xl" />
+                <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 to-primary/5 rounded-[40px] blur-3xl pointer-events-none" />
                 <LoyaltyCardPreview
                   businessName={siteConfig.hero.demoCard.businessName}
                   currentStamps={siteConfig.hero.demoCard.currentStamps}
@@ -148,7 +148,7 @@ export default async function LandingPage({
       </section>
 
       {/* How it Works */}
-      <section id="how-it-works" className="py-20 lg:py-28 bg-muted/30">
+      <section id="how-it-works" className="scroll-mt-16 py-20 lg:py-28 bg-muted/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
@@ -184,7 +184,7 @@ export default async function LandingPage({
       </section>
 
       {/* Features */}
-      <section id="features" className="py-20 lg:py-28">
+      <section id="features" className="scroll-mt-16 py-20 lg:py-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
@@ -241,7 +241,7 @@ export default async function LandingPage({
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="py-20 lg:py-28">
+      <section id="pricing" className="scroll-mt-16 py-20 lg:py-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-xl mx-auto text-center bg-card rounded-2xl p-12 border border-border">
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
@@ -250,6 +250,26 @@ export default async function LandingPage({
             <p className="text-lg text-muted-foreground">
               {siteConfig.pricing.description}
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Customer CTA Section */}
+      <section className="py-20 lg:py-28 bg-muted/30">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="bg-card rounded-3xl p-12 lg:p-16 border border-border shadow-sm">
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+              ¿Ya tienes tu tarjeta de lealtad?
+            </h2>
+            <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
+            Accede a todas tus tarjetas, revisa tu progreso y canjea tus recompensas desde un solo lugar.
+            </p>
+            <Button asChild size="lg" className="text-base px-10">
+              <Link href="/my-cards">
+                Ir a Mis Tarjetas
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
           </div>
         </div>
       </section>
@@ -264,12 +284,12 @@ export default async function LandingPage({
             <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
               {siteConfig.cta.description}
             </p>
-            <Link href={siteConfig.cta.href}>
-              <Button size="lg" className="text-base px-10">
+            <Button asChild size="lg" className="text-base px-10">
+              <Link href={siteConfig.cta.href}>
                 {siteConfig.cta.cta}
                 <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
         </div>
       </section>
@@ -278,7 +298,7 @@ export default async function LandingPage({
       <footer className="py-12 border-t border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2">
               <Image
                 src="/short-logo.svg"
                 alt={siteConfig.shortName}
@@ -287,7 +307,7 @@ export default async function LandingPage({
                 className="size-8 shrink-0"
               />
               <span className="font-semibold text-foreground">{siteConfig.name}</span>
-            </div>
+            </Link>
             <p className="text-sm text-muted-foreground">
               {siteConfig.footer.tagline}
             </p>

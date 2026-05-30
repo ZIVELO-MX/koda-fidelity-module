@@ -40,6 +40,7 @@ export function DashboardHeader({ userEmail, businessName, brandColor }: Dashboa
               brandColor={brandColor}
               onClose={() => setOpen(false)}
               fullScreen={false}
+              showMyCards={false}
             />
           )}
         </div>
