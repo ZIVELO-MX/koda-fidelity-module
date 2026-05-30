@@ -11,6 +11,7 @@ interface ProfilePanelProps {
   brandColor: string
   onClose: () => void
   fullScreen?: boolean
+  showMyCards?: boolean
 }
 
 export function ProfilePanel({
@@ -19,6 +20,7 @@ export function ProfilePanel({
   brandColor,
   onClose,
   fullScreen = false,
+  showMyCards = false,
 }: ProfilePanelProps) {
   const initial = businessName.charAt(0).toUpperCase()
 
@@ -46,14 +48,16 @@ export function ProfilePanel({
         {userEmail}
       </div>
 
-      <Link
-        href="/dashboard/my-cards"
-        onClick={onClose}
-        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <Smartphone className="h-4 w-4" />
-        Mis Tarjetas
-      </Link>
+      {showMyCards && (
+        <Link
+          href="/dashboard/my-cards"
+          onClick={onClose}
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Smartphone className="h-4 w-4" />
+          Mis Tarjetas
+        </Link>
+      )}
 
       <form action={logout}>
         <Button
@@ -100,14 +104,16 @@ export function ProfilePanel({
           <p className="font-semibold text-foreground">{businessName}</p>
           <p className="text-xs text-muted-foreground mt-1">{userEmail}</p>
         </div>
-        <Link
-          href="/dashboard/my-cards"
-          onClick={onClose}
-          className="flex items-center justify-center gap-2 w-full py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-muted"
-        >
-          <Smartphone className="h-4 w-4" />
-          Mis Tarjetas
-        </Link>
+        {showMyCards && (
+          <Link
+            href="/dashboard/my-cards"
+            onClick={onClose}
+            className="flex items-center justify-center gap-2 w-full py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-muted"
+          >
+            <Smartphone className="h-4 w-4" />
+            Mis Tarjetas
+          </Link>
+        )}
         <form action={logout} className="w-full">
           <Button
             variant="outline"

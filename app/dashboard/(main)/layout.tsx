@@ -19,7 +19,7 @@ export default async function DashboardLayout({
   })
 
   if (!business) {
-    redirect("/dashboard/my-cards")
+    redirect("/dashboard/forbidden")
   }
 
   const userEmail = user.email

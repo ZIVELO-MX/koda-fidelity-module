@@ -191,6 +191,26 @@ Esto es insostenible para producción porque:
 - [ ] Cambiar remitente de `noreply@app.xxxxx.supabase.co` a `noreply@koda.app`
 - [ ] Personalizar templates restantes (Confirmación, Cambio de contraseña, Cambio de email)
 
+### Deuda Técnica — Dominio de autenticación visible durante Google Auth
+
+El flujo de Google Auth redirige al usuario al dominio técnico del proveedor de autenticación
+(mgzledffujjnunawgymc.supabase.co) durante el login. Esto puede afectar la confianza del
+usuario al ver un dominio ajeno al producto.
+
+**Causa:** Supabase Auth utiliza su propio dominio por defecto. Para usar un dominio
+personalizado se requiere Supabase Pro Plan + $10 USD/mes por dominio custom.
+
+**Impacto:** Medio — no bloquea el login pero afecta branding y percepción de seguridad.
+
+**Solución definitiva:** Configurar Custom Domain en Supabase Auth (Authentication > Settings >
+Custom Domain). Requiere plan Pro y dominio propio verificado.
+
+**Alternativa al cambiar de provider:** Si se migra a otro provider de auth (Auth0, Clerk, etc.)
+el dominio personalizado suele estar incluido en planes base, resolviendo el problema sin
+costo adicional.
+
+**Decisión:** No se corrige para el MVP. Se evaluará al definir el provider final de auth.
+
 ### Issues conocidos
 
 - ~~**📷 Cámara en escáner QR no funciona**~~ ✅ Resuelto — se reemplazó `html5-qrcode` por `@yudiel/react-qr-scanner` (usa Barcode Detection API con fallback ZXing). Ver PR `fix/qr-scanner-library`.
