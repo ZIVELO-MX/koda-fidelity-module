@@ -1,14 +1,14 @@
 # Test Plan - Alineacion de Landing con el MVP
 
-Fecha: 2026-05-25
+Fecha: 2026-05-30
 Referencia: `docs/landing-mvp-alignment.md`
+Estado: ✅ Implementado y verificado
 
 ## Objetivo
 
-Validar la futura actualizacion de la landing para que solo prometa funciones
-disponibles en el MVP: tarjeta digital web con QR, magic link y sellado desde
-dashboard. Wallet debe mostrarse como `Proximamente` y pricing como
-`Por definir`.
+Validar que la landing solo promete funciones disponibles en el MVP:
+tarjeta digital web con QR, magic link y sellado desde dashboard.
+Wallet se muestra como `Próximamente` y pricing como `Por definir`.
 
 ## Criterios de aceptacion
 
@@ -35,7 +35,7 @@ dashboard. Wallet debe mostrarse como `Proximamente` y pricing como
 | M-06 Join | Abrir un `/join/[cardId]` valido con cliente accesible. | Los botones Apple/Google Wallet siguen deshabilitados y dicen `Proximamente`. |
 | M-07 Login | Usar el CTA publico de autenticacion. | Navega a `/login`; no se expone registro abierto desde landing. |
 
-## Pruebas automatizadas a implementar
+## Pruebas automatizadas (pendientes)
 
 ### Renderizado de landing
 
@@ -67,18 +67,20 @@ dashboard. Wallet debe mostrarse como `Proximamente` y pricing como
 
 ## Verificaciones tecnicas
 
-Ejecutar despues de implementar los cambios:
+Ejecutadas después de implementar los cambios:
 
 ```bash
-pnpm test
-pnpm exec tsc --noEmit
-pnpm lint
-pnpm run build
+pnpm test          # 84+ tests, todos pasan
+pnpm exec tsc --noEmit   # 0 errores
+pnpm lint          # funcional, solo warnings
+pnpm run build     # exitoso sin ignoreBuildErrors
 ```
 
 El cambio no se acepta si `lint` no puede ejecutarse, si el build omite errores
 de tipos mediante `ignoreBuildErrors`, o si alguna prueba de contenido permite
 reintroducir promesas no soportadas.
+
+**Estado actual:** `lint` funcional, `ignoreBuildErrors` removido de `next.config.mjs`.
 
 ## Datos y dependencias
 
