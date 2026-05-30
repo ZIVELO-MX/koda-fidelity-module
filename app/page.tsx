@@ -58,7 +58,7 @@ export default async function LandingPage({
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+      <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-2">
@@ -148,7 +148,7 @@ export default async function LandingPage({
       </section>
 
       {/* How it Works */}
-      <section id="how-it-works" className="py-20 lg:py-28 bg-muted/30">
+      <section id="how-it-works" className="scroll-mt-16 py-20 lg:py-28 bg-muted/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
@@ -184,7 +184,7 @@ export default async function LandingPage({
       </section>
 
       {/* Features */}
-      <section id="features" className="py-20 lg:py-28">
+      <section id="features" className="scroll-mt-16 py-20 lg:py-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
@@ -241,7 +241,7 @@ export default async function LandingPage({
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="py-20 lg:py-28">
+      <section id="pricing" className="scroll-mt-16 py-20 lg:py-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-xl mx-auto text-center bg-card rounded-2xl p-12 border border-border">
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
