@@ -1,12 +1,13 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { GoogleButton } from "@/components/auth/google-button"
-import { Mail, Loader2, Smartphone, ChevronDown, ChevronUp } from "lucide-react"
+import { ArrowLeft, Mail, Loader2, Smartphone, ChevronDown, ChevronUp } from "lucide-react"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
 import { getFriendlySendError } from "@/lib/auth-errors"
 
@@ -194,6 +195,25 @@ export default function DashboardMyCardsPage() {
     <div className="min-h-screen bg-background flex flex-col">
       <main className="flex-1 px-4 py-8">
         <div className="max-w-lg mx-auto space-y-6">
+          {sessionEmail && (
+            <div className="flex items-center justify-between mb-2">
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Volver al dashboard
+              </Link>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-bold text-foreground">Tus tarjetas</h1>
+            <span className="text-sm text-muted-foreground bg-muted px-2.5 py-0.5 rounded-full">
+              {cards.length}
+            </span>
+          </div>
+
           {cards.map((c) => {
             const isExpanded = expandedCards.has(c.id)
             return (
@@ -218,28 +238,36 @@ export default function DashboardMyCardsPage() {
                     </div>
                   </div>
                   <div className="lg:hidden">
-                    {isExpanded ? (
-                      <ChevronUp className="h-5 w-5 text-muted-foreground shrink-0" />
-                    ) : (
-                      <ChevronDown className="h-5 w-5 text-muted-foreground shrink-0" />
-                    )}
+                    <ChevronDown
+                      className={`h-5 w-5 text-muted-foreground shrink-0 transition-transform duration-300 ${
+                        isExpanded ? "rotate-180" : ""
+                      }`}
+                    />
                   </div>
                 </button>
-                <div className={`px-4 pb-4 space-y-4 ${isExpanded ? "block" : "hidden"} lg:block`}>
-                  <LoyaltyCardPreview
-                    businessName={c.card.business.name}
-                    businessLogo={c.card.business.logoUrl ?? undefined}
-                    customerName={c.name}
-                    currentStamps={c.stamps}
-                    maxStamps={c.card.stampsRequired}
-                    reward={c.card.reward}
-                    brandColor={c.card.brandColor}
-                    showQR={true}
-                    qrValue={c.id}
-                  />
-                  <p className="text-xs text-muted-foreground text-center">
-                    Muestra este código QR en el negocio para acumular sellos
-                  </p>
+                <div
+                  className={`grid transition-all duration-300 ease-in-out ${
+                    isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0 lg:grid-rows-[1fr] lg:opacity-100"
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="px-4 pb-4 space-y-4">
+                      <LoyaltyCardPreview
+                        businessName={c.card.business.name}
+                        businessLogo={c.card.business.logoUrl ?? undefined}
+                        customerName={c.name}
+                        currentStamps={c.stamps}
+                        maxStamps={c.card.stampsRequired}
+                        reward={c.card.reward}
+                        brandColor={c.card.brandColor}
+                        showQR={true}
+                        qrValue={c.id}
+                      />
+                      <p className="text-xs text-muted-foreground text-center">
+                        Muestra este código QR en el negocio para acumular sellos
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )
