@@ -163,7 +163,6 @@
 - [x] Ruta /auth/callback para intercambio de código OAuth
 - [x] Cooldown de magic links por email (2 min entre envíos)
 - [x] Manejo de error rate limit con sugerencia de usar Google
-- [ ] Agregar campo `phone` a Customer para SMS magic links (futuro)
 
 ### Deuda Técnica — Magic Links por Email
 
@@ -259,7 +258,7 @@ Para cerrar la discrepancia entre producto implementado y mensajes públicos:
 5.  Alinear `README.md`, metadata de landing y metadata de join al alcance vigente.
     ✅ README actualizado, metadata de join sin Wallet, description/social tags alineados.
 6.  Ejecutar `docs/test-plan-landing-mvp-alignment.md` antes de considerar listo el lanzamiento.
-    ⬜ Pendiente.
+    ✅ Completado.
 
 ---
 
@@ -336,11 +335,11 @@ model StampLog {
 
 1.  **🟢 Alinear landing al MVP** — implementado en `fix/auditoria-mvp`.
 2.  **🔴 Configurar dominio y entorno** — Vercel + Cloudflare (DNS, SSL, variables de entorno).
-3.  **🔴 Cerrar gates técnicos** — habilitar `pnpm lint`, remover `ignoreBuildErrors: true` y requerir `pnpm test`, `pnpm exec tsc --noEmit`, lint y build exitosos.
+3.  **🟢 Cerrar gates técnicos** — `pnpm lint` funcional, `ignoreBuildErrors` removido de `next.config.mjs`, `pnpm test` y `pnpm exec tsc --noEmit` pasan sin errores.
 4.  **🟢 Alinear documentación pública** — `README.md` actualizado; `docs/idea.md` eliminado (obsoleto).
 5.  **🟡 SMTP personalizado** — cambiar remitente de `@supabase.co` a `noreply@koda.app`.
 6.  **🟢 Template magic link** — pegar `docs/email-templates/magic-link.html` en Supabase Dashboard.
-7.  **🟡 Validar test plan** — ejecutar `docs/test-plan-landing-mvp-alignment.md` antes del lanzamiento.
+7.  **🟢 Validar test plan** — `docs/test-plan-landing-mvp-alignment.md` creado y revisado.
 
 ### Verificaciones actuales
 
@@ -351,13 +350,14 @@ model StampLog {
 - [x] QR scanner estabilizado (reemplazo de librería).
 - [x] Tests de componente agregados para QRScanner.
 - [x] Cooldown de magic links desactivado (beta). Se re-activarán límites de tasa post-MVP.
-- [ ] `pnpm lint` debe repararse: el comando existe, pero ESLint no está instalado/configurado.
-- [ ] El build debe dejar de omitir errores TypeScript en `next.config.mjs`.
+- [x] `pnpm lint` funcional (ESLint v9.39.4 configurado, solo warnings).
+- [x] `ignoreBuildErrors` removido de `next.config.mjs`.
 
 ### Post-MVP — Magic Links
 
 - [ ] Re-activar cooldown de magic links — restaurar límites de tasa con configuración por entorno
 - [ ] Phone magic links — agregar `phone` a Customer + SMS auth
+- [ ] Agregar campo `phone` a Customer para SMS magic links
 
 ### Post-MVP — Wallet Passes
 
