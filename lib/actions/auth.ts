@@ -8,6 +8,9 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { getFriendlySendError } from "@/lib/auth-errors"
 
+const magicLinkCooldowns = new Map<string, number>()
+const MAGIC_LINK_COOLDOWN_MS = 120_000
+
 export type AuthResult = { error?: string; success?: true; isBusiness?: boolean }
 
 export async function checkBusinessEmail(email: string): Promise<boolean> {
@@ -73,16 +76,25 @@ export async function signup(_prev: AuthResult, formData: FormData): Promise<Aut
 }
 
 export async function sendLoginMagicLink(email: string): Promise<AuthResult> {
+  const lastSent = magicLinkCooldowns.get(email)
+  if (lastSent && Date.now() - lastSent < MAGIC_LINK_COOLDOWN_MS) {
+    const remaining = Math.ceil((MAGIC_LINK_COOLDOWN_MS - (Date.now() - lastSent)) / 1000)
+    return { error: `Ya enviamos un enlace recientemente. Revisa tu correo o espera ${remaining} segundos.` }
+  }
+
   try {
     await authService.sendMagicLink(email, {
       redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/dashboard/my-cards`,
     })
+    magicLinkCooldowns.set(email, Date.now())
     return { success: true }
   } catch (err) {
     console.error("[sendLoginMagicLink] Error sending magic link:", err)
     return { error: getFriendlySendError(err) }
   }
 }
+
+
 
 export async function logout() {
   await authService.signOut()

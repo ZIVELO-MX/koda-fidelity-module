@@ -76,4 +76,15 @@ export const authService: AuthService = {
     })
     if (error) throw error
   },
+
+  async signInWithOAuth(provider: string, options?: { redirectTo?: string }) {
+    const supabase = await createClient()
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: provider as any,
+      options: {
+        redirectTo: options?.redirectTo,
+      },
+    })
+    if (error) throw error
+  },
 }

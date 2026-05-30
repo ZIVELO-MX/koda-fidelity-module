@@ -18,4 +18,5 @@ export interface AuthService {
   signOut(): Promise<void>
   getUser(): Promise<AuthUser | null>
   sendMagicLink(email: string, options?: { redirectTo?: string }): Promise<void>
+  signInWithOAuth(provider: string, options?: { redirectTo?: string }): Promise<void>
 }

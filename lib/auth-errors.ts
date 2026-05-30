@@ -14,7 +14,7 @@ export function getFriendlyAuthError(error: string, errorCode: string): AuthErro
   if (errorCode === "rate_limit" || message.includes("rate_limit") || message.includes("rate limit") || message.includes("over_email_send_rate_limit") || message.includes("too many")) {
     return {
       title: "Demasiados Intentos",
-      description: "Has solicitado demasiados enlaces en poco tiempo. Espera un minuto antes de intentar de nuevo.",
+      description: "El límite de enlaces por correo está agotado. Usa Google para acceder al instante o espera unos minutos.",
     }
   }
   if (message.includes("invalid") || message.includes("not found") || message.includes("token")) {
@@ -43,7 +43,7 @@ export function getFriendlySendError(err: unknown): string {
     message.includes("over_email_send_rate_limit") ||
     message.includes("too many")
   ) {
-    return "Has solicitado demasiados enlaces. Espera un momento antes de intentar de nuevo."
+    return "El límite de enlaces por correo está agotado. Usa Google para acceder al instante o espera unos minutos."
   }
   if (message.includes("invalid") || message.includes("not found")) {
     return "Correo electrónico no válido. Verifica e intenta de nuevo."
