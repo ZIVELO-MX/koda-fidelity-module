@@ -4,6 +4,7 @@ import { useState, useActionState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { checkBusinessEmail, sendLoginMagicLink, login, type AuthResult } from "@/lib/actions/auth"
+import { GoogleButton } from "@/components/auth/google-button"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -121,7 +122,19 @@ export function LoginForm() {
         )}
 
         {step === "email" ? (
-          <form onSubmit={handleEmailSubmit} className="space-y-4">
+          <div className="space-y-4">
+            <GoogleButton redirectTo="/dashboard/my-cards" />
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">
+                  o correo electrónico
+                </span>
+              </div>
+            </div>
+            <form onSubmit={handleEmailSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Correo electrónico</Label>
               <Input
@@ -143,6 +156,7 @@ export function LoginForm() {
               )}
             </Button>
           </form>
+          </div>
         ) : (
           <form action={loginAction} className="space-y-4">
             <input type="hidden" name="email" value={email} />
