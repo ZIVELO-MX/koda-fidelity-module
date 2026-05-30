@@ -159,7 +159,7 @@
 - [x] Login inteligente: detecta business email → password, customer email → magic link
 - [x] Actividad reciente: limitado a 3 items en mobile
 - [x] Google OAuth — reemplazar magic link como método principal de auth de clientes
-- [x] Botón "Continuar con Google" en join flow, my-cards, página de error
+- [x] Botón "Continuar con Google" en join flow, login, my-cards, dashboard/my-cards, página de error
 - [x] Ruta /auth/callback para intercambio de código OAuth
 - [x] Cooldown de magic links por email (2 min entre envíos)
 - [x] Manejo de error rate limit con sugerencia de usar Google
