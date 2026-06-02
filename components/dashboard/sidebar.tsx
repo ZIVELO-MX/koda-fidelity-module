@@ -12,6 +12,8 @@ import {
   Palette,
   Settings,
   BookOpen,
+  Smartphone,
+  LogOut,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { logout } from "@/lib/actions/auth"
@@ -85,9 +87,17 @@ export function DashboardSidebar({ userEmail, businessName, brandColor }: Dashbo
           })}
         </nav>
 
-        <div className="p-4 border-t border-border space-y-2">
+        <div className="p-4 border-t border-border space-y-1">
+          <Link
+            href="/dashboard/my-cards"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          >
+            <Smartphone className="h-5 w-5" />
+            Mis Tarjetas
+          </Link>
           <form action={logout}>
-            <Button size="sm" variant="ghost" className="w-full text-xs text-muted-foreground hover:text-destructive">
+            <Button size="sm" variant="ghost" className="w-full justify-start gap-3 text-xs text-muted-foreground hover:text-destructive">
+              <LogOut className="h-5 w-5" />
               Cerrar Sesión
             </Button>
           </form>
@@ -142,7 +152,7 @@ export function DashboardSidebar({ userEmail, businessName, brandColor }: Dashbo
           brandColor={brandColor}
           onClose={() => setProfileOpen(false)}
           fullScreen
-          showMyCards={false}
+          showMyCards={true}
         />
       )}
     </>
