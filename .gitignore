@@ -40,10 +40,14 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
-# --- Apple Wallet Certificates ---
+# --- Security docs ---
+docs/security-review-fixes.md
+
+# --- Apple Wallet Certificates & Credentials ---
 certificates/*.pem
 certificates/*.p12
 certificates/*.der
+certificates/*.json
 
 # --- Generated pass images (build artifacts) ---
 public/passes/*.png

@@ -9,7 +9,7 @@ import { generateLoyaltyPass } from "@/lib/passes/apple"
  *     tags:
  *       - Digital Passes
  *     summary: Generate Apple Wallet pass
- *     description: Creates a customer and generates an Apple Wallet .pkpass file.
+ *     description: Generates an Apple Wallet .pkpass for an existing customer.
  *     parameters:
  *       - in: path
  *         name: cardId
@@ -24,11 +24,11 @@ import { generateLoyaltyPass } from "@/lib/passes/apple"
  *           schema:
  *             type: object
  *             required:
- *               - customerName
+ *               - customerId
  *             properties:
- *               customerName:
+ *               customerId:
  *                 type: string
- *                 description: Customer name
+ *                 description: Existing customer ID (created via POST /api/join)
  *     responses:
  *       200:
  *         description: Generated .pkpass file
@@ -38,7 +38,7 @@ import { generateLoyaltyPass } from "@/lib/passes/apple"
  *               type: string
  *               format: binary
  *       400:
- *         description: Customer name required
+ *         description: customerId required
  *         content:
  *           application/json:
  *             schema:
@@ -47,7 +47,7 @@ import { generateLoyaltyPass } from "@/lib/passes/apple"
  *                 error:
  *                   type: string
  *       404:
- *         description: Card not found
+ *         description: Card or customer not found
  *         content:
  *           application/json:
  *             schema:
@@ -60,7 +60,6 @@ export async function POST(
   const { cardId } = await params
 
   const body = await request.json()
-  const customerName = body.customerName as string | undefined
   const existingCustomerId = body.customerId as string | undefined
 
   const loyaltyCard = await prisma.loyaltyCard.findUnique({
@@ -74,33 +73,21 @@ export async function POST(
     )
   }
 
-  let customer
+  if (!existingCustomerId) {
+    return NextResponse.json(
+      { error: "customerId is required" },
+      { status: 400 },
+    )
+  }
 
-  if (existingCustomerId) {
-    customer = await prisma.customer.findUnique({
-      where: { id: existingCustomerId },
-    })
-    if (!customer || customer.cardId !== cardId) {
-      return NextResponse.json(
-        { error: "Customer not found" },
-        { status: 404 },
-      )
-    }
-  } else {
-    if (!customerName?.trim()) {
-      return NextResponse.json(
-        { error: "customerName is required" },
-        { status: 400 },
-      )
-    }
-
-    customer = await prisma.customer.create({
-      data: {
-        name: customerName.trim(),
-        cardId: loyaltyCard.id,
-        stamps: 0,
-      },
-    })
+  const customer = await prisma.customer.findUnique({
+    where: { id: existingCustomerId },
+  })
+  if (!customer || customer.cardId !== cardId) {
+    return NextResponse.json(
+      { error: "Customer not found" },
+      { status: 404 },
+    )
   }
 
   const passBuffer = await generateLoyaltyPass(customer.id)
