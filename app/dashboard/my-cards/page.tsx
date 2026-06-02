@@ -7,9 +7,21 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { GoogleButton } from "@/components/auth/google-button"
-import { ArrowLeft, Mail, Loader2, Smartphone, ChevronDown, ChevronUp } from "lucide-react"
+import { ArrowLeft, Mail, Loader2, Smartphone, ChevronDown, ChevronUp, LogOut, Wallet, Download, Trash2 } from "lucide-react"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
 import { getFriendlySendError } from "@/lib/auth-errors"
+import { logout } from "@/lib/actions/auth"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface MyCard {
   id: string
@@ -221,15 +233,43 @@ export default function DashboardMyCardsPage() {
             </span>
           </div>
 
+          <div className="hidden lg:block">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="w-full text-red-500 hover:text-red-600 border-red-200 hover:border-red-300" size="lg">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Cerrar Sesión
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Cerrar Sesión</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    ¿Estás seguro de que deseas cerrar sesión?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={async () => await logout()}
+                    className="bg-red-500 hover:bg-red-600"
+                  >
+                    Cerrar Sesión
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+
           {cards.map((c) => {
             const isExpanded = expandedCards.has(c.id)
             return (
               <div key={c.id} className="bg-card rounded-2xl border border-border overflow-hidden">
-                <button
-                  onClick={() => toggleCard(c.id)}
-                  className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors lg:cursor-default lg:hover:bg-transparent"
-                  aria-expanded={isExpanded}
-                >
+                  <button
+                    onClick={() => toggleCard(c.id)}
+                    className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+                    aria-expanded={isExpanded}
+                  >
                   <div className="flex items-center gap-3 min-w-0">
                     <div
                       className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shrink-0"
@@ -244,7 +284,7 @@ export default function DashboardMyCardsPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="lg:hidden">
+                  <div>
                     <ChevronDown
                       className={`h-5 w-5 text-muted-foreground shrink-0 transition-transform duration-300 ${
                         isExpanded ? "rotate-180" : ""
@@ -254,7 +294,7 @@ export default function DashboardMyCardsPage() {
                 </button>
                 <div
                   className={`grid transition-all duration-300 ease-in-out ${
-                    isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0 lg:grid-rows-[1fr] lg:opacity-100"
+                    isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
                   }`}
                 >
                   <div className="overflow-hidden">
@@ -273,6 +313,20 @@ export default function DashboardMyCardsPage() {
                       <p className="text-xs text-muted-foreground text-center">
                         Muestra este código QR en el negocio para acumular sellos
                       </p>
+                      <div className="flex flex-col gap-2 pt-2">
+                        <Button variant="outline" size="sm" disabled className="w-full text-muted-foreground/50 border-dashed gap-2">
+                          <Wallet className="h-4 w-4" />
+                          Agregar a Wallet — Próximamente
+                        </Button>
+                        <Button variant="outline" size="sm" disabled className="w-full text-muted-foreground/50 border-dashed gap-2">
+                          <Download className="h-4 w-4" />
+                          Descargar Tarjeta — Próximamente
+                        </Button>
+                        <Button variant="outline" size="sm" disabled className="w-full text-muted-foreground/50 border-dashed gap-2">
+                          <Trash2 className="h-4 w-4" />
+                          Eliminar Tarjeta — Próximamente
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -288,6 +342,34 @@ export default function DashboardMyCardsPage() {
               </p>
             </div>
           )}
+
+          <div className="pt-6 border-t border-border lg:hidden">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="w-full text-red-500 hover:text-red-600 border-red-200 hover:border-red-300" size="lg">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Cerrar Sesión
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Cerrar Sesión</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    ¿Estás seguro de que deseas cerrar sesión?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={async () => await logout()}
+                    className="bg-red-500 hover:bg-red-600"
+                  >
+                    Cerrar Sesión
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       </main>
     </div>
