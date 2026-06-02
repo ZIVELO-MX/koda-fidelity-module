@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -9,6 +10,7 @@ import {
   DrawerContent,
   DrawerTrigger,
 } from "@/components/ui/drawer"
+import { siteConfig } from "@/lib/site-config"
 
 const links = [
   { href: "#features", label: "Funciones" },
@@ -67,11 +69,10 @@ export function LandingMobileNav() {
 
   return (
     <div className="md:hidden">
-      <Drawer open={open} onOpenChange={setOpen}>
+      <Drawer open={open} onOpenChange={setOpen} shouldScaleBackground={false}>
         <DrawerTrigger asChild>
           <button
-            className="p-2 -mr-2 rounded-lg text-muted-foreground transition-colors duration-150 active:scale-[0.96] active:text-foreground"
-            style={{ transition: "transform 120ms ease-out, color 150ms ease" }}
+            className="p-2 -mr-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors duration-150 active:scale-[0.93]"
             aria-label={open ? "Cerrar menú" : "Abrir menú de navegación"}
           >
             <HamburgerIcon open={open} />
@@ -79,58 +80,61 @@ export function LandingMobileNav() {
         </DrawerTrigger>
 
         <DrawerContent className="focus:outline-none">
+          {/* Brand header */}
+          <div className="flex items-center gap-2.5 px-5 pt-5 pb-4">
+            <Image
+              src="/short-logo.svg"
+              alt={siteConfig.shortName}
+              width={28}
+              height={28}
+              className="size-7 shrink-0"
+            />
+            <span className="font-semibold text-base text-foreground">
+              {siteConfig.name}
+            </span>
+          </div>
+
           <nav
-            className="flex flex-col px-4 pt-1 pb-8 gap-0.5"
+            className="flex flex-col px-3 pb-2 gap-0.5"
             aria-label="Navegación principal"
           >
             {links.map((link, i) => (
               <DrawerClose asChild key={link.href}>
                 <Link
                   href={link.href}
-                  className="px-3 py-3.5 rounded-xl text-base font-medium text-muted-foreground transition-colors duration-150"
+                  className="flex items-center px-3 py-3.5 rounded-xl text-base font-medium text-muted-foreground hover:text-foreground hover:bg-muted active:bg-muted active:text-foreground transition-colors duration-150"
                   style={{
                     animation: `nav-item-in 240ms cubic-bezier(0.23, 1, 0.32, 1) ${i * 35}ms both`,
-                  }}
-                  // hover only on pointer devices — avoids stuck-hover on touch
-                  onMouseEnter={(e) => {
-                    if (window.matchMedia("(hover: hover)").matches) {
-                      e.currentTarget.style.color = "var(--foreground)"
-                      e.currentTarget.style.background = "var(--muted)"
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = ""
-                    e.currentTarget.style.background = ""
                   }}
                 >
                   {link.label}
                 </Link>
               </DrawerClose>
             ))}
-
-            {/* CTA buttons stagger after the nav links */}
-            <div
-              className="flex flex-col gap-2 mt-4 pt-4 border-t border-border"
-              style={{
-                animation: `nav-item-in 240ms cubic-bezier(0.23, 1, 0.32, 1) ${links.length * 35 + 30}ms both`,
-              }}
-            >
-              <DrawerClose asChild>
-                <Link href="/login" className="w-full">
-                  <Button variant="outline" className="w-full">
-                    Iniciar Sesión
-                  </Button>
-                </Link>
-              </DrawerClose>
-              <DrawerClose asChild>
-                <Link href="/my-cards" className="w-full">
-                  <Button className="w-full active:scale-[0.97]">
-                    Ver mis tarjetas
-                  </Button>
-                </Link>
-              </DrawerClose>
-            </div>
           </nav>
+
+          {/* CTA buttons */}
+          <div
+            className="flex flex-col gap-2 mx-3 mb-8 mt-2 pt-4 border-t border-border"
+            style={{
+              animation: `nav-item-in 240ms cubic-bezier(0.23, 1, 0.32, 1) ${links.length * 35 + 30}ms both`,
+            }}
+          >
+            <DrawerClose asChild>
+              <Link href="/login" className="w-full">
+                <Button variant="outline" className="w-full">
+                  Iniciar Sesión
+                </Button>
+              </Link>
+            </DrawerClose>
+            <DrawerClose asChild>
+              <Link href="/my-cards" className="w-full">
+                <Button className="w-full active:scale-[0.97]">
+                  Ver mis tarjetas
+                </Button>
+              </Link>
+            </DrawerClose>
+          </div>
         </DrawerContent>
       </Drawer>
     </div>
