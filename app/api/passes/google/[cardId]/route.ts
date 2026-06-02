@@ -14,7 +14,7 @@ import {
  *     tags:
  *       - Digital Passes
  *     summary: Generate Google Wallet URL
- *     description: Generates a signed JWT for Google Wallet for an existing customer.
+ *     description: Creates a customer and generates a signed JWT for Google Wallet.
  *     parameters:
  *       - in: path
  *         name: cardId
@@ -29,11 +29,11 @@ import {
  *           schema:
  *             type: object
  *             required:
- *               - customerId
+ *               - customerName
  *             properties:
- *               customerId:
+ *               customerName:
  *                 type: string
- *                 description: Existing customer ID (created via POST /api/join)
+ *                 description: Customer name
  *     responses:
  *       200:
  *         description: Google Wallet save URL
@@ -48,16 +48,13 @@ import {
  *                 customerId:
  *                   type: string
  *       400:
- *         description: customerId required
+ *         description: Customer name required
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
+ *               $ref: '#/components/schemas/Error'
  *       404:
- *         description: Card or customer not found
+ *         description: Card not found
  *         content:
  *           application/json:
  *             schema:
@@ -86,6 +83,7 @@ export async function POST(
   }
 
   const body = await request.json()
+  const customerName = body.customerName as string | undefined
   const existingCustomerId = body.customerId as string | undefined
 
   const loyaltyCard = await prisma.loyaltyCard.findUnique({
