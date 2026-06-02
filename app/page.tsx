@@ -83,7 +83,7 @@ export default async function LandingPage({
               </Link>
             </div>
             <div className="flex items-center gap-2">
-              <Button asChild variant="ghost" className="hidden sm:inline-flex">
+              <Button asChild variant="ghost" className="hidden md:inline-flex">
                 <Link href="/login">
                   Iniciar Sesión
                 </Link>
