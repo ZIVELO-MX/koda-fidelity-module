@@ -9,7 +9,7 @@ import { generateLoyaltyPass } from "@/lib/passes/apple"
  *     tags:
  *       - Digital Passes
  *     summary: Generate Apple Wallet pass
- *     description: Generates an Apple Wallet .pkpass for an existing customer.
+ *     description: Creates a customer and generates an Apple Wallet .pkpass file.
  *     parameters:
  *       - in: path
  *         name: cardId
@@ -24,11 +24,11 @@ import { generateLoyaltyPass } from "@/lib/passes/apple"
  *           schema:
  *             type: object
  *             required:
- *               - customerId
+ *               - customerName
  *             properties:
- *               customerId:
+ *               customerName:
  *                 type: string
- *                 description: Existing customer ID (created via POST /api/join)
+ *                 description: Customer name
  *     responses:
  *       200:
  *         description: Generated .pkpass file
@@ -38,7 +38,7 @@ import { generateLoyaltyPass } from "@/lib/passes/apple"
  *               type: string
  *               format: binary
  *       400:
- *         description: customerId required
+ *         description: Customer name required
  *         content:
  *           application/json:
  *             schema:
@@ -47,7 +47,7 @@ import { generateLoyaltyPass } from "@/lib/passes/apple"
  *                 error:
  *                   type: string
  *       404:
- *         description: Card or customer not found
+ *         description: Card not found
  *         content:
  *           application/json:
  *             schema:
@@ -60,6 +60,7 @@ export async function POST(
   const { cardId } = await params
 
   const body = await request.json()
+  const customerName = body.customerName as string | undefined
   const existingCustomerId = body.customerId as string | undefined
 
   const loyaltyCard = await prisma.loyaltyCard.findUnique({

@@ -43,7 +43,7 @@ Thumbs.db
 # --- Security docs ---
 docs/security-review-fixes.md
 
-# --- Apple Wallet Certificates & Credentials ---
+# --- Apple Wallet Certificates ---
 certificates/*.pem
 certificates/*.p12
 certificates/*.der
