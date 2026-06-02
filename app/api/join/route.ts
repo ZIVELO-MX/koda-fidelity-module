@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
       where: { email, cardId },
     })
     if (existing) {
-      return NextResponse.json({ customerId: existing.id, existing: true })
+      return NextResponse.json({ existing: true })
     }
 
     const customer = await prisma.customer.create({
