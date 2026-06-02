@@ -14,7 +14,7 @@ import {
  *     tags:
  *       - Digital Passes
  *     summary: Generate Google Wallet URL
- *     description: Creates a customer and generates a signed JWT for Google Wallet.
+ *     description: Generates a signed JWT for Google Wallet for an existing customer.
  *     parameters:
  *       - in: path
  *         name: cardId
@@ -29,11 +29,11 @@ import {
  *           schema:
  *             type: object
  *             required:
- *               - customerName
+ *               - customerId
  *             properties:
- *               customerName:
+ *               customerId:
  *                 type: string
- *                 description: Customer name
+ *                 description: Existing customer ID (created via POST /api/join)
  *     responses:
  *       200:
  *         description: Google Wallet save URL
@@ -48,13 +48,16 @@ import {
  *                 customerId:
  *                   type: string
  *       400:
- *         description: Customer name required
+ *         description: customerId required
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Error'
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
  *       404:
- *         description: Card not found
+ *         description: Card or customer not found
  *         content:
  *           application/json:
  *             schema:
@@ -83,7 +86,6 @@ export async function POST(
   }
 
   const body = await request.json()
-  const customerName = body.customerName as string | undefined
   const existingCustomerId = body.customerId as string | undefined
 
   const loyaltyCard = await prisma.loyaltyCard.findUnique({
@@ -98,33 +100,21 @@ export async function POST(
     )
   }
 
-  let customer
+  if (!existingCustomerId) {
+    return NextResponse.json(
+      { error: "customerId is required" },
+      { status: 400 },
+    )
+  }
 
-  if (existingCustomerId) {
-    customer = await prisma.customer.findUnique({
-      where: { id: existingCustomerId },
-    })
-    if (!customer || customer.cardId !== cardId) {
-      return NextResponse.json(
-        { error: "Customer not found" },
-        { status: 404 },
-      )
-    }
-  } else {
-    if (!customerName?.trim()) {
-      return NextResponse.json(
-        { error: "customerName is required" },
-        { status: 400 },
-      )
-    }
-
-    customer = await prisma.customer.create({
-      data: {
-        name: customerName.trim(),
-        cardId: loyaltyCard.id,
-        stamps: 0,
-      },
-    })
+  const customer = await prisma.customer.findUnique({
+    where: { id: existingCustomerId },
+  })
+  if (!customer || customer.cardId !== cardId) {
+    return NextResponse.json(
+      { error: "Customer not found" },
+      { status: 404 },
+    )
   }
 
   const host = request.headers.get("host") || "localhost:3000"
