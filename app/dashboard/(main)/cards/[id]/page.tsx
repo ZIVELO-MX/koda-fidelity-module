@@ -6,8 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ArrowLeft, Gift, Users, Stamp, Calendar, Search } from "lucide-react"
 import { CardActions } from "@/components/dashboard/card-actions"
-import { StampButton } from "@/components/dashboard/stamp-button"
-import { DeleteCustomerButton } from "@/components/dashboard/delete-customer-button"
+import { CustomerActionsMenu } from "@/components/dashboard/customer-actions-menu"
 import { getCardIcon } from "@/lib/card-icons"
 
 function timeAgo(date: Date): string {
@@ -210,15 +209,13 @@ export default async function CardDetailPage({
                         <span className="text-sm text-muted-foreground">{timeAgo(customer.createdAt)}</span>
                       </td>
                       <td className="px-6 py-3 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <StampButton
-                            customerId={customer.id}
-                            currentStamps={customer.stamps}
-                            maxStamps={card.stampsRequired}
-                            reward={card.reward}
-                          />
-                          <DeleteCustomerButton customerId={customer.id} customerName={customer.name} />
-                        </div>
+                        <CustomerActionsMenu
+                          customerId={customer.id}
+                          customerName={customer.name}
+                          currentStamps={customer.stamps}
+                          maxStamps={card.stampsRequired}
+                          reward={card.reward}
+                        />
                       </td>
                     </tr>
                   ))}

@@ -4,8 +4,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Search, Stamp, Gift, Calendar } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { StampButton } from "@/components/dashboard/stamp-button"
-import { DeleteCustomerButton } from "@/components/dashboard/delete-customer-button"
+import { CustomerActionsMenu } from "@/components/dashboard/customer-actions-menu"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 
@@ -186,15 +185,13 @@ export default async function CustomersPage({
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <StampButton
-                          customerId={customer.id}
-                          currentStamps={customer.stamps}
-                          maxStamps={customer.card.stampsRequired}
-                          reward={customer.card.reward}
-                        />
-                        <DeleteCustomerButton customerId={customer.id} customerName={customer.name} />
-                      </div>
+                      <CustomerActionsMenu
+                        customerId={customer.id}
+                        customerName={customer.name}
+                        currentStamps={customer.stamps}
+                        maxStamps={customer.card.stampsRequired}
+                        reward={customer.card.reward}
+                      />
                     </td>
                   </tr>
                 ))}

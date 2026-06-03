@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button"
 import { Download, Printer, Copy, ExternalLink, Check, Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { getCardIcon } from "@/lib/card-icons"
 
 interface CardQR {
   id: string
   name: string
   brandColor: string
+  iconName?: string | null
 }
 
 export default function QRCodesPage() {
@@ -113,12 +115,18 @@ export default function QRCodesPage() {
                 
                 <div className="p-6">
                   <div className="flex items-center gap-3 mb-6">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold"
-                      style={{ backgroundColor: card.brandColor }}
-                    >
-                      {card.name.charAt(0)}
-                    </div>
+                    {(() => {
+                      const icon = getCardIcon(card.iconName)
+                      const IconComp = icon?.Icon
+                      return (
+                        <div
+                          className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shrink-0"
+                          style={{ backgroundColor: card.brandColor }}
+                        >
+                          {IconComp ? <IconComp className="h-5 w-5" /> : card.name.charAt(0)}
+                        </div>
+                      )
+                    })()}
                     <div>
                       <h3 className="font-semibold text-foreground">{card.name}</h3>
                     </div>
