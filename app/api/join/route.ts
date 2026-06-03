@@ -128,7 +128,9 @@ const cardInclude = {
       stampsRequired: true,
       reward: true,
       brandColor: true,
-      business: { select: { name: true, brandColor: true, logoUrl: true } },
+      iconName: true,
+      expiresAt: true,
+      business: { select: { name: true, brandColor: true, logoUrl: true, iconName: true } },
     },
   },
 } as const
