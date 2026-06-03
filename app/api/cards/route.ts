@@ -95,7 +95,7 @@ export async function GET() {
     const business = await getBusinessFromSession()
 
     const cards = await prisma.loyaltyCard.findMany({
-      where: { businessId: business.id },
+      where: { businessId: business.id, isActive: true },
       include: {
         _count: { select: { customers: true } },
         customers: { select: { stamps: true } },

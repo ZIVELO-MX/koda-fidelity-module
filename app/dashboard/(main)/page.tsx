@@ -39,7 +39,7 @@ export default async function DashboardPage() {
     }
 
     const cards = await prisma.loyaltyCard.findMany({
-      where: { businessId: business.id },
+      where: { businessId: business.id, isActive: true },
       include: {
         _count: { select: { customers: { where: { isActive: true } } } },
         customers: { where: { isActive: true }, select: { stamps: true } },

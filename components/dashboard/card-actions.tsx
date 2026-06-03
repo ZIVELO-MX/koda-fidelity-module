@@ -12,7 +12,17 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
-import { Trash2, QrCode, Pencil, Loader2, Check } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { Archive, QrCode, Pencil, Loader2, Check } from "lucide-react"
 import Link from "next/link"
 import { IconPicker } from "@/components/dashboard/icon-picker"
 
@@ -37,9 +47,10 @@ export function CardActions({
 }: CardActionsProps) {
   const router = useRouter()
 
-  // delete state
-  const [deleting, setDeleting] = useState(false)
-  const [deleteError, setDeleteError] = useState<string | null>(null)
+  // archive state
+  const [archiveOpen, setArchiveOpen] = useState(false)
+  const [archiving, setArchiving] = useState(false)
+  const [archiveError, setArchiveError] = useState<string | null>(null)
 
   // edit state
   const [editOpen, setEditOpen] = useState(false)
@@ -51,19 +62,15 @@ export function CardActions({
   const [saved, setSaved] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
 
-  const handleDelete = async () => {
-    if (!confirm("¿Eliminar esta tarjeta? Los clientes perderán su progreso.")) return
-
-    setDeleting(true)
-    setDeleteError(null)
-
+  const handleArchive = async () => {
+    setArchiving(true)
+    setArchiveError(null)
     const res = await fetch(`/api/cards/${cardId}`, { method: "DELETE" })
-
     if (res.ok) {
       router.push("/dashboard/cards")
     } else {
-      setDeleteError("No fue posible eliminar la tarjeta")
-      setDeleting(false)
+      setArchiveError("No fue posible archivar la tarjeta")
+      setArchiving(false)
     }
   }
 
@@ -109,23 +116,44 @@ export function CardActions({
           <Pencil className="h-4 w-4 mr-2" />
           Editar
         </Button>
-        <Link href="/dashboard/qr-codes">
+        <Link href={`/dashboard/qr-codes/${cardId}`}>
           <Button variant="outline" size="sm">
             <QrCode className="h-4 w-4 mr-2" />
             Código QR
           </Button>
         </Link>
-        <Button variant="destructive" size="sm" onClick={handleDelete} disabled={deleting}>
-          {deleting ? (
+        <Button variant="outline" size="sm" onClick={() => setArchiveOpen(true)} disabled={archiving}>
+          {archiving ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
           ) : (
-            <Trash2 className="h-4 w-4 mr-2" />
+            <Archive className="h-4 w-4 mr-2" />
           )}
-          Eliminar
+          Archivar
         </Button>
       </div>
-      {deleteError && <p className="text-sm text-destructive mt-2">{deleteError}</p>}
+      {archiveError && <p className="text-sm text-destructive mt-2">{archiveError}</p>}
 
+      {/* Archive confirmation */}
+      <AlertDialog open={archiveOpen} onOpenChange={setArchiveOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Archivar tarjeta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              La tarjeta <strong>{initialName}</strong> será archivada y dejará de aparecer en el dashboard. Los datos de los clientes se conservarán.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={archiving}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleArchive} disabled={archiving} className="gap-2">
+              {archiving && <Loader2 className="h-4 w-4 animate-spin" />}
+              <Archive className="h-4 w-4" />
+              Archivar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Edit dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

@@ -31,6 +31,7 @@ export default async function CardsPage({
 
   const where: Record<string, unknown> = {
     businessId: business.id,
+    isActive: true,
   }
 
   if (q?.trim()) {
