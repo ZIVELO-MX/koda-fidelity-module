@@ -13,6 +13,10 @@ export default async function DashboardLayout({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user?.email) redirect("/login")
 
+  if (user.user_metadata?.must_change_password) {
+    redirect("/dashboard/update-password")
+  }
+
   const business = await prisma.business.findUnique({
     where: { email: user.email },
     select: { name: true, brandColor: true },
