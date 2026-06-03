@@ -258,7 +258,7 @@ export async function DELETE(
       throw new NotFoundError("Loyalty card not found")
     }
 
-    await prisma.loyaltyCard.delete({ where: { id } })
+    await prisma.loyaltyCard.update({ where: { id }, data: { isActive: false } })
 
     return NextResponse.json({ success: true })
   } catch (error) {
