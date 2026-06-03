@@ -52,6 +52,7 @@ export default function DashboardMyCardsPage() {
   const [sessionEmail, setSessionEmail] = useState<string | null>(null)
   const [hasDashboard, setHasDashboard] = useState(false)
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set())
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState("")
 
   const toggleCard = useCallback((cardId: string) => {
@@ -61,6 +62,18 @@ export default function DashboardMyCardsPage() {
         next.delete(cardId)
       } else {
         next.add(cardId)
+      }
+      return next
+    })
+  }, [])
+
+  const toggleGroup = useCallback((businessName: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(businessName)) {
+        next.delete(businessName)
+      } else {
+        next.add(businessName)
       }
       return next
     })
@@ -299,9 +312,15 @@ export default function DashboardMyCardsPage() {
             </AlertDialog>
           </div>
 
-          {groupedCards.map(([businessName, businessCards]) => (
+          {groupedCards.map(([businessName, businessCards]) => {
+            const isGroupCollapsed = collapsedGroups.has(businessName)
+            return (
             <div key={businessName} className="space-y-3">
-              <div className="flex items-center gap-2">
+              <button
+                onClick={() => toggleGroup(businessName)}
+                className="w-full flex items-center gap-2 py-1 hover:opacity-75 transition-opacity"
+                aria-expanded={!isGroupCollapsed}
+              >
                 {businessCards[0].card.business.logoUrl ? (
                   <img
                     src={businessCards[0].card.business.logoUrl}
@@ -309,14 +328,25 @@ export default function DashboardMyCardsPage() {
                     className="w-5 h-5 rounded-md object-cover"
                   />
                 ) : null}
-                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex-1 text-left">
                   {businessName}
                 </h2>
                 <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
                   {businessCards.length}
                 </span>
-              </div>
+                <ChevronDown
+                  className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
+                    isGroupCollapsed ? "-rotate-90" : ""
+                  }`}
+                />
+              </button>
 
+              <div
+                className={`grid transition-all duration-300 ease-in-out ${
+                  isGroupCollapsed ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
+                }`}
+              >
+              <div className="overflow-hidden space-y-3">
               {businessCards.map((c) => {
                 const isExpanded = expandedCards.has(c.id)
                 return (
@@ -403,8 +433,11 @@ export default function DashboardMyCardsPage() {
                   </div>
                 )
               })}
+              </div>
+              </div>
             </div>
-          ))}
+            )
+          })}
 
           {cards.length === 0 && (
             <div className="text-center py-20">
