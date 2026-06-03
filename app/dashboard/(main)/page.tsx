@@ -31,6 +31,7 @@ export default async function DashboardPage() {
 
     const business = await prisma.business.findUnique({
       where: { email: user.email },
+      select: { id: true, name: true, brandColor: true, logoUrl: true, iconName: true },
     })
 
     if (!business) {
@@ -242,11 +243,13 @@ export default async function DashboardPage() {
               <div className="w-full max-w-full sm:max-w-xs overflow-hidden">
                 <LoyaltyCardPreview
                   businessName={business.name}
-                  customerName={sampleCustomer ? "Tus Clientes" : "Tus Clientes"}
+                  businessLogo={business.logoUrl ?? undefined}
+                  iconName={card.iconName ?? business.iconName}
+                  customerName="Tus Clientes"
                   currentStamps={card.customers.length > 0 ? Math.max(...card.customers.map(c => c.stamps)) : 0}
                   maxStamps={card.stampsRequired}
                   reward={card.reward}
-                  expirationDate={card.expiresAt ? card.expiresAt.toLocaleDateString("es-MX") : "Sin vencimiento"}
+                  expirationDate={card.expiresAt ? card.expiresAt.toLocaleDateString("es-MX") : undefined}
                   brandColor={card.brandColor}
                 />
               </div>

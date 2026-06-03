@@ -35,6 +35,7 @@ interface MyCard {
     reward: string
     brandColor: string
     iconName: string | null
+    expiresAt: string | null
     business: { name: string; brandColor: string; logoUrl: string | null; iconName: string | null }
   }
 }
@@ -316,10 +317,12 @@ export default function DashboardMyCardsPage() {
                       <LoyaltyCardPreview
                         businessName={c.card.business.name}
                         businessLogo={c.card.business.logoUrl ?? undefined}
+                        iconName={c.card.iconName ?? c.card.business.iconName}
                         customerName={c.name}
                         currentStamps={c.stamps}
                         maxStamps={c.card.stampsRequired}
                         reward={c.card.reward}
+                        expirationDate={c.card.expiresAt ? new Date(c.card.expiresAt).toLocaleDateString("es-MX") : undefined}
                         brandColor={c.card.brandColor}
                         showQR={true}
                         qrValue={c.id}
