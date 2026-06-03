@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
+import { IconPicker } from "@/components/dashboard/icon-picker"
 import { ArrowLeft, ArrowRight, Check, Sparkles } from "lucide-react"
 
 const steps = [
@@ -37,13 +38,19 @@ export default function CreateCardPage() {
     brandColor: "#f97316",
     businessName: "",
   })
+  const [iconName, setIconName] = useState<string | null>(null)
 
   useEffect(() => {
     fetch("/api/business")
       .then((res) => res.json())
       .then((data) => {
-        if (data.business?.name) {
-          setFormData((prev) => ({ ...prev, businessName: data.business.name }))
+        if (data.business) {
+          setFormData((prev) => ({
+            ...prev,
+            businessName: data.business.name || "",
+            brandColor: data.business.brandColor || "#f97316",
+          }))
+          setIconName(data.business.iconName || null)
         }
       })
       .catch(() => {})
@@ -89,6 +96,7 @@ export default function CreateCardPage() {
           reward: formData.reward,
           stampsRequired: formData.maxStamps,
           brandColor: formData.brandColor,
+          iconName: iconName || undefined,
           description: formData.description || undefined,
           expiresAt: formData.expirationDate || undefined,
         }),
@@ -306,6 +314,11 @@ export default function CreateCardPage() {
                       className="w-28 font-mono text-sm"
                     />
                   </div>
+                </div>
+
+                <div className="space-y-3">
+                  <Label>Ícono <span className="text-xs text-muted-foreground font-normal">(opcional)</span></Label>
+                  <IconPicker value={iconName} onChange={setIconName} />
                 </div>
               </div>
             </div>
