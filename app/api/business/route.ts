@@ -104,6 +104,7 @@ export async function PUT(request: NextRequest) {
         ...(body.phone !== undefined && { phone: body.phone || null }),
         ...(body.website !== undefined && { website: body.website || null }),
         ...(body.instagram !== undefined && { instagram: body.instagram || null }),
+        ...(body.iconName !== undefined && { iconName: body.iconName || null }),
       },
     })
 

@@ -23,7 +23,9 @@ interface JoinCustomer {
     stampsRequired: number
     reward: string
     brandColor: string
-    business: { name: string; brandColor: string; logoUrl: string | null }
+    iconName: string | null
+    expiresAt: string | null
+    business: { name: string; brandColor: string; logoUrl: string | null; iconName: string | null }
   }
 }
 
@@ -37,9 +39,12 @@ export default function JoinCardPage() {
     stampsRequired: number
     reward: string
     brandColor: string
+    iconName: string | null
+    expiresAt: string | null
     businessName: string
     businessBrandColor: string
     businessLogoUrl: string | null
+    businessIconName: string | null
   } | null>(null)
   const [cardError, setCardError] = useState<string | null>(null)
   const [name, setName] = useState("")
@@ -189,9 +194,12 @@ export default function JoinCardPage() {
         reward: customer.card.reward,
         stampsRequired: customer.card.stampsRequired,
         brandColor: customer.card.brandColor,
+        iconName: customer.card.iconName,
+        expiresAt: customer.card.expiresAt,
         businessName: customer.card.business.name,
         businessBrandColor: customer.card.business.brandColor,
         businessLogoUrl: customer.card.business.logoUrl,
+        businessIconName: customer.card.business.iconName,
       }
     : cardData
 
@@ -250,10 +258,12 @@ export default function JoinCardPage() {
               <LoyaltyCardPreview
                 businessName={cardInfo.businessName}
                 businessLogo={cardInfo.businessLogoUrl ?? undefined}
+                iconName={cardInfo.iconName ?? cardInfo.businessIconName}
                 customerName={customer.name}
                 currentStamps={customer.stamps}
                 maxStamps={cardInfo.stampsRequired}
                 reward={cardInfo.reward}
+                expirationDate={cardInfo.expiresAt ? new Date(cardInfo.expiresAt).toLocaleDateString("es-MX") : undefined}
                 brandColor={cardInfo.brandColor}
                 showQR={true}
                 qrValue={customer.id}
@@ -356,10 +366,12 @@ export default function JoinCardPage() {
               <LoyaltyCardPreview
                 businessName={cardInfo.businessName}
                 businessLogo={cardInfo.businessLogoUrl ?? undefined}
+                iconName={cardInfo.iconName ?? cardInfo.businessIconName}
                 customerName={name || "Tu Nombre"}
                 currentStamps={0}
                 maxStamps={cardInfo.stampsRequired}
                 reward={cardInfo.reward}
+                expirationDate={cardInfo.expiresAt ? new Date(cardInfo.expiresAt).toLocaleDateString("es-MX") : undefined}
                 brandColor={cardInfo.brandColor}
                 showQR={false}
                 onMemberClick={scrollToForm}

@@ -95,7 +95,7 @@ export async function GET() {
     const business = await getBusinessFromSession()
 
     const cards = await prisma.loyaltyCard.findMany({
-      where: { businessId: business.id },
+      where: { businessId: business.id, isActive: true },
       include: {
         _count: { select: { customers: true } },
         customers: { select: { stamps: true } },
@@ -110,6 +110,7 @@ export async function GET() {
       reward: card.reward,
       stampsRequired: card.stampsRequired,
       brandColor: card.brandColor,
+      iconName: card.iconName,
       expiresAt: card.expiresAt,
       createdAt: card.createdAt,
       updatedAt: card.updatedAt,
@@ -148,6 +149,7 @@ export async function POST(request: NextRequest) {
         reward: body.reward.trim(),
         stampsRequired,
         brandColor: body.brandColor || business.brandColor,
+        iconName: body.iconName || business.iconName || null,
         description: body.description?.trim() || null,
         expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
       },
