@@ -2,10 +2,12 @@
 
 import { QRCodeSVG } from "qrcode.react"
 import { cn } from "@/lib/utils"
+import { getCardIcon } from "@/lib/card-icons"
 
 interface LoyaltyCardPreviewProps {
   businessName: string
   businessLogo?: string
+  iconName?: string | null
   customerName?: string
   currentStamps: number
   maxStamps: number
@@ -21,6 +23,7 @@ interface LoyaltyCardPreviewProps {
 export function LoyaltyCardPreview({
   businessName,
   businessLogo,
+  iconName,
   customerName = "Tu Nombre",
   currentStamps,
   maxStamps,
@@ -52,14 +55,18 @@ export function LoyaltyCardPreview({
               alt={businessName}
               className="w-10 h-10 rounded-xl object-cover"
             />
-          ) : (
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-lg"
-              style={{ backgroundColor: "rgba(255,255,255,0.2)" }}
-            >
-              {businessName.charAt(0)}
-            </div>
-          )}
+          ) : (() => {
+            const icon = getCardIcon(iconName)
+            const IconComp = icon?.Icon
+            return (
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-lg"
+                style={{ backgroundColor: "rgba(255,255,255,0.2)" }}
+              >
+                {IconComp ? <IconComp className="h-5 w-5" /> : businessName.charAt(0)}
+              </div>
+            )
+          })()}
           <div>
             <p className="text-white/70 text-xs uppercase tracking-wide">Tarjeta de Lealtad</p>
             <h3 className="font-semibold text-white text-lg leading-tight">{businessName}</h3>

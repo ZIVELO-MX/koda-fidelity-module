@@ -129,6 +129,7 @@ const cardInclude = {
       reward: true,
       brandColor: true,
       iconName: true,
+      expiresAt: true,
       business: { select: { name: true, brandColor: true, logoUrl: true, iconName: true } },
     },
   },
