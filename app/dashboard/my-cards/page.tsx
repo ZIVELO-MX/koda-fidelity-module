@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { GoogleButton } from "@/components/auth/google-button"
-import { ArrowLeft, Mail, Loader2, Smartphone, ChevronDown, ChevronUp, LogOut, Wallet, Download, Trash2 } from "lucide-react"
+import { ArrowLeft, Mail, Loader2, Smartphone, ChevronDown, LogOut, Wallet, Download, Trash2 } from "lucide-react"
+import { getCardIcon } from "@/lib/card-icons"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
 import { getFriendlySendError } from "@/lib/auth-errors"
 import { logout } from "@/lib/actions/auth"
@@ -33,7 +34,8 @@ interface MyCard {
     stampsRequired: number
     reward: string
     brandColor: string
-    business: { name: string; brandColor: string; logoUrl: string | null }
+    iconName: string | null
+    business: { name: string; brandColor: string; logoUrl: string | null; iconName: string | null }
   }
 }
 
@@ -271,12 +273,24 @@ export default function DashboardMyCardsPage() {
                     aria-expanded={isExpanded}
                   >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shrink-0"
-                      style={{ backgroundColor: c.card.brandColor }}
-                    >
-                      {c.card.business.name.charAt(0)}
-                    </div>
+                    {(() => {
+                      const icon = getCardIcon(c.card.iconName ?? c.card.business.iconName)
+                      const IconComp = icon?.Icon
+                      return (
+                        <div
+                          className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shrink-0 overflow-hidden"
+                          style={{ backgroundColor: c.card.brandColor }}
+                        >
+                          {c.card.business.logoUrl ? (
+                            <img src={c.card.business.logoUrl} alt="" className="w-full h-full object-cover" />
+                          ) : IconComp ? (
+                            <IconComp className="h-5 w-5" />
+                          ) : (
+                            c.card.business.name.charAt(0)
+                          )}
+                        </div>
+                      )
+                    })()}
                     <div className="text-left min-w-0">
                       <p className="font-semibold text-foreground truncate">{c.card.business.name}</p>
                       <p className="text-sm text-muted-foreground truncate">

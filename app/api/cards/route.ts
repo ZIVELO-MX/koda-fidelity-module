@@ -110,6 +110,7 @@ export async function GET() {
       reward: card.reward,
       stampsRequired: card.stampsRequired,
       brandColor: card.brandColor,
+      iconName: card.iconName,
       expiresAt: card.expiresAt,
       createdAt: card.createdAt,
       updatedAt: card.updatedAt,
