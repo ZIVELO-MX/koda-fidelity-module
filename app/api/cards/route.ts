@@ -148,6 +148,7 @@ export async function POST(request: NextRequest) {
         reward: body.reward.trim(),
         stampsRequired,
         brandColor: body.brandColor || business.brandColor,
+        iconName: body.iconName || business.iconName || null,
         description: body.description?.trim() || null,
         expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
       },

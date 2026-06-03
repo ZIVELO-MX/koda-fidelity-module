@@ -170,7 +170,7 @@ export async function GET(
       where: { id },
       include: {
         business: {
-          select: { name: true, brandColor: true, logoUrl: true },
+          select: { name: true, brandColor: true, logoUrl: true, iconName: true },
         },
       },
     })
@@ -187,10 +187,12 @@ export async function GET(
         reward: card.reward,
         stampsRequired: card.stampsRequired,
         brandColor: card.brandColor,
+        iconName: card.iconName,
         expiresAt: card.expiresAt,
         businessName: card.business.name,
         businessBrandColor: card.business.brandColor,
         businessLogoUrl: card.business.logoUrl,
+        businessIconName: card.business.iconName,
       },
     })
   } catch (error) {
@@ -231,6 +233,7 @@ export async function PUT(
         ...(body.reward?.trim() && { reward: body.reward.trim() }),
         ...(body.stampsRequired !== undefined && { stampsRequired: Number(body.stampsRequired) }),
         ...(body.brandColor !== undefined && { brandColor: body.brandColor }),
+        ...(body.iconName !== undefined && { iconName: body.iconName || null }),
         ...(body.description !== undefined && { description: body.description?.trim() || null }),
         ...(body.expiresAt !== undefined && { expiresAt: body.expiresAt ? new Date(body.expiresAt) : null }),
       },
