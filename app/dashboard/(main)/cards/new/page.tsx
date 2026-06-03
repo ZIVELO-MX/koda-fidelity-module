@@ -39,6 +39,7 @@ export default function CreateCardPage() {
     businessName: "",
   })
   const [iconName, setIconName] = useState<string | null>(null)
+  const [businessLogo, setBusinessLogo] = useState<string | null>(null)
 
   useEffect(() => {
     fetch("/api/business")
@@ -51,6 +52,7 @@ export default function CreateCardPage() {
             brandColor: data.business.brandColor || "#f97316",
           }))
           setIconName(data.business.iconName || null)
+          setBusinessLogo(data.business.logoUrl || null)
         }
       })
       .catch(() => {})
@@ -415,11 +417,13 @@ export default function CreateCardPage() {
             </h3>
             <LoyaltyCardPreview
               businessName={formData.businessName || "Tu Negocio"}
+              businessLogo={businessLogo ?? undefined}
+              iconName={iconName}
               customerName="Cliente Feliz"
               currentStamps={Math.floor(formData.maxStamps * 0.6)}
               maxStamps={formData.maxStamps}
               reward={formData.reward || "Tu Recompensa"}
-              expirationDate={formData.expirationDate ? new Date(formData.expirationDate).toLocaleDateString("es-US", { month: "short", day: "numeric", year: "numeric" }) : undefined}
+              expirationDate={formData.expirationDate ? new Date(formData.expirationDate).toLocaleDateString("es-MX") : undefined}
               brandColor={formData.brandColor}
             />
           </div>

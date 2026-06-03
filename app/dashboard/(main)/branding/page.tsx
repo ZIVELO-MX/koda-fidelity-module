@@ -245,9 +245,9 @@ export default function BrandingPage() {
       </div>
 
       {/* Save */}
-      <div className="flex flex-col items-end gap-3">
-        {saveError && <p className="text-sm text-destructive text-right">{saveError}</p>}
-        <Button onClick={handleSave} className="px-8" disabled={saving}>
+      <div className="flex flex-col items-center gap-3">
+        {saveError && <p className="text-sm text-destructive text-center">{saveError}</p>}
+        <Button onClick={handleSave} className="px-10" disabled={saving}>
           {saving ? (
             <Loader2 className="h-4 w-4 animate-spin mr-2" />
           ) : saved ? (
