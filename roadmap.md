@@ -163,6 +163,9 @@
 - [x] Ruta /auth/callback para intercambio de código OAuth
 - [x] Cooldown de magic links por email (2 min entre envíos)
 - [x] Manejo de error rate limit con sugerencia de usar Google
+- [x] `/dashboard/my-cards`: agrupar tarjetas por negocio con header colapsable
+- [x] `/dashboard/my-cards`: barra de búsqueda (visible a partir de 5 tarjetas, filtra por negocio y nombre de tarjeta)
+- [x] `/dashboard/my-cards`: mostrar nombre de tarjeta en el ítem del acordeón
 
 ### Deuda Técnica — Magic Links por Email
 
