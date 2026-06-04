@@ -126,12 +126,8 @@ export function LandingMobileNav() {
                   Iniciar Sesión
                 </Button>
               </Link>
-            </DrawerClose>
-            <DrawerClose asChild>
-              <Link href="/my-cards" className="w-full">
-                <Button className="w-full active:scale-[0.97]">
-                  Ver mis tarjetas
-                </Button>
+              <Link href="/signup" onClick={() => setOpen(false)}>
+                <Button className="w-full active:scale-[0.97] transition-transform">Empezar Gratis</Button>
               </Link>
             </DrawerClose>
           </div>
