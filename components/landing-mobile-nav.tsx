@@ -49,8 +49,8 @@ export function LandingMobileNav() {
               <Link href="/login" onClick={() => setOpen(false)}>
                 <Button variant="outline" className="w-full">Iniciar Sesión</Button>
               </Link>
-              <Link href="/my-cards" onClick={() => setOpen(false)}>
-                <Button className="w-full">Ver mis tarjetas</Button>
+              <Link href="/signup" onClick={() => setOpen(false)}>
+                <Button className="w-full active:scale-[0.97] transition-transform">Empezar Gratis</Button>
               </Link>
             </nav>
           </div>
