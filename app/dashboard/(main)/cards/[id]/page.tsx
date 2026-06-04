@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ArrowLeft, Gift, Users, Stamp, Calendar, Search } from "lucide-react"
 import { CardActions } from "@/components/dashboard/card-actions"
-import { StampButton } from "@/components/dashboard/stamp-button"
+import { CustomerActionsMenu } from "@/components/dashboard/customer-actions-menu"
+import { getCardIcon } from "@/lib/card-icons"
 
 function timeAgo(date: Date): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
@@ -39,8 +40,9 @@ export default async function CardDetailPage({
   const card = await prisma.loyaltyCard.findUnique({
     where: { id },
     include: {
-      _count: { select: { customers: true } },
+      _count: { select: { customers: { where: { isActive: true } } } },
       customers: {
+        where: { isActive: true },
         include: {
           _count: { select: { stampsLog: { where: { type: "redeem" } } } },
         },
@@ -75,18 +77,30 @@ export default async function CardDetailPage({
 
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div
-            className="w-14 h-14 rounded-xl flex items-center justify-center text-white font-bold text-xl"
-            style={{ backgroundColor: card.brandColor }}
-          >
-            {card.name.charAt(0)}
-          </div>
+          {(() => {
+            const icon = getCardIcon(card.iconName)
+            const IconComp = icon?.Icon
+            return (
+              <div
+                className="w-14 h-14 rounded-xl flex items-center justify-center text-white font-bold text-xl shrink-0"
+                style={{ backgroundColor: card.brandColor }}
+              >
+                {IconComp ? <IconComp className="h-7 w-7" /> : card.name.charAt(0)}
+              </div>
+            )
+          })()}
           <div>
             <h1 className="text-2xl font-bold text-foreground">{card.name}</h1>
             <p className="text-muted-foreground">{card.stampsRequired} sellos para {card.reward}</p>
           </div>
         </div>
-        <CardActions cardId={card.id} />
+        <CardActions
+          cardId={card.id}
+          initialName={card.name}
+          initialReward={card.reward}
+          initialColor={card.brandColor}
+          initialIcon={card.iconName}
+        />
       </div>
 
       {card.description && (
@@ -156,7 +170,7 @@ export default async function CardDetailPage({
                     <th className="text-left text-sm font-medium text-muted-foreground px-6 py-3">Progreso</th>
                     <th className="text-left text-sm font-medium text-muted-foreground px-6 py-3">Canjes</th>
                     <th className="text-left text-sm font-medium text-muted-foreground px-6 py-3">Registro</th>
-                    <th className="text-right text-sm font-medium text-muted-foreground px-6 py-3">Acción</th>
+                    <th className="text-right text-sm font-medium text-muted-foreground px-6 py-3">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -195,8 +209,9 @@ export default async function CardDetailPage({
                         <span className="text-sm text-muted-foreground">{timeAgo(customer.createdAt)}</span>
                       </td>
                       <td className="px-6 py-3 text-right">
-                        <StampButton
+                        <CustomerActionsMenu
                           customerId={customer.id}
+                          customerName={customer.name}
                           currentStamps={customer.stamps}
                           maxStamps={card.stampsRequired}
                           reward={card.reward}

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Plus, QrCode, Users, Stamp, Search } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
+import { getCardIcon } from "@/lib/card-icons"
 
 export default async function CardsPage({
   searchParams,
@@ -30,6 +31,7 @@ export default async function CardsPage({
 
   const where: Record<string, unknown> = {
     businessId: business.id,
+    isActive: true,
   }
 
   if (q?.trim()) {
@@ -39,8 +41,8 @@ export default async function CardsPage({
   const cards = await prisma.loyaltyCard.findMany({
     where,
     include: {
-      _count: { select: { customers: true } },
-      customers: { select: { stamps: true } },
+      _count: { select: { customers: { where: { isActive: true } } } },
+      customers: { where: { isActive: true }, select: { stamps: true } },
     },
     orderBy: { createdAt: "desc" },
   })
@@ -102,12 +104,18 @@ export default async function CardsPage({
               />
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
-                  <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg"
-                    style={{ backgroundColor: card.brandColor }}
-                  >
-                    {card.name.charAt(0)}
-                  </div>
+                  {(() => {
+                    const icon = getCardIcon(card.iconName)
+                    const IconComp = icon?.Icon
+                    return (
+                      <div
+                        className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shrink-0"
+                        style={{ backgroundColor: card.brandColor }}
+                      >
+                        {IconComp ? <IconComp className="h-6 w-6" /> : card.name.charAt(0)}
+                      </div>
+                    )
+                  })()}
                   <div className="flex items-center gap-2">
                     <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-green-100 text-green-700">
                       Activa

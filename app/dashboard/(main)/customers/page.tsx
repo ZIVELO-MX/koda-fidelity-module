@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Search, Stamp, Gift, Calendar } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { StampButton } from "@/components/dashboard/stamp-button"
+import { CustomerActionsMenu } from "@/components/dashboard/customer-actions-menu"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 
@@ -42,6 +42,7 @@ export default async function CustomersPage({
 
   const where: Record<string, unknown> = {
     card: { businessId: business.id },
+    isActive: true,
   }
 
   if (q?.trim()) {
@@ -184,8 +185,9 @@ export default async function CustomersPage({
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <StampButton
+                      <CustomerActionsMenu
                         customerId={customer.id}
+                        customerName={customer.name}
                         currentStamps={customer.stamps}
                         maxStamps={customer.card.stampsRequired}
                         reward={customer.card.reward}

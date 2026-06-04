@@ -28,6 +28,7 @@ export function GoogleButton({ redirectTo, label = "Continuar con Google", class
           redirectTo: redirectTo
             ? `${callbackUrl}?next=${encodeURIComponent(redirectTo)}`
             : callbackUrl,
+          queryParams: { prompt: "select_account" },
         },
       })
       if (error) throw error
