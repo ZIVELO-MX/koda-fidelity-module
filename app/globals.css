@@ -230,3 +230,41 @@
     transition: none !important;
   }
 }
+
+/* Marquee band — businesses separator */
+@keyframes marquee-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.marquee-band {
+  background: #16241c;
+  border-color: #2a3d33;
+  padding-block: 18px;
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll 28s linear infinite;
+}
+
+.marquee-text {
+  color: #9fb3ab;
+  font-weight: 700;
+  font-size: 1.3rem;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.marquee-sep {
+  color: #a3e635;
+  font-weight: 700;
+  font-size: 1.3rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+}

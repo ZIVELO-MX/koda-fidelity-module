@@ -7,6 +7,7 @@ import { ArrowRight, Smartphone, QrCode, Wallet, CheckCircle2, Zap, Shield, BarC
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { LandingMobileNav } from "@/components/landing-mobile-nav"
 import { RevealGrid } from "@/components/reveal-grid"
+import { MarqueeBand } from "@/components/marquee-band"
 import { siteConfig } from "@/lib/site-config"
 
 export const metadata: Metadata = {
@@ -186,6 +187,8 @@ export default async function LandingPage({
           </div>
         </div>
       </div>
+
+      <MarqueeBand />
 
       {/* How it Works */}
       <section id="how-it-works" className="scroll-mt-16 py-20 lg:py-28 bg-muted/30">
