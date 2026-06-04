@@ -1,9 +1,16 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import Image from "next/image"
 import Link from "next/link"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
-import { Menu, X } from "lucide-react"
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerTrigger,
+} from "@/components/ui/drawer"
+import { siteConfig } from "@/lib/site-config"
 
 const links = [
   { href: "#features", label: "Funciones" },
@@ -20,25 +27,61 @@ function smoothScroll(href: string) {
   window.scrollTo({ top, behavior: "smooth" })
 }
 
+// SVG lines morph into an X. Each rect animates independently so the
+// transition feels mechanical and intentional rather than a simple icon swap.
+function HamburgerIcon({ open }: { open: boolean }) {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 20 20"
+      fill="none"
+      aria-hidden="true"
+    >
+      <rect
+        x="2" y="4.5" width="16" height="1.75" rx="0.875"
+        fill="currentColor"
+        style={{
+          transformOrigin: "10px 5.375px",
+          transform: open ? "translateY(4.625px) rotate(45deg)" : "none",
+          transition: "transform 320ms cubic-bezier(0.23, 1, 0.32, 1)",
+        }}
+      />
+      <rect
+        x="2" y="9.125" width="16" height="1.75" rx="0.875"
+        fill="currentColor"
+        style={{
+          transformOrigin: "10px 10px",
+          opacity: open ? 0 : 1,
+          transform: open ? "scaleX(0.3)" : "scaleX(1)",
+          transition: "opacity 160ms ease-out, transform 160ms ease-out",
+        }}
+      />
+      <rect
+        x="2" y="13.75" width="16" height="1.75" rx="0.875"
+        fill="currentColor"
+        style={{
+          transformOrigin: "10px 14.625px",
+          transform: open ? "translateY(-4.625px) rotate(-45deg)" : "none",
+          transition: "transform 320ms cubic-bezier(0.23, 1, 0.32, 1)",
+        }}
+      />
+    </svg>
+  )
+}
+
 export function LandingMobileNav() {
   const [open, setOpen] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden"
-      const timer = setTimeout(() => {
-        const first = menuRef.current?.querySelector<HTMLElement>(
-          'a, button, [tabindex]:not([tabindex="-1"])'
-        )
-        first?.focus()
-      }, 100)
-      return () => {
-        clearTimeout(timer)
-        document.body.style.overflow = ""
-      }
     } else {
+      document.body.style.overflow = ""
+    }
+    return () => {
       document.body.style.overflow = ""
     }
   }, [open])
@@ -46,109 +89,113 @@ export function LandingMobileNav() {
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === "Escape") {
       setOpen(false)
-      buttonRef.current?.focus()
+      closeTimerRef.current = setTimeout(() => buttonRef.current?.focus(), 100)
     }
   }, [])
 
   useEffect(() => {
     document.addEventListener("keydown", handleKeyDown)
-    return () => document.removeEventListener("keydown", handleKeyDown)
-  }, [handleKeyDown])
-
-  const trapFocus = useCallback((e: React.KeyboardEvent) => {
-    if (e.key !== "Tab") return
-    const focusable = menuRef.current?.querySelectorAll<HTMLElement>(
-      'a, button, [tabindex]:not([tabindex="-1"])'
-    )
-    if (!focusable || focusable.length === 0) return
-
-    const first = focusable[0]
-    const last = focusable[focusable.length - 1]
-
-    if (e.shiftKey && document.activeElement === first) {
-      e.preventDefault()
-      last.focus()
-    } else if (!e.shiftKey && document.activeElement === last) {
-      e.preventDefault()
-      first.focus()
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown)
+      clearTimeout(closeTimerRef.current)
     }
-  }, [])
+  }, [handleKeyDown])
 
   const handleNavClick = useCallback((href: string) => {
     setOpen(false)
-    buttonRef.current?.focus()
+    closeTimerRef.current = setTimeout(() => buttonRef.current?.focus(), 100)
     if (href.startsWith("#")) {
-      smoothScroll(href)
+      setTimeout(() => smoothScroll(href), 150)
     }
   }, [])
 
-  const closeAndFocus = useCallback(() => {
-    setOpen(false)
-    buttonRef.current?.focus()
-  }, [])
-
   return (
-    <div className="relative md:hidden">
-      <button
-        ref={buttonRef}
-        type="button"
-        className="p-3 text-muted-foreground hover:text-foreground"
-        onClick={() => setOpen(!open)}
-        aria-expanded={open}
-        aria-controls="mobile-menu"
-        aria-label={open ? "Cerrar menú de navegación" : "Abrir menú de navegación"}
-      >
-        {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-      </button>
+    <div className="relative md:hidden" data-mobile-menu="">
+      <Drawer open={open} onOpenChange={setOpen} shouldScaleBackground={false}>
+        <DrawerTrigger asChild>
+          <button
+            ref={buttonRef}
+            type="button"
+            className="p-3 -mr-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors duration-150 active:scale-[0.93]"
+            aria-label={open ? "Cerrar menú" : "Abrir menú de navegación"}
+          >
+            <HamburgerIcon open={open} />
+          </button>
+        </DrawerTrigger>
 
-      {open && (
-        <div
-          id="mobile-menu"
-          ref={menuRef}
-          role="dialog"
-          aria-modal="true"
+        <DrawerContent
+          className="focus:outline-none"
           aria-label="Navegación móvil"
-          data-mobile-menu=""
-          onKeyDown={trapFocus}
-          className="fixed inset-0 z-40"
         >
-          <div
-            className="fixed inset-0 bg-background/80 backdrop-blur-sm"
-            onClick={closeAndFocus}
-          />
-          <div className="fixed left-0 right-0 top-16 z-50 bg-card border-b border-border shadow-xl data-[mobile-menu]:animate-in data-[mobile-menu]:slide-in-from-top-2 data-[mobile-menu]:fade-in data-[mobile-menu]:duration-200 rounded-b-2xl">
-            <nav className="flex flex-col p-4 space-y-2">
-              {links.map((link) => (
+          {/* Brand header */}
+          <div className="flex items-center gap-2.5 px-5 pt-5 pb-4">
+            <Image
+              src="/short-logo.svg"
+              alt={siteConfig.shortName}
+              width={28}
+              height={28}
+              className="size-7 shrink-0"
+            />
+            <span className="font-semibold text-base text-foreground">
+              {siteConfig.name}
+            </span>
+          </div>
+
+          <nav
+            className="flex flex-col px-3 pb-2 gap-0.5"
+            aria-label="Navegación principal"
+          >
+            {links.map((link, i) => (
+              <DrawerClose asChild key={link.href}>
                 <Link
-                  key={link.href}
                   href={link.href}
                   onClick={(e) => {
                     e.preventDefault()
                     handleNavClick(link.href)
                   }}
-                  className="px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus-visible:outline-2 focus-visible:outline-ring"
+                  className="flex items-center px-3 py-3.5 rounded-xl text-base font-medium text-muted-foreground hover:text-foreground hover:bg-muted active:bg-muted active:text-foreground transition-colors duration-150"
+                  style={{
+                    animation: `nav-item-in 240ms cubic-bezier(0.23, 1, 0.32, 1) ${i * 35}ms both`,
+                  }}
                 >
                   {link.label}
                 </Link>
-              ))}
+              </DrawerClose>
+            ))}
+          </nav>
+
+          {/* CTA buttons */}
+          <div
+            className="flex flex-col gap-2 mx-3 mb-8 mt-2 pt-4 border-t border-border"
+            style={{
+              animation: `nav-item-in 240ms cubic-bezier(0.23, 1, 0.32, 1) ${links.length * 35 + 30}ms both`,
+            }}
+          >
+            <DrawerClose asChild>
               <Link
                 href="/login"
-                onClick={() => setOpen(false)}
-                className="block"
+                onClick={() => handleNavClick("/login")}
+                className="w-full"
               >
-                <Button variant="outline" className="w-full h-10">Iniciar Sesión</Button>
+                <Button variant="outline" className="w-full h-10">
+                  Iniciar Sesión
+                </Button>
               </Link>
+            </DrawerClose>
+            <DrawerClose asChild>
               <Link
                 href="/signup"
-                onClick={() => setOpen(false)}
-                className="block"
+                onClick={() => handleNavClick("/signup")}
+                className="w-full"
               >
-                <Button className="w-full h-10 active:scale-[0.97] transition-transform">Empezar Gratis</Button>
+                <Button className="w-full h-10 active:scale-[0.97] transition-transform">
+                  Empezar Gratis
+                </Button>
               </Link>
-            </nav>
+            </DrawerClose>
           </div>
-        </div>
-      )}
+        </DrawerContent>
+      </Drawer>
     </div>
   )
 }

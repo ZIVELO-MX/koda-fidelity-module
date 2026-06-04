@@ -1,15 +1,28 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { GoogleButton } from "@/components/auth/google-button"
-import { ArrowLeft, Mail, Loader2, Smartphone, ChevronDown, ChevronUp } from "lucide-react"
+import { ArrowLeft, Mail, Loader2, Smartphone, ChevronDown, LogOut, Wallet, Download, Trash2, Search } from "lucide-react"
+import { getCardIcon } from "@/lib/card-icons"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
 import { getFriendlySendError } from "@/lib/auth-errors"
+import { logout } from "@/lib/actions/auth"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface MyCard {
   id: string
@@ -21,7 +34,9 @@ interface MyCard {
     stampsRequired: number
     reward: string
     brandColor: string
-    business: { name: string; brandColor: string; logoUrl: string | null }
+    iconName: string | null
+    expiresAt: string | null
+    business: { name: string; brandColor: string; logoUrl: string | null; iconName: string | null }
   }
 }
 
@@ -37,6 +52,8 @@ export default function DashboardMyCardsPage() {
   const [sessionEmail, setSessionEmail] = useState<string | null>(null)
   const [hasDashboard, setHasDashboard] = useState(false)
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set())
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
+  const [search, setSearch] = useState("")
 
   const toggleCard = useCallback((cardId: string) => {
     setExpandedCards((prev) => {
@@ -49,6 +66,39 @@ export default function DashboardMyCardsPage() {
       return next
     })
   }, [])
+
+  const toggleGroup = useCallback((businessName: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(businessName)) {
+        next.delete(businessName)
+      } else {
+        next.add(businessName)
+      }
+      return next
+    })
+  }, [])
+
+  const filteredCards = useMemo(() => {
+    if (!search.trim()) return cards
+    const q = search.toLowerCase()
+    return cards.filter(
+      (c) =>
+        c.card.business.name.toLowerCase().includes(q) ||
+        c.card.name.toLowerCase().includes(q),
+    )
+  }, [cards, search])
+
+  const groupedCards = useMemo(() => {
+    const groups = new Map<string, MyCard[]>()
+    for (const c of filteredCards) {
+      const key = c.card.business.name
+      const group = groups.get(key) ?? []
+      group.push(c)
+      groups.set(key, group)
+    }
+    return Array.from(groups.entries())
+  }, [filteredCards])
 
   useEffect(() => {
     const checkSession = async () => {
@@ -221,62 +271,171 @@ export default function DashboardMyCardsPage() {
             </span>
           </div>
 
-          {cards.map((c) => {
-            const isExpanded = expandedCards.has(c.id)
+          {cards.length >= 5 && (
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                type="search"
+                placeholder="Buscar negocio o tarjeta..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+          )}
+
+          <div className="hidden lg:block">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="w-full text-red-500 hover:text-red-600 border-red-200 hover:border-red-300" size="lg">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Cerrar Sesión
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Cerrar Sesión</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    ¿Estás seguro de que deseas cerrar sesión?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={async () => await logout()}
+                    className="bg-red-500 hover:bg-red-600"
+                  >
+                    Cerrar Sesión
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+
+          {groupedCards.map(([businessName, businessCards]) => {
+            const isGroupCollapsed = collapsedGroups.has(businessName)
             return (
-              <div key={c.id} className="bg-card rounded-2xl border border-border overflow-hidden">
-                <button
-                  onClick={() => toggleCard(c.id)}
-                  className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors lg:cursor-default lg:hover:bg-transparent"
-                  aria-expanded={isExpanded}
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shrink-0"
-                      style={{ backgroundColor: c.card.brandColor }}
-                    >
-                      {c.card.business.name.charAt(0)}
-                    </div>
-                    <div className="text-left min-w-0">
-                      <p className="font-semibold text-foreground truncate">{c.card.business.name}</p>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {c.stamps}/{c.card.stampsRequired} sellos
-                      </p>
-                    </div>
-                  </div>
-                  <div className="lg:hidden">
-                    <ChevronDown
-                      className={`h-5 w-5 text-muted-foreground shrink-0 transition-transform duration-300 ${
-                        isExpanded ? "rotate-180" : ""
-                      }`}
-                    />
-                  </div>
-                </button>
-                <div
-                  className={`grid transition-all duration-300 ease-in-out ${
-                    isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0 lg:grid-rows-[1fr] lg:opacity-100"
+            <div key={businessName} className="space-y-3">
+              <button
+                onClick={() => toggleGroup(businessName)}
+                className="w-full flex items-center gap-2 py-1 hover:opacity-75 transition-opacity"
+                aria-expanded={!isGroupCollapsed}
+              >
+                {businessCards[0].card.business.logoUrl ? (
+                  <img
+                    src={businessCards[0].card.business.logoUrl}
+                    alt=""
+                    className="w-5 h-5 rounded-md object-cover"
+                  />
+                ) : null}
+                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex-1 text-left">
+                  {businessName}
+                </h2>
+                <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
+                  {businessCards.length}
+                </span>
+                <ChevronDown
+                  className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
+                    isGroupCollapsed ? "-rotate-90" : ""
                   }`}
-                >
-                  <div className="overflow-hidden">
-                    <div className="px-4 pb-4 space-y-4">
-                      <LoyaltyCardPreview
-                        businessName={c.card.business.name}
-                        businessLogo={c.card.business.logoUrl ?? undefined}
-                        customerName={c.name}
-                        currentStamps={c.stamps}
-                        maxStamps={c.card.stampsRequired}
-                        reward={c.card.reward}
-                        brandColor={c.card.brandColor}
-                        showQR={true}
-                        qrValue={c.id}
-                      />
-                      <p className="text-xs text-muted-foreground text-center">
-                        Muestra este código QR en el negocio para acumular sellos
-                      </p>
+                />
+              </button>
+
+              <div
+                className={`grid transition-all duration-300 ease-in-out ${
+                  isGroupCollapsed ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
+                }`}
+              >
+              <div className="overflow-hidden space-y-3">
+              {businessCards.map((c) => {
+                const isExpanded = expandedCards.has(c.id)
+                return (
+                  <div key={c.id} className="bg-card rounded-2xl border border-border overflow-hidden">
+                    <button
+                      onClick={() => toggleCard(c.id)}
+                      className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+                      aria-expanded={isExpanded}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        {(() => {
+                          const icon = getCardIcon(c.card.iconName ?? c.card.business.iconName)
+                          const IconComp = icon?.Icon
+                          return (
+                            <div
+                              className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shrink-0 overflow-hidden"
+                              style={{ backgroundColor: c.card.brandColor }}
+                            >
+                              {c.card.business.logoUrl ? (
+                                <img src={c.card.business.logoUrl} alt="" className="w-full h-full object-cover" />
+                              ) : IconComp ? (
+                                <IconComp className="h-5 w-5" />
+                              ) : (
+                                c.card.business.name.charAt(0)
+                              )}
+                            </div>
+                          )
+                        })()}
+                        <div className="text-left min-w-0">
+                          <p className="font-semibold text-foreground truncate">{c.card.name}</p>
+                          <p className="text-sm text-muted-foreground truncate">
+                            {c.stamps}/{c.card.stampsRequired} sellos
+                          </p>
+                        </div>
+                      </div>
+                      <div>
+                        <ChevronDown
+                          className={`h-5 w-5 text-muted-foreground shrink-0 transition-transform duration-300 ${
+                            isExpanded ? "rotate-180" : ""
+                          }`}
+                        />
+                      </div>
+                    </button>
+                    <div
+                      className={`grid transition-all duration-300 ease-in-out ${
+                        isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                      }`}
+                    >
+                      <div className="overflow-hidden">
+                        <div className="px-4 pb-4 space-y-4">
+                          <LoyaltyCardPreview
+                            businessName={c.card.business.name}
+                            businessLogo={c.card.business.logoUrl ?? undefined}
+                            iconName={c.card.iconName ?? c.card.business.iconName}
+                            customerName={c.name}
+                            currentStamps={c.stamps}
+                            maxStamps={c.card.stampsRequired}
+                            reward={c.card.reward}
+                            expirationDate={c.card.expiresAt ? new Date(c.card.expiresAt).toLocaleDateString("es-MX") : undefined}
+                            brandColor={c.card.brandColor}
+                            showQR={true}
+                            qrValue={c.id}
+                          />
+                          <p className="text-xs text-muted-foreground text-center">
+                            Muestra este código QR en el negocio para acumular sellos
+                          </p>
+                          <div className="flex flex-col gap-2 pt-2">
+                            <Button variant="outline" size="sm" disabled className="w-full text-muted-foreground/50 border-dashed gap-2">
+                              <Wallet className="h-4 w-4" />
+                              Agregar a Wallet — Próximamente
+                            </Button>
+                            <Button variant="outline" size="sm" disabled className="w-full text-muted-foreground/50 border-dashed gap-2">
+                              <Download className="h-4 w-4" />
+                              Descargar Tarjeta — Próximamente
+                            </Button>
+                            <Button variant="outline" size="sm" disabled className="w-full text-muted-foreground/50 border-dashed gap-2">
+                              <Trash2 className="h-4 w-4" />
+                              Eliminar Tarjeta — Próximamente
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )
+              })}
               </div>
+              </div>
+            </div>
             )
           })}
 
@@ -288,6 +447,40 @@ export default function DashboardMyCardsPage() {
               </p>
             </div>
           )}
+
+          {cards.length > 0 && filteredCards.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">Sin resultados para &ldquo;{search}&rdquo;</p>
+            </div>
+          )}
+
+          <div className="pt-6 border-t border-border lg:hidden">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="w-full text-red-500 hover:text-red-600 border-red-200 hover:border-red-300" size="lg">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Cerrar Sesión
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Cerrar Sesión</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    ¿Estás seguro de que deseas cerrar sesión?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={async () => await logout()}
+                    className="bg-red-500 hover:bg-red-600"
+                  >
+                    Cerrar Sesión
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       </main>
     </div>
