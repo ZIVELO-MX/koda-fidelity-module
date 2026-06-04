@@ -5,6 +5,7 @@ import { StatCard } from "@/components/dashboard/stat-card"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
+import { getCardIcon } from "@/lib/card-icons"
 import { CreditCard, Users, Stamp, TrendingUp, Plus, ArrowRight, AlertCircle, Eye } from "lucide-react"
 
 function timeAgo(date: Date): string {
@@ -30,6 +31,7 @@ export default async function DashboardPage() {
 
     const business = await prisma.business.findUnique({
       where: { email: user.email },
+      select: { id: true, name: true, brandColor: true, logoUrl: true, iconName: true },
     })
 
     if (!business) {
@@ -37,10 +39,10 @@ export default async function DashboardPage() {
     }
 
     const cards = await prisma.loyaltyCard.findMany({
-      where: { businessId: business.id },
+      where: { businessId: business.id, isActive: true },
       include: {
-        _count: { select: { customers: true } },
-        customers: { select: { stamps: true } },
+        _count: { select: { customers: { where: { isActive: true } } } },
+        customers: { where: { isActive: true }, select: { stamps: true } },
       },
       orderBy: { createdAt: "desc" },
     })
@@ -107,12 +109,18 @@ export default async function DashboardPage() {
               >
                 <div className="p-5">
                   <div className="flex items-start justify-between mb-4">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shrink-0"
-                      style={{ backgroundColor: card.brandColor }}
-                    >
-                      {card.name.charAt(0)}
-                    </div>
+                    {(() => {
+                      const icon = getCardIcon(card.iconName)
+                      const IconComp = icon?.Icon
+                      return (
+                        <div
+                          className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shrink-0"
+                          style={{ backgroundColor: card.brandColor }}
+                        >
+                          {IconComp ? <IconComp className="h-5 w-5" /> : card.name.charAt(0)}
+                        </div>
+                      )
+                    })()}
                     <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full ml-2">
                       Activa
                     </span>
@@ -235,11 +243,13 @@ export default async function DashboardPage() {
               <div className="w-full max-w-full sm:max-w-xs overflow-hidden">
                 <LoyaltyCardPreview
                   businessName={business.name}
-                  customerName={sampleCustomer ? "Tus Clientes" : "Tus Clientes"}
+                  businessLogo={business.logoUrl ?? undefined}
+                  iconName={card.iconName ?? business.iconName}
+                  customerName="Tus Clientes"
                   currentStamps={card.customers.length > 0 ? Math.max(...card.customers.map(c => c.stamps)) : 0}
                   maxStamps={card.stampsRequired}
                   reward={card.reward}
-                  expirationDate={card.expiresAt ? card.expiresAt.toLocaleDateString("es-MX") : "Sin vencimiento"}
+                  expirationDate={card.expiresAt ? card.expiresAt.toLocaleDateString("es-MX") : undefined}
                   brandColor={card.brandColor}
                 />
               </div>

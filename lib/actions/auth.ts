@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { getFriendlySendError } from "@/lib/auth-errors"
+import { createClient } from "@/lib/supabase-server"
 
 const magicLinkCooldowns = new Map<string, number>()
 const MAGIC_LINK_COOLDOWN_MS = 120_000
@@ -32,6 +33,35 @@ export async function login(_prev: AuthResult, formData: FormData): Promise<Auth
   } catch (err) {
     console.error("[login] Error signing in:", err)
     return { error: "No fue posible iniciar sesión. Verifica tus datos." }
+  }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (user?.user_metadata?.must_change_password) {
+    redirect("/dashboard/update-password")
+  }
+
+  revalidatePath("/dashboard")
+  redirect("/dashboard")
+}
+
+export async function updatePassword(_prev: AuthResult, formData: FormData): Promise<AuthResult> {
+  const password = formData.get("password") as string
+  const confirm = formData.get("confirm") as string
+
+  if (!password || password.length < 8) return { error: "La contraseña debe tener al menos 8 caracteres" }
+  if (password !== confirm) return { error: "Las contraseñas no coinciden" }
+
+  const supabase = await createClient()
+  const { error } = await supabase.auth.updateUser({
+    password,
+    data: { must_change_password: false },
+  })
+
+  if (error) {
+    console.error("[updatePassword] Error:", error)
+    return { error: "No fue posible actualizar la contraseña. Intenta de nuevo." }
   }
 
   revalidatePath("/dashboard")
