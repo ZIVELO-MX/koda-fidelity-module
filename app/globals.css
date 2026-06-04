@@ -263,6 +263,32 @@
   font-size: 1.3rem;
 }
 
+.marquee-label {
+  display: flex;
+  align-items: center;
+}
+
+.marquee-label-pre {
+  color: #888;
+  font-weight: 500;
+  font-size: 0.85rem;
+  letter-spacing: 0.01em;
+}
+
+.marquee-label-brand {
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.marquee-fade-left {
+  background: linear-gradient(to right, #111 0%, transparent 100%);
+}
+
+.marquee-fade-right {
+  background: linear-gradient(to left, #111 0%, transparent 100%);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .marquee-track {
     animation: none;
