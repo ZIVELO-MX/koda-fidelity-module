@@ -37,6 +37,49 @@
   --sidebar-accent-foreground: oklch(0.25 0 0);
   --sidebar-border: oklch(0.94 0 0);
   --sidebar-ring: oklch(0.705 0.191 41.116);
+  --marquee-bg: #111;
+  --marquee-text: oklch(0.6 0 0);
+  --marquee-border: rgba(255, 255, 255, 0.08);
+  --marquee-fade: #111;
+}
+
+.dark {
+  --background: oklch(0.15 0.01 260);
+  --foreground: oklch(0.95 0 0);
+  --card: oklch(0.19 0.01 260);
+  --card-foreground: oklch(0.95 0 0);
+  --popover: oklch(0.19 0.01 260);
+  --popover-foreground: oklch(0.95 0 0);
+  --primary: oklch(0.705 0.191 41.116);
+  --primary-foreground: oklch(0.15 0 0);
+  --secondary: oklch(0.25 0.01 260);
+  --secondary-foreground: oklch(0.95 0 0);
+  --muted: oklch(0.22 0.01 260);
+  --muted-foreground: oklch(0.65 0 0);
+  --accent: oklch(0.25 0.01 60);
+  --accent-foreground: oklch(0.95 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.95 0 0);
+  --border: oklch(0.28 0.01 260);
+  --input: oklch(0.28 0.01 260);
+  --ring: oklch(0.705 0.191 41.116);
+  --chart-1: oklch(0.705 0.191 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.19 0.01 260);
+  --sidebar-foreground: oklch(0.95 0 0);
+  --sidebar-primary: oklch(0.705 0.191 41.116);
+  --sidebar-primary-foreground: oklch(0.15 0 0);
+  --sidebar-accent: oklch(0.25 0.01 60);
+  --sidebar-accent-foreground: oklch(0.95 0 0);
+  --sidebar-border: oklch(0.28 0.01 260);
+  --sidebar-ring: oklch(0.705 0.191 41.116);
+  --marquee-bg: oklch(0.2 0 0);
+  --marquee-text: oklch(0.6 0 0);
+  --marquee-border: rgba(255, 255, 255, 0.06);
+  --marquee-fade: oklch(0.2 0 0);
 }
 
 @theme inline {
@@ -84,8 +127,27 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    scroll-behavior: smooth;
+  }
   body {
     @apply bg-background text-foreground;
+  }
+  .skip-link {
+    position: absolute;
+    top: -100%;
+    left: 1rem;
+    z-index: 9999;
+    padding: 0.5rem 1rem;
+    background: var(--primary);
+    color: var(--primary-foreground);
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .skip-link:focus {
+    top: 0.5rem;
   }
 }
 
@@ -114,6 +176,7 @@
 .stagger-grid.is-visible > *:nth-child(4) { transition-delay: 210ms; }
 .stagger-grid.is-visible > *:nth-child(5) { transition-delay: 280ms; }
 .stagger-grid.is-visible > *:nth-child(6) { transition-delay: 350ms; }
+.stagger-grid.is-visible > *:nth-child(n+7) { transition-delay: 420ms; }
 
 /* Loyalty card stamp entry animation */
 .stamp-filled {
@@ -138,6 +201,13 @@
   }
   .stamp-filled {
     transition: none !important;
+  }
+  [data-mobile-menu] {
+    animation: none !important;
+    transition: none !important;
+  }
+  html {
+    scroll-behavior: auto;
   }
 }
 
@@ -238,8 +308,8 @@
 }
 
 .marquee-band {
-  background: #111;
-  border-color: rgba(255, 255, 255, 0.08);
+  background: var(--marquee-bg);
+  border-color: var(--marquee-border);
   padding-block: 18px;
 }
 
@@ -250,7 +320,7 @@
 }
 
 .marquee-text {
-  color: #888;
+  color: var(--marquee-text);
   font-weight: 700;
   font-size: 1.3rem;
   letter-spacing: -0.01em;
@@ -269,7 +339,7 @@
 }
 
 .marquee-label-pre {
-  color: #888;
+  color: var(--marquee-text);
   font-weight: 500;
   font-size: 0.85rem;
   letter-spacing: 0.01em;
@@ -282,11 +352,11 @@
 }
 
 .marquee-fade-left {
-  background: linear-gradient(to right, #111 0%, transparent 100%);
+  background: linear-gradient(to right, var(--marquee-fade) 0%, transparent 100%);
 }
 
 .marquee-fade-right {
-  background: linear-gradient(to left, #111 0%, transparent 100%);
+  background: linear-gradient(to left, var(--marquee-fade) 0%, transparent 100%);
 }
 
 @media (prefers-reduced-motion: reduce) {

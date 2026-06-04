@@ -35,9 +35,9 @@ export function MarqueeBand() {
       {/* Label fijo */}
       <div className="marquee-label shrink-0 flex items-center gap-0 pl-6 pr-5 border-r border-white/10 self-stretch">
         <p className="whitespace-nowrap">
-          <span className="marquee-label-pre">Te recomendamos </span>
+          <span className="marquee-label-pre max-sm:hidden">Te recomendamos </span>
           <span className="marquee-label-brand">Koda Fidelity</span>
-          <span className="marquee-label-pre"> si eres:</span>
+          <span className="marquee-label-pre max-sm:hidden"> si eres:</span>
         </p>
       </div>
 
