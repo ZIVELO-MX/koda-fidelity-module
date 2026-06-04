@@ -93,14 +93,17 @@ export function LoyaltyCardPreview({
             <div
               key={i}
               className={cn(
-                "aspect-square rounded-xl flex items-center justify-center transition-all",
+                "aspect-square rounded-xl flex items-center justify-center",
                 filled
-                  ? "shadow-sm"
+                  ? "stamp-filled shadow-sm"
                   : "border-2 border-dashed",
               )}
               style={
                 filled
-                  ? { backgroundColor: "rgba(255,255,255,0.95)" }
+                  ? {
+                      backgroundColor: "rgba(255,255,255,0.95)",
+                      transitionDelay: `${i * 55}ms`,
+                    }
                   : { borderColor: "rgba(255,255,255,0.3)" }
               }
             >

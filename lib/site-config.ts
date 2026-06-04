@@ -115,9 +115,9 @@ export const siteConfig = {
   cta: {
     title: "¿Listo para construir lealtad?",
     description:
-      "Inicia sesión y crea tu primera tarjeta de lealtad digital en minutos.",
-    cta: "Iniciar Sesión",
-    href: "/login",
+      "Crea tu primera tarjeta de lealtad digital en minutos. Sin tarjeta de crédito, sin complicaciones.",
+    cta: "Empezar Gratis",
+    href: "/signup",
   },
 
   footer: {
