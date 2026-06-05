@@ -30,8 +30,8 @@ export function LoginForm() {
 
   function waRecoverLink(address: string) {
     const text = address
-      ? `Hola, quisiera restablecer mi contraseña. Correo: ${address}`
-      : "Hola, quisiera restablecer mi contraseña."
+      ? `Hola, quisiera restablecer mi contraseña en Koda Fidelity. Correo: ${address}`
+      : "Hola, quisiera restablecer mi contraseña en Koda Fidelity."
     return `https://wa.me/${SUPPORT_WA}?text=${encodeURIComponent(text)}`
   }
 
