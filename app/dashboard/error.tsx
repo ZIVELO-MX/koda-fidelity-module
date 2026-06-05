@@ -1,7 +1,8 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { AlertCircle, RefreshCw } from "lucide-react"
+import { AlertCircle, RefreshCw, LogOut } from "lucide-react"
+import { logout } from "@/lib/actions/auth"
 
 export default function DashboardError({
   error,
@@ -22,7 +23,7 @@ export default function DashboardError({
             Ocurrió un error inesperado al cargar esta página. Intenta de nuevo.
           </p>
         </div>
-        <div className="flex items-center justify-center gap-3">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <Button onClick={reset}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Reintentar
@@ -30,7 +31,16 @@ export default function DashboardError({
           <Button variant="outline" onClick={() => window.location.href = "/dashboard"}>
             Ir al panel
           </Button>
+          <form action={logout}>
+            <Button type="submit" variant="ghost">
+              <LogOut className="h-4 w-4 mr-2" />
+              Cerrar sesión
+            </Button>
+          </form>
         </div>
+        <p className="text-xs text-muted-foreground">
+          Si el error persiste, cerrar sesión e iniciar de nuevo suele resolverlo.
+        </p>
       </div>
     </div>
   )
