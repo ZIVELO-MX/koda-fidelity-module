@@ -74,7 +74,7 @@ describe("OpenAPI spec", () => {
   it("defines production and development servers", () => {
     const urls = spec.servers.map((s: { url: string }) => s.url).sort()
     expect(urls).toContain("http://localhost:3000")
-    expect(urls).toContain("https://koda-fidelity.vercel.app")
+    expect(urls).toContain("https://fidelity.zivelo.dev")
   })
 
   it("all paths have tags, summary and responses", () => {

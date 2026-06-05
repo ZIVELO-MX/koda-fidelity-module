@@ -79,7 +79,7 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
             </p>
           </div>
           <Button asChild variant="outline" className="w-full active:scale-[0.97] transition-transform">
-            <a href="mailto:soporte@koda.app" className="flex items-center gap-2">
+            <a href="mailto:contacto@zivelo.dev" className="flex items-center gap-2">
               <Mail className="h-4 w-4" />
               Solicitar acceso
             </a>

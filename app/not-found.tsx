@@ -58,7 +58,7 @@ export default function NotFound() {
         <p className="text-xs text-muted-foreground">
           Si crees que esto es un error,
           {" "}
-          <a href="mailto:soporte@koda.app" className="underline hover:text-primary transition-colors">
+          <a href="mailto:contacto@zivelo.dev" className="underline hover:text-primary transition-colors">
             contáctanos
           </a>
           .

@@ -123,7 +123,7 @@ export const siteConfig = {
   footer: {
     tagline: "Parte del ecosistema Koda POS. Hecho para pequeños negocios.",
     links: [
-      { label: "Soporte", href: "mailto:soporte@koda.app" },
+      { label: "Contacto", href: "mailto:contacto@zivelo.dev" },
     ],
   },
 }
