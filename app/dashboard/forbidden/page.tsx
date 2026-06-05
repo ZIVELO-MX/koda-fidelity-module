@@ -62,6 +62,10 @@ export default function ForbiddenPage() {
             </Button>
           </form>
         </div>
+
+        <p className="text-xs text-muted-foreground">
+          Si el error persiste, cerrar sesión e iniciar de nuevo suele resolverlo.
+        </p>
       </div>
     </div>
   )
