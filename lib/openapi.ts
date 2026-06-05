@@ -10,13 +10,13 @@ const options: swaggerJsdoc.Options = {
         "API for the Koda POS loyalty module. Manages loyalty cards, customers, stamps, and digital passes for Apple Wallet and Google Wallet.",
       contact: {
         name: "Koda Fidelity",
-        url: "https://koda.app",
+        url: "https://fidelity.zivelo.dev",
         email: "contacto@zivelo.dev",
       },
     },
     servers: [
       {
-        url: "https://koda-fidelity.vercel.app",
+        url: "https://fidelity.zivelo.dev",
         description: "Production",
       },
       {

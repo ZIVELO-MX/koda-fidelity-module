@@ -32,7 +32,7 @@ export function LoyaltyCardPreview({
   brandColor = "#f97316",
   className,
   showQR = true,
-  qrValue = "https://koda.app/card/demo",
+  qrValue = "https://fidelity.zivelo.dev/card/demo",
   onMemberClick,
 }: LoyaltyCardPreviewProps) {
   const stamps = Array.from({ length: maxStamps }, (_, i) => i < currentStamps)
