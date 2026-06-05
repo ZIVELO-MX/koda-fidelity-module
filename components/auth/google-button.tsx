@@ -44,7 +44,7 @@ export function GoogleButton({ redirectTo, label = "Continuar con Google", class
       <Button
         type="button"
         variant="outline"
-        className={`w-full h-12 text-base ${className ?? ""}`}
+        className={`w-full h-12 text-base font-medium active:scale-[0.97] transition-transform ${className ?? ""}`}
         onClick={handleClick}
         disabled={loading}
       >

@@ -37,10 +37,53 @@
   --sidebar-accent-foreground: oklch(0.25 0 0);
   --sidebar-border: oklch(0.94 0 0);
   --sidebar-ring: oklch(0.705 0.191 41.116);
+  --marquee-bg: #111;
+  --marquee-text: oklch(0.6 0 0);
+  --marquee-border: rgba(255, 255, 255, 0.08);
+  --marquee-fade: #111;
+}
+
+.dark {
+  --background: oklch(0.15 0.01 260);
+  --foreground: oklch(0.95 0 0);
+  --card: oklch(0.19 0.01 260);
+  --card-foreground: oklch(0.95 0 0);
+  --popover: oklch(0.19 0.01 260);
+  --popover-foreground: oklch(0.95 0 0);
+  --primary: oklch(0.705 0.191 41.116);
+  --primary-foreground: oklch(0.15 0 0);
+  --secondary: oklch(0.25 0.01 260);
+  --secondary-foreground: oklch(0.95 0 0);
+  --muted: oklch(0.22 0.01 260);
+  --muted-foreground: oklch(0.65 0 0);
+  --accent: oklch(0.25 0.01 60);
+  --accent-foreground: oklch(0.95 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.95 0 0);
+  --border: oklch(0.28 0.01 260);
+  --input: oklch(0.28 0.01 260);
+  --ring: oklch(0.705 0.191 41.116);
+  --chart-1: oklch(0.705 0.191 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.19 0.01 260);
+  --sidebar-foreground: oklch(0.95 0 0);
+  --sidebar-primary: oklch(0.705 0.191 41.116);
+  --sidebar-primary-foreground: oklch(0.15 0 0);
+  --sidebar-accent: oklch(0.25 0.01 60);
+  --sidebar-accent-foreground: oklch(0.95 0 0);
+  --sidebar-border: oklch(0.28 0.01 260);
+  --sidebar-ring: oklch(0.705 0.191 41.116);
+  --marquee-bg: oklch(0.2 0 0);
+  --marquee-text: oklch(0.6 0 0);
+  --marquee-border: rgba(255, 255, 255, 0.06);
+  --marquee-fade: oklch(0.2 0 0);
 }
 
 @theme inline {
-  --font-sans: 'Inter', 'Geist', 'Geist Fallback', system-ui, sans-serif;
+  --font-sans: 'Geist', 'Geist Fallback', system-ui, sans-serif;
   --font-mono: 'Geist Mono', 'Geist Mono Fallback', monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -84,11 +127,181 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    scroll-behavior: smooth;
+  }
   body {
     @apply bg-background text-foreground;
   }
+  .skip-link {
+    position: absolute;
+    top: -100%;
+    left: 1rem;
+    z-index: 9999;
+    padding: 0.5rem 1rem;
+    background: var(--primary);
+    color: var(--primary-foreground);
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .skip-link:focus {
+    top: 0.5rem;
+  }
 }
 
+/* Custom easing curves — Emil Kowalski */
+:root {
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+/* Scroll-reveal stagger grid */
+.stagger-grid > * {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.45s var(--ease-out-strong),
+              transform 0.45s var(--ease-out-strong);
+}
+
+.stagger-grid.is-visible > * {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.stagger-grid.is-visible > *:nth-child(1) { transition-delay: 0ms; }
+.stagger-grid.is-visible > *:nth-child(2) { transition-delay: 70ms; }
+.stagger-grid.is-visible > *:nth-child(3) { transition-delay: 140ms; }
+.stagger-grid.is-visible > *:nth-child(4) { transition-delay: 210ms; }
+.stagger-grid.is-visible > *:nth-child(5) { transition-delay: 280ms; }
+.stagger-grid.is-visible > *:nth-child(6) { transition-delay: 350ms; }
+.stagger-grid.is-visible > *:nth-child(n+7) { transition-delay: 420ms; }
+
+/* Loyalty card stamp entry animation */
+.stamp-filled {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.25s var(--ease-out-strong),
+              transform 0.25s var(--ease-out-strong);
+}
+
+@starting-style {
+  .stamp-filled {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stagger-grid > * {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .stamp-filled {
+    transition: none !important;
+  }
+  [data-mobile-menu] {
+    animation: none !important;
+    transition: none !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Loyalty card float animation (auth sidebar) */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-8px); }
+}
+
+.card-float {
+  animation: float 3.6s ease-in-out infinite;
+}
+
+/* Mail icon bounce-in (sent / success states) */
+@keyframes bounce-in {
+  0%   { transform: scale(0.4); opacity: 0; }
+  55%  { transform: scale(1.12); opacity: 1; }
+  75%  { transform: scale(0.94); }
+  100% { transform: scale(1); }
+}
+
+.mail-bounce {
+  animation: bounce-in 0.5s var(--ease-out-strong) forwards;
+}
+
+/* Password requirements — smooth height expand (no layout shift) */
+.pw-req-container {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s var(--ease-out-strong);
+}
+
+.pw-req-container.is-open {
+  grid-template-rows: 1fr;
+}
+
+.pw-req-inner {
+  overflow: hidden;
+}
+
+/* Auth page — card entry animation */
+.auth-card-enter {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.4s var(--ease-out-strong),
+              transform 0.4s var(--ease-out-strong);
+}
+
+@starting-style {
+  .auth-card-enter {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+/* Auth page — step transition (email → password → sent) */
+.auth-step-enter {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.22s var(--ease-out-strong),
+              transform 0.22s var(--ease-out-strong);
+}
+
+@starting-style {
+  .auth-step-enter {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* Password requirement row */
+.pw-req {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.25s var(--ease-out-strong),
+              transform 0.25s var(--ease-out-strong);
+}
+
+@starting-style {
+  .pw-req {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-card-enter,
+  .auth-step-enter,
+  .pw-req {
+    transition: none !important;
+  }
+}
+
+/* Mobile nav — staggered item entrance */
 @keyframes nav-item-in {
   from {
     opacity: 0;
@@ -100,9 +313,66 @@
   }
 }
 
+/* Marquee band — businesses separator */
+@keyframes marquee-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.marquee-band {
+  background: var(--marquee-bg);
+  border-color: var(--marquee-border);
+  padding-block: 18px;
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll 28s linear infinite;
+}
+
+.marquee-text {
+  color: var(--marquee-text);
+  font-weight: 700;
+  font-size: 1.3rem;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.marquee-sep {
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 1.3rem;
+}
+
+.marquee-label {
+  display: flex;
+  align-items: center;
+}
+
+.marquee-label-pre {
+  color: var(--marquee-text);
+  font-weight: 500;
+  font-size: 0.85rem;
+  letter-spacing: 0.01em;
+}
+
+.marquee-label-brand {
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.marquee-fade-left {
+  background: linear-gradient(to right, var(--marquee-fade) 0%, transparent 100%);
+}
+
+.marquee-fade-right {
+  background: linear-gradient(to left, var(--marquee-fade) 0%, transparent 100%);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  @keyframes nav-item-in {
-    from { opacity: 0; }
-    to   { opacity: 1; }
+  .marquee-track {
+    animation: none;
   }
 }
