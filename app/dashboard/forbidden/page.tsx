@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ShieldAlert, ArrowRight } from "lucide-react"
+import { ShieldAlert, ArrowRight, LogOut } from "lucide-react"
+import { logout } from "@/lib/actions/auth"
 
 export default function ForbiddenPage() {
   return (
@@ -17,7 +18,7 @@ export default function ForbiddenPage() {
             No tienes permisos para acceder al panel de administración.
           </p>
           <p className="text-sm text-muted-foreground">
-            Si eres cliente, puedes ver tus tarjetas de lealtad desde la sección Mis Tarjetas.
+            Si eres cliente, puedes ver tus tarjetas de lealtad desde <strong>Mis Tarjetas</strong>.
           </p>
         </div>
 
@@ -28,12 +29,20 @@ export default function ForbiddenPage() {
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </Link>
-          <Link href="/">
-            <Button variant="outline" className="w-full sm:w-auto">
-              Volver al inicio
+          <form action={logout}>
+            <Button type="submit" variant="outline" className="w-full sm:w-auto">
+              <LogOut className="mr-2 h-4 w-4" />
+              Cerrar sesión
             </Button>
-          </Link>
+          </form>
         </div>
+
+        <p className="text-sm text-muted-foreground">
+          ¿Olvidaste tu contraseña?{" "}
+          <Link href="/login?recover=true" className="text-primary hover:underline font-medium">
+            Recupérala aquí
+          </Link>
+        </p>
 
         <p className="text-xs text-muted-foreground">
           Código: 403 Forbidden
