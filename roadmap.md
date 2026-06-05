@@ -166,6 +166,10 @@
 - [x] `/dashboard/my-cards`: agrupar tarjetas por negocio con header colapsable
 - [x] `/dashboard/my-cards`: barra de búsqueda (visible a partir de 5 tarjetas, filtra por negocio y nombre de tarjeta)
 - [x] `/dashboard/my-cards`: mostrar nombre de tarjeta en el ítem del acordeón
+- [x] Script `create-client` para crear cuentas de negocio con contraseña temporal desde CLI
+- [x] Flujo de cambio de contraseña forzado al primer login (`must_change_password` en user metadata)
+- [x] Página 403 mejorada: botón "Cerrar sesión" + link de recuperación de contraseña
+- [x] Recuperación de contraseña vía WhatsApp (MVP) — redirige a soporte con correo pre-llenado en el mensaje
 
 ### Deuda Técnica — Magic Links por Email
 

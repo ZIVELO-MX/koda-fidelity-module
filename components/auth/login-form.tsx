@@ -3,24 +3,37 @@
 import { useState, useActionState } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { checkBusinessEmail, sendLoginMagicLink, login, type AuthResult } from "@/lib/actions/auth"
 import { GoogleButton } from "@/components/auth/google-button"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Mail, Loader2, ArrowLeft } from "lucide-react"
+import { Mail, Loader2, ArrowLeft, MessageCircle } from "lucide-react"
 
-type LoginStep = "email" | "password" | "sent"
+const SUPPORT_WA = "5213921107274"
+
+type LoginStep = "email" | "password" | "sent" | "recover"
 
 const initialState: AuthResult = {}
 
 export function LoginForm() {
-  const [step, setStep] = useState<LoginStep>("email")
+  const searchParams = useSearchParams()
+  const [step, setStep] = useState<LoginStep>(
+    searchParams.get("recover") === "true" ? "recover" : "email"
+  )
   const [email, setEmail] = useState("")
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loginState, loginAction, loginPending] = useActionState(login, initialState)
+
+  function waRecoverLink(address: string) {
+    const text = address
+      ? `Hola, quisiera restablecer mi contraseña en Koda Fidelity. Correo: ${address}`
+      : "Hola, quisiera restablecer mi contraseña en Koda Fidelity."
+    return `https://wa.me/${SUPPORT_WA}?text=${encodeURIComponent(text)}`
+  }
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -81,6 +94,55 @@ export function LoginForm() {
           >
             <ArrowLeft className="h-4 w-4" />
             Usar otro correo
+          </button>
+        </CardFooter>
+      </Card>
+    )
+  }
+
+  if (step === "recover") {
+    return (
+      <Card className="w-full max-w-md auth-card-enter shadow-lg border-border/50">
+        <CardHeader className="text-center">
+          <div className="flex justify-center mb-4">
+            <Image src="/short-logo.svg" alt="Koda" width={48} height={48} className="size-12" />
+          </div>
+          <CardTitle className="text-2xl">Recuperar contraseña</CardTitle>
+          <CardDescription>
+            Confirma tu correo y escríbenos por WhatsApp para restablecer tu acceso
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="recover-email">Correo electrónico</Label>
+            <Input
+              id="recover-email"
+              type="email"
+              placeholder="tu@correo.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              autoFocus
+              className="[&:user-invalid]:border-destructive [&:user-valid]:border-primary transition-colors"
+            />
+          </div>
+          <Button
+            asChild
+            className="w-full active:scale-[0.97] transition-transform bg-[#25D366] hover:bg-[#1ebe5d] text-white"
+          >
+            <a href={waRecoverLink(email)} target="_blank" rel="noopener noreferrer">
+              <MessageCircle className="mr-2 h-4 w-4" />
+              Solicitar por WhatsApp
+            </a>
+          </Button>
+        </CardContent>
+        <CardFooter className="flex-col gap-2 text-sm text-muted-foreground">
+          <button
+            onClick={() => { setStep("email"); setError(null) }}
+            className="inline-flex items-center gap-1 text-primary hover:underline"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Volver al inicio de sesión
           </button>
         </CardFooter>
       </Card>
@@ -150,7 +212,16 @@ export function LoginForm() {
             <form action={loginAction} className="space-y-4">
               <input type="hidden" name="email" value={email} />
               <div className="space-y-2">
-                <Label htmlFor="password">Contraseña</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Contraseña</Label>
+                  <button
+                    type="button"
+                    onClick={() => { setStep("recover"); setError(null) }}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </button>
+                </div>
                 <Input
                   id="password"
                   name="password"
