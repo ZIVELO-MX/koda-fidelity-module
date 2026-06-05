@@ -1,6 +1,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { CheckCircle2 } from "lucide-react"
+import { Suspense } from "react"
 import { LoginForm } from "@/components/auth/login-form"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { siteConfig } from "@/lib/site-config"
@@ -71,7 +72,9 @@ export default function LoginPage() {
               <span className="font-semibold text-foreground">Koda Fidelity</span>
             </Link>
           </div>
-          <LoginForm />
+          <Suspense>
+            <LoginForm />
+          </Suspense>
         </div>
 
       </div>
