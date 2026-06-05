@@ -11,7 +11,7 @@ Actualizar cuando se tengan los valores reales de producción.
 | Nombre corto | `Koda` | |
 | URL del sitio | `{{ .SiteURL }}` (se resuelve desde Supabase) | |
 | Color principal | `#f97316` (naranja) | |
-| Email de soporte | `soporte@koda.app` | |
+| Email de soporte | `contacto@zivelo.dev` | |
 | Logo en correos | Letra "K" en círculo naranja `#f97316` | |
 | Idioma | Español (es_MX) | |
 

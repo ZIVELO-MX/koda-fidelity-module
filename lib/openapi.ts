@@ -11,6 +11,7 @@ const options: swaggerJsdoc.Options = {
       contact: {
         name: "Koda Fidelity",
         url: "https://koda.app",
+        email: "contacto@zivelo.dev",
       },
     },
     servers: [
