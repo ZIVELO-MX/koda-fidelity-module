@@ -77,6 +77,14 @@ export const authService: AuthService = {
     if (error) throw error
   },
 
+  async sendPasswordResetEmail(email: string, options?: { redirectTo?: string }) {
+    const supabase = await createClient()
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: options?.redirectTo,
+    })
+    if (error) throw error
+  },
+
   async signInWithOAuth(provider: string, options?: { redirectTo?: string }) {
     const supabase = await createClient()
     const { error } = await supabase.auth.signInWithOAuth({

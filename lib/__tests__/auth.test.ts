@@ -40,6 +40,8 @@ class MockAuthService implements AuthService {
 
   async sendMagicLink(_email: string, _options?: { redirectTo?: string }) {}
 
+  async sendPasswordResetEmail(_email: string, _options?: { redirectTo?: string }) {}
+
   async signInWithOAuth(_provider: string, _options?: { redirectTo?: string }) {}
 }
 
@@ -115,6 +117,7 @@ describe("AuthService interface contract", () => {
         return session.user
       }
       async sendMagicLink(_email: string, _options?: { redirectTo?: string }) {}
+      async sendPasswordResetEmail(_email: string, _options?: { redirectTo?: string }) {}
       async signInWithOAuth(_provider: string, _options?: { redirectTo?: string }) {}
     })()
     const user = await auth.getUser()

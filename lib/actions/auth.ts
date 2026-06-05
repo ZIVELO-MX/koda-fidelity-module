@@ -126,6 +126,21 @@ export async function sendLoginMagicLink(email: string): Promise<AuthResult> {
 
 
 
+export async function sendPasswordReset(_prev: AuthResult, formData: FormData): Promise<AuthResult> {
+  const email = formData.get("email") as string
+  if (!email || !email.includes("@")) return { error: "Ingresa un correo electrónico válido" }
+
+  const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/callback?next=/dashboard/update-password`
+
+  try {
+    await authService.sendPasswordResetEmail(email.trim(), { redirectTo })
+    return { success: true }
+  } catch (err) {
+    console.error("[sendPasswordReset] Error:", err)
+    return { error: "No fue posible enviar el correo. Verifica el correo e intenta de nuevo." }
+  }
+}
+
 export async function logout() {
   await authService.signOut()
   revalidatePath("/login")

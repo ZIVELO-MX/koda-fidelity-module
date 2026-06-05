@@ -1,26 +1,36 @@
 "use client"
 
-import { useState, useActionState } from "react"
+import { useState, useActionState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { checkBusinessEmail, sendLoginMagicLink, login, type AuthResult } from "@/lib/actions/auth"
+import { useSearchParams } from "next/navigation"
+import { checkBusinessEmail, sendLoginMagicLink, login, sendPasswordReset, type AuthResult } from "@/lib/actions/auth"
 import { GoogleButton } from "@/components/auth/google-button"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Mail, Loader2, ArrowLeft } from "lucide-react"
+import { Mail, Loader2, ArrowLeft, KeyRound } from "lucide-react"
 
-type LoginStep = "email" | "password" | "sent"
+type LoginStep = "email" | "password" | "sent" | "recover" | "recover-sent"
 
 const initialState: AuthResult = {}
 
 export function LoginForm() {
-  const [step, setStep] = useState<LoginStep>("email")
+  const searchParams = useSearchParams()
+  const [step, setStep] = useState<LoginStep>(
+    searchParams.get("recover") === "true" ? "recover" : "email"
+  )
   const [email, setEmail] = useState("")
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loginState, loginAction, loginPending] = useActionState(login, initialState)
+  const [recoverState, recoverAction, recoverPending] = useActionState(sendPasswordReset, initialState)
+
+  useEffect(() => {
+    if (recoverState?.success) setStep("recover-sent")
+    if (recoverState?.error) setError(recoverState.error)
+  }, [recoverState])
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -87,6 +97,106 @@ export function LoginForm() {
           >
             <ArrowLeft className="h-4 w-4" />
             Usar otro correo
+          </button>
+        </CardFooter>
+      </Card>
+    )
+  }
+
+  if (step === "recover-sent") {
+    return (
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <div className="flex justify-center mb-4">
+            <Image
+              src="/short-logo.svg"
+              alt="Koda"
+              width={48}
+              height={48}
+              className="size-12"
+            />
+          </div>
+          <CardTitle className="text-2xl">Revisa tu correo</CardTitle>
+          <CardDescription>
+            Te enviamos instrucciones para recuperar tu contraseña a <strong>{email}</strong>
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="text-center space-y-4">
+          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+            <KeyRound className="h-10 w-10 text-primary" />
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Haz clic en el enlace del correo para crear una nueva contraseña.
+          </p>
+        </CardContent>
+        <CardFooter className="flex-col gap-2 text-sm text-muted-foreground">
+          <button
+            onClick={() => { setStep("email"); setError(null) }}
+            className="inline-flex items-center gap-1 text-primary hover:underline"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Volver al inicio de sesión
+          </button>
+        </CardFooter>
+      </Card>
+    )
+  }
+
+  if (step === "recover") {
+    return (
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <div className="flex justify-center mb-4">
+            <Image
+              src="/short-logo.svg"
+              alt="Koda"
+              width={48}
+              height={48}
+              className="size-12"
+            />
+          </div>
+          <CardTitle className="text-2xl">Recuperar contraseña</CardTitle>
+          <CardDescription>
+            Ingresa tu correo y te enviaremos un enlace para crear una nueva contraseña
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {error && (
+            <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive mb-4">
+              {error}
+            </div>
+          )}
+          <form action={recoverAction} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="recover-email">Correo electrónico</Label>
+              <Input
+                id="recover-email"
+                name="email"
+                type="email"
+                placeholder="tu@correo.com"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setError(null) }}
+                required
+                autoComplete="email"
+                autoFocus
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={recoverPending}>
+              {recoverPending ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                "Enviar instrucciones"
+              )}
+            </Button>
+          </form>
+        </CardContent>
+        <CardFooter className="flex-col gap-2 text-sm text-muted-foreground">
+          <button
+            onClick={() => { setStep("email"); setError(null) }}
+            className="inline-flex items-center gap-1 text-primary hover:underline"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Volver al inicio de sesión
           </button>
         </CardFooter>
       </Card>
@@ -161,7 +271,16 @@ export function LoginForm() {
           <form action={loginAction} className="space-y-4">
             <input type="hidden" name="email" value={email} />
             <div className="space-y-2">
-              <Label htmlFor="password">Contraseña</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Contraseña</Label>
+                <button
+                  type="button"
+                  onClick={() => { setStep("recover"); setError(null) }}
+                  className="text-xs text-primary hover:underline"
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </div>
               <Input
                 id="password"
                 name="password"
