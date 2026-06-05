@@ -6,11 +6,17 @@ import { Button } from "@/components/ui/button"
 import { ArrowRight, Smartphone, QrCode, Wallet, CheckCircle2, Zap, Shield, BarChart3 } from "lucide-react"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { LandingMobileNav } from "@/components/landing-mobile-nav"
+import { SmoothNavLink } from "@/components/smooth-nav-link"
+import { RevealGrid } from "@/components/reveal-grid"
+import { MarqueeBand } from "@/components/marquee-band"
 import { siteConfig } from "@/lib/site-config"
 
 export const metadata: Metadata = {
   title: `${siteConfig.name} - Tarjetas de Fidelidad Digitales`,
   description: siteConfig.description,
+  keywords: siteConfig.keywords,
+  robots: { index: true, follow: true },
+  alternates: { canonical: siteConfig.url },
   openGraph: {
     title: `${siteConfig.name} - Tarjetas de Fidelidad Digitales`,
     description: siteConfig.description,
@@ -42,23 +48,32 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 export default async function LandingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ [key: string]: string | undefined }>
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
   const params = await searchParams
-  if (params.code) {
-    redirect(`/auth/callback?code=${encodeURIComponent(params.code)}&next=${encodeURIComponent(params.next || "/dashboard/my-cards")}`)
+  const code = typeof params.code === "string" ? params.code : params.code?.[0]
+  const next = typeof params.next === "string" ? params.next : params.next?.[0]
+  const error = typeof params.error === "string" ? params.error : params.error?.[0]
+  const error_code = typeof params.error_code === "string" ? params.error_code : params.error_code?.[0]
+  const error_description = typeof params.error_description === "string" ? params.error_description : params.error_description?.[0]
+
+  if (code) {
+    redirect(`/auth/callback?code=${encodeURIComponent(code)}&next=${encodeURIComponent(next || "/dashboard/my-cards")}`)
   }
-  if (params.error || params.error_code) {
+  if (error || error_code) {
     const qs = new URLSearchParams()
-    if (params.error) qs.set("error", params.error)
-    if (params.error_code) qs.set("error_code", params.error_code)
-    if (params.error_description) qs.set("error_description", params.error_description)
+    if (error) qs.set("error", error)
+    if (error_code) qs.set("error_code", error_code)
+    if (error_description) qs.set("error_description", error_description)
     redirect(`/auth/error?${qs.toString()}`)
   }
   return (
     <div className="min-h-screen bg-background">
+      <a href="#main-content" className="skip-link">
+        Saltar al contenido principal
+      </a>
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border relative">
+      <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-2">
@@ -72,20 +87,25 @@ export default async function LandingPage({
               <span className="font-semibold text-lg text-foreground">Koda Fidelity</span>
             </Link>
             <div className="hidden md:flex items-center gap-8">
-              <Link href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <SmoothNavLink href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Funciones
-              </Link>
-              <Link href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              </SmoothNavLink>
+              <SmoothNavLink href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Cómo Funciona
-              </Link>
-              <Link href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              </SmoothNavLink>
+              <SmoothNavLink href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Precios
-              </Link>
+              </SmoothNavLink>
             </div>
             <div className="flex items-center gap-2">
               <Button asChild variant="ghost" className="hidden md:inline-flex">
                 <Link href="/login">
                   Iniciar Sesión
+                </Link>
+              </Button>
+              <Button asChild size="sm" className="hidden md:inline-flex active:scale-[0.97] transition-transform">
+                <Link href="/signup">
+                  Empezar Gratis
                 </Link>
               </Button>
               <LandingMobileNav />
@@ -95,12 +115,15 @@ export default async function LandingPage({
       </nav>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 pointer-events-none" />
+      <section id="main-content" className="relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute -top-40 -right-24 w-[560px] h-[560px] rounded-full bg-primary/10 blur-3xl" />
+          <div className="absolute -bottom-20 -left-20 w-[380px] h-[380px] rounded-full bg-primary/[0.07] blur-3xl" />
+        </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <div className="space-y-8">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-medium">
                 <Zap className="h-4 w-4" />
                 {siteConfig.hero.tagline}
               </div>
@@ -112,26 +135,30 @@ export default async function LandingPage({
                 {siteConfig.hero.subtitle}
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button asChild size="lg" className="w-full sm:w-auto text-base px-8">
-                  <Link href="#how-it-works">
-                    Ver Cómo Funciona
-                    <ArrowRight className="ml-2 h-5 w-5" />
+                <Button asChild size="lg" className="group w-full sm:w-auto text-base px-8 active:scale-[0.97] transition-transform">
+                  <Link href="/signup">
+                    Empezar Gratis
+                    <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-150 group-hover:translate-x-1" />
                   </Link>
                 </Button>
-                <Button asChild size="lg" variant="outline" className="w-full sm:w-auto text-base px-8">
-                  <Link href="/login">
-                    Iniciar Sesión
-                  </Link>
+                <Button asChild size="lg" variant="outline" className="w-full sm:w-auto text-base px-8 active:scale-[0.97] transition-transform">
+                  <SmoothNavLink href="#how-it-works">
+                    Ver Cómo Funciona
+                  </SmoothNavLink>
                 </Button>
               </div>
-              <div className="flex items-center pt-4">
-                <CheckCircle2 className="h-5 w-5 text-primary mr-2" />
-                <span className="text-sm text-muted-foreground">Configuración en 2 minutos</span>
+              <div className="flex flex-wrap gap-x-5 gap-y-2 pt-1">
+                {["Sin tarjeta de crédito", "Setup en 2 minutos", "Cancela cuando quieras"].map((text) => (
+                  <div key={text} className="flex items-center gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                    <span className="text-sm text-muted-foreground">{text}</span>
+                  </div>
+                ))}
               </div>
             </div>
             <div className="relative lg:pl-8">
               <div className="relative">
-                <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 to-primary/5 rounded-[40px] blur-3xl pointer-events-none" />
+                <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 to-primary/5 rounded-[40px] blur-2xl pointer-events-none" />
                 <LoyaltyCardPreview
                   businessName={siteConfig.hero.demoCard.businessName}
                   currentStamps={siteConfig.hero.demoCard.currentStamps}
@@ -147,6 +174,32 @@ export default async function LandingPage({
         </div>
       </section>
 
+      {/* Feature trust strip */}
+      <div className="border-y border-border/60 bg-muted/20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+          <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-3 md:gap-x-14">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Smartphone className="h-4 w-4 text-primary/70 shrink-0" />
+              <span>Sin apps requeridas</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Shield className="h-4 w-4 text-primary/70 shrink-0" />
+              <span>Acceso seguro por email</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Zap className="h-4 w-4 text-primary/70 shrink-0" />
+              <span>Lista en 2 minutos</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <QrCode className="h-4 w-4 text-primary/70 shrink-0" />
+              <span>Flujo 100% con QR</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <MarqueeBand />
+
       {/* How it Works */}
       <section id="how-it-works" className="scroll-mt-16 py-20 lg:py-28 bg-muted/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -158,13 +211,13 @@ export default async function LandingPage({
               Tu programa de lealtad digital funcionando en minutos, no en días.
             </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
+          <RevealGrid className="grid md:grid-cols-3 gap-8">
             {siteConfig.howItWorks.map((item, index) => {
               const Icon = iconMap[item.icon]
               return (
                 <div
-                  key={index}
-                  className="relative bg-card rounded-2xl p-8 border border-border shadow-sm hover:shadow-lg transition-shadow group"
+                  key={`how-${item.step}`}
+                  className="relative bg-card rounded-2xl p-8 border border-border shadow-sm hover:shadow-lg hover:-translate-y-1 transition-[box-shadow,transform] duration-200 group"
                 >
                   <div className="absolute -top-4 -left-4 w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold shadow-lg">
                     {item.step}
@@ -179,7 +232,7 @@ export default async function LandingPage({
                 </div>
               )
             })}
-          </div>
+          </RevealGrid>
         </div>
       </section>
 
@@ -194,13 +247,13 @@ export default async function LandingPage({
               Funciones diseñadas para pequeños negocios que quieren grandes resultados.
             </p>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {siteConfig.features.map((feature, index) => {
+          <RevealGrid className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {siteConfig.features.map((feature) => {
               const Icon = iconMap[feature.icon]
               return (
                 <div
-                  key={index}
-                  className="bg-card rounded-2xl p-6 border border-border hover:border-primary/30 transition-colors group"
+                  key={feature.title}
+                  className="bg-card rounded-2xl p-6 border border-border hover:border-primary/30 hover:-translate-y-0.5 transition-[border-color,transform] duration-200 group"
                 >
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/15 transition-colors">
                     {Icon && <Icon className="h-6 w-6 text-primary" />}
@@ -210,7 +263,7 @@ export default async function LandingPage({
                 </div>
               )
             })}
-          </div>
+          </RevealGrid>
         </div>
       </section>
 
@@ -225,31 +278,41 @@ export default async function LandingPage({
               Únete a cientos de pequeños negocios que ya usan Koda Fidelity.
             </p>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {siteConfig.useCases.map((useCase, index) => (
+          <RevealGrid className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {siteConfig.useCases.map((useCase) => (
               <div
-                key={index}
-                className="bg-card rounded-2xl p-6 border border-border text-center hover:shadow-md transition-shadow"
+                key={useCase.name}
+                className="group bg-card rounded-2xl p-6 border border-border text-center hover:shadow-md hover:-translate-y-0.5 transition-[box-shadow,transform] duration-200"
               >
-                <div className="text-4xl mb-4">{useCase.emoji}</div>
+                <div className="text-4xl mb-4 transition-transform duration-150 [@media(hover:hover)]:group-hover:scale-110">{useCase.emoji}</div>
                 <h3 className="font-semibold text-foreground mb-2">{useCase.name}</h3>
                 <p className="text-sm text-muted-foreground">{useCase.example}</p>
               </div>
             ))}
-          </div>
+          </RevealGrid>
         </div>
       </section>
 
       {/* Pricing */}
       <section id="pricing" className="scroll-mt-16 py-20 lg:py-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-xl mx-auto text-center bg-card rounded-2xl p-12 border border-border">
+          <div className="max-w-2xl mx-auto text-center bg-card rounded-3xl p-6 sm:p-12 border border-border shadow-sm">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-medium mb-6">
+              <Zap className="h-3.5 w-3.5" />
+              Acceso Anticipado
+            </div>
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              {siteConfig.pricing.title}
+              Precios accesibles para negocios locales
             </h2>
-            <p className="text-lg text-muted-foreground">
+            <p className="text-lg text-muted-foreground mb-8">
               {siteConfig.pricing.description}
             </p>
+            <Button asChild size="lg" className="group text-base px-8 active:scale-[0.97] transition-transform">
+              <Link href="/signup">
+                Obtener Acceso Anticipado
+                <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-150 group-hover:translate-x-1" />
+              </Link>
+            </Button>
           </div>
         </div>
       </section>
@@ -257,17 +320,17 @@ export default async function LandingPage({
       {/* Customer CTA Section */}
       <section className="py-20 lg:py-28 bg-muted/30">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="bg-card rounded-3xl p-12 lg:p-16 border border-border shadow-sm">
+          <div className="bg-card rounded-3xl p-6 sm:p-12 lg:p-16 border border-border shadow-sm">
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
               ¿Ya tienes tu tarjeta de lealtad?
             </h2>
             <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
             Accede a todas tus tarjetas, revisa tu progreso y canjea tus recompensas desde un solo lugar.
             </p>
-            <Button asChild size="lg" className="text-base px-10">
+            <Button asChild size="lg" className="group text-base px-10 active:scale-[0.97] transition-transform">
               <Link href="/my-cards">
                 Ir a Mis Tarjetas
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-150 group-hover:translate-x-1" />
               </Link>
             </Button>
           </div>
@@ -277,17 +340,17 @@ export default async function LandingPage({
       {/* CTA Section */}
       <section className="py-20 lg:py-28">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-3xl p-12 lg:p-16 border border-primary/20">
+          <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-3xl p-6 sm:p-12 lg:p-16 border border-primary/20">
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
               {siteConfig.cta.title}
             </h2>
             <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
               {siteConfig.cta.description}
             </p>
-            <Button asChild size="lg" className="text-base px-10">
+            <Button asChild size="lg" className="group text-base px-10 active:scale-[0.97] transition-transform">
               <Link href={siteConfig.cta.href}>
                 {siteConfig.cta.cta}
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-150 group-hover:translate-x-1" />
               </Link>
             </Button>
           </div>
@@ -312,9 +375,9 @@ export default async function LandingPage({
               {siteConfig.footer.tagline}
             </p>
             <div className="flex items-center gap-6">
-              {siteConfig.footer.links.map((link, index) => (
+              {siteConfig.footer.links.map((link) => (
                 <Link
-                  key={index}
+                  key={link.href}
                   href={link.href}
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >

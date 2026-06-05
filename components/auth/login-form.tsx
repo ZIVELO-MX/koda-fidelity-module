@@ -66,16 +66,10 @@ export function LoginForm() {
 
   if (step === "sent") {
     return (
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md auth-card-enter shadow-lg border-border/50">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <Image
-              src="/short-logo.svg"
-              alt="Koda"
-              width={48}
-              height={48}
-              className="size-12"
-            />
+            <Image src="/short-logo.svg" alt="Koda" width={48} height={48} className="size-12" />
           </div>
           <CardTitle className="text-2xl">Revisa tu correo</CardTitle>
           <CardDescription>
@@ -83,7 +77,7 @@ export function LoginForm() {
           </CardDescription>
         </CardHeader>
         <CardContent className="text-center space-y-4">
-          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+          <div className="mail-bounce w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
             <Mail className="h-10 w-10 text-primary" />
           </div>
           <p className="text-sm text-muted-foreground">
@@ -105,16 +99,10 @@ export function LoginForm() {
 
   if (step === "recover-sent") {
     return (
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md auth-card-enter shadow-lg border-border/50">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <Image
-              src="/short-logo.svg"
-              alt="Koda"
-              width={48}
-              height={48}
-              className="size-12"
-            />
+            <Image src="/short-logo.svg" alt="Koda" width={48} height={48} className="size-12" />
           </div>
           <CardTitle className="text-2xl">Revisa tu correo</CardTitle>
           <CardDescription>
@@ -122,7 +110,7 @@ export function LoginForm() {
           </CardDescription>
         </CardHeader>
         <CardContent className="text-center space-y-4">
-          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+          <div className="mail-bounce w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
             <KeyRound className="h-10 w-10 text-primary" />
           </div>
           <p className="text-sm text-muted-foreground">
@@ -144,16 +132,10 @@ export function LoginForm() {
 
   if (step === "recover") {
     return (
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md auth-card-enter shadow-lg border-border/50">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <Image
-              src="/short-logo.svg"
-              alt="Koda"
-              width={48}
-              height={48}
-              className="size-12"
-            />
+            <Image src="/short-logo.svg" alt="Koda" width={48} height={48} className="size-12" />
           </div>
           <CardTitle className="text-2xl">Recuperar contraseña</CardTitle>
           <CardDescription>
@@ -179,14 +161,15 @@ export function LoginForm() {
                 required
                 autoComplete="email"
                 autoFocus
+                className="[&:user-invalid]:border-destructive [&:user-valid]:border-primary transition-colors"
               />
             </div>
-            <Button type="submit" className="w-full" disabled={recoverPending}>
-              {recoverPending ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                "Enviar instrucciones"
-              )}
+            <Button
+              type="submit"
+              className="w-full active:scale-[0.97] transition-transform"
+              disabled={recoverPending}
+            >
+              {recoverPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviar instrucciones"}
             </Button>
           </form>
         </CardContent>
@@ -204,116 +187,117 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader className="text-center">
-        <div className="flex justify-center mb-4">
-          <Image
-            src="/short-logo.svg"
-            alt="Koda"
-            width={48}
-            height={48}
-            className="size-12"
-          />
-        </div>
-        <CardTitle className="text-2xl">
-          {step === "password" ? "Ingresa tu contraseña" : "Iniciar Sesión"}
-        </CardTitle>
-        <CardDescription>
-          {step === "password"
-            ? `Bienvenido de vuelta, ${email.split("@")[0]}`
-            : "Accede a tu panel o a tus tarjetas de lealtad"}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {(error || loginState?.error) && (
-          <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive mb-4">
-            {error || loginState.error}
+    <Card className="w-full max-w-md auth-card-enter shadow-lg border-border/50">
+      <div key={step} className="auth-step-enter">
+        <CardHeader className="text-center">
+          <div className="flex justify-center mb-4">
+            <Image src="/short-logo.svg" alt="Koda" width={48} height={48} className="size-12" />
           </div>
-        )}
+          <CardTitle className="text-2xl">
+            {step === "password" ? "Ingresa tu contraseña" : "Iniciar Sesión"}
+          </CardTitle>
+          <CardDescription>
+            {step === "password"
+              ? `Bienvenido de vuelta, ${email.split("@")[0]}`
+              : "Accede a tu panel o a tus tarjetas de lealtad"}
+          </CardDescription>
+        </CardHeader>
 
-        {step === "email" ? (
-          <div className="space-y-4">
-            <GoogleButton redirectTo="/dashboard/my-cards" />
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">
-                  o correo electrónico
-                </span>
-              </div>
+        <CardContent>
+          {(error || loginState?.error) && (
+            <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive mb-4">
+              {error || loginState.error}
             </div>
-            <form onSubmit={handleEmailSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Correo electrónico</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="tu@correo.com"
-                value={email}
-                onChange={(e) => { setEmail(e.target.value); setError(null) }}
-                required
-                autoComplete="email"
-                autoFocus
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={pending}>
-              {pending ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                "Continuar"
-              )}
-            </Button>
-          </form>
-          </div>
-        ) : (
-          <form action={loginAction} className="space-y-4">
-            <input type="hidden" name="email" value={email} />
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Contraseña</Label>
-                <button
-                  type="button"
-                  onClick={() => { setStep("recover"); setError(null) }}
-                  className="text-xs text-primary hover:underline"
+          )}
+
+          {step === "email" ? (
+            <div className="space-y-4">
+              <GoogleButton redirectTo="/dashboard/my-cards" />
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">o correo electrónico</span>
+                </div>
+              </div>
+              <form onSubmit={handleEmailSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Correo electrónico</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="tu@correo.com"
+                    value={email}
+                    onChange={(e) => { setEmail(e.target.value); setError(null) }}
+                    required
+                    autoComplete="email"
+                    autoFocus
+                    className="[&:user-invalid]:border-destructive [&:user-valid]:border-primary transition-colors"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full active:scale-[0.97] transition-transform"
+                  disabled={pending}
                 >
-                  ¿Olvidaste tu contraseña?
-                </button>
-              </div>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="••••••••"
-                required
-                autoComplete="current-password"
-                autoFocus
-              />
+                  {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Continuar"}
+                </Button>
+              </form>
             </div>
-            <Button type="submit" className="w-full" disabled={loginPending}>
-              {loginPending ? "Iniciando sesión..." : "Iniciar Sesión"}
-            </Button>
-            <button
-              type="button"
-              onClick={() => { setStep("email"); setError(null) }}
-              className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Usar otro correo
-            </button>
-          </form>
-        )}
-      </CardContent>
-      <CardFooter className="flex-col gap-2 text-sm text-muted-foreground">
-        {step !== "password" && (
-          <span>
-            ¿Sin acceso?{" "}
-            <Link href="/signup" className="text-primary hover:underline font-medium">
-              Más información
-            </Link>
-          </span>
-        )}
-      </CardFooter>
+          ) : (
+            <form action={loginAction} className="space-y-4">
+              <input type="hidden" name="email" value={email} />
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Contraseña</Label>
+                  <button
+                    type="button"
+                    onClick={() => { setStep("recover"); setError(null) }}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </button>
+                </div>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="••••••••"
+                  required
+                  autoComplete="current-password"
+                  autoFocus
+                />
+              </div>
+              <Button
+                type="submit"
+                className="w-full active:scale-[0.97] transition-transform"
+                disabled={loginPending}
+              >
+                {loginPending ? "Iniciando sesión..." : "Iniciar Sesión"}
+              </Button>
+              <button
+                type="button"
+                onClick={() => { setStep("email"); setError(null) }}
+                className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Usar otro correo
+              </button>
+            </form>
+          )}
+        </CardContent>
+
+        <CardFooter className="flex-col gap-2 text-sm text-muted-foreground">
+          {step !== "password" && (
+            <span>
+              ¿Sin acceso?{" "}
+              <Link href="/signup" className="text-primary hover:underline font-medium">
+                Más información
+              </Link>
+            </span>
+          )}
+        </CardFooter>
+      </div>
     </Card>
   )
 }
