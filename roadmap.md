@@ -176,6 +176,7 @@
 - [ ] Foto de perfil para client y customer — subir/cambiar avatar similar al flujo de logo en tarjetas (Branding); mostrar en `ProfilePanel`, sidebar y header en lugar del círculo con inicial; campo `avatarUrl` en `Business` y en `Customer`
 - [x] Mover `/docs` a `/dashboard/docs` — ahora hereda el layout del dashboard (sidebar + header + nickname) y se eliminó el layout duplicado
 - [ ] Mejorar OG image de `/join/[cardId]` — actualmente usa el OG genérico del sitio; generar una imagen dinámica por tarjeta con nombre del negocio, logo, color de marca y nombre de la tarjeta para que al compartir el link se vea una preview atractiva y contextual
+- [ ] `/dashboard/my-cards`: botón de recargar — útil cuando el cliente acaba de recibir un sello y quiere ver el estado actualizado sin recargar la página completa; usar `router.refresh()` de Next.js con icono giratorio mientras carga
 
 ### Fase 7 — Caducidad de Tarjetas
 
