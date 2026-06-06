@@ -43,8 +43,8 @@
 - [x] Signup dinámico: formulario real vs gate según INVITE_ONLY
 - [x] E2E tests con Playwright: UI rendering, login, signup, logout, middleware
 - [x] Script para crear test user en Supabase Auth (email_confirm=true)
-- [ ] Configurar variables de entorno en Vercel
-- [ ] Apuntar dominio desde Cloudflare a Vercel
+- [x] Configurar variables de entorno en Vercel
+- [x] Apuntar dominio desde Cloudflare a Vercel — DNS + SSL activo en `fidelity.zivelo.dev`; WAF/proxy de Cloudflare post-MVP
 
 ### Fase 1 — Backend real + API Routes ✅ Completada
 
@@ -177,7 +177,7 @@
 - [x] `docs/colors.md` documenta el naranja Koda (`oklch(0.705 0.191 41.116)` / `#f97316`), su equivalente hex y dónde aplica
 - [ ] `/login`: mejorar UI/UX del campo "ingresa tu contraseña" (padding, spacing, diseño del input)
 - [ ] `/login`: aumentar padding/margin sobre el texto "Bienvenido de vuelta, [email]" para mejorar la respiración visual
-- [ ] Agregar campo `nickname` (apodo) al modelo `Business` — se muestra en la UI en lugar del email; editable desde `/settings`. No tiene impacto funcional, solo mejora UX (evitar exponer el correo en la interfaz)
+- [x] Agregar campo `nickname` (apodo) al modelo `Business` — visible en sidebar, header y profile panel en lugar del email; editable desde `/settings` y capturado en el flujo de cambio de contraseña
 - [ ] Foto de perfil para client y customer — subir/cambiar avatar similar al flujo de logo en tarjetas (Branding); mostrar en `ProfilePanel`, sidebar y header en lugar del círculo con inicial; campo `avatarUrl` en `Business` y en `Customer`
 - [x] Mover `/docs` a `/dashboard/docs` — ahora hereda el layout del dashboard (sidebar + header + nickname) y se eliminó el layout duplicado
 - [x] Mejorar OG image de `/join/[cardId]` — fondo blanco, barra de color de marca, nombre del negocio en grande, titular "Obtén tu Fidelity Card", reward pill, puntos de sellos, badge "⚡ Por tiempo limitado" cuando hay caducidad; corregidos bugs de Satori (z-index, text nodes, backgroundImage) y tabla Prisma incorrecta
@@ -223,48 +223,40 @@
 ### Deuda Técnica — Magic Links por Email
 
 El plan Free de Supabase limita el envío de emails a 30/hora por proyecto.
-Esto es insostenible para producción porque:
-- Cada cliente que se registra consume un email
-- 2 negocios con actividad moderada agotan el límite en minutos
-- Todos los usuarios ven error "No fue posible enviar el enlace"
-- No hay forma de aumentar este límite sin migrar a Pro ($25/mes)
+Con SMTP propio (`noreply@zivelo.dev`) este límite ya no aplica para los emails de magic link,
+pero el rate limit interno de Supabase Auth (30 OTPs/hora por proyecto) sigue vigente.
 
 **Mitigación actual:**
-- Google OAuth como método principal (sin rate limits, 1 clic)
+- Google OAuth como método principal (sin rate limits, 1 clic) — activo en producción
 - Magic link queda como respaldo para quien no use Google
-- Cooldown de 2 min entre envíos por email
+- Cooldown de 2 min entre envíos por email (desactivado en beta)
 - Mensajes de error claros que sugieren usar Google
 
 **Solución definitiva (Post-MVP):**
-- Migrar a Supabase Pro ($25/mes) o
-- Configurar SMTP custom (SendGrid, Resend) para enviar emails
-  desde nuestro propio dominio sin pasar por los rate limits de Supabase
+- Migrar a Supabase Pro ($25/mes) para aumentar el límite de OTPs, o
+- Evaluar provider alternativo (Auth0, Clerk) si el volumen lo justifica
 
-### Post-MVP — SMTP / Remitente personalizado
+### SMTP / Remitente personalizado
 
-- [ ] Configurar SMTP custom en Supabase (Resend, SendGrid, etc.)
-- [ ] Cambiar remitente de `noreply@app.xxxxx.supabase.co` a `noreply@koda.app`
+- [x] Configurar SMTP custom en Supabase
+- [x] Remitente cambiado a `noreply@zivelo.dev` (ya no usa `@supabase.co`)
+- [x] Template de magic link personalizado activo en Supabase Dashboard
 - [ ] Personalizar templates restantes (Confirmación, Cambio de contraseña, Cambio de email)
 
 ### Deuda Técnica — Dominio de autenticación visible durante Google Auth
 
-El flujo de Google Auth redirige al usuario al dominio técnico del proveedor de autenticación
-(mgzledffujjnunawgymc.supabase.co) durante el login. Esto puede afectar la confianza del
-usuario al ver un dominio ajeno al producto.
+El flujo de Google Auth redirige brevemente al dominio técnico de Supabase
+(`mgzledffujjnunawgymc.supabase.co`) durante el login. El flujo completo funciona correctamente
+en producción (`fidelity.zivelo.dev`), pero el usuario ve momentáneamente un dominio ajeno.
 
-**Causa:** Supabase Auth utiliza su propio dominio por defecto. Para usar un dominio
-personalizado se requiere Supabase Pro Plan + $10 USD/mes por dominio custom.
+**Causa:** Supabase Auth utiliza su propio dominio por defecto. Custom Domain requiere plan Pro + $10/mes.
 
-**Impacto:** Medio — no bloquea el login pero afecta branding y percepción de seguridad.
+**Impacto:** Bajo — no bloquea el login. Google Auth funciona en producción.
 
 **Solución definitiva:** Configurar Custom Domain en Supabase Auth (Authentication > Settings >
 Custom Domain). Requiere plan Pro y dominio propio verificado.
 
-**Alternativa al cambiar de provider:** Si se migra a otro provider de auth (Auth0, Clerk, etc.)
-el dominio personalizado suele estar incluido en planes base, resolviendo el problema sin
-costo adicional.
-
-**Decisión:** No se corrige para el MVP. Se evaluará al definir el provider final de auth.
+**Decisión:** Post-MVP. Se evaluará al escalar o cambiar de provider de auth.
 
 ### Issues conocidos
 
@@ -387,33 +379,43 @@ model StampLog {
 
 > MVP base funcional (Fases 0-5). Actualmente en Fase 6 — mejora del MVP.
 
-### Pre-lanzamiento
+### Pre-lanzamiento ✅ Completado
 
 1.  **🟢 Alinear landing al MVP** — implementado en `fix/auditoria-mvp`.
-2.  **🔴 Configurar dominio y entorno** — Vercel + Cloudflare (DNS, SSL, variables de entorno).
+2.  **🟢 Configurar dominio y entorno** — `fidelity.zivelo.dev` activo, DNS + SSL en Vercel, variables de entorno configuradas.
 3.  **🟢 Cerrar gates técnicos** — `pnpm lint` funcional, `ignoreBuildErrors` removido de `next.config.mjs`, `pnpm test` y `pnpm exec tsc --noEmit` pasan sin errores.
 4.  **🟢 Alinear documentación pública** — `README.md` actualizado; `docs/idea.md` eliminado (obsoleto).
-5.  **🟡 SMTP personalizado** — cambiar remitente de `@supabase.co` a `noreply@koda.app`.
-6.  **🟢 Template magic link** — pegar `docs/email-templates/magic-link.html` en Supabase Dashboard.
+5.  **🟢 SMTP personalizado** — remitente `noreply@zivelo.dev` activo en Supabase.
+6.  **🟢 Template magic link** — `docs/email-templates/magic-link.html` activo en Supabase Dashboard.
 7.  **🟢 Validar test plan** — `docs/test-plan-landing-mvp-alignment.md` creado y revisado.
 
 ### Verificaciones actuales
 
 - [x] `pnpm exec tsc --noEmit` pasa sin errores.
-- [x] Vercel Analytics ya está integrado en `app/layout.tsx`.
+- [x] `pnpm test` — 167 tests, 0 errores.
+- [x] `pnpm lint` funcional (ESLint v9.39.4, solo warnings).
+- [x] `ignoreBuildErrors` removido de `next.config.mjs`.
+- [x] Vercel Analytics integrado en `app/layout.tsx`.
+- [x] Deploy activo en `fidelity.zivelo.dev` con SSL.
+- [x] Google OAuth funcional en producción (callbacks configurados en Supabase + Google Cloud Console).
+- [x] SMTP propio activo — emails salen desde `noreply@zivelo.dev`.
+- [x] Template magic link personalizado activo en Supabase Dashboard.
+- [x] `INVITE_ONLY=true` en producción — lanzamiento controlado.
 - [x] Landing alineada (site-config, page, mobile-nav, join layout, README).
 - [x] `docs/idea.md` y `docs/deploy.md` eliminados (obsoletos).
 - [x] QR scanner estabilizado (reemplazo de librería).
-- [x] Tests de componente agregados para QRScanner.
 - [x] Cooldown de magic links desactivado (beta). Se re-activarán límites de tasa post-MVP.
-- [x] `pnpm lint` funcional (ESLint v9.39.4 configurado, solo warnings).
-- [x] `ignoreBuildErrors` removido de `next.config.mjs`.
+
+### Post-MVP — Infraestructura
+
+- [ ] Activar Cloudflare WAF/proxy — el DNS ya apunta a Vercel sin proxy activo; activarlo añade DDoS protection y WAF
+- [ ] Custom Domain en Supabase Auth — elimina el dominio técnico de Supabase visible durante Google OAuth
+- [ ] Personalizar templates de email restantes (Confirmación, Cambio de contraseña, Cambio de email)
 
 ### Post-MVP — Magic Links
 
 - [ ] Re-activar cooldown de magic links — restaurar límites de tasa con configuración por entorno
 - [ ] Phone magic links — agregar `phone` a Customer + SMS auth
-- [ ] Agregar campo `phone` a Customer para SMS magic links
 
 ### Post-MVP — Wallet Passes
 
