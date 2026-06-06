@@ -114,7 +114,7 @@ export async function sendLoginMagicLink(email: string): Promise<AuthResult> {
 
   try {
     await authService.sendMagicLink(email, {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/dashboard/my-cards`,
+      redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/dashboard/my-cards`,
     })
     magicLinkCooldowns.set(email, Date.now())
     return { success: true }
@@ -130,7 +130,7 @@ export async function sendPasswordReset(_prev: AuthResult, formData: FormData): 
   const email = formData.get("email") as string
   if (!email || !email.includes("@")) return { error: "Ingresa un correo electrónico válido" }
 
-  const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/callback?next=/dashboard/update-password`
+  const redirectTo = `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/auth/callback?next=/dashboard/update-password`
 
   try {
     await authService.sendPasswordResetEmail(email.trim(), { redirectTo })
