@@ -49,7 +49,8 @@ export default async function Image({
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        background: "linear-gradient(135deg, #f97316 0%, #c2410c 100%)",
+        backgroundColor: "#f97316",
+        backgroundImage: "linear-gradient(135deg, #f97316 0%, #c2410c 100%)",
         fontFamily: "system-ui, sans-serif",
         color: "white",
       }}
@@ -78,9 +79,9 @@ export default async function Image({
         display: "flex",
         flexDirection: "column",
         position: "relative",
-        background: `linear-gradient(145deg, ${bg} 0%, ${bg2} 100%)`,
+        backgroundColor: bg,
+        backgroundImage: `linear-gradient(145deg, ${bg} 0%, ${bg2} 100%)`,
         fontFamily: "system-ui, -apple-system, sans-serif",
-        overflow: "hidden",
       }}
     >
       {/* Decorative circles */}
