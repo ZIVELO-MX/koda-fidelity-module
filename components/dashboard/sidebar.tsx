@@ -27,7 +27,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { logout } from "@/lib/actions/auth"
-import { ProfilePanel } from "./profile-panel"
+import { MobileSettingsPanel } from "./mobile-settings-panel"
 import { useState } from "react"
 
 interface DashboardSidebarProps {
@@ -57,7 +57,7 @@ const mobileNavigation = [
 
 export function DashboardSidebar({ userEmail, businessName, brandColor, nickname }: DashboardSidebarProps) {
   const pathname = usePathname()
-  const [profileOpen, setProfileOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [logoutOpen, setLogoutOpen] = useState(false)
 
   return (
@@ -163,32 +163,24 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
             )
           })}
           <button
-            onClick={() => setProfileOpen(true)}
+            onClick={() => setSettingsOpen(true)}
             className="flex flex-col items-center justify-center gap-0.5 min-w-0 px-2 py-1 rounded-lg transition-colors text-muted-foreground"
           >
-            <div
-              className="h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
-              style={{ backgroundColor: brandColor }}
-            >
-              {businessName.charAt(0).toUpperCase()}
-            </div>
+            <Settings className="h-5 w-5" />
             <span className="text-[10px] font-medium leading-tight truncate w-full text-center">
-              Perfil
+              Ajustes
             </span>
           </button>
         </div>
       </nav>
 
-      {/* Mobile profile panel */}
-      {profileOpen && (
-        <ProfilePanel
+      {/* Mobile settings panel */}
+      {settingsOpen && (
+        <MobileSettingsPanel
           userEmail={userEmail}
           businessName={businessName}
           brandColor={brandColor}
-          nickname={nickname}
-          onClose={() => setProfileOpen(false)}
-          fullScreen
-          showMyCards={true}
+          onClose={() => setSettingsOpen(false)}
         />
       )}
     </>
