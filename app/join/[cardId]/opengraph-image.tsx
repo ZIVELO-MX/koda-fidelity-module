@@ -1,8 +1,6 @@
 import { ImageResponse } from "next/og"
 import { siteConfig } from "@/lib/site-config"
-import { createAdminClient } from "@/lib/supabase-admin"
-
-export const runtime = "edge"
+import { prisma } from "@/lib/prisma"
 
 function darken(hex: string, amount: number): string {
   const num = parseInt(hex.replace("#", ""), 16)
@@ -27,22 +25,20 @@ export default async function Image({
 }) {
   const { cardId } = await params
 
-  const admin = createAdminClient()
-  const { data: raw } = await admin
-    .from("LoyaltyCard")
-    .select('id, name, reward, "stampsRequired", "brandColor", "expiresAt", Business(name, "logoUrl")')
-    .eq("id", cardId)
-    .single()
-
-  const card = raw as unknown as {
-    id: string
-    name: string
-    reward: string
-    stampsRequired: number
-    brandColor: string | null
-    expiresAt: string | null
-    Business: { name: string; logoUrl: string | null }
-  } | null
+  const card = await prisma.loyaltyCard.findUnique({
+    where: { id: cardId },
+    select: {
+      id: true,
+      name: true,
+      reward: true,
+      stampsRequired: true,
+      brandColor: true,
+      expiresAt: true,
+      business: {
+        select: { name: true, logoUrl: true },
+      },
+    },
+  })
 
   const fallback = (
     <div
@@ -125,7 +121,7 @@ export default async function Image({
           gap: 20, flex: "0 0 auto", maxWidth: 420,
         }}>
           {/* Logo or initial */}
-          {card.Business.logoUrl ? (
+          {card.business.logoUrl ? (
             <div style={{
               width: 120, height: 120, borderRadius: 28,
               background: light ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.20)",
@@ -133,7 +129,7 @@ export default async function Image({
               overflow: "hidden",
             }}>
               <img
-                src={card.Business.logoUrl}
+                src={card.business.logoUrl}
                 width={96}
                 height={96}
                 style={{ objectFit: "contain" }}
@@ -146,13 +142,13 @@ export default async function Image({
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 60, fontWeight: 800, color: text,
             }}>
-              {card.Business.name.charAt(0).toUpperCase()}
+              {card.business.name.charAt(0).toUpperCase()}
             </div>
           )}
 
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <div style={{ fontSize: 52, fontWeight: 800, color: text, lineHeight: 1.1, letterSpacing: "-0.02em" }}>
-              {card.Business.name}
+              {card.business.name}
             </div>
             <div style={{ fontSize: 24, color: textMuted, fontWeight: 500 }}>
               {card.name}
