@@ -175,7 +175,7 @@
 - [ ] Agregar campo `nickname` (apodo) al modelo `Business` — se muestra en la UI en lugar del email; editable desde `/settings`. No tiene impacto funcional, solo mejora UX (evitar exponer el correo en la interfaz)
 - [ ] Foto de perfil para client y customer — subir/cambiar avatar similar al flujo de logo en tarjetas (Branding); mostrar en `ProfilePanel`, sidebar y header en lugar del círculo con inicial; campo `avatarUrl` en `Business` y en `Customer`
 - [x] Mover `/docs` a `/dashboard/docs` — ahora hereda el layout del dashboard (sidebar + header + nickname) y se eliminó el layout duplicado
-- [x] Mejorar OG image de `/join/[cardId]` — rediseño completo: logo del negocio, titular "Obtén tu Fidelity Card", badge "⚡ Por tiempo limitado" cuando hay fecha de vencimiento, puntos de sellos visuales, texto claro/oscuro automático según luminosidad del color de marca
+- [x] Mejorar OG image de `/join/[cardId]` — fondo blanco, barra de color de marca, nombre del negocio en grande, titular "Obtén tu Fidelity Card", reward pill, puntos de sellos, badge "⚡ Por tiempo limitado" cuando hay caducidad; corregidos bugs de Satori (z-index, text nodes, backgroundImage) y tabla Prisma incorrecta
 - [x] `/dashboard/my-cards`: botón de recargar — icono giratorio que recarga los datos del customer sin recargar la página
 
 ### Fase 7 — Caducidad de Tarjetas
