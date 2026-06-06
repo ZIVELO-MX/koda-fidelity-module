@@ -22,7 +22,10 @@ export default function BrandingPage() {
   const [fetchError, setFetchError] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [logoError, setLogoError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const MAX_LOGO_MB = 2
 
   useEffect(() => {
     fetch("/api/business")
@@ -42,6 +45,12 @@ export default function BrandingPage() {
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    if (file.size > MAX_LOGO_MB * 1024 * 1024) {
+      setLogoError(`El archivo es demasiado grande. El máximo permitido es ${MAX_LOGO_MB} MB.`)
+      e.target.value = ""
+      return
+    }
+    setLogoError(null)
     const reader = new FileReader()
     reader.onload = (ev) => setLogoUrl(ev.target?.result as string)
     reader.readAsDataURL(file)
@@ -128,7 +137,7 @@ export default function BrandingPage() {
             style={{ backgroundColor: brandColor }}
           >
             {logoUrl ? (
-              <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
+              <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-1" />
             ) : PreviewIcon ? (
               <PreviewIcon className="h-9 w-9" />
             ) : (
@@ -152,11 +161,14 @@ export default function BrandingPage() {
                 {logoUrl ? "Cambiar Logo" : "Subir Logo"}
               </Button>
               {logoUrl && (
-                <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setLogoUrl("")}>
+                <Button variant="ghost" size="sm" className="text-destructive" onClick={() => { setLogoUrl(""); setLogoError(null) }}>
                   Quitar
                 </Button>
               )}
             </div>
+            {logoError && (
+              <p className="text-sm text-destructive">{logoError}</p>
+            )}
           </div>
         </div>
       </div>
@@ -220,7 +232,7 @@ export default function BrandingPage() {
               style={{ backgroundColor: brandColor }}
             >
               {logoUrl ? (
-                <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-1" />
               ) : PreviewIcon ? (
                 <PreviewIcon className="h-7 w-7" />
               ) : (
