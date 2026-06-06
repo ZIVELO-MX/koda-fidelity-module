@@ -325,7 +325,7 @@ export default function DashboardMyCardsPage() {
                   <img
                     src={businessCards[0].card.business.logoUrl}
                     alt=""
-                    className="w-5 h-5 rounded-md object-cover"
+                    className="w-5 h-5 rounded-md object-contain"
                   />
                 ) : null}
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex-1 text-left">

@@ -53,7 +53,7 @@ export function LoyaltyCardPreview({
             <img
               src={businessLogo}
               alt={businessName}
-              className="w-10 h-10 rounded-xl object-cover"
+              className="w-10 h-10 rounded-xl object-contain p-0.5"
             />
           ) : (() => {
             const icon = getCardIcon(iconName)
