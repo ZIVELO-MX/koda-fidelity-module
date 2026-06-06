@@ -32,7 +32,16 @@ export default async function DashboardLayout({
   const nickname = business.nickname ?? undefined
 
   return (
-    <div className="min-h-screen bg-background">
+    <div
+      className="min-h-screen bg-background"
+      style={{
+        '--primary': brandColor,
+        '--ring': brandColor,
+        '--sidebar-primary': brandColor,
+        '--sidebar-ring': brandColor,
+        '--chart-1': brandColor,
+      } as React.CSSProperties}
+    >
       <DashboardSidebar
         userEmail={userEmail}
         businessName={businessName}
