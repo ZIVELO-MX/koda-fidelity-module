@@ -29,8 +29,8 @@ export default async function Image({
 
   const admin = createAdminClient()
   const { data: raw } = await admin
-    .from("loyalty_card")
-    .select("id, name, reward, stampsRequired, brandColor, expiresAt, business(name, logoUrl)")
+    .from("LoyaltyCard")
+    .select('id, name, reward, "stampsRequired", "brandColor", "expiresAt", Business(name, "logoUrl")')
     .eq("id", cardId)
     .single()
 
@@ -41,7 +41,7 @@ export default async function Image({
     stampsRequired: number
     brandColor: string | null
     expiresAt: string | null
-    business: { name: string; logoUrl: string | null }
+    Business: { name: string; logoUrl: string | null }
   } | null
 
   const fallback = (
@@ -125,7 +125,7 @@ export default async function Image({
           gap: 20, flex: "0 0 auto", maxWidth: 420,
         }}>
           {/* Logo or initial */}
-          {card.business.logoUrl ? (
+          {card.Business.logoUrl ? (
             <div style={{
               width: 120, height: 120, borderRadius: 28,
               background: light ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.20)",
@@ -133,7 +133,7 @@ export default async function Image({
               overflow: "hidden",
             }}>
               <img
-                src={card.business.logoUrl}
+                src={card.Business.logoUrl}
                 width={96}
                 height={96}
                 style={{ objectFit: "contain" }}
@@ -146,13 +146,13 @@ export default async function Image({
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 60, fontWeight: 800, color: text,
             }}>
-              {card.business.name.charAt(0).toUpperCase()}
+              {card.Business.name.charAt(0).toUpperCase()}
             </div>
           )}
 
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <div style={{ fontSize: 52, fontWeight: 800, color: text, lineHeight: 1.1, letterSpacing: "-0.02em" }}>
-              {card.business.name}
+              {card.Business.name}
             </div>
             <div style={{ fontSize: 24, color: textMuted, fontWeight: 500 }}>
               {card.name}
