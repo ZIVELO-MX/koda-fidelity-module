@@ -49,12 +49,13 @@ export async function login(_prev: AuthResult, formData: FormData): Promise<Auth
 export async function updatePassword(_prev: AuthResult, formData: FormData): Promise<AuthResult> {
   const password = formData.get("password") as string
   const confirm = formData.get("confirm") as string
+  const nickname = (formData.get("nickname") as string | null)?.trim() || null
 
   if (!password || password.length < 8) return { error: "La contraseña debe tener al menos 8 caracteres" }
   if (password !== confirm) return { error: "Las contraseñas no coinciden" }
 
   const supabase = await createClient()
-  const { error } = await supabase.auth.updateUser({
+  const { data: { user }, error } = await supabase.auth.updateUser({
     password,
     data: { must_change_password: false },
   })
@@ -62,6 +63,13 @@ export async function updatePassword(_prev: AuthResult, formData: FormData): Pro
   if (error) {
     console.error("[updatePassword] Error:", error)
     return { error: "No fue posible actualizar la contraseña. Intenta de nuevo." }
+  }
+
+  if (nickname && user?.email) {
+    await prisma.business.updateMany({
+      where: { email: user.email },
+      data: { nickname },
+    })
   }
 
   revalidatePath("/dashboard")
