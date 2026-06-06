@@ -146,9 +146,9 @@
 - Google Wallet: requiere configuración en Google Pay & Wallet Console
 - Apple Wallet: requiere Apple Developer Account ($99/año) + certificados
 
-### Fase 6 — Mejora del MVP (En progreso)
+### Fase 6 — Mejora del MVP ✅ Completada
 
-> El MVP base está completo (Fases 0-5). Esta fase agrupa mejoras técnicas y de UX
+> El MVP base está completo (Fases 0-5). Esta fase agrupó mejoras técnicas y de UX
 > sobre el producto existente, sin cambiar el alcance del MVP.
 
 - [x] Reemplazar `html5-qrcode` por `@yudiel/react-qr-scanner` — estabiliza el escáner QR con la API nativa Barcode Detection + fallback ZXing
@@ -175,10 +175,7 @@
 - [x] Escáner (`/dashboard/scan`): botón "Agregar Sello", stamps y confirmación usan el `brandColor` de la tarjeta del cliente
 - [x] `GET /api/customers` incluye `cardBrandColor` en la respuesta
 - [x] `docs/colors.md` documenta el naranja Koda (`oklch(0.705 0.191 41.116)` / `#f97316`), su equivalente hex y dónde aplica
-- [ ] `/login`: mejorar UI/UX del campo "ingresa tu contraseña" (padding, spacing, diseño del input)
-- [ ] `/login`: aumentar padding/margin sobre el texto "Bienvenido de vuelta, [email]" para mejorar la respiración visual
 - [x] Agregar campo `nickname` (apodo) al modelo `Business` — visible en sidebar, header y profile panel en lugar del email; editable desde `/settings` y capturado en el flujo de cambio de contraseña
-- [ ] Foto de perfil para client y customer — subir/cambiar avatar similar al flujo de logo en tarjetas (Branding); mostrar en `ProfilePanel`, sidebar y header en lugar del círculo con inicial; campo `avatarUrl` en `Business` y en `Customer`
 - [x] Mover `/docs` a `/dashboard/docs` — ahora hereda el layout del dashboard (sidebar + header + nickname) y se eliminó el layout duplicado
 - [x] Mejorar OG image de `/join/[cardId]` — fondo blanco, barra de color de marca, nombre del negocio en grande, titular "Obtén tu Fidelity Card", reward pill, puntos de sellos, badge "⚡ Por tiempo limitado" cuando hay caducidad; corregidos bugs de Satori (z-index, text nodes, backgroundImage) y tabla Prisma incorrecta
 - [x] `/dashboard/my-cards`: botón de recargar — icono giratorio que recarga los datos del customer sin recargar la página
@@ -213,7 +210,14 @@
 - [x] `DeleteExpiredCardButton`: botón de eliminar con confirmación que muestra N clientes afectados (solo visible en tarjetas vencidas)
 - [x] En detalle (`/dashboard/cards/[id]`): badge "Vencida" junto al título + banner informativo con N clientes que no completaron sus sellos
 
-#### 7.5 — Notificación pasiva (post-MVP, sin push)
+#### 7.5 — Guards de caducidad (API)
+
+- [x] `POST /api/stamps`: bloquea sellos si la tarjeta del cliente está vencida
+- [x] `POST /api/join`: bloquea nuevos registros si la tarjeta está vencida
+- [x] `GET /api/cards/[id]`: devuelve campo `expired` (boolean calculado en el servidor)
+- [x] `/join/[cardId]`: muestra error antes del formulario cuando la tarjeta está vencida
+
+#### 7.6 — Notificación pasiva (post-MVP, sin push)
 
 - [ ] En el dashboard home (`/dashboard`): alerta si hay tarjetas próximas a vencer en ≤ 7 días
 - [ ] En `/dashboard/scan`: aviso al sellar si la tarjeta del cliente vence en ≤ 3 días
@@ -375,9 +379,14 @@ model StampLog {
 
 ---
 
+## Estado del MVP
+
+> **✅ MVP completo** — Fases 0–6 + guards de caducidad (Fase 7.5) completados y desplegados en `fidelity.zivelo.dev`.
+> Lanzamiento controlado activo (`INVITE_ONLY=true`). Las secciones Post-MVP agrupan el trabajo futuro.
+
 ## Prioridades inmediatas
 
-> MVP base funcional (Fases 0-5). Actualmente en Fase 6 — mejora del MVP.
+> MVP completo. Fases 0–6 y guards de caducidad (7.1–7.5) en producción.
 
 ### Pre-lanzamiento ✅ Completado
 
@@ -411,6 +420,12 @@ model StampLog {
 - [ ] Activar Cloudflare WAF/proxy — el DNS ya apunta a Vercel sin proxy activo; activarlo añade DDoS protection y WAF
 - [ ] Custom Domain en Supabase Auth — elimina el dominio técnico de Supabase visible durante Google OAuth
 - [ ] Personalizar templates de email restantes (Confirmación, Cambio de contraseña, Cambio de email)
+
+### Post-MVP — UX
+
+- [ ] `/login`: mejorar UI/UX del campo "ingresa tu contraseña" (padding, spacing, diseño del input)
+- [ ] `/login`: aumentar padding/margin sobre el texto "Bienvenido de vuelta, [email]" para mejorar la respiración visual
+- [ ] Foto de perfil para client y customer — subir/cambiar avatar similar al flujo de logo en tarjetas (Branding); mostrar en `ProfilePanel`, sidebar y header en lugar del círculo con inicial; campo `avatarUrl` en `Business` y en `Customer`
 
 ### Post-MVP — Magic Links
 
