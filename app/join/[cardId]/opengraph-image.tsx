@@ -1,24 +1,6 @@
 import { ImageResponse } from "next/og"
 import { siteConfig } from "@/lib/site-config"
-import { createAdminClient } from "@/lib/supabase-admin"
-
-export const runtime = "edge"
-
-function darken(hex: string, amount: number): string {
-  const num = parseInt(hex.replace("#", ""), 16)
-  const r = Math.max(0, (num >> 16) - amount)
-  const g = Math.max(0, ((num >> 8) & 0x00ff) - amount)
-  const b = Math.max(0, (num & 0x0000ff) - amount)
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`
-}
-
-function lighten(hex: string, amount: number): string {
-  const num = parseInt(hex.replace("#", ""), 16)
-  const r = Math.min(255, (num >> 16) + amount)
-  const g = Math.min(255, ((num >> 8) & 0x00ff) + amount)
-  const b = Math.min(255, (num & 0x0000ff) + amount)
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`
-}
+import { prisma } from "@/lib/prisma"
 
 function isLight(hex: string): boolean {
   const num = parseInt(hex.replace("#", ""), 16)
@@ -35,54 +17,22 @@ export default async function Image({
 }) {
   const { cardId } = await params
 
-  const admin = createAdminClient()
-  const { data: raw } = await admin
-    .from("loyalty_card")
-    .select("id, name, reward, stampsRequired, brandColor, business(name)")
-    .eq("id", cardId)
-    .single()
-  const card = raw as unknown as {
-    id: string
-    name: string
-    reward: string
-    stampsRequired: number
-    brandColor: string | null
-    business: { name: string }
-  } | null
-
-  if (!card) {
-    return new ImageResponse(
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
-          fontFamily: "system-ui, -apple-system, sans-serif",
-          color: "white",
-        }}
-      >
-        <div style={{ fontSize: 64, fontWeight: 700, marginBottom: 16 }}>
-          {siteConfig.name}
-        </div>
-        <div style={{ fontSize: 32, opacity: 0.9 }}>
-          Tarjeta de Lealtad Digital
-        </div>
-      </div>,
-      {
-        width: 1200,
-        height: 630,
+  const card = await prisma.loyaltyCard.findUnique({
+    where: { id: cardId },
+    select: {
+      id: true,
+      name: true,
+      reward: true,
+      stampsRequired: true,
+      brandColor: true,
+      expiresAt: true,
+      business: {
+        select: { name: true },
       },
-    )
-  }
+    },
+  })
 
-  const bgColor = card.brandColor || siteConfig.defaultBrandColor
-  const textColor = isLight(bgColor) ? "#1a1a1a" : "#ffffff"
-
-  return new ImageResponse(
+  const fallback = (
     <div
       style={{
         width: "100%",
@@ -91,115 +41,202 @@ export default async function Image({
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        background: `linear-gradient(135deg, ${bgColor} 0%, ${darken(bgColor, 40)} 50%, ${darken(bgColor, 70)} 100%)`,
-        fontFamily: "system-ui, -apple-system, sans-serif",
-        color: textColor,
-        position: "relative",
+        backgroundColor: "#f97316",
+        backgroundImage: "linear-gradient(135deg, #f97316 0%, #c2410c 100%)",
+        fontFamily: "system-ui, sans-serif",
+        color: "white",
       }}
     >
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background:
-            "radial-gradient(circle at 20% 80%, rgba(255,255,255,0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255,255,255,0.08) 0%, transparent 50%)",
-        }}
-      />
-      <div
-        style={{
+      <div style={{ fontSize: 64, fontWeight: 800, marginBottom: 12 }}>{siteConfig.name}</div>
+      <div style={{ fontSize: 28, opacity: 0.85 }}>Tarjetas de Lealtad Digital</div>
+    </div>
+  )
+
+  if (!card) return new ImageResponse(fallback, { width: 1200, height: 630 })
+
+  const accent = card.brandColor || siteConfig.defaultBrandColor
+  const accentOnDark = isLight(accent) ? "#111827" : "#ffffff"
+  const hasExpiry = !!card.expiresAt
+
+  return new ImageResponse(
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        backgroundColor: "#ffffff",
+        fontFamily: "system-ui, -apple-system, sans-serif",
+      }}
+    >
+      {/* Top accent bar */}
+      <div style={{ display: "flex", height: 8, backgroundColor: accent }} />
+
+      {/* Main content */}
+      <div style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "row",
+        alignItems: "center",
+        padding: "0 80px",
+        gap: 72,
+      }}>
+        {/* Left: business identity */}
+        <div style={{
           display: "flex",
           flexDirection: "column",
-          alignItems: "center",
-          position: "relative",
-          zIndex: 1,
-          padding: "0 80px",
-          textAlign: "center",
-        }}
-      >
-        <div
-          style={{
-            fontSize: 72,
-            fontWeight: 800,
-            letterSpacing: "-0.02em",
-            lineHeight: 1.1,
-            marginBottom: 16,
-          }}
-        >
-          {card.business.name}
-        </div>
-        <div
-          style={{
-            fontSize: 36,
-            fontWeight: 600,
-            opacity: 0.85,
-            marginBottom: 24,
-          }}
-        >
-          {card.name}
-        </div>
-        <div
-          style={{
+          alignItems: "flex-start",
+          gap: 24,
+          flex: "0 0 auto",
+          width: 380,
+        }}>
+          {/* Business name + card name */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ fontSize: 56, fontWeight: 800, color: "#111827", lineHeight: 1.1, letterSpacing: "-0.02em" }}>
+              {card.business.name}
+            </div>
+            <div style={{ fontSize: 26, color: "#6b7280", fontWeight: 500 }}>
+              {card.name}
+            </div>
+          </div>
+
+          {/* Reward pill */}
+          <div style={{
             display: "flex",
             alignItems: "center",
-            gap: 8,
-            fontSize: 24,
-            opacity: 0.75,
-            padding: "12px 32px",
+            gap: 10,
+            backgroundColor: `${accent}18`,
+            border: `1.5px solid ${accent}40`,
             borderRadius: 999,
-            background: isLight(bgColor)
-              ? "rgba(0,0,0,0.08)"
-              : "rgba(255,255,255,0.12)",
-            border: `1px solid ${
-              isLight(bgColor)
-                ? "rgba(0,0,0,0.1)"
-                : "rgba(255,255,255,0.15)"
-            }`,
-          }}
-        >
-          <span>{card.stampsRequired} sellos</span>
-          <span style={{ margin: "0 8px" }}>→</span>
-          <span style={{ fontWeight: 700 }}>{card.reward}</span>
+            padding: "10px 22px",
+            fontSize: 22,
+            color: accent,
+            fontWeight: 600,
+          }}>
+            <span>{`${card.stampsRequired} sellos`}</span>
+            <span style={{ opacity: 0.5, margin: "0 2px" }}>→</span>
+            <span style={{ fontWeight: 700 }}>{card.reward}</span>
+          </div>
         </div>
-        <div
-          style={{
-            marginTop: 48,
-            fontSize: 18,
-            opacity: 0.6,
-            letterSpacing: "0.05em",
+
+        {/* Divider */}
+        <div style={{
+          width: 1,
+          alignSelf: "stretch",
+          margin: "80px 0",
+          backgroundColor: "#e5e7eb",
+          display: "flex",
+        }} />
+
+        {/* Right: CTA */}
+        <div style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-start",
+          gap: 16,
+          flex: 1,
+        }}>
+          <div style={{
+            fontSize: 14,
+            fontWeight: 700,
+            letterSpacing: "0.12em",
             textTransform: "uppercase",
-          }}
-        >
-          {siteConfig.name} · Tarjeta de Lealtad Digital
+            color: accent,
+          }}>
+            Programa de Lealtad
+          </div>
+
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
+            fontSize: 64,
+            fontWeight: 800,
+            color: "#111827",
+            lineHeight: 1.1,
+            letterSpacing: "-0.02em",
+            gap: 0,
+          }}>
+            <span>Obtén tu</span>
+            <span>Fidelity Card</span>
+          </div>
+
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
+            fontSize: 24,
+            color: "#6b7280",
+            lineHeight: 1.5,
+            marginTop: 4,
+            gap: 0,
+          }}>
+            <span>Acumula sellos con cada visita</span>
+            <span>y gana recompensas exclusivas.</span>
+          </div>
+
+          {/* Stamp dots */}
+          <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+            {Array.from({ length: Math.min(card.stampsRequired, 10) }).map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: "50%",
+                  backgroundColor: i < Math.ceil(card.stampsRequired * 0.4) ? accent : "#e5e7eb",
+                  border: `2px solid ${i < Math.ceil(card.stampsRequired * 0.4) ? accent : "#d1d5db"}`,
+                  display: "flex",
+                }}
+              />
+            ))}
+            {card.stampsRequired > 10 && (
+              <div style={{ fontSize: 16, color: "#9ca3af", alignSelf: "center", display: "flex" }}>
+                {`+${card.stampsRequired - 10}`}
+              </div>
+            )}
+          </div>
+
+          {/* Limited time badge */}
+          {hasExpiry && (
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              backgroundColor: accent,
+              borderRadius: 999,
+              padding: "8px 20px",
+              marginTop: 4,
+              fontSize: 16,
+              fontWeight: 700,
+              color: accentOnDark,
+            }}>
+              <span>⚡</span>
+              <span>Por tiempo limitado</span>
+            </div>
+          )}
         </div>
       </div>
-      <div
-        style={{
-          position: "absolute",
-          bottom: 32,
-          right: 40,
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          opacity: 0.5,
-          fontSize: 16,
-        }}
-      >
-        <img
-          src={`${siteConfig.url}/short-logo.svg`}
-          alt={siteConfig.shortName}
-          width={28}
-          height={28}
-          style={{ borderRadius: 6 }}
-        />
-        <span>{siteConfig.shortName}</span>
+
+      {/* Bottom bar */}
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "0 80px 28px",
+      }}>
+        <div style={{ fontSize: 13, color: "#9ca3af", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+          {siteConfig.url.replace("https://", "")}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <img
+            src={`${siteConfig.url}/short-logo.svg`}
+            width={20}
+            height={20}
+            style={{ borderRadius: 4, opacity: 0.5 }}
+          />
+          <span style={{ fontSize: 13, color: "#9ca3af", fontWeight: 600 }}>{siteConfig.shortName}</span>
+        </div>
       </div>
     </div>,
-    {
-      width: 1200,
-      height: 630,
-    },
+    { width: 1200, height: 630 },
   )
 }

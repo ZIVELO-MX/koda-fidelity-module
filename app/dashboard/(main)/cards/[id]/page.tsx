@@ -4,10 +4,11 @@ import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { ArrowLeft, Gift, Users, Stamp, Calendar, Search } from "lucide-react"
+import { ArrowLeft, Gift, Users, Stamp, Calendar, Search, AlertTriangle } from "lucide-react"
 import { CardActions } from "@/components/dashboard/card-actions"
 import { CustomerActionsMenu } from "@/components/dashboard/customer-actions-menu"
 import { getCardIcon } from "@/lib/card-icons"
+import { isExpired } from "@/lib/card-utils"
 
 function timeAgo(date: Date): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
@@ -55,9 +56,13 @@ export default async function CardDetailPage({
     redirect("/dashboard/cards")
   }
 
+  const cardExpired = isExpired(card.expiresAt)
   const allCustomers = card.customers
   const totalStamps = allCustomers.reduce((s, c) => s + c.stamps, 0)
   const readyToRedeem = allCustomers.filter((c) => c.stamps >= card.stampsRequired).length
+  const incompleteCustomers = cardExpired
+    ? allCustomers.filter((c) => c.stamps < card.stampsRequired).length
+    : 0
 
   const filteredCustomers = q?.trim()
     ? allCustomers.filter((c) =>
@@ -90,7 +95,14 @@ export default async function CardDetailPage({
             )
           })()}
           <div>
-            <h1 className="text-2xl font-bold text-foreground">{card.name}</h1>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-2xl font-bold text-foreground">{card.name}</h1>
+              {cardExpired && (
+                <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-destructive/10 text-destructive">
+                  Vencida
+                </span>
+              )}
+            </div>
             <p className="text-muted-foreground">{card.stampsRequired} sellos para {card.reward}</p>
           </div>
         </div>
@@ -131,6 +143,18 @@ export default async function CardDetailPage({
           <p className="text-sm text-muted-foreground">Vencimiento</p>
         </div>
       </div>
+
+      {cardExpired && incompleteCustomers > 0 && (
+        <div className="flex items-start gap-3 bg-destructive/5 border border-destructive/20 rounded-xl p-4">
+          <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-destructive">Esta tarjeta ya venció</p>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {incompleteCustomers} cliente{incompleteCustomers !== 1 ? "s" : ""} no {incompleteCustomers !== 1 ? "completaron" : "completó"} los {card.stampsRequired} sellos necesarios para obtener su recompensa.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-4">
         <form className="relative max-w-sm">

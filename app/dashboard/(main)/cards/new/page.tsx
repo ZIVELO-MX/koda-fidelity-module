@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { IconPicker } from "@/components/dashboard/icon-picker"
 import { ArrowLeft, ArrowRight, Check, Sparkles } from "lucide-react"
+import { ExpirationPicker } from "@/components/dashboard/expiration-picker"
 
 const steps = [
   { id: 1, name: "Datos", description: "Nombre y recompensa" },
@@ -238,12 +239,10 @@ export default function CreateCardPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="expirationDate">Fecha de Vencimiento (opcional)</Label>
-                  <Input
-                    id="expirationDate"
-                    type="date"
+                  <Label>Fecha de Vencimiento <span className="text-muted-foreground font-normal text-xs">(opcional)</span></Label>
+                  <ExpirationPicker
                     value={formData.expirationDate}
-                    onChange={(e) => updateFormData("expirationDate", e.target.value)}
+                    onChange={(v) => updateFormData("expirationDate", v)}
                   />
                 </div>
 
@@ -361,7 +360,9 @@ export default function CreateCardPage() {
                   {formData.expirationDate && (
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Vence</span>
-                      <span className="text-sm font-medium text-foreground">{formData.expirationDate}</span>
+                      <span className="text-sm font-medium text-foreground">
+                        {new Date(formData.expirationDate + "T12:00:00").toLocaleDateString("es-MX")}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -423,7 +424,7 @@ export default function CreateCardPage() {
               currentStamps={Math.floor(formData.maxStamps * 0.6)}
               maxStamps={formData.maxStamps}
               reward={formData.reward || "Tu Recompensa"}
-              expirationDate={formData.expirationDate ? new Date(formData.expirationDate).toLocaleDateString("es-MX") : undefined}
+              expirationDate={formData.expirationDate ? new Date(formData.expirationDate + "T12:00:00").toLocaleDateString("es-MX") : undefined}
               brandColor={formData.brandColor}
             />
           </div>
