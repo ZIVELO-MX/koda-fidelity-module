@@ -96,7 +96,7 @@ export default function BrandingPage() {
   const PreviewIcon = previewIcon?.Icon
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6 max-w-2xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Marca</h1>
         <p className="text-muted-foreground">
