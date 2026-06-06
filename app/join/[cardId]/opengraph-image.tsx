@@ -38,7 +38,7 @@ export default async function Image({
   const admin = createAdminClient()
   const { data: raw } = await admin
     .from("loyalty_card")
-    .select("id, name, reward, stampsRequired, brandColor, business(name)")
+    .select("id, name, reward, stampsRequired, brandColor, business(name, logoUrl)")
     .eq("id", cardId)
     .single()
   const card = raw as unknown as {
@@ -47,7 +47,7 @@ export default async function Image({
     reward: string
     stampsRequired: number
     brandColor: string | null
-    business: { name: string }
+    business: { name: string; logoUrl: string | null }
   } | null
 
   if (!card) {
@@ -121,14 +121,46 @@ export default async function Image({
       >
         <div
           style={{
-            fontSize: 72,
-            fontWeight: 800,
-            letterSpacing: "-0.02em",
-            lineHeight: 1.1,
+            display: "flex",
+            alignItems: "center",
+            gap: 24,
             marginBottom: 16,
           }}
         >
-          {card.business.name}
+          {card.business.logoUrl && (
+            <div
+              style={{
+                width: 96,
+                height: 96,
+                borderRadius: 24,
+                overflow: "hidden",
+                background: isLight(bgColor)
+                  ? "rgba(0,0,0,0.08)"
+                  : "rgba(255,255,255,0.15)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <img
+                src={card.business.logoUrl}
+                width={80}
+                height={80}
+                style={{ objectFit: "contain" }}
+              />
+            </div>
+          )}
+          <div
+            style={{
+              fontSize: 72,
+              fontWeight: 800,
+              letterSpacing: "-0.02em",
+              lineHeight: 1.1,
+            }}
+          >
+            {card.business.name}
+          </div>
         </div>
         <div
           style={{

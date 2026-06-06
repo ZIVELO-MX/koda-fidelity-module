@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { IconPicker } from "@/components/dashboard/icon-picker"
 import { ArrowLeft, ArrowRight, Check, Sparkles } from "lucide-react"
+import { ExpirationPicker } from "@/components/dashboard/expiration-picker"
 
 const steps = [
   { id: 1, name: "Datos", description: "Nombre y recompensa" },
@@ -238,12 +239,10 @@ export default function CreateCardPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="expirationDate">Fecha de Vencimiento (opcional)</Label>
-                  <Input
-                    id="expirationDate"
-                    type="date"
+                  <Label>Fecha de Vencimiento <span className="text-muted-foreground font-normal text-xs">(opcional)</span></Label>
+                  <ExpirationPicker
                     value={formData.expirationDate}
-                    onChange={(e) => updateFormData("expirationDate", e.target.value)}
+                    onChange={(v) => updateFormData("expirationDate", v)}
                   />
                 </div>
 

@@ -175,56 +175,38 @@
 - [ ] Agregar campo `nickname` (apodo) al modelo `Business` — se muestra en la UI en lugar del email; editable desde `/settings`. No tiene impacto funcional, solo mejora UX (evitar exponer el correo en la interfaz)
 - [ ] Foto de perfil para client y customer — subir/cambiar avatar similar al flujo de logo en tarjetas (Branding); mostrar en `ProfilePanel`, sidebar y header en lugar del círculo con inicial; campo `avatarUrl` en `Business` y en `Customer`
 - [x] Mover `/docs` a `/dashboard/docs` — ahora hereda el layout del dashboard (sidebar + header + nickname) y se eliminó el layout duplicado
-- [ ] Mejorar OG image de `/join/[cardId]` — actualmente usa el OG genérico del sitio; generar una imagen dinámica por tarjeta con nombre del negocio, logo, color de marca y nombre de la tarjeta para que al compartir el link se vea una preview atractiva y contextual
-- [ ] `/dashboard/my-cards`: botón de recargar — útil cuando el cliente acaba de recibir un sello y quiere ver el estado actualizado sin recargar la página completa; usar `router.refresh()` de Next.js con icono giratorio mientras carga
+- [x] Mejorar OG image de `/join/[cardId]` — imagen dinámica por tarjeta con nombre del negocio, logo (si existe), color de marca, nombre de tarjeta, recompensa y sellos requeridos
+- [x] `/dashboard/my-cards`: botón de recargar — icono giratorio que recarga los datos del customer sin recargar la página
 
 ### Fase 7 — Caducidad de Tarjetas
 
-> El schema ya tiene `expirationDays` en `LoyaltyCard`. Esta fase lo hace funcional de extremo a extremo: UX de creación, visualización para cliente y negocio, y gestión de tarjetas vencidas.
+> El schema ya tiene `expiresAt` en `LoyaltyCard`. Esta fase lo hace funcional de extremo a extremo.
 
 #### 7.1 — UX de selección de fecha en `/dashboard/cards/new`
 
-- [ ] Reemplazar el input numérico `expirationDays` por un selector de duración con opciones rápidas:
-  - "1 semana" (7 días)
-  - "1 mes" (30 días)
-  - "3 meses" (90 días)
-  - "6 meses" (180 días)
-  - "1 año" (365 días)
-  - "Sin caducidad"
-  - "Elegir fecha…" → muestra `DatePicker` (shadcn/ui Calendar + Popover); calcula días desde hoy
-- [ ] La opción activa se resalta visualmente (similar a los color presets en Branding)
-- [ ] Tests de componente: renderizado del selector, selección de opción rápida, apertura del calendario, cálculo de días desde fecha seleccionada, estado "Sin caducidad"
+- [x] Reemplazar el input de fecha por `ExpirationPicker` con opciones rápidas: 1 semana, 1 mes, 3 meses, 6 meses, 1 año, Sin caducidad, Elegir fecha (muestra input de calendario nativo)
+- [x] La opción activa se resalta visualmente
+- [x] Tests de componente: 7 tests en `expiration-picker.test.tsx`
 
-#### 7.2 — Lógica de caducidad (backend)
+#### 7.2 — Lógica de caducidad (helpers)
 
-- [ ] Agregar campo `expiresAt DateTime?` al modelo `Customer` en Prisma
-  - Se calcula al unirse: `createdAt + card.expirationDays` (null si la tarjeta no expira)
-  - Migración: poblar `expiresAt` para customers existentes
-- [ ] Función helper `isExpired(customer)` y `daysUntilExpiry(customer)` en `lib/card-utils.ts`
-- [ ] `GET /api/customers` y `GET /api/cards/:id` incluyen `expiresAt` y campo calculado `expired: boolean`
-- [ ] Tests unitarios para las funciones helper (casos: sin fecha, fecha futura, hoy, fecha pasada)
+- [x] `lib/card-utils.ts`: `isExpired`, `daysUntilExpiry`, `addDays`, `toDateInputValue`
+- [x] Tests unitarios: 14 tests en `card-utils.test.ts`
 
 #### 7.3 — Vista del customer (`/dashboard/my-cards`)
 
-- [ ] Mostrar fecha de vencimiento en cada tarjeta activa ("Vence el 12 ene 2027")
-- [ ] Alerta visual cuando faltan ≤ 7 días: banner o badge amarillo "¡Por vencer!" con cuenta regresiva
-- [ ] Alerta visual cuando faltan ≤ 1 día: badge rojo "Vence hoy / mañana"
-- [ ] Tarjeta vencida: UI especial en lugar del contenido normal
-  - Mensaje cómico configurable, ej.: _"¡Ups! No alcanzaste a completar los sellos 🫠"_, _"Se fue el tren... y tus sellos con él 🚂"_
-  - Muestra sellos acumulados vs requeridos a modo de récord
-  - Botón "Entendido" que archiva/oculta la tarjeta de la lista activa
-- [ ] Las tarjetas vencidas se agrupan en un acordeón colapsado "Tarjetas vencidas (N)" al fondo
-- [ ] Tests de componente: renderizado con tarjeta vigente, próxima a vencer, vencida, sin fecha de caducidad
+- [x] Banner amarillo cuando faltan ≤ 7 días; rojo cuando vence hoy/mañana
+- [x] Badge en el accordion item (días restantes o "Vence hoy")
+- [x] Tarjeta vencida: UI especial con mensaje cómico según sellos acumulados ("¡Casi lo logras!", "No alcanzaste los N sellos 🫠", "venció antes de comenzar 🤷")
+- [x] Tarjetas vencidas agrupadas en acordeón colapsado "Tarjetas vencidas (N)" al fondo
+- [x] Botón de recargar en el header con spinner
 
 #### 7.4 — Vista del negocio (`/dashboard/cards` y `/dashboard/cards/[id]`)
 
-- [ ] Badge "Vencida" en la tarjeta en el listado de `/dashboard/cards`
-- [ ] En detalle de tarjeta (`/dashboard/cards/[id]`): sección de clientes con tarjeta vencida con badge y fecha
-- [ ] Mensaje informativo para el negocio en tarjeta vencida: _"Esta tarjeta caducó para X clientes sin completar sus sellos"_ con número de afectados
-- [ ] Filtro en `/dashboard/cards`: mostrar solo activas / vencidas / todas
-- [ ] Permitir eliminar una tarjeta caducada con diálogo de confirmación que muestre impacto (N clientes)
-  - Actualmente el DELETE ya existe en la API; agregar validación que permita borrar aunque haya clientes si está vencida
-- [ ] Tests de componente: badge vencida, conteo de afectados, flujo de confirmación de borrado
+- [x] Badge "Vencida" / "Activa" en el listado de `/dashboard/cards`
+- [x] Filtro Todas / Activas / Vencidas con contador de vencidas en la pestaña
+- [x] `DeleteExpiredCardButton`: botón de eliminar con confirmación que muestra N clientes afectados (solo visible en tarjetas vencidas)
+- [x] En detalle (`/dashboard/cards/[id]`): badge "Vencida" junto al título + banner informativo con N clientes que no completaron sus sellos
 
 #### 7.5 — Notificación pasiva (post-MVP, sin push)
 
