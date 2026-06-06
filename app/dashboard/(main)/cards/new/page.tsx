@@ -360,7 +360,9 @@ export default function CreateCardPage() {
                   {formData.expirationDate && (
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Vence</span>
-                      <span className="text-sm font-medium text-foreground">{formData.expirationDate}</span>
+                      <span className="text-sm font-medium text-foreground">
+                        {new Date(formData.expirationDate + "T12:00:00").toLocaleDateString("es-MX")}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -422,7 +424,7 @@ export default function CreateCardPage() {
               currentStamps={Math.floor(formData.maxStamps * 0.6)}
               maxStamps={formData.maxStamps}
               reward={formData.reward || "Tu Recompensa"}
-              expirationDate={formData.expirationDate ? new Date(formData.expirationDate).toLocaleDateString("es-MX") : undefined}
+              expirationDate={formData.expirationDate ? new Date(formData.expirationDate + "T12:00:00").toLocaleDateString("es-MX") : undefined}
               brandColor={formData.brandColor}
             />
           </div>

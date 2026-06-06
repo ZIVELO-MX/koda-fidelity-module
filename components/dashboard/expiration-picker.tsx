@@ -2,17 +2,18 @@
 
 import { useState, useEffect } from "react"
 import { Input } from "@/components/ui/input"
-import { addDays, toDateInputValue } from "@/lib/card-utils"
+import { addDays, addMonths, addYears, toDateInputValue } from "@/lib/card-utils"
 
-const QUICK_OPTIONS = [
-  { label: "1 semana", days: 7 },
-  { label: "1 mes", days: 30 },
-  { label: "3 meses", days: 90 },
-  { label: "6 meses", days: 180 },
-  { label: "1 año", days: 365 },
-] as const
+type OptionKey = "1w" | "1m" | "3m" | "6m" | "1y"
+type Mode = "none" | "custom" | OptionKey
 
-type Mode = "none" | "custom" | number
+const QUICK_OPTIONS: { key: OptionKey; label: string; compute: () => Date }[] = [
+  { key: "1w", label: "1 semana", compute: () => addDays(7) },
+  { key: "1m", label: "1 mes", compute: () => addMonths(1) },
+  { key: "3m", label: "3 meses", compute: () => addMonths(3) },
+  { key: "6m", label: "6 meses", compute: () => addMonths(6) },
+  { key: "1y", label: "1 año", compute: () => addYears(1) },
+]
 
 interface ExpirationPickerProps {
   value: string
@@ -20,19 +21,12 @@ interface ExpirationPickerProps {
 }
 
 export function ExpirationPicker({ value, onChange }: ExpirationPickerProps) {
-  const [mode, setMode] = useState<Mode>(() => {
-    if (!value) return "none"
-    return "custom"
-  })
+  const [mode, setMode] = useState<Mode>(() => (!value ? "none" : "custom"))
 
   useEffect(() => {
-    if (mode === "none") {
-      onChange("")
-      return
-    }
-    if (typeof mode === "number") {
-      onChange(toDateInputValue(addDays(mode)))
-    }
+    if (mode === "none") { onChange(""); return }
+    const opt = QUICK_OPTIONS.find((o) => o.key === mode)
+    if (opt) onChange(toDateInputValue(opt.compute()))
   }, [mode]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const today = toDateInputValue(new Date())
@@ -40,13 +34,13 @@ export function ExpirationPicker({ value, onChange }: ExpirationPickerProps) {
   return (
     <div className="space-y-3" data-testid="expiration-picker">
       <div className="flex flex-wrap gap-2">
-        {QUICK_OPTIONS.map(({ label, days }) => (
+        {QUICK_OPTIONS.map(({ key, label }) => (
           <button
-            key={days}
+            key={key}
             type="button"
-            onClick={() => setMode(days)}
+            onClick={() => setMode(key)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-              mode === days
+              mode === key
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted text-foreground hover:bg-muted/80"
             }`}

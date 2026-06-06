@@ -21,31 +21,38 @@ describe("ExpirationPicker", () => {
 
   it("starts with 'Sin caducidad' active when value is empty", () => {
     render(<ExpirationPicker value="" onChange={() => {}} />)
-    const btn = screen.getByRole("button", { name: "Sin caducidad" })
-    expect(btn.className).toMatch(/bg-primary/)
+    expect(screen.getByRole("button", { name: "Sin caducidad" }).className).toMatch(/bg-primary/)
   })
 
   it("calls onChange with empty string when 'Sin caducidad' is selected", () => {
     const onChange = vi.fn()
-    render(<ExpirationPicker value="2026-12-01" onChange={onChange} />)
-    fireEvent.click(screen.getByRole("button", { name: "1 semana" }))
+    render(<ExpirationPicker value="" onChange={onChange} />)
+    fireEvent.click(screen.getByRole("button", { name: "1 mes" }))
+    onChange.mockClear()
     fireEvent.click(screen.getByRole("button", { name: "Sin caducidad" }))
     expect(onChange).toHaveBeenCalledWith("")
   })
 
-  it("calls onChange with computed date when a quick option is clicked", () => {
+  it("'3 meses' calls onChange with September 5 (calendar months, not 90 days)", () => {
     const onChange = vi.fn()
     render(<ExpirationPicker value="" onChange={onChange} />)
-    fireEvent.click(screen.getByRole("button", { name: "1 mes" }))
-    expect(onChange).toHaveBeenCalled()
+    fireEvent.click(screen.getByRole("button", { name: "3 meses" }))
     const dateArg: string = onChange.mock.calls.at(-1)?.[0]
-    expect(dateArg).toMatch(/^\d{4}-\d{2}-\d{2}$/)
-    const result = new Date(dateArg)
-    const expected = new Date(NOW)
-    expected.setDate(expected.getDate() + 30)
-    expect(result.getFullYear()).toBe(expected.getFullYear())
-    expect(result.getMonth()).toBe(expected.getMonth())
-    expect(result.getDate()).toBe(expected.getDate())
+    expect(dateArg).toBe("2026-09-05")
+  })
+
+  it("'1 año' calls onChange with next year same date", () => {
+    const onChange = vi.fn()
+    render(<ExpirationPicker value="" onChange={onChange} />)
+    fireEvent.click(screen.getByRole("button", { name: "1 año" }))
+    expect(onChange.mock.calls.at(-1)?.[0]).toBe("2027-06-05")
+  })
+
+  it("'6 meses' calls onChange with December 5", () => {
+    const onChange = vi.fn()
+    render(<ExpirationPicker value="" onChange={onChange} />)
+    fireEvent.click(screen.getByRole("button", { name: "6 meses" }))
+    expect(onChange.mock.calls.at(-1)?.[0]).toBe("2026-12-05")
   })
 
   it("shows date input when 'Elegir fecha…' is clicked", () => {
@@ -58,14 +65,12 @@ describe("ExpirationPicker", () => {
   it("hides date input when a quick option is selected after custom", () => {
     render(<ExpirationPicker value="" onChange={() => {}} />)
     fireEvent.click(screen.getByRole("button", { name: "Elegir fecha…" }))
-    expect(screen.getByTestId("expiration-date-input")).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "3 meses" }))
     expect(screen.queryByTestId("expiration-date-input")).toBeNull()
   })
 
-  it("shows formatted expiry date label when a quick option is active", () => {
-    const onChange = vi.fn()
-    render(<ExpirationPicker value="2026-12-15" onChange={onChange} />)
+  it("shows formatted expiry label when value is set", () => {
+    render(<ExpirationPicker value="2026-12-15" onChange={() => {}} />)
     expect(screen.getByText(/vence el/i)).toBeInTheDocument()
   })
 })

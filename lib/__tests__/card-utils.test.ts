@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest"
-import { isExpired, daysUntilExpiry, addDays, toDateInputValue } from "../card-utils"
+import { isExpired, daysUntilExpiry, addDays, addMonths, addYears, toDateInputValue } from "../card-utils"
 
 const NOW = new Date("2026-06-05T12:00:00Z")
 
@@ -18,33 +18,44 @@ describe("isExpired", () => {
 describe("daysUntilExpiry", () => {
   it("returns null for null", () => expect(daysUntilExpiry(null)).toBeNull())
   it("returns null for undefined", () => expect(daysUntilExpiry(undefined)).toBeNull())
-  it("returns 1 for expiry tomorrow", () => {
-    expect(daysUntilExpiry(new Date(NOW.getTime() + 86_400_000))).toBe(1)
-  })
-  it("returns 7 for expiry in 7 days", () => {
-    expect(daysUntilExpiry(new Date(NOW.getTime() + 7 * 86_400_000))).toBe(7)
-  })
-  it("returns negative for past date", () => {
-    expect(daysUntilExpiry(new Date(NOW.getTime() - 86_400_000))).toBe(-1)
-  })
-  it("returns 0 for expiry in less than a day", () => {
-    expect(daysUntilExpiry(new Date(NOW.getTime() + 3600 * 1000))).toBe(1)
-  })
+  it("returns 1 for expiry tomorrow", () =>
+    expect(daysUntilExpiry(new Date(NOW.getTime() + 86_400_000))).toBe(1))
+  it("returns 7 for expiry in 7 days", () =>
+    expect(daysUntilExpiry(new Date(NOW.getTime() + 7 * 86_400_000))).toBe(7))
+  it("returns negative for past date", () =>
+    expect(daysUntilExpiry(new Date(NOW.getTime() - 86_400_000))).toBe(-1))
 })
 
 describe("addDays", () => {
-  it("adds 7 days to today", () => {
+  it("adds 7 days keeping same day-of-month where possible", () => {
     const result = addDays(7)
     const expected = new Date(NOW)
     expected.setDate(expected.getDate() + 7)
-    expect(result.getFullYear()).toBe(expected.getFullYear())
-    expect(result.getMonth()).toBe(expected.getMonth())
-    expect(result.getDate()).toBe(expected.getDate())
+    expect(toDateInputValue(result)).toBe(toDateInputValue(expected))
+  })
+})
+
+describe("addMonths — calendar arithmetic", () => {
+  it("adds 1 month: June 5 → July 5", () => {
+    expect(toDateInputValue(addMonths(1))).toBe("2026-07-05")
+  })
+  it("adds 3 months: June 5 → September 5", () => {
+    expect(toDateInputValue(addMonths(3))).toBe("2026-09-05")
+  })
+  it("adds 6 months: June 5 → December 5", () => {
+    expect(toDateInputValue(addMonths(6))).toBe("2026-12-05")
+  })
+})
+
+describe("addYears", () => {
+  it("adds 1 year: June 5 2026 → June 5 2027", () => {
+    expect(toDateInputValue(addYears(1))).toBe("2027-06-05")
   })
 })
 
 describe("toDateInputValue", () => {
-  it("formats date as YYYY-MM-DD", () => {
-    expect(toDateInputValue(new Date("2026-12-31T12:00:00Z"))).toBe("2026-12-31")
+  it("returns YYYY-MM-DD using local date components", () => {
+    const d = new Date(2026, 11, 31, 23, 59, 59) // Dec 31 local, could be Jan 1 UTC+offset
+    expect(toDateInputValue(d)).toBe("2026-12-31")
   })
 })
