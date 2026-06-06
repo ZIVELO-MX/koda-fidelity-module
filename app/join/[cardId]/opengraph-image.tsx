@@ -2,6 +2,14 @@ import { ImageResponse } from "next/og"
 import { siteConfig } from "@/lib/site-config"
 import { prisma } from "@/lib/prisma"
 
+const ICON_EMOJI: Record<string, string> = {
+  coffee: "☕",
+  utensils: "🍽️",
+  "shopping-bag": "🛍️",
+  star: "⭐",
+  crown: "👑",
+}
+
 function darken(hex: string, amount: number): string {
   const num = parseInt(hex.replace("#", ""), 16)
   const r = Math.max(0, (num >> 16) - amount)
@@ -35,7 +43,7 @@ export default async function Image({
       brandColor: true,
       expiresAt: true,
       business: {
-        select: { name: true, logoUrl: true },
+        select: { name: true, logoUrl: true, iconName: true },
       },
     },
   })
@@ -120,7 +128,7 @@ export default async function Image({
           display: "flex", flexDirection: "column", alignItems: "flex-start",
           gap: 20, flex: "0 0 auto", maxWidth: 420,
         }}>
-          {/* Logo or initial */}
+          {/* Logo, emoji icon, or initial */}
           {card.business.logoUrl ? (
             <div style={{
               width: 120, height: 120, borderRadius: 28,
@@ -140,9 +148,12 @@ export default async function Image({
               width: 120, height: 120, borderRadius: 28,
               background: light ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.20)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 60, fontWeight: 800, color: text,
+              fontSize: card.business.iconName ? 64 : 60,
+              fontWeight: 800, color: text,
             }}>
-              {card.business.name.charAt(0).toUpperCase()}
+              {card.business.iconName
+                ? (ICON_EMOJI[card.business.iconName] ?? card.business.name.charAt(0).toUpperCase())
+                : card.business.name.charAt(0).toUpperCase()}
             </div>
           )}
 
