@@ -2,14 +2,6 @@ import { ImageResponse } from "next/og"
 import { siteConfig } from "@/lib/site-config"
 import { prisma } from "@/lib/prisma"
 
-const ICON_EMOJI: Record<string, string> = {
-  coffee: "☕",
-  utensils: "🍽️",
-  "shopping-bag": "🛍️",
-  star: "⭐",
-  crown: "👑",
-}
-
 function isLight(hex: string): boolean {
   const num = parseInt(hex.replace("#", ""), 16)
   const r = num >> 16
@@ -35,7 +27,7 @@ export default async function Image({
       brandColor: true,
       expiresAt: true,
       business: {
-        select: { name: true, logoUrl: true, iconName: true },
+        select: { name: true },
       },
     },
   })
@@ -65,16 +57,6 @@ export default async function Image({
   const accent = card.brandColor || siteConfig.defaultBrandColor
   const accentOnDark = isLight(accent) ? "#111827" : "#ffffff"
   const hasExpiry = !!card.expiresAt
-
-  const logoContent = card.business.logoUrl ? (
-    <img src={card.business.logoUrl} width={72} height={72} style={{ objectFit: "contain" }} />
-  ) : (
-    <div style={{ display: "flex", fontSize: 48, fontWeight: 800, color: accentOnDark }}>
-      {card.business.iconName
-        ? (ICON_EMOJI[card.business.iconName] ?? card.business.name.charAt(0).toUpperCase())
-        : card.business.name.charAt(0).toUpperCase()}
-    </div>
-  )
 
   return new ImageResponse(
     <div
@@ -108,25 +90,12 @@ export default async function Image({
           flex: "0 0 auto",
           width: 380,
         }}>
-          {/* Logo box */}
-          <div style={{
-            width: 112,
-            height: 112,
-            borderRadius: 24,
-            backgroundColor: accent,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}>
-            {logoContent}
-          </div>
-
           {/* Business name + card name */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <div style={{ fontSize: 44, fontWeight: 800, color: "#111827", lineHeight: 1.1, letterSpacing: "-0.02em" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ fontSize: 56, fontWeight: 800, color: "#111827", lineHeight: 1.1, letterSpacing: "-0.02em" }}>
               {card.business.name}
             </div>
-            <div style={{ fontSize: 22, color: "#6b7280", fontWeight: 500 }}>
+            <div style={{ fontSize: 26, color: "#6b7280", fontWeight: 500 }}>
               {card.name}
             </div>
           </div>
@@ -140,7 +109,7 @@ export default async function Image({
             border: `1.5px solid ${accent}40`,
             borderRadius: 999,
             padding: "10px 22px",
-            fontSize: 18,
+            fontSize: 22,
             color: accent,
             fontWeight: 600,
           }}>
@@ -180,7 +149,7 @@ export default async function Image({
           <div style={{
             display: "flex",
             flexDirection: "column",
-            fontSize: 52,
+            fontSize: 64,
             fontWeight: 800,
             color: "#111827",
             lineHeight: 1.1,
@@ -194,7 +163,7 @@ export default async function Image({
           <div style={{
             display: "flex",
             flexDirection: "column",
-            fontSize: 20,
+            fontSize: 24,
             color: "#6b7280",
             lineHeight: 1.5,
             marginTop: 4,
