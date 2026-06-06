@@ -228,7 +228,7 @@ export function LoginForm() {
                     id="password"
                     name="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
+                    placeholder="Tu contraseña"
                     required
                     autoComplete="current-password"
                     autoFocus
