@@ -155,6 +155,10 @@ export async function POST(request: NextRequest) {
       throw new NotFoundError("Loyalty card not found")
     }
 
+    if (card.expiresAt && card.expiresAt < new Date()) {
+      throw new ValidationError("This loyalty card has expired")
+    }
+
     const existing = await prisma.customer.findFirst({
       where: { email, cardId },
     })

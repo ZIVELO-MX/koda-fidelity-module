@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     const customer = await prisma.customer.findUnique({
       where: { id: body.customerId },
       include: {
-        card: { select: { businessId: true, stampsRequired: true, reward: true } },
+        card: { select: { businessId: true, stampsRequired: true, reward: true, expiresAt: true } },
       },
     })
 
@@ -91,6 +91,10 @@ export async function POST(request: NextRequest) {
 
     if (customer.card.businessId !== business.id) {
       throw new NotFoundError("Customer not found")
+    }
+
+    if (customer.card.expiresAt && customer.card.expiresAt < new Date()) {
+      throw new ValidationError("This loyalty card has expired")
     }
 
     if (type === "stamp") {
