@@ -27,6 +27,7 @@ interface SearchCustomer {
   maxStamps: number
   cardName: string
   cardReward: string
+  cardBrandColor: string
 }
 
 type ScanState = "idle" | "scanning" | "found" | "stamped" | "redeemed"
@@ -85,6 +86,7 @@ function ScanPageInner() {
         maxStamps: c.card.stampsRequired,
         cardName: c.card.name,
         cardReward: c.card.reward,
+        cardBrandColor: c.card.brandColor,
       })
       setScanState("found")
     } catch (err) {
@@ -300,11 +302,8 @@ function ScanPageInner() {
                     {Array.from({ length: selectedCustomer.maxStamps }).map((_, i) => (
                       <div
                         key={i}
-                        className={`aspect-square rounded-lg ${
-                          i < selectedCustomer.stamps
-                            ? "bg-primary"
-                            : "bg-muted border border-border"
-                        }`}
+                        className={`aspect-square rounded-lg ${i < selectedCustomer.stamps ? "" : "bg-muted border border-border"}`}
+                        style={i < selectedCustomer.stamps ? { backgroundColor: selectedCustomer.cardBrandColor } : undefined}
                       />
                     ))}
                   </div>
@@ -319,8 +318,8 @@ function ScanPageInner() {
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-primary/10 rounded-xl p-4 flex items-center gap-3">
-                    <Stamp className="h-6 w-6 text-primary" />
+                  <div className="rounded-xl p-4 flex items-center gap-3" style={{ backgroundColor: `${selectedCustomer.cardBrandColor}1a` }}>
+                    <Stamp className="h-6 w-6" style={{ color: selectedCustomer.cardBrandColor }} />
                     <div>
                       <p className="font-medium text-foreground">
                         {selectedCustomer.maxStamps - selectedCustomer.stamps} más para la meta
@@ -341,11 +340,11 @@ function ScanPageInner() {
                 onClick={addStamp}
                 disabled={actionLoading}
                 size="lg"
-                className={`w-full h-16 text-lg ${
-                  selectedCustomer.stamps >= selectedCustomer.maxStamps
-                    ? "bg-green-600 hover:bg-green-700"
-                    : ""
-                }`}
+                className="w-full h-16 text-lg text-white"
+                style={selectedCustomer.stamps >= selectedCustomer.maxStamps
+                  ? { backgroundColor: "#16a34a" }
+                  : { backgroundColor: selectedCustomer.cardBrandColor }
+                }
               >
                 {actionLoading ? (
                   <Loader2 className="h-6 w-6 mr-3 animate-spin" />
@@ -367,14 +366,16 @@ function ScanPageInner() {
           {(scanState === "stamped" || scanState === "redeemed") && selectedCustomer && (
             <div className="text-center space-y-6">
               <div
-                className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto ${
-                  scanState === "redeemed" ? "bg-green-100" : "bg-primary/10"
-                }`}
+                className="w-24 h-24 rounded-full flex items-center justify-center mx-auto"
+                style={scanState === "redeemed"
+                  ? { backgroundColor: "#dcfce7" }
+                  : { backgroundColor: `${selectedCustomer.cardBrandColor}1a` }
+                }
               >
                 {scanState === "redeemed" ? (
                   <Gift className="h-12 w-12 text-green-600" />
                 ) : (
-                  <Check className="h-12 w-12 text-primary" />
+                  <Check className="h-12 w-12" style={{ color: selectedCustomer.cardBrandColor }} />
                 )}
               </div>
 
@@ -395,18 +396,23 @@ function ScanPageInner() {
                     {Array.from({ length: selectedCustomer.maxStamps }).map((_, i) => (
                       <div
                         key={i}
-                        className={`aspect-square rounded-lg ${
-                          i < selectedCustomer.stamps
-                            ? "bg-primary"
-                            : "bg-muted border border-border"
-                        } ${i === selectedCustomer.stamps - 1 ? "ring-2 ring-primary ring-offset-2" : ""}`}
+                        className={`aspect-square rounded-lg ${i >= selectedCustomer.stamps ? "bg-muted border border-border" : ""}`}
+                        style={{
+                          ...(i < selectedCustomer.stamps ? { backgroundColor: selectedCustomer.cardBrandColor } : {}),
+                          ...(i === selectedCustomer.stamps - 1 ? { outline: `2px solid ${selectedCustomer.cardBrandColor}`, outlineOffset: "2px" } : {}),
+                        }}
                       />
                     ))}
                   </div>
                 </div>
               )}
 
-              <Button onClick={resetScan} size="lg" className="w-full">
+              <Button
+                onClick={resetScan}
+                size="lg"
+                className="w-full text-white"
+                style={{ backgroundColor: selectedCustomer.cardBrandColor }}
+              >
                 Escanear Siguiente Cliente
               </Button>
             </div>
