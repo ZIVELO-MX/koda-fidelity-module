@@ -12,14 +12,6 @@ function darken(hex: string, amount: number): string {
   return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`
 }
 
-function lighten(hex: string, amount: number): string {
-  const num = parseInt(hex.replace("#", ""), 16)
-  const r = Math.min(255, (num >> 16) + amount)
-  const g = Math.min(255, ((num >> 8) & 0x00ff) + amount)
-  const b = Math.min(255, (num & 0x0000ff) + amount)
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`
-}
-
 function isLight(hex: string): boolean {
   const num = parseInt(hex.replace("#", ""), 16)
   const r = num >> 16
@@ -38,51 +30,21 @@ export default async function Image({
   const admin = createAdminClient()
   const { data: raw } = await admin
     .from("loyalty_card")
-    .select("id, name, reward, stampsRequired, brandColor, business(name, logoUrl)")
+    .select("id, name, reward, stampsRequired, brandColor, expiresAt, business(name, logoUrl)")
     .eq("id", cardId)
     .single()
+
   const card = raw as unknown as {
     id: string
     name: string
     reward: string
     stampsRequired: number
     brandColor: string | null
+    expiresAt: string | null
     business: { name: string; logoUrl: string | null }
   } | null
 
-  if (!card) {
-    return new ImageResponse(
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
-          fontFamily: "system-ui, -apple-system, sans-serif",
-          color: "white",
-        }}
-      >
-        <div style={{ fontSize: 64, fontWeight: 700, marginBottom: 16 }}>
-          {siteConfig.name}
-        </div>
-        <div style={{ fontSize: 32, opacity: 0.9 }}>
-          Tarjeta de Lealtad Digital
-        </div>
-      </div>,
-      {
-        width: 1200,
-        height: 630,
-      },
-    )
-  }
-
-  const bgColor = card.brandColor || siteConfig.defaultBrandColor
-  const textColor = isLight(bgColor) ? "#1a1a1a" : "#ffffff"
-
-  return new ImageResponse(
+  const fallback = (
     <div
       style={{
         width: "100%",
@@ -91,147 +53,196 @@ export default async function Image({
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        background: `linear-gradient(135deg, ${bgColor} 0%, ${darken(bgColor, 40)} 50%, ${darken(bgColor, 70)} 100%)`,
-        fontFamily: "system-ui, -apple-system, sans-serif",
-        color: textColor,
-        position: "relative",
+        background: "linear-gradient(135deg, #f97316 0%, #c2410c 100%)",
+        fontFamily: "system-ui, sans-serif",
+        color: "white",
       }}
     >
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background:
-            "radial-gradient(circle at 20% 80%, rgba(255,255,255,0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255,255,255,0.08) 0%, transparent 50%)",
-        }}
-      />
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          position: "relative",
-          zIndex: 1,
-          padding: "0 80px",
-          textAlign: "center",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 24,
-            marginBottom: 16,
-          }}
-        >
-          {card.business.logoUrl && (
-            <div
-              style={{
-                width: 96,
-                height: 96,
-                borderRadius: 24,
-                overflow: "hidden",
-                background: isLight(bgColor)
-                  ? "rgba(0,0,0,0.08)"
-                  : "rgba(255,255,255,0.15)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
+      <div style={{ fontSize: 64, fontWeight: 800, marginBottom: 12 }}>{siteConfig.name}</div>
+      <div style={{ fontSize: 28, opacity: 0.85 }}>Tarjetas de Lealtad Digital</div>
+    </div>
+  )
+
+  if (!card) return new ImageResponse(fallback, { width: 1200, height: 630 })
+
+  const bg = card.brandColor || siteConfig.defaultBrandColor
+  const bg2 = darken(bg, 50)
+  const light = isLight(bg)
+  const text = light ? "#111827" : "#ffffff"
+  const textMuted = light ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.65)"
+  const pillBg = light ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.18)"
+  const pillBorder = light ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.22)"
+  const hasExpiry = !!card.expiresAt
+
+  return new ImageResponse(
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        position: "relative",
+        background: `linear-gradient(145deg, ${bg} 0%, ${bg2} 100%)`,
+        fontFamily: "system-ui, -apple-system, sans-serif",
+        overflow: "hidden",
+      }}
+    >
+      {/* Decorative circles */}
+      <div style={{
+        position: "absolute", top: -160, right: -160, width: 480, height: 480,
+        borderRadius: "50%", background: "rgba(255,255,255,0.06)", display: "flex",
+      }} />
+      <div style={{
+        position: "absolute", bottom: -120, left: -80, width: 360, height: 360,
+        borderRadius: "50%", background: "rgba(255,255,255,0.05)", display: "flex",
+      }} />
+
+      {/* Limited time badge — top right */}
+      {hasExpiry && (
+        <div style={{
+          position: "absolute", top: 36, right: 52,
+          display: "flex", alignItems: "center", gap: 8,
+          background: light ? "rgba(0,0,0,0.18)" : "rgba(255,255,255,0.18)",
+          border: `1.5px solid ${light ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.3)"}`,
+          borderRadius: 999, padding: "10px 22px",
+          fontSize: 18, fontWeight: 700, color: text,
+          letterSpacing: "0.01em",
+        }}>
+          <span>⚡</span>
+          <span>Por tiempo limitado</span>
+        </div>
+      )}
+
+      {/* Main content */}
+      <div style={{
+        flex: 1, display: "flex", flexDirection: "row",
+        alignItems: "center", padding: "0 80px", gap: 64,
+        position: "relative", zIndex: 1,
+      }}>
+        {/* Left: logo + business */}
+        <div style={{
+          display: "flex", flexDirection: "column", alignItems: "flex-start",
+          gap: 20, flex: "0 0 auto", maxWidth: 420,
+        }}>
+          {/* Logo or initial */}
+          {card.business.logoUrl ? (
+            <div style={{
+              width: 120, height: 120, borderRadius: 28,
+              background: light ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.20)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              overflow: "hidden",
+            }}>
               <img
                 src={card.business.logoUrl}
-                width={80}
-                height={80}
+                width={96}
+                height={96}
                 style={{ objectFit: "contain" }}
               />
             </div>
+          ) : (
+            <div style={{
+              width: 120, height: 120, borderRadius: 28,
+              background: light ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.20)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 60, fontWeight: 800, color: text,
+            }}>
+              {card.business.name.charAt(0).toUpperCase()}
+            </div>
           )}
-          <div
-            style={{
-              fontSize: 72,
-              fontWeight: 800,
-              letterSpacing: "-0.02em",
-              lineHeight: 1.1,
-            }}
-          >
-            {card.business.name}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ fontSize: 52, fontWeight: 800, color: text, lineHeight: 1.1, letterSpacing: "-0.02em" }}>
+              {card.business.name}
+            </div>
+            <div style={{ fontSize: 24, color: textMuted, fontWeight: 500 }}>
+              {card.name}
+            </div>
+          </div>
+
+          {/* Reward pill */}
+          <div style={{
+            display: "flex", alignItems: "center", gap: 10,
+            background: pillBg, border: `1px solid ${pillBorder}`,
+            borderRadius: 999, padding: "10px 24px",
+            fontSize: 20, color: text,
+          }}>
+            <span style={{ opacity: 0.75 }}>{card.stampsRequired} sellos</span>
+            <span style={{ opacity: 0.5, margin: "0 4px" }}>→</span>
+            <span style={{ fontWeight: 700 }}>{card.reward}</span>
           </div>
         </div>
-        <div
-          style={{
-            fontSize: 36,
-            fontWeight: 600,
-            opacity: 0.85,
-            marginBottom: 24,
-          }}
-        >
-          {card.name}
-        </div>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            fontSize: 24,
-            opacity: 0.75,
-            padding: "12px 32px",
-            borderRadius: 999,
-            background: isLight(bgColor)
-              ? "rgba(0,0,0,0.08)"
-              : "rgba(255,255,255,0.12)",
-            border: `1px solid ${
-              isLight(bgColor)
-                ? "rgba(0,0,0,0.1)"
-                : "rgba(255,255,255,0.15)"
-            }`,
-          }}
-        >
-          <span>{card.stampsRequired} sellos</span>
-          <span style={{ margin: "0 8px" }}>→</span>
-          <span style={{ fontWeight: 700 }}>{card.reward}</span>
-        </div>
-        <div
-          style={{
-            marginTop: 48,
-            fontSize: 18,
-            opacity: 0.6,
-            letterSpacing: "0.05em",
-            textTransform: "uppercase",
-          }}
-        >
-          {siteConfig.name} · Tarjeta de Lealtad Digital
+
+        {/* Divider */}
+        <div style={{
+          width: 1, alignSelf: "stretch", margin: "80px 0",
+          background: light ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.18)",
+          display: "flex",
+        }} />
+
+        {/* Right: CTA */}
+        <div style={{
+          display: "flex", flexDirection: "column", alignItems: "flex-start",
+          gap: 16, flex: 1,
+        }}>
+          <div style={{
+            fontSize: 16, fontWeight: 700, letterSpacing: "0.12em",
+            textTransform: "uppercase", color: textMuted,
+          }}>
+            Programa de Lealtad
+          </div>
+          <div style={{
+            fontSize: 56, fontWeight: 800, color: text, lineHeight: 1.1,
+            letterSpacing: "-0.02em",
+          }}>
+            Obtén tu{"\n"}Fidelity Card
+          </div>
+          <div style={{ fontSize: 22, color: textMuted, lineHeight: 1.4, marginTop: 4 }}>
+            Acumula sellos con cada visita{"\n"}y gana recompensas exclusivas.
+          </div>
+
+          {/* Stamp dots */}
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            {Array.from({ length: Math.min(card.stampsRequired, 10) }).map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  width: 20, height: 20, borderRadius: "50%",
+                  background: i < Math.ceil(card.stampsRequired * 0.4)
+                    ? (light ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.85)")
+                    : (light ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.22)"),
+                  border: `2px solid ${light ? "rgba(0,0,0,0.18)" : "rgba(255,255,255,0.3)"}`,
+                }}
+              />
+            ))}
+            {card.stampsRequired > 10 && (
+              <div style={{ fontSize: 18, color: textMuted, alignSelf: "center" }}>
+                +{card.stampsRequired - 10}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-      <div
-        style={{
-          position: "absolute",
-          bottom: 32,
-          right: 40,
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          opacity: 0.5,
-          fontSize: 16,
-        }}
-      >
-        <img
-          src={`${siteConfig.url}/short-logo.svg`}
-          alt={siteConfig.shortName}
-          width={28}
-          height={28}
-          style={{ borderRadius: 6 }}
-        />
-        <span>{siteConfig.shortName}</span>
+
+      {/* Bottom bar */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "0 80px 32px",
+        position: "relative", zIndex: 1,
+      }}>
+        <div style={{ fontSize: 14, color: textMuted, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+          {siteConfig.url.replace("https://", "")}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <img
+            src={`${siteConfig.url}/short-logo.svg`}
+            width={22}
+            height={22}
+            style={{ borderRadius: 5, opacity: 0.6 }}
+          />
+          <span style={{ fontSize: 14, color: textMuted, fontWeight: 600 }}>{siteConfig.shortName}</span>
+        </div>
       </div>
     </div>,
-    {
-      width: 1200,
-      height: 630,
-    },
+    { width: 1200, height: 630 },
   )
 }
