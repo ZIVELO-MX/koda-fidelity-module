@@ -170,6 +170,11 @@
 - [x] Flujo de cambio de contraseña forzado al primer login (`must_change_password` en user metadata)
 - [x] Página 403 mejorada: botón "Cerrar sesión" + link de recuperación de contraseña
 - [x] Recuperación de contraseña vía WhatsApp (MVP) — redirige a soporte con correo pre-llenado en el mensaje
+- [x] Dashboard: sobreescribir `--primary` con el `brandColor` del negocio en el layout — sidebar activo, íconos, links y progress bars reflejan la marca del cliente
+- [x] Botón "Sellar" en listado de tarjetas usa el `brandColor` de cada tarjeta individualmente
+- [x] Escáner (`/dashboard/scan`): botón "Agregar Sello", stamps y confirmación usan el `brandColor` de la tarjeta del cliente
+- [x] `GET /api/customers` incluye `cardBrandColor` en la respuesta
+- [x] `docs/colors.md` documenta el naranja Koda (`oklch(0.705 0.191 41.116)` / `#f97316`), su equivalente hex y dónde aplica
 - [ ] `/login`: mejorar UI/UX del campo "ingresa tu contraseña" (padding, spacing, diseño del input)
 - [ ] `/login`: aumentar padding/margin sobre el texto "Bienvenido de vuelta, [email]" para mejorar la respiración visual
 - [ ] Agregar campo `nickname` (apodo) al modelo `Business` — se muestra en la UI en lugar del email; editable desde `/settings`. No tiene impacto funcional, solo mejora UX (evitar exponer el correo en la interfaz)

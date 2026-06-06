@@ -10,6 +10,7 @@ interface StampButtonProps {
   currentStamps: number
   maxStamps: number
   reward: string
+  brandColor?: string
 }
 
 type StampState = "idle" | "loading" | "stamped" | "redeemed" | "error"
@@ -19,6 +20,7 @@ export function StampButton({
   currentStamps,
   maxStamps,
   reward,
+  brandColor,
 }: StampButtonProps) {
   const router = useRouter()
   const [state, setState] = useState<StampState>("idle")
@@ -77,6 +79,7 @@ export function StampButton({
         onClick={handleStamp}
         disabled={state === "loading"}
         className="gap-1.5 h-8 px-2.5 text-xs"
+        style={brandColor ? { color: brandColor } : undefined}
       >
         {state === "loading" ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin" />

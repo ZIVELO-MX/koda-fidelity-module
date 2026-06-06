@@ -224,7 +224,11 @@ export default async function CardsPage({
                         <Button variant="outline" className="w-full">Ver Detalles</Button>
                       </Link>
                       <Link href={`/dashboard/scan?cardId=${card.id}`}>
-                        <Button variant="default" className="flex-1">
+                        <Button
+                          variant="default"
+                          className="flex-1 text-white"
+                          style={{ backgroundColor: card.brandColor }}
+                        >
                           <Stamp className="h-4 w-4 mr-2" />
                           Sellar
                         </Button>
