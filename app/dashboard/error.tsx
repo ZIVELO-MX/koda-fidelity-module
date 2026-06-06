@@ -1,7 +1,8 @@
 "use client"
 
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { AlertCircle, RefreshCw, LogOut } from "lucide-react"
+import { AlertCircle, RefreshCw, LogOut, Smartphone } from "lucide-react"
 import { logout } from "@/lib/actions/auth"
 
 export default function DashboardError({
@@ -28,9 +29,12 @@ export default function DashboardError({
             <RefreshCw className="h-4 w-4 mr-2" />
             Reintentar
           </Button>
-          <Button variant="outline" onClick={() => window.location.href = "/dashboard"}>
-            Ir al panel
-          </Button>
+          <Link href="/dashboard/my-cards">
+            <Button variant="outline">
+              <Smartphone className="h-4 w-4 mr-2" />
+              Mis Tarjetas
+            </Button>
+          </Link>
           <form action={logout}>
             <Button type="submit" variant="ghost">
               <LogOut className="h-4 w-4 mr-2" />
@@ -39,7 +43,8 @@ export default function DashboardError({
           </form>
         </div>
         <p className="text-xs text-muted-foreground">
-          Si el error persiste, cerrar sesión e iniciar de nuevo suele resolverlo.
+          ¿Eres cliente? Ve directo a <Link href="/dashboard/my-cards" className="underline">Mis Tarjetas</Link>.
+          Si el error persiste, cierra sesión e inicia de nuevo.
         </p>
       </div>
     </div>
