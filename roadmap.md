@@ -170,6 +170,9 @@
 - [x] Flujo de cambio de contraseña forzado al primer login (`must_change_password` en user metadata)
 - [x] Página 403 mejorada: botón "Cerrar sesión" + link de recuperación de contraseña
 - [x] Recuperación de contraseña vía WhatsApp (MVP) — redirige a soporte con correo pre-llenado en el mensaje
+- [ ] `/login`: mejorar UI/UX del campo "ingresa tu contraseña" (padding, spacing, diseño del input)
+- [ ] `/login`: aumentar padding/margin sobre el texto "Bienvenido de vuelta, [email]" para mejorar la respiración visual
+- [ ] Agregar campo `nickname` (apodo) al modelo `Business` — se muestra en la UI en lugar del email; editable desde `/settings`. No tiene impacto funcional, solo mejora UX (evitar exponer el correo en la interfaz)
 
 ### Deuda Técnica — Magic Links por Email
 
