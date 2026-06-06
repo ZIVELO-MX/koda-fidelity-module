@@ -25,6 +25,7 @@ interface JoinCustomer {
     brandColor: string
     iconName: string | null
     expiresAt: string | null
+    expired: boolean
     business: { name: string; brandColor: string; logoUrl: string | null; iconName: string | null }
   }
 }
@@ -65,6 +66,11 @@ export default function JoinCardPage() {
         return
       }
       const cardJson = await cardRes.json()
+      if (cardJson.card.expired) {
+        setCardError("Esta tarjeta de lealtad ha vencido y ya no acepta nuevos participantes.")
+        setStep("error")
+        return
+      }
       setCardData(cardJson.card)
 
       const supabase = createBrowserSupabase()
