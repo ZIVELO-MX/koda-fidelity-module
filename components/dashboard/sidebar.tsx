@@ -44,7 +44,7 @@ const desktopNavigation = [
   { name: "Códigos QR", href: "/dashboard/qr-codes", icon: QrCode },
   { name: "Marca", href: "/dashboard/branding", icon: Palette },
   { name: "Configuración", href: "/dashboard/settings", icon: Settings },
-  { name: "Documentación", href: "/docs", icon: BookOpen },
+  { name: "Documentación", href: "/dashboard/docs", icon: BookOpen },
 ]
 
 const mobileNavigation = [
