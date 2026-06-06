@@ -113,7 +113,6 @@ export default async function Image({
       <div style={{
         flex: 1, display: "flex", flexDirection: "row",
         alignItems: "center", padding: "0 80px", gap: 64,
-        position: "relative", zIndex: 1,
       }}>
         {/* Left: logo + business */}
         <div style={{
@@ -162,7 +161,7 @@ export default async function Image({
             borderRadius: 999, padding: "10px 24px",
             fontSize: 20, color: text,
           }}>
-            <span style={{ opacity: 0.75 }}>{card.stampsRequired} sellos</span>
+            <span style={{ opacity: 0.75 }}>{`${card.stampsRequired} sellos`}</span>
             <span style={{ opacity: 0.5, margin: "0 4px" }}>→</span>
             <span style={{ fontWeight: 700 }}>{card.reward}</span>
           </div>
@@ -187,13 +186,19 @@ export default async function Image({
             Programa de Lealtad
           </div>
           <div style={{
+            display: "flex", flexDirection: "column",
             fontSize: 56, fontWeight: 800, color: text, lineHeight: 1.1,
-            letterSpacing: "-0.02em",
+            letterSpacing: "-0.02em", gap: 0,
           }}>
-            Obtén tu{"\n"}Fidelity Card
+            <span>Obtén tu</span>
+            <span>Fidelity Card</span>
           </div>
-          <div style={{ fontSize: 22, color: textMuted, lineHeight: 1.4, marginTop: 4 }}>
-            Acumula sellos con cada visita{"\n"}y gana recompensas exclusivas.
+          <div style={{
+            display: "flex", flexDirection: "column",
+            fontSize: 22, color: textMuted, lineHeight: 1.4, marginTop: 4, gap: 0,
+          }}>
+            <span>Acumula sellos con cada visita</span>
+            <span>y gana recompensas exclusivas.</span>
           </div>
 
           {/* Stamp dots */}
@@ -211,8 +216,8 @@ export default async function Image({
               />
             ))}
             {card.stampsRequired > 10 && (
-              <div style={{ fontSize: 18, color: textMuted, alignSelf: "center" }}>
-                +{card.stampsRequired - 10}
+              <div style={{ fontSize: 18, color: textMuted, alignSelf: "center", display: "flex" }}>
+                {`+${card.stampsRequired - 10}`}
               </div>
             )}
           </div>
@@ -223,7 +228,6 @@ export default async function Image({
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "0 80px 32px",
-        position: "relative", zIndex: 1,
       }}>
         <div style={{ fontSize: 14, color: textMuted, letterSpacing: "0.06em", textTransform: "uppercase" }}>
           {siteConfig.url.replace("https://", "")}
