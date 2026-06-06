@@ -16,6 +16,16 @@ import {
   LogOut,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { logout } from "@/lib/actions/auth"
 import { ProfilePanel } from "./profile-panel"
 import { useState } from "react"
@@ -24,6 +34,7 @@ interface DashboardSidebarProps {
   userEmail: string
   businessName: string
   brandColor: string
+  nickname?: string
 }
 
 const desktopNavigation = [
@@ -33,7 +44,7 @@ const desktopNavigation = [
   { name: "Códigos QR", href: "/dashboard/qr-codes", icon: QrCode },
   { name: "Marca", href: "/dashboard/branding", icon: Palette },
   { name: "Configuración", href: "/dashboard/settings", icon: Settings },
-  { name: "Documentación", href: "/docs", icon: BookOpen },
+  { name: "Documentación", href: "/dashboard/docs", icon: BookOpen },
 ]
 
 const mobileNavigation = [
@@ -44,9 +55,10 @@ const mobileNavigation = [
   { name: "Marca", href: "/dashboard/branding", icon: Palette },
 ]
 
-export function DashboardSidebar({ userEmail, businessName, brandColor }: DashboardSidebarProps) {
+export function DashboardSidebar({ userEmail, businessName, brandColor, nickname }: DashboardSidebarProps) {
   const pathname = usePathname()
   const [profileOpen, setProfileOpen] = useState(false)
+  const [logoutOpen, setLogoutOpen] = useState(false)
 
   return (
     <>
@@ -95,12 +107,35 @@ export function DashboardSidebar({ userEmail, businessName, brandColor }: Dashbo
             <Smartphone className="h-5 w-5" />
             Mis Tarjetas
           </Link>
-          <form action={logout}>
-            <Button size="sm" variant="ghost" className="w-full justify-start gap-3 text-xs text-muted-foreground hover:text-destructive">
-              <LogOut className="h-5 w-5" />
-              Cerrar Sesión
-            </Button>
-          </form>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="w-full justify-start gap-3 text-xs text-muted-foreground hover:text-destructive"
+            onClick={() => setLogoutOpen(true)}
+          >
+            <LogOut className="h-5 w-5" />
+            Cerrar Sesión
+          </Button>
+
+          <AlertDialog open={logoutOpen} onOpenChange={setLogoutOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Cerrar sesión</AlertDialogTitle>
+                <AlertDialogDescription>
+                  ¿Estás seguro de que deseas cerrar sesión?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={async () => await logout()}
+                  className="bg-destructive hover:bg-destructive/90"
+                >
+                  Cerrar sesión
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </aside>
 
@@ -150,6 +185,7 @@ export function DashboardSidebar({ userEmail, businessName, brandColor }: Dashbo
           userEmail={userEmail}
           businessName={businessName}
           brandColor={brandColor}
+          nickname={nickname}
           onClose={() => setProfileOpen(false)}
           fullScreen
           showMyCards={true}

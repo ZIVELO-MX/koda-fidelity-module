@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Mail, Loader2, ArrowLeft, MessageCircle } from "lucide-react"
+import { Mail, Loader2, ArrowLeft, MessageCircle, Eye, EyeOff } from "lucide-react"
 
 const SUPPORT_WA = "5213921107274"
 
@@ -26,6 +26,7 @@ export function LoginForm() {
   const [email, setEmail] = useState("")
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
   const [loginState, loginAction, loginPending] = useActionState(login, initialState)
 
   function waRecoverLink(address: string) {
@@ -159,14 +160,14 @@ export function LoginForm() {
           <CardTitle className="text-2xl">
             {step === "password" ? "Ingresa tu contraseña" : "Iniciar Sesión"}
           </CardTitle>
-          <CardDescription>
+          <CardDescription className={step === "password" ? "mt-3" : undefined}>
             {step === "password"
               ? `Bienvenido de vuelta, ${email.split("@")[0]}`
               : "Accede a tu panel o a tus tarjetas de lealtad"}
           </CardDescription>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className={step === "password" ? "pt-4" : undefined}>
           {(error || loginState?.error) && (
             <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive mb-4">
               {error || loginState.error}
@@ -222,15 +223,26 @@ export function LoginForm() {
                     ¿Olvidaste tu contraseña?
                   </button>
                 </div>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="••••••••"
-                  required
-                  autoComplete="current-password"
-                  autoFocus
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Tu contraseña"
+                    required
+                    autoComplete="current-password"
+                    autoFocus
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
               <Button
                 type="submit"

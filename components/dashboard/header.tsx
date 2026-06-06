@@ -8,9 +8,10 @@ interface DashboardHeaderProps {
   userEmail: string
   businessName: string
   brandColor: string
+  nickname?: string
 }
 
-export function DashboardHeader({ userEmail, businessName, brandColor }: DashboardHeaderProps) {
+export function DashboardHeader({ userEmail, businessName, brandColor, nickname }: DashboardHeaderProps) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -38,6 +39,7 @@ export function DashboardHeader({ userEmail, businessName, brandColor }: Dashboa
               userEmail={userEmail}
               businessName={businessName}
               brandColor={brandColor}
+              nickname={nickname}
               onClose={() => setOpen(false)}
               fullScreen={false}
               showMyCards={true}

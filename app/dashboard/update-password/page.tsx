@@ -26,9 +26,9 @@ export default function UpdatePasswordPage() {
               <KeyRound className="h-6 w-6 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-2xl">Actualiza tu contraseña</CardTitle>
+          <CardTitle className="text-2xl">Configura tu cuenta</CardTitle>
           <CardDescription>
-            Por seguridad, elige una contraseña personal antes de continuar.
+            Elige una contraseña personal. También puedes agregar un apodo para identificarte en el panel.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -61,11 +61,25 @@ export default function UpdatePasswordPage() {
                 autoComplete="new-password"
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="nickname">Apodo <span className="text-muted-foreground font-normal">(opcional)</span></Label>
+              <Input
+                id="nickname"
+                name="nickname"
+                type="text"
+                placeholder="Ej. Juan, El Jefe, Administrador..."
+                autoComplete="off"
+                maxLength={40}
+              />
+              <p className="text-xs text-muted-foreground">
+                Se muestra en el panel en lugar de tu correo. Puedes cambiarlo después en Configuración.
+              </p>
+            </div>
             <Button type="submit" className="w-full" disabled={pending}>
               {pending ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
-                "Guardar contraseña"
+                "Guardar y continuar"
               )}
             </Button>
           </form>
