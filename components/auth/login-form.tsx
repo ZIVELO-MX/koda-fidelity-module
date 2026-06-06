@@ -167,7 +167,7 @@ export function LoginForm() {
           </CardDescription>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className={step === "password" ? "pt-4" : undefined}>
           {(error || loginState?.error) && (
             <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive mb-4">
               {error || loginState.error}
