@@ -24,6 +24,7 @@ interface DashboardSidebarProps {
   userEmail: string
   businessName: string
   brandColor: string
+  nickname?: string
 }
 
 const desktopNavigation = [
@@ -44,7 +45,7 @@ const mobileNavigation = [
   { name: "Marca", href: "/dashboard/branding", icon: Palette },
 ]
 
-export function DashboardSidebar({ userEmail, businessName, brandColor }: DashboardSidebarProps) {
+export function DashboardSidebar({ userEmail, businessName, brandColor, nickname }: DashboardSidebarProps) {
   const pathname = usePathname()
   const [profileOpen, setProfileOpen] = useState(false)
 
@@ -150,6 +151,7 @@ export function DashboardSidebar({ userEmail, businessName, brandColor }: Dashbo
           userEmail={userEmail}
           businessName={businessName}
           brandColor={brandColor}
+          nickname={nickname}
           onClose={() => setProfileOpen(false)}
           fullScreen
           showMyCards={true}

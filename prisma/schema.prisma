@@ -15,6 +15,7 @@ model Business {
   logoUrl      String?
   iconName     String?
   email        String        @unique
+  nickname     String?
   businessType String?
   address      String?
   phone        String?

@@ -9,6 +9,7 @@ interface ProfilePanelProps {
   userEmail: string
   businessName: string
   brandColor: string
+  nickname?: string
   onClose: () => void
   fullScreen?: boolean
   showMyCards?: boolean
@@ -18,6 +19,7 @@ export function ProfilePanel({
   userEmail,
   businessName,
   brandColor,
+  nickname,
   onClose,
   fullScreen = false,
   showMyCards = false,
@@ -45,7 +47,7 @@ export function ProfilePanel({
 
       <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted px-4 py-2 rounded-full">
         <Mail className="h-4 w-4" />
-        {userEmail}
+        {nickname ?? userEmail}
       </div>
 
       {showMyCards && (
@@ -102,7 +104,7 @@ export function ProfilePanel({
         </div>
         <div className="text-center">
           <p className="font-semibold text-foreground">{businessName}</p>
-          <p className="text-xs text-muted-foreground mt-1">{userEmail}</p>
+          <p className="text-xs text-muted-foreground mt-1">{nickname ?? userEmail}</p>
         </div>
         {showMyCards && (
           <Link

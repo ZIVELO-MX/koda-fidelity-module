@@ -99,6 +99,7 @@ export async function PUT(request: NextRequest) {
         ...(body.name?.trim() && { name: body.name.trim() }),
         ...(body.brandColor !== undefined && { brandColor: body.brandColor }),
         ...(body.logoUrl !== undefined && { logoUrl: body.logoUrl }),
+        ...(body.nickname !== undefined && { nickname: body.nickname?.trim() || null }),
         ...(body.businessType !== undefined && { businessType: body.businessType || null }),
         ...(body.address !== undefined && { address: body.address || null }),
         ...(body.phone !== undefined && { phone: body.phone || null }),

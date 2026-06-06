@@ -8,6 +8,7 @@ import { Check, Building2, Mail, Loader2, Globe } from "lucide-react"
 
 export default function SettingsPage() {
   const [businessName, setBusinessName] = useState("")
+  const [nickname, setNickname] = useState("")
   const [businessType, setBusinessType] = useState("")
   const [address, setAddress] = useState("")
   const [phone, setPhone] = useState("")
@@ -26,6 +27,7 @@ export default function SettingsPage() {
       .then((data) => {
         if (data.business) {
           setBusinessName(data.business.name)
+          setNickname(data.business.nickname ?? "")
           setEmail(data.business.email)
           setBusinessType(data.business.businessType ?? "")
           setAddress(data.business.address ?? "")
@@ -46,6 +48,7 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: businessName,
+          nickname,
           businessType,
           address,
           phone,
@@ -112,6 +115,19 @@ export default function SettingsPage() {
               <Label htmlFor="businessType">Tipo de Negocio</Label>
               <Input id="businessType" value={businessType} onChange={(e) => setBusinessType(e.target.value)} />
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="nickname">Apodo (visible en el panel)</Label>
+            <Input
+              id="nickname"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              placeholder="Ej. Juan, El Jefe, Administrador..."
+              maxLength={40}
+            />
+            <p className="text-xs text-muted-foreground">
+              Se muestra en lugar de tu correo electrónico en el panel. Solo para uso interno.
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="address">Dirección</Label>
