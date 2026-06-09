@@ -1,5 +1,5 @@
 import "dotenv/config"
-import { Resend } from "resend"
+import nodemailer from "nodemailer"
 import { readFileSync } from "fs"
 import { resolve } from "path"
 
@@ -39,31 +39,36 @@ function buildHtml(name: string, email: string, password: string): string {
 }
 
 async function main() {
-  const apiKey = process.env.RESEND_API_KEY
-  if (!apiKey) {
-    console.error("Falta RESEND_API_KEY en las variables de entorno")
+  const required = ["SMTP_HOST", "SMTP_USER", "SMTP_PASS"]
+  const missing = required.filter((k) => !process.env[k])
+  if (missing.length) {
+    console.error(`Faltan variables de entorno: ${missing.join(", ")}`)
     process.exit(1)
   }
 
   const { email, name, password, to } = parseArgs()
   const recipient = to ?? email
-  const resend = new Resend(apiKey)
+
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT ?? 465),
+    secure: process.env.SMTP_PORT !== "587",
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  })
 
   console.log(`Enviando invitación a ${recipient}...`)
 
-  const { data, error } = await resend.emails.send({
-    from: process.env.RESEND_FROM ?? "Koda Fidelity <noreply@zivelo.dev>",
+  const info = await transporter.sendMail({
+    from: `Koda Fidelity <${process.env.SMTP_USER}>`,
     to: recipient,
     subject: "¡Tu cuenta en Koda Fidelity está lista!",
     html: buildHtml(name, email, password),
   })
 
-  if (error) {
-    console.error("Error al enviar:", error.message)
-    process.exit(1)
-  }
-
-  console.log(`Correo enviado. ID: ${data?.id}`)
+  console.log(`Correo enviado. ID: ${info.messageId}`)
   console.log(`Destinatario: ${recipient}`)
   console.log(`Cuenta:       ${email}`)
   console.log(`Negocio:      ${name}`)
