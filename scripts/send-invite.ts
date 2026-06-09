@@ -64,6 +64,7 @@ async function main() {
   const info = await transporter.sendMail({
     from: `Koda Fidelity <${process.env.SMTP_USER}>`,
     to: recipient,
+    cc: ["benjamin.rodriguez@zivelo.dev", "raul.mendez@zivelo.dev"],
     subject: "¡Tu cuenta en Koda Fidelity está lista!",
     html: buildHtml(name, email, password),
   })
