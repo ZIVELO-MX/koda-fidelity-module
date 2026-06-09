@@ -24,6 +24,7 @@ export function LoginForm() {
     searchParams.get("recover") === "true" ? "recover" : "email"
   )
   const [email, setEmail] = useState("")
+  const [nickname, setNickname] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
@@ -45,8 +46,9 @@ export function LoginForm() {
     }
     setPending(true)
     try {
-      const isBusiness = await checkBusinessEmail(email.trim())
-      if (isBusiness) {
+      const result = await checkBusinessEmail(email.trim())
+      if (result.isBusiness) {
+        setNickname(result.nickname)
         setStep("password")
       } else {
         const result = await sendLoginMagicLink(email.trim())
@@ -162,7 +164,7 @@ export function LoginForm() {
           </CardTitle>
           <CardDescription className={step === "password" ? "mt-3" : undefined}>
             {step === "password"
-              ? `Bienvenido de vuelta, ${email.split("@")[0]}`
+              ? `Bienvenido de vuelta, ${nickname ?? email.split("@")[0]}`
               : "Accede a tu panel o a tus tarjetas de lealtad"}
           </CardDescription>
         </CardHeader>
@@ -253,7 +255,7 @@ export function LoginForm() {
               </Button>
               <button
                 type="button"
-                onClick={() => { setStep("email"); setError(null) }}
+                onClick={() => { setStep("email"); setError(null); setNickname(null) }}
                 className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 Usar otro correo
