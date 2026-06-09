@@ -248,7 +248,8 @@ pero el rate limit interno de Supabase Auth (30 OTPs/hora por proyecto) sigue vi
 - [x] Configurar SMTP custom en Supabase
 - [x] Remitente cambiado a `noreply@zivelo.dev` (ya no usa `@supabase.co`)
 - [x] Template de magic link personalizado activo en Supabase Dashboard
-- [x] Personalizar templates restantes (Confirmación, Cambio de contraseña, Cambio de email)
+- [x] Personalizar templates restantes — `confirmation.html`, `password-reset.html`, `email-change.html` en `docs/email-templates/`
+- [x] Todos los templates incluyen soporte `@media (prefers-color-scheme: dark)` — ver paleta en la sección Post-MVP más abajo
 
 ### Deuda Técnica — Dominio de autenticación visible durante Google Auth
 
@@ -423,7 +424,33 @@ model StampLog {
 
 - [ ] Activar Cloudflare WAF/proxy — el DNS ya apunta a Vercel sin proxy activo; activarlo añade DDoS protection y WAF
 - [ ] Custom Domain en Supabase Auth — elimina el dominio técnico de Supabase visible durante Google OAuth
-- [ ] Personalizar templates de email restantes (Confirmación, Cambio de contraseña, Cambio de email)
+- [x] Templates de email personalizados — todos los 5 templates activos con logo real
+
+### Post-MVP — Dark Mode
+
+> La app aún no implementa dark mode oficialmente (Tailwind CSS maneja colores con variables CSS light-only).
+> Sin embargo, los 5 templates de email ya responden a `@media (prefers-color-scheme: dark)` usando
+> las clases `.em-*` con `!important` para sobrescribir estilos inline.
+
+**Paleta de emails (stone de Tailwind):**
+
+| Token      | Clase       | Light       | Dark        | Tailwind  |
+| ---------- | ----------- | ----------- | ----------- | --------- |
+| Fondo      | `.em-body`  | `#f5f5f4`   | `#0c0a09`   | stone-950 |
+| Tarjeta    | `.em-card`  | `#ffffff`   | `#1c1917`   | stone-900 |
+| Credenciales | `.em-creds` | `#f5f5f4` | `#292524`   | stone-800 |
+| Heading    | `.em-h1`    | `#1c1917`   | `#fafaf9`   | stone-50  |
+| Body text  | `.em-p`     | `#78716c`   | `#d6d3d1`   | stone-300 |
+| Muted text | `.em-muted` | `#a8a29e`   | `#78716c`   | stone-500 |
+| Divider    | `.em-divider` | `#e7e5e4` | `#44403c`   | stone-700 |
+| Links      | `.em-link`  | `#a8a29e`   | `#78716c`   | stone-500 |
+| CTA button | —           | `#f97316`   | `#f97316`   | orange-500 (sin cambio) |
+
+**Al implementar dark mode en la app:**
+- Extender `tailwind.config` con la clase `.dark` (selector strategy)
+- Los emails **no requieren cambios** si se mantiene la paleta stone — la implementación ya está lista
+- Si se cambian los colores base de la app, actualizar el bloque `@media (prefers-color-scheme: dark)`
+  en los 5 templates (`docs/email-templates/*.html`)
 
 ### Post-MVP — UX
 
