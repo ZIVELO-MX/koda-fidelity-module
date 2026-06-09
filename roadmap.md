@@ -168,6 +168,9 @@
 - [x] `/dashboard/my-cards`: mostrar nombre de tarjeta en el ítem del acordeón
 - [x] Script `create-client` para crear cuentas de negocio con contraseña temporal desde CLI
 - [x] Flujo de cambio de contraseña forzado al primer login (`must_change_password` en user metadata)
+- [x] Login con email pre-llenado vía `?email=`: el formulario detecta que es negocio y salta directo al paso de contraseña
+- [x] Template de invitación `docs/email-templates/invite.html` con credenciales, CTA y logo real
+- [x] Script `send:invite` para envío manual de correos de invitación vía SMTP (Zoho Mail / `noreply@zivelo.dev`) con CC a equipo interno
 - [x] Página 403 mejorada: botón "Cerrar sesión" + link de recuperación de contraseña
 - [x] Recuperación de contraseña vía WhatsApp (MVP) — redirige a soporte con correo pre-llenado en el mensaje
 - [x] Dashboard: sobreescribir `--primary` con el `brandColor` del negocio en el layout — sidebar activo, íconos, links y progress bars reflejan la marca del cliente
@@ -409,6 +412,7 @@ model StampLog {
 - [x] Google OAuth funcional en producción (callbacks configurados en Supabase + Google Cloud Console).
 - [x] SMTP propio activo — emails salen desde `noreply@zivelo.dev`.
 - [x] Template magic link personalizado activo en Supabase Dashboard.
+- [x] Flujo de invitación operativo — `create-client` + `send:invite` + login con email pre-llenado.
 - [x] `INVITE_ONLY=true` en producción — lanzamiento controlado.
 - [x] Landing alineada (site-config, page, mobile-nav, join layout, README).
 - [x] `docs/idea.md` y `docs/deploy.md` eliminados (obsoletos).
