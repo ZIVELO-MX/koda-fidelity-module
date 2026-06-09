@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
     const customers = await prisma.customer.findMany({
       where,
       include: {
-        card: { select: { name: true, stampsRequired: true, reward: true, brandColor: true } },
+        card: { select: { name: true, stampsRequired: true, reward: true, brandColor: true, expiresAt: true } },
       },
       orderBy: { createdAt: "desc" },
     })
@@ -99,6 +99,7 @@ export async function GET(request: NextRequest) {
       cardName: c.card.name,
       cardReward: c.card.reward,
       cardBrandColor: c.card.brandColor,
+      cardExpiresAt: c.card.expiresAt,
       applePassId: c.applePassId,
       googlePassId: c.googlePassId,
       createdAt: c.createdAt,

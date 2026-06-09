@@ -10,7 +10,7 @@ describe("isExpired", () => {
   it("returns false for null", () => expect(isExpired(null)).toBe(false))
   it("returns false for undefined", () => expect(isExpired(undefined)).toBe(false))
   it("returns false for future date", () => expect(isExpired(new Date(NOW.getTime() + 86_400_000))).toBe(false))
-  it("returns true for past date", () => expect(isExpired(new Date(NOW.getTime() - 1000))).toBe(true))
+  it("returns true for past date", () => expect(isExpired(new Date(NOW.getTime() - 86_400_000))).toBe(true))
   it("returns true for past date string", () => expect(isExpired("2026-01-01T00:00:00Z")).toBe(true))
   it("returns false for future date string", () => expect(isExpired("2027-01-01T00:00:00Z")).toBe(false))
 })

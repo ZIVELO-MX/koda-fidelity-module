@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getBusinessFromSession, handleApiError, NotFoundError, ValidationError } from "@/lib/api-utils"
+import { isExpired } from "@/lib/card-utils"
 
 /**
  * @openapi
@@ -189,7 +190,7 @@ export async function GET(
         brandColor: card.brandColor,
         iconName: card.iconName,
         expiresAt: card.expiresAt,
-        expired: card.expiresAt ? card.expiresAt < new Date() : false,
+        expired: isExpired(card.expiresAt),
         businessName: card.business.name,
         businessBrandColor: card.business.brandColor,
         businessLogoUrl: card.business.logoUrl,

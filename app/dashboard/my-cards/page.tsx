@@ -451,7 +451,7 @@ export default function DashboardMyCardsPage() {
                         </span>
                       </div>
                       <div className="px-4 pb-4 pt-0 border-t border-border/50">
-                        <div className="bg-muted/50 rounded-xl p-4 text-center space-y-1">
+                        <div className="bg-muted/50 rounded-xl p-4 text-center space-y-1 mb-3">
                           <p className="text-sm font-medium text-foreground">
                             {expiredMessage(c.stamps, c.card.stampsRequired)}
                           </p>
@@ -464,6 +464,33 @@ export default function DashboardMyCardsPage() {
                             </p>
                           )}
                         </div>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="sm" className="w-full gap-2 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive">
+                              <Trash2 className="h-4 w-4" />Eliminar tarjeta
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Eliminar tarjeta vencida?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Se eliminará <strong>{c.card.name}</strong> de {c.card.business.name} con {c.stamps} sello{c.stamps !== 1 ? "s" : ""}. Esta acción no se puede deshacer.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-destructive hover:bg-destructive/90"
+                                onClick={async () => {
+                                  await fetch(`/api/my-cards/${c.id}`, { method: "DELETE" })
+                                  setCards((prev) => prev.filter((card) => card.id !== c.id))
+                                }}
+                              >
+                                Eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </div>
                   ))}

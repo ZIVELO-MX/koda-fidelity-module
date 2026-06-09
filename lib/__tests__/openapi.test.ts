@@ -28,6 +28,7 @@ describe("OpenAPI spec", () => {
       "/api/cards",
       "/api/cards/{id}",
       "/api/customers",
+      "/api/customers/{id}",
       "/api/dashboard/stats",
       "/api/join",
       "/api/passes/apple/{cardId}",
