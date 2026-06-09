@@ -14,12 +14,14 @@ const MAGIC_LINK_COOLDOWN_MS = 120_000
 
 export type AuthResult = { error?: string; success?: true; isBusiness?: boolean }
 
-export async function checkBusinessEmail(email: string): Promise<boolean> {
+export async function checkBusinessEmail(
+  email: string
+): Promise<{ isBusiness: boolean; nickname: string | null }> {
   const business = await prisma.business.findUnique({
     where: { email },
-    select: { id: true },
+    select: { id: true, nickname: true },
   })
-  return business !== null
+  return { isBusiness: business !== null, nickname: business?.nickname ?? null }
 }
 
 export async function login(_prev: AuthResult, formData: FormData): Promise<AuthResult> {
