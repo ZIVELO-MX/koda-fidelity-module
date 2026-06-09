@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useActionState } from "react"
+import { useState, useActionState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
@@ -20,11 +20,23 @@ const initialState: AuthResult = {}
 
 export function LoginForm() {
   const searchParams = useSearchParams()
+  const emailParam = searchParams.get("email") ?? ""
   const [step, setStep] = useState<LoginStep>(
     searchParams.get("recover") === "true" ? "recover" : "email"
   )
-  const [email, setEmail] = useState("")
+  const [email, setEmail] = useState(emailParam)
   const [nickname, setNickname] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!emailParam || !emailParam.includes("@")) return
+    checkBusinessEmail(emailParam).then((result) => {
+      if (result.isBusiness) {
+        setNickname(result.nickname)
+        setStep("password")
+      }
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
