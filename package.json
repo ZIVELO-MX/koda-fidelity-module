@@ -19,6 +19,7 @@
     "e2e:debug": "playwright test --debug",
     "seed:test-user": "pnpm tsx scripts/create-test-user.ts",
     "create:client": "pnpm tsx scripts/create-client.ts",
+    "send:invite": "pnpm tsx scripts/send-invite.ts",
     "generate:pass-images": "tsx scripts/generate-pass-images.ts"
   },
   "prisma": {
@@ -76,6 +77,7 @@
     "react-hook-form": "^7.76.1",
     "react-resizable-panels": "^4.11.2",
     "recharts": "3.8.1",
+    "resend": "^6.12.4",
     "sharp": "^0.34.5",
     "swagger-jsdoc": "^6.3.0",
     "swagger-ui-react": "^5.32.6",
