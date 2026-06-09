@@ -18,7 +18,9 @@ import {
   X,
   Loader2,
   Scan,
+  AlertTriangle,
 } from "lucide-react"
+import { daysUntilExpiry } from "@/lib/card-utils"
 
 interface SearchCustomer {
   id: string
@@ -28,6 +30,7 @@ interface SearchCustomer {
   cardName: string
   cardReward: string
   cardBrandColor: string
+  cardExpiresAt: string | null
 }
 
 type ScanState = "idle" | "scanning" | "found" | "stamped" | "redeemed"
@@ -87,6 +90,7 @@ function ScanPageInner() {
         cardName: c.card.name,
         cardReward: c.card.reward,
         cardBrandColor: c.card.brandColor,
+        cardExpiresAt: c.card.expiresAt ?? null,
       })
       setScanState("found")
     } catch (err) {
@@ -406,6 +410,21 @@ function ScanPageInner() {
                   </div>
                 </div>
               )}
+
+              {scanState === "stamped" && (() => {
+                const days = daysUntilExpiry(selectedCustomer.cardExpiresAt)
+                if (days === null || days > 3) return null
+                return (
+                  <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">
+                    <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                    <span>
+                      {days === 0
+                        ? "Esta tarjeta vence hoy — avisa al cliente."
+                        : `Esta tarjeta vence en ${days} día${days !== 1 ? "s" : ""} — avisa al cliente.`}
+                    </span>
+                  </div>
+                )
+              })()}
 
               <Button
                 onClick={resetScan}

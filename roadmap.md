@@ -220,10 +220,10 @@
 - [x] `GET /api/cards/[id]`: devuelve campo `expired` (boolean calculado en el servidor)
 - [x] `/join/[cardId]`: muestra error antes del formulario cuando la tarjeta está vencida
 
-#### 7.6 — Notificación pasiva (post-MVP, sin push)
+#### 7.6 — Notificación pasiva (post-MVP, sin push) ✅ Completada
 
-- [ ] En el dashboard home (`/dashboard`): alerta si hay tarjetas próximas a vencer en ≤ 7 días
-- [ ] En `/dashboard/scan`: aviso al sellar si la tarjeta del cliente vence en ≤ 3 días
+- [x] En el dashboard home (`/dashboard`): alerta si hay tarjetas próximas a vencer en ≤ 7 días
+- [x] En `/dashboard/scan`: aviso al sellar si la tarjeta del cliente vence en ≤ 3 días
 
 ---
 
@@ -248,7 +248,7 @@ pero el rate limit interno de Supabase Auth (30 OTPs/hora por proyecto) sigue vi
 - [x] Configurar SMTP custom en Supabase
 - [x] Remitente cambiado a `noreply@zivelo.dev` (ya no usa `@supabase.co`)
 - [x] Template de magic link personalizado activo en Supabase Dashboard
-- [ ] Personalizar templates restantes (Confirmación, Cambio de contraseña, Cambio de email)
+- [x] Personalizar templates restantes (Confirmación, Cambio de contraseña, Cambio de email)
 
 ### Deuda Técnica — Dominio de autenticación visible durante Google Auth
 

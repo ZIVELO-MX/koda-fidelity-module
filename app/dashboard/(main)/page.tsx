@@ -6,7 +6,8 @@ import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 import { getCardIcon } from "@/lib/card-icons"
-import { CreditCard, Users, Stamp, TrendingUp, Plus, ArrowRight, AlertCircle, Eye } from "lucide-react"
+import { daysUntilExpiry } from "@/lib/card-utils"
+import { CreditCard, Users, Stamp, TrendingUp, Plus, ArrowRight, AlertCircle, Eye, AlertTriangle } from "lucide-react"
 
 function timeAgo(date: Date): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
@@ -63,6 +64,10 @@ export default async function DashboardPage() {
     const stampsGiven = cards.reduce((sum, c) => sum + c.customers.reduce((s, cust) => s + cust.stamps, 0), 0)
     const redemptions = allLogs.filter((l) => l.type === "redeem").length
 
+    const soonExpiring = cards
+      .map((c) => ({ ...c, daysLeft: daysUntilExpiry(c.expiresAt) }))
+      .filter((c) => c.daysLeft !== null && c.daysLeft >= 0 && c.daysLeft <= 7)
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -85,6 +90,26 @@ export default async function DashboardPage() {
           </Link>
         </div>
       </div>
+
+      {soonExpiring.length > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 px-4 py-3 flex gap-3">
+          <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="space-y-1 min-w-0">
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+              {soonExpiring.length === 1 ? "Una tarjeta vence pronto" : `${soonExpiring.length} tarjetas vencen pronto`}
+            </p>
+            <ul className="space-y-0.5">
+              {soonExpiring.map((c) => (
+                <li key={c.id} className="text-sm text-amber-700 dark:text-amber-400">
+                  <Link href={`/dashboard/cards/${c.id}`} className="hover:underline font-medium">{c.name}</Link>
+                  {" — "}
+                  {c.daysLeft === 0 ? "vence hoy" : `${c.daysLeft} día${c.daysLeft !== 1 ? "s" : ""}`}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Tarjetas Activas" value={activeCards} icon={CreditCard} />

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getBusinessFromSession, handleApiError, ValidationError, NotFoundError } from "@/lib/api-utils"
+import { isExpired } from "@/lib/card-utils"
 
 /**
  * @openapi
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
       throw new NotFoundError("Customer not found")
     }
 
-    if (customer.card.expiresAt && customer.card.expiresAt < new Date()) {
+    if (isExpired(customer.card.expiresAt)) {
       throw new ValidationError("This loyalty card has expired")
     }
 
