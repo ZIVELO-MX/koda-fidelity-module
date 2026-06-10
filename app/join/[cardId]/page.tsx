@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { GoogleButton } from "@/components/auth/google-button"
-import { Check, Mail, Loader2, ArrowLeft, Smartphone, ChevronDown } from "lucide-react"
+import { Check, Mail, Loader2, ArrowLeft, ChevronDown } from "lucide-react"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
 import { getFriendlySendError } from "@/lib/auth-errors"
 
@@ -405,6 +405,10 @@ export default function JoinCardPage() {
             </p>
 
             <GoogleButton redirectTo={`/join/${cardId}`} />
+
+            <p className="mt-3 text-center text-sm text-muted-foreground">
+              Te recomendamos continuar con Google para guardar tu tarjeta de forma más rápida y segura.
+            </p>
 
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
