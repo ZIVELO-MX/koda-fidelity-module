@@ -236,6 +236,7 @@ pero el rate limit interno de Supabase Auth (30 OTPs/hora por proyecto) sigue vi
 **Mitigación actual:**
 - Google OAuth como método principal (sin rate limits, 1 clic) — activo en producción
 - Magic link queda como respaldo para quien no use Google
+- `/join/[cardId]` muestra una sugerencia temporal para invitar a usar Google antes de la opción por email; se quitará eventualmente cuando el respaldo por correo deje de necesitar promoción contextual
 - Cooldown de 2 min entre envíos por email (desactivado en beta)
 - Mensajes de error claros que sugieren usar Google
 
