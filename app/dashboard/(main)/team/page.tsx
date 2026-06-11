@@ -12,7 +12,7 @@ export default async function TeamPage() {
 
   const userRecord = await prisma.user.findUnique({
     where: { email: user.email },
-    select: { id: true, role: true, businessId: true },
+    select: { id: true, name: true, role: true, businessId: true, business: { select: { name: true } } },
   })
 
   if (!userRecord || userRecord.role !== "admin") redirect("/dashboard")
@@ -23,5 +23,15 @@ export default async function TeamPage() {
     select: { id: true, email: true, name: true, role: true, createdAt: true },
   })
 
-  return <TeamClient currentUserId={userRecord.id} initialUsers={users} />
+  const memberLimit = parseInt(process.env.TEAM_MEMBER_LIMIT ?? "3", 10)
+
+  return (
+    <TeamClient
+      currentUserId={userRecord.id}
+      currentUserName={userRecord.name}
+      businessName={userRecord.business.name}
+      initialUsers={users}
+      memberLimit={memberLimit}
+    />
+  )
 }

@@ -46,6 +46,12 @@ export async function POST(request: NextRequest) {
       throw new ValidationError("Role must be 'admin' or 'sellador'")
     }
 
+    const memberLimit = parseInt(process.env.TEAM_MEMBER_LIMIT ?? "3", 10)
+    const memberCount = await prisma.user.count({ where: { businessId: business.id } })
+    if (memberCount >= memberLimit) {
+      throw new ValidationError(`Team member limit of ${memberLimit} reached`)
+    }
+
     const existing = await prisma.user.findUnique({ where: { email } })
     if (existing) {
       throw new ValidationError("A user with that email already exists")

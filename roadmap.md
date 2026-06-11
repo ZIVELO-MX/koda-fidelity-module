@@ -407,7 +407,7 @@ model StampLog {
 ### Verificaciones actuales
 
 - [x] `pnpm exec tsc --noEmit` pasa sin errores.
-- [x] `pnpm test` — 191 tests, 0 errores.
+- [x] `pnpm test` — 191 tests, 0 errores (Fases 0–9).
 - [x] `pnpm lint` funcional (ESLint v9.39.4, solo warnings).
 - [x] `ignoreBuildErrors` removido de `next.config.mjs`.
 - [x] Vercel Analytics integrado en `app/layout.tsx`.
@@ -437,6 +437,21 @@ model StampLog {
 - [x] `/dashboard/team` — gestión de equipo: tabla, modal invitar, cambio de rol, eliminar con confirmación
 - [x] `prisma db push` aplicado + 9 negocios existentes migrados con usuario admin
 - [x] `scripts/create-client.ts` actualizado — crea `User{admin}` junto con el `Business`
+- [x] 191 tests, 0 errores de tipo
+
+### Fase 9 — UX de Equipo ✅ Completada
+
+> `feat/team-ux` mergeada a `dev`. Rama de tests separada si aplica.
+
+- [x] **Tabla de equipo enriquecida** — avatar inicial, badge "tú" para el usuario actual, selector de rol con ícono
+- [x] **Estado vacío con propuesta de valor** — comunica el beneficio de agregar colaboradores en lugar de mostrar solo un ícono vacío
+- [x] **Explicador de permisos por rol** — sección permanente al fondo de la página con permisos y restricciones de cada rol
+- [x] **Modal de invitación en 2 pasos**
+  - Paso 1: nombre, email, selector de rol con tarjetas interactivas que muestran permisos
+  - Paso 2: credenciales (correo + contraseña + link) con botones de copiar individual
+- [x] **Entrega por WhatsApp** — campo de teléfono en paso 2 que genera `wa.me` URL con mensaje pre-redactado; número nunca se envía al servidor
+- [x] **`/invite` — landing de bienvenida** — página intermedia (`app/invite/page.tsx`) que muestra el negocio y CTA de acceso, permite renderizado de OG antes del login
+- [x] **`/invite/opengraph-image.tsx`** — OG 1200×630 con nombre del colaborador (si aplica), nombre del negocio y CTA; se muestra en preview de WhatsApp al compartir el link
 - [x] 191 tests, 0 errores de tipo
 
 ### Post-MVP — Infraestructura
