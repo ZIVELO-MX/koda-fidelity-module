@@ -70,4 +70,28 @@ describe("card update validation", () => {
     expect(() => validateCardUpdate({ stampsRequired: 1 })).not.toThrow()
     expect(() => validateCardUpdate({ stampsRequired: 100 })).not.toThrow()
   })
+
+  it("accepts description as a string", () => {
+    expect(() => validateCardUpdate({ description: "Tarjeta para clientes frecuentes" })).not.toThrow()
+  })
+
+  it("accepts description as null", () => {
+    expect(() => validateCardUpdate({ description: null })).not.toThrow()
+  })
+
+  it("accepts description as empty string (cleared)", () => {
+    expect(() => validateCardUpdate({ description: "" })).not.toThrow()
+  })
+
+  it("accepts full update including description", () => {
+    expect(() =>
+      validateCardUpdate({
+        name: "Coffee Card",
+        reward: "Free Coffee",
+        stampsRequired: 10,
+        brandColor: "#f97316",
+        description: "10 visitas y el café es tuyo",
+      }),
+    ).not.toThrow()
+  })
 })

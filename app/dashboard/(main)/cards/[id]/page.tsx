@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ArrowLeft, Gift, Users, Stamp, Calendar, Search, AlertTriangle } from "lucide-react"
 import { CardActions } from "@/components/dashboard/card-actions"
+import { CardQRInline } from "@/components/dashboard/card-qr-inline"
 import { CustomerActionsMenu } from "@/components/dashboard/customer-actions-menu"
 import { getCardIcon } from "@/lib/card-icons"
 import { isExpired } from "@/lib/card-utils"
@@ -112,6 +113,7 @@ export default async function CardDetailPage({
           initialReward={card.reward}
           initialColor={card.brandColor}
           initialIcon={card.iconName}
+          initialDescription={card.description}
         />
       </div>
 
@@ -143,6 +145,8 @@ export default async function CardDetailPage({
           <p className="text-sm text-muted-foreground">Vencimiento</p>
         </div>
       </div>
+
+      <CardQRInline cardId={card.id} brandColor={card.brandColor} />
 
       {cardExpired && incompleteCustomers > 0 && (
         <div className="flex items-start gap-3 bg-destructive/5 border border-destructive/20 rounded-xl p-4">
