@@ -12,6 +12,7 @@ import {
   LogOut,
   Smartphone,
 } from "lucide-react"
+import type { Role } from "@prisma/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -31,6 +32,7 @@ interface MobileSettingsPanelProps {
   userEmail: string
   businessName: string
   brandColor: string
+  role?: Role
   onClose: () => void
 }
 
@@ -38,6 +40,7 @@ export function MobileSettingsPanel({
   userEmail,
   businessName,
   brandColor,
+  role = "admin",
   onClose,
 }: MobileSettingsPanelProps) {
   const [name, setName] = useState("")
@@ -143,7 +146,28 @@ export function MobileSettingsPanel({
             </div>
           </div>
 
-          {loading ? (
+          {role !== "admin" ? (
+            <div className="space-y-6 p-6 pb-10">
+              <div className="border-t border-border pt-6 space-y-2">
+                <Link
+                  href="/dashboard/my-cards"
+                  onClick={onClose}
+                  className="flex items-center justify-center gap-2 w-full py-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-colors"
+                >
+                  <Smartphone className="h-4 w-4" />
+                  Mis Tarjetas
+                </Link>
+                <Button
+                  variant="outline"
+                  className="w-full gap-2 text-destructive border-destructive/30 hover:bg-destructive/10"
+                  onClick={() => setConfirmOpen(true)}
+                >
+                  <LogOut className="h-4 w-4" />
+                  Cerrar Sesión
+                </Button>
+              </div>
+            </div>
+          ) : loading ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>

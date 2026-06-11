@@ -28,7 +28,7 @@ import { getBusinessFromSession, handleApiError } from "@/lib/api-utils"
  */
 export async function GET() {
   try {
-    const business = await getBusinessFromSession()
+    const { business } = await getBusinessFromSession()
 
     const cards = await prisma.loyaltyCard.findMany({
       where: { businessId: business.id },

@@ -4,14 +4,17 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ProfilePanel } from "./profile-panel"
 import { useState } from "react"
 
+import type { Role } from "@prisma/client"
+
 interface DashboardHeaderProps {
   userEmail: string
   businessName: string
   brandColor: string
   nickname?: string
+  role: Role
 }
 
-export function DashboardHeader({ userEmail, businessName, brandColor, nickname }: DashboardHeaderProps) {
+export function DashboardHeader({ userEmail, businessName, brandColor, nickname, role }: DashboardHeaderProps) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -40,6 +43,7 @@ export function DashboardHeader({ userEmail, businessName, brandColor, nickname 
               businessName={businessName}
               brandColor={brandColor}
               nickname={nickname}
+              role={role}
               onClose={() => setOpen(false)}
               fullScreen={false}
               showMyCards={true}

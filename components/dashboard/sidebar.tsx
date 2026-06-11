@@ -14,6 +14,7 @@ import {
   BookOpen,
   Smartphone,
   LogOut,
+  UsersRound,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -29,36 +30,42 @@ import {
 import { logout } from "@/lib/actions/auth"
 import { MobileSettingsPanel } from "./mobile-settings-panel"
 import { useState } from "react"
+import type { Role } from "@prisma/client"
 
 interface DashboardSidebarProps {
   userEmail: string
   businessName: string
   brandColor: string
   nickname?: string
+  role: Role
 }
 
-const desktopNavigation = [
-  { name: "Panel", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Tarjetas de Lealtad", href: "/dashboard/cards", icon: CreditCard },
-  { name: "Clientes", href: "/dashboard/customers", icon: Users },
-  { name: "Códigos QR", href: "/dashboard/qr-codes", icon: QrCode },
-  { name: "Marca", href: "/dashboard/branding", icon: Palette },
-  { name: "Configuración", href: "/dashboard/settings", icon: Settings },
-  { name: "Documentación", href: "/dashboard/docs", icon: BookOpen },
+const allNavItems = [
+  { name: "Panel", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "sellador"] as Role[] },
+  { name: "Tarjetas de Lealtad", href: "/dashboard/cards", icon: CreditCard, roles: ["admin", "sellador"] as Role[] },
+  { name: "Clientes", href: "/dashboard/customers", icon: Users, roles: ["admin", "sellador"] as Role[] },
+  { name: "Códigos QR", href: "/dashboard/qr-codes", icon: QrCode, roles: ["admin", "sellador"] as Role[] },
+  { name: "Marca", href: "/dashboard/branding", icon: Palette, roles: ["admin"] as Role[] },
+  { name: "Configuración", href: "/dashboard/settings", icon: Settings, roles: ["admin"] as Role[] },
+  { name: "Equipo", href: "/dashboard/team", icon: UsersRound, roles: ["admin"] as Role[] },
+  { name: "Documentación", href: "/dashboard/docs", icon: BookOpen, roles: ["admin"] as Role[] },
 ]
 
-const mobileNavigation = [
-  { name: "Panel", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Tarjetas", href: "/dashboard/cards", icon: CreditCard },
-  { name: "Clientes", href: "/dashboard/customers", icon: Users },
-  { name: "QR", href: "/dashboard/qr-codes", icon: QrCode },
-  { name: "Marca", href: "/dashboard/branding", icon: Palette },
+const allMobileItems = [
+  { name: "Panel", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "sellador"] as Role[] },
+  { name: "Tarjetas", href: "/dashboard/cards", icon: CreditCard, roles: ["admin", "sellador"] as Role[] },
+  { name: "Clientes", href: "/dashboard/customers", icon: Users, roles: ["admin", "sellador"] as Role[] },
+  { name: "QR", href: "/dashboard/qr-codes", icon: QrCode, roles: ["admin", "sellador"] as Role[] },
+  { name: "Marca", href: "/dashboard/branding", icon: Palette, roles: ["admin"] as Role[] },
 ]
 
-export function DashboardSidebar({ userEmail, businessName, brandColor, nickname }: DashboardSidebarProps) {
+export function DashboardSidebar({ userEmail, businessName, brandColor, nickname, role }: DashboardSidebarProps) {
   const pathname = usePathname()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [logoutOpen, setLogoutOpen] = useState(false)
+
+  const desktopNav = allNavItems.filter((item) => item.roles.includes(role))
+  const mobileNav = allMobileItems.filter((item) => item.roles.includes(role))
 
   return (
     <>
@@ -79,7 +86,7 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {desktopNavigation.map((item) => {
+          {desktopNav.map((item) => {
             const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
             return (
               <Link
@@ -100,6 +107,14 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
         </nav>
 
         <div className="p-4 border-t border-border space-y-1">
+          {role === "sellador" && (
+            <div className="px-3 py-1.5 mb-1">
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">
+                <UsersRound className="h-3 w-3" />
+                Sellador
+              </span>
+            </div>
+          )}
           <Link
             href="/dashboard/my-cards"
             className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
@@ -142,7 +157,7 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
       {/* Mobile bottom navbar */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
         <div className="flex items-center justify-around h-16 px-2">
-          {mobileNavigation.map((item) => {
+          {mobileNav.map((item) => {
             const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
             return (
               <Link
@@ -180,6 +195,7 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
           userEmail={userEmail}
           businessName={businessName}
           brandColor={brandColor}
+          role={role}
           onClose={() => setSettingsOpen(false)}
         />
       )}

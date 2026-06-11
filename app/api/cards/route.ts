@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getBusinessFromSession, handleApiError, ValidationError } from "@/lib/api-utils"
+import { getBusinessFromSession, handleApiError, ValidationError, requireRole } from "@/lib/api-utils"
 
 /**
  * @openapi
@@ -92,7 +92,7 @@ import { getBusinessFromSession, handleApiError, ValidationError } from "@/lib/a
  */
 export async function GET() {
   try {
-    const business = await getBusinessFromSession()
+    const { business } = await getBusinessFromSession()
 
     const cards = await prisma.loyaltyCard.findMany({
       where: { businessId: business.id, isActive: true },
@@ -126,7 +126,8 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const business = await getBusinessFromSession()
+    const { business, user } = await getBusinessFromSession()
+    requireRole(user, "admin")
 
     const body = await request.json()
 

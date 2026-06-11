@@ -189,7 +189,7 @@ export async function GET(request: NextRequest) {
     const cardId = searchParams.get("cardId")
 
     if (id) {
-      const business = await getBusinessFromSession()
+      const { business } = await getBusinessFromSession()
 
       const customer = await prisma.customer.findUnique({
         where: { id },

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getBusinessFromSession, handleApiError, ValidationError } from "@/lib/api-utils"
+import { getBusinessFromSession, handleApiError, ValidationError, requireRole } from "@/lib/api-utils"
 
 /**
  * @openapi
@@ -77,7 +77,8 @@ import { getBusinessFromSession, handleApiError, ValidationError } from "@/lib/a
  */
 export async function GET() {
   try {
-    const business = await getBusinessFromSession()
+    const { business, user } = await getBusinessFromSession()
+    requireRole(user, "admin")
     return NextResponse.json({ business })
   } catch (error) {
     return handleApiError(error)
@@ -86,7 +87,8 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
-    const business = await getBusinessFromSession()
+    const { business, user } = await getBusinessFromSession()
+    requireRole(user, "admin")
     const body = await request.json()
 
     if (body.name !== undefined && (!body.name || typeof body.name !== "string" || !body.name.trim())) {
