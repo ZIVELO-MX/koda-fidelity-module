@@ -20,6 +20,7 @@
     "seed:test-user": "pnpm tsx scripts/create-test-user.ts",
     "create:client": "pnpm tsx scripts/create-client.ts",
     "create:user": "pnpm tsx scripts/create-user.ts",
+    "reset:password": "pnpm tsx scripts/reset-password.ts",
     "send:invite": "pnpm tsx scripts/send-invite.ts",
     "generate:pass-images": "tsx scripts/generate-pass-images.ts"
   },
