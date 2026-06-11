@@ -15,8 +15,16 @@ import {
   Smartphone,
   LogOut,
   UserCog,
+  Camera,
+  Menu,
+  ChevronDown,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,10 +48,29 @@ interface DashboardSidebarProps {
   role: Role
 }
 
-const allNavItems = [
-  { name: "Panel", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "sellador"] as Role[] },
-  { name: "Tarjetas de Lealtad", href: "/dashboard/cards", icon: CreditCard, roles: ["admin", "sellador"] as Role[] },
-  { name: "Clientes", href: "/dashboard/customers", icon: Users, roles: ["admin", "sellador"] as Role[] },
+const navGroups = [
+  {
+    label: "Gestión",
+    roles: ["admin", "sellador"] as Role[],
+    items: [
+      { name: "Tarjetas de Lealtad", href: "/dashboard/cards", icon: CreditCard },
+      { name: "Clientes", href: "/dashboard/customers", icon: Users },
+      { name: "Códigos QR", href: "/dashboard/qr-codes", icon: QrCode },
+    ],
+  },
+  {
+    label: "Administración",
+    roles: ["admin"] as Role[],
+    items: [
+      { name: "Marca", href: "/dashboard/branding", icon: Palette },
+      { name: "Configuración", href: "/dashboard/settings", icon: Settings },
+      { name: "Equipo", href: "/dashboard/team", icon: UserCog },
+      { name: "Documentación", href: "/dashboard/docs", icon: BookOpen },
+    ],
+  },
+]
+
+const allMoreItems = [
   { name: "Códigos QR", href: "/dashboard/qr-codes", icon: QrCode, roles: ["admin", "sellador"] as Role[] },
   { name: "Marca", href: "/dashboard/branding", icon: Palette, roles: ["admin"] as Role[] },
   { name: "Configuración", href: "/dashboard/settings", icon: Settings, roles: ["admin"] as Role[] },
@@ -51,34 +78,37 @@ const allNavItems = [
   { name: "Documentación", href: "/dashboard/docs", icon: BookOpen, roles: ["admin"] as Role[] },
 ]
 
-const allMobileItems = [
-  { name: "Panel", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "sellador"] as Role[] },
-  { name: "Tarjetas", href: "/dashboard/cards", icon: CreditCard, roles: ["admin", "sellador"] as Role[] },
-  { name: "Clientes", href: "/dashboard/customers", icon: Users, roles: ["admin", "sellador"] as Role[] },
-  { name: "QR", href: "/dashboard/qr-codes", icon: QrCode, roles: ["admin", "sellador"] as Role[] },
-  { name: "Marca", href: "/dashboard/branding", icon: Palette, roles: ["admin"] as Role[] },
-]
-
 export function DashboardSidebar({ userEmail, businessName, brandColor, nickname, role }: DashboardSidebarProps) {
   const pathname = usePathname()
-  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(false)
   const [logoutOpen, setLogoutOpen] = useState(false)
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
+    Gestión: true,
+    Administración: true,
+  })
 
-  const desktopNav = allNavItems.filter((item) => item.roles.includes(role))
-  const mobileNav = allMobileItems.filter((item) => item.roles.includes(role))
+  const moreNavItems = allMoreItems.filter((item) => item.roles.includes(role))
+  const visibleGroups = navGroups.filter((g) => g.roles.includes(role))
+
+  const isScanActive = pathname === "/dashboard/scan"
+  const isMenuActive = moreNavItems.some((item) => pathname.startsWith(item.href))
+
+  const mobileMainItems = [
+    { name: "Panel", href: "/dashboard", icon: LayoutDashboard },
+    { name: "Tarjetas", href: "/dashboard/cards", icon: CreditCard },
+    { name: "Clientes", href: "/dashboard/customers", icon: Users },
+  ]
+
+  function toggleGroup(label: string) {
+    setOpenGroups((prev) => ({ ...prev, [label]: !prev[label] }))
+  }
 
   return (
     <>
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex fixed top-0 left-0 z-40 h-full w-64 max-w-[calc(100vw-2rem)] bg-card border-r border-border flex-col">
         <div className="flex items-center gap-2 px-6 py-5 border-b border-border">
-          <Image
-            src="/short-logo.svg"
-            alt="Koda"
-            width={36}
-            height={36}
-            className="size-9 shrink-0"
-          />
+          <Image src="/short-logo.svg" alt="Koda" width={36} height={36} className="size-9 shrink-0" />
           <div className="flex flex-col">
             <span className="font-semibold text-foreground">Koda Fidelity</span>
             <span className="text-xs text-muted-foreground">Plataforma de Lealtad</span>
@@ -86,24 +116,62 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {desktopNav.map((item) => {
-            const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
+          {/* Panel — standalone */}
+          {(() => {
+            const isActive = pathname === "/dashboard"
             return (
               <Link
-                key={item.name}
-                href={item.href}
+                href="/dashboard"
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
-                <item.icon className="h-5 w-5 flex-shrink-0" />
-                {item.name}
+                <LayoutDashboard className="h-5 w-5 flex-shrink-0" />
+                Panel
               </Link>
             )
-          })}
+          })()}
+
+          {/* Grouped sections */}
+          {visibleGroups.map((group) => (
+            <Collapsible
+              key={group.label}
+              open={openGroups[group.label]}
+              onOpenChange={() => toggleGroup(group.label)}
+              className="mt-2"
+            >
+              <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">
+                {group.label}
+                <ChevronDown
+                  className={cn(
+                    "h-3.5 w-3.5 transition-transform duration-200",
+                    openGroups[group.label] ? "rotate-0" : "-rotate-90"
+                  )}
+                />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-0.5 mt-0.5">
+                {group.items.map((item) => {
+                  const isActive = pathname.startsWith(item.href)
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                        isActive
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      )}
+                    >
+                      <item.icon className="h-5 w-5 flex-shrink-0" />
+                      {item.name}
+                    </Link>
+                  )
+                })}
+              </CollapsibleContent>
+            </Collapsible>
+          ))}
         </nav>
 
         <div className="p-4 border-t border-border space-y-1">
@@ -136,9 +204,7 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Cerrar sesión</AlertDialogTitle>
-                <AlertDialogDescription>
-                  ¿Estás seguro de que deseas cerrar sesión?
-                </AlertDialogDescription>
+                <AlertDialogDescription>¿Estás seguro de que deseas cerrar sesión?</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
@@ -155,19 +221,22 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
       </aside>
 
       {/* Mobile bottom navbar */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-        <div className="flex items-center justify-around h-16 px-2">
-          {mobileNav.map((item) => {
-            const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
+      <nav
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      >
+        <div className="flex items-end justify-around h-16 px-2">
+          {/* Panel, Tarjetas */}
+          {mobileMainItems.slice(0, 2).map((item) => {
+            const isActive =
+              pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
             return (
               <Link
                 key={item.name}
                 href={item.href}
                 className={cn(
                   "flex flex-col items-center justify-center gap-0.5 min-w-0 px-2 py-1 rounded-lg transition-colors",
-                  isActive
-                    ? "text-primary"
-                    : "text-muted-foreground"
+                  isActive ? "text-primary" : "text-muted-foreground"
                 )}
               >
                 <item.icon className="h-5 w-5" />
@@ -177,26 +246,77 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
               </Link>
             )
           })}
-          <button
-            onClick={() => setSettingsOpen(true)}
-            className="flex flex-col items-center justify-center gap-0.5 min-w-0 px-2 py-1 rounded-lg transition-colors text-muted-foreground"
+
+          {/* Center: Escáner FAB */}
+          <Link
+            href="/dashboard/scan"
+            className="flex flex-col items-center gap-0.5 -mt-4 pb-1"
+            aria-label="Abrir escáner"
           >
-            <Settings className="h-5 w-5" />
-            <span className="text-[10px] font-medium leading-tight truncate w-full text-center">
-              Ajustes
+            <div
+              className={cn(
+                "h-14 w-14 rounded-full flex items-center justify-center shadow-lg transition-all",
+                isScanActive
+                  ? "bg-primary scale-105 shadow-primary/40"
+                  : "bg-primary/90 hover:bg-primary shadow-primary/20"
+              )}
+            >
+              <Camera className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <span
+              className={cn(
+                "text-[10px] font-medium leading-tight",
+                isScanActive ? "text-primary" : "text-muted-foreground"
+              )}
+            >
+              Escáner
             </span>
+          </Link>
+
+          {/* Clientes */}
+          {mobileMainItems.slice(2).map((item) => {
+            const isActive = pathname.startsWith(item.href)
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-0.5 min-w-0 px-2 py-1 rounded-lg transition-colors",
+                  isActive ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                <item.icon className="h-5 w-5" />
+                <span className="text-[10px] font-medium leading-tight truncate w-full text-center">
+                  {item.name}
+                </span>
+              </Link>
+            )
+          })}
+
+          {/* Menú button */}
+          <button
+            onClick={() => setMoreOpen(true)}
+            className={cn(
+              "flex flex-col items-center justify-center gap-0.5 min-w-0 px-2 py-1 rounded-lg transition-colors",
+              isMenuActive ? "text-primary" : "text-muted-foreground"
+            )}
+            aria-label="Abrir menú"
+          >
+            <Menu className="h-5 w-5" />
+            <span className="text-[10px] font-medium leading-tight truncate w-full text-center">Menú</span>
           </button>
         </div>
       </nav>
 
-      {/* Mobile settings panel */}
-      {settingsOpen && (
+      {/* Mobile menu panel */}
+      {moreOpen && (
         <MobileSettingsPanel
           userEmail={userEmail}
           businessName={businessName}
           brandColor={brandColor}
           role={role}
-          onClose={() => setSettingsOpen(false)}
+          navItems={moreNavItems}
+          onClose={() => setMoreOpen(false)}
         />
       )}
     </>
