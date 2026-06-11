@@ -441,7 +441,7 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
         onOpenChange={(open) => { if (!open) { setInviteOpen(false); resetInviteModal() } else setInviteOpen(true) }}
       >
         <DialogContent
-          className="sm:max-w-md max-h-[90svh] overflow-y-auto"
+          className="sm:max-w-md max-h-[90svh] flex flex-col overflow-hidden"
           onPointerDownOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}
         >
@@ -510,7 +510,7 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
               </div>
             </>
           ) : (
-            <>
+            <div className="flex flex-col gap-4">
               <DialogHeader>
                 <DialogTitle>Cuenta creada ✓</DialogTitle>
                 <DialogDescription className="break-words">
@@ -520,10 +520,11 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="space-y-4 py-1">
+              {/* Scrollable body — header and button stay fixed */}
+              <div className="space-y-4 overflow-y-auto">
                 {/* Credentials box */}
-                <div className="rounded-xl bg-muted/50 border border-border p-4 space-y-3 overflow-hidden">
-                  <div className="flex items-center justify-between gap-2 min-w-0">
+                <div className="rounded-xl bg-muted/50 border border-border p-4 space-y-3">
+                  <div className="flex items-center gap-2">
                     <div className="min-w-0 flex-1">
                       <p className="text-xs text-muted-foreground mb-0.5">Correo</p>
                       <p className="text-sm font-mono font-medium text-foreground truncate">{invitedUser?.email}</p>
@@ -531,7 +532,7 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
                     <CopyButton text={invitedUser?.email ?? ""} />
                   </div>
                   <Separator />
-                  <div className="flex items-center justify-between gap-2 min-w-0">
+                  <div className="flex items-center gap-2">
                     <div className="min-w-0 flex-1">
                       <p className="text-xs text-muted-foreground mb-0.5">Contraseña temporal</p>
                       <p className="text-sm font-mono font-medium text-foreground">{invitedUser?.password}</p>
@@ -539,12 +540,15 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
                     <CopyButton text={invitedUser?.password ?? ""} />
                   </div>
                   <Separator />
-                  <div className="flex items-center justify-between gap-2 min-w-0">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs text-muted-foreground mb-0.5">Link de acceso</p>
-                      <p className="text-xs font-mono text-muted-foreground truncate">{loginUrl}</p>
+                  {/* Link row: label + copy en la misma línea, URL con scroll horizontal abajo */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs text-muted-foreground">Link de acceso</p>
+                      <CopyButton text={loginUrl} />
                     </div>
-                    <CopyButton text={loginUrl} />
+                    <div className="overflow-x-auto rounded-md bg-background border border-border px-2.5 py-1.5">
+                      <p className="text-xs font-mono text-muted-foreground whitespace-nowrap">{loginUrl}</p>
+                    </div>
                   </div>
                 </div>
 
@@ -584,7 +588,7 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
               <Button onClick={() => { setInviteOpen(false); resetInviteModal() }} className="w-full">
                 Listo
               </Button>
-            </>
+            </div>
           )}
         </DialogContent>
       </Dialog>
