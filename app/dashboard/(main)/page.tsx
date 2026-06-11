@@ -118,8 +118,8 @@ export default async function DashboardPage() {
         <StatCard title="Canjes" value={redemptions} icon={TrendingUp} />
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-4">
+      <div className="space-y-6">
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-foreground">Tus Tarjetas de Lealtad</h2>
             <Link href="/dashboard/cards" className="text-sm text-primary hover:underline">
@@ -206,7 +206,7 @@ export default async function DashboardPage() {
                 {allLogs.map((log, i) => (
                   <div
                     key={log.id}
-                    className={`${i >= 3 ? "hidden lg:flex" : ""} lg:flex-shrink-0 lg:w-56 bg-muted/30 rounded-xl p-4 hover:bg-muted/50 transition-colors`}
+                    className={`${i >= 3 ? "hidden lg:flex" : ""} lg:flex-shrink-0 lg:w-64 bg-muted/30 rounded-xl p-4 hover:bg-muted/50 transition-colors`}
                   >
                     <div className="flex items-center gap-3 mb-3">
                       <div
