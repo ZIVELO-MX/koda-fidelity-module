@@ -69,7 +69,7 @@ import { isExpired } from "@/lib/card-utils"
  */
 export async function POST(request: NextRequest) {
   try {
-    const business = await getBusinessFromSession()
+    const { business } = await getBusinessFromSession()
 
     const body = await request.json()
 

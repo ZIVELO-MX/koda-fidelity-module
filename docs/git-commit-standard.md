@@ -1,5 +1,10 @@
 # Git Standard — Koda Fidelity Module
 
+## Workflow
+
+> **A partir de ahora todo el desarrollo se hace en `dev`.**
+> `main` solo recibe merges desde `dev` para releases estables.
+
 ## Branch naming
 
 ```

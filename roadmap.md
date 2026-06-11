@@ -4,8 +4,9 @@
 
 ## Workflow
 
-- **Solo PRs a `main`** — nunca push directo
-- Toda feature o fix va en una rama separada y pasa por code review antes de mergear
+- **Solo PRs a `dev`** — nunca push directo a `main`
+- Toda feature o fix va en una rama separada desde `dev` y pasa por code review antes de mergear
+- `main` solo recibe merges desde `dev` para releases estables
 
 ---
 
@@ -236,6 +237,7 @@ pero el rate limit interno de Supabase Auth (30 OTPs/hora por proyecto) sigue vi
 **Mitigación actual:**
 - Google OAuth como método principal (sin rate limits, 1 clic) — activo en producción
 - Magic link queda como respaldo para quien no use Google
+- `/join/[cardId]` muestra una sugerencia temporal para invitar a usar Google antes de la opción por email; se quitará eventualmente cuando el respaldo por correo deje de necesitar promoción contextual
 - Cooldown de 2 min entre envíos por email (desactivado en beta)
 - Mensajes de error claros que sugieren usar Google
 
@@ -420,6 +422,20 @@ model StampLog {
 - [x] QR scanner estabilizado (reemplazo de librería).
 - [x] Cooldown de magic links desactivado (beta). Se re-activarán límites de tasa post-MVP.
 
+> **A partir de ahora todo el desarrollo se hace en `dev`.** Las ramas de feature se crean desde `dev`, los PRs se mergean a `dev`, y `main` solo recibe merges desde `dev` para releases estables.
+
+### Siguiente prioridad (inmediata después de MVP)
+
+> Sistema multi-usuario con roles para que los negocios puedan invitar colaboradores.
+
+- [ ] **Soporte multiusuarios** — modelo `User` vinculado a `Business` con dos roles:
+  - `admin` (dueño, control total del negocio)
+  - `sellador` (puede sellar/canjear tarjetas, ver clientes)
+- [ ] Login con selección de negocio si aplica
+- [ ] Pantalla de invitación — admin envía magic link con rol asignado
+- [ ] Restringir acciones según rol en API routes y UI
+- [ ] Migración de `Business.email` como owner implícito al nuevo modelo User
+
 ### Post-MVP — Infraestructura
 
 - [ ] Activar Cloudflare WAF/proxy — el DNS ya apunta a Vercel sin proxy activo; activarlo añade DDoS protection y WAF
@@ -470,15 +486,11 @@ model StampLog {
 - [ ] Generar certificado Apple Wallet (Pass Type ID + certificado de firma)
 - [ ] Publicar en Wallet Console (Google) para quitar modo prueba
 
-### Post-MVP — Usuarios y Permisos
+### Post-MVP — Usuarios y Permisos (ampliación)
 
-> Sistema multi-usuario con roles por negocio para que dueños puedan invitar
-> colaboradores con diferentes niveles de acceso.
+> El MVP con roles admin/sellador está priorizado como siguiente hito.
+> Esta sección amplía con funcionalidad futura post-lanzamiento.
 
-- [ ] Modelo `User` con email, nombre, rol y referencia a `Business`
-- [ ] Roles: `admin` (dueño, control total), `editor` (crear/editar tarjetas, sellar), `viewer` (solo leer reportes)
-- [ ] Login con selección de negocio si el usuario pertenece a más de uno
-- [ ] Pantalla de invitación: dueño envía magic link con rol asignado
+- [ ] Roles adicionales: `viewer` (solo lectura de reportes)
 - [ ] Registro de auditoría: quién hizo qué acción (selló, canjeó, editó)
-- [ ] Restringir acciones según rol en API routes y UI
-- [ ] Migración de `Business.email` como owner implícito al nuevo modelo User
+- [ ] Dashboard de actividad por usuario

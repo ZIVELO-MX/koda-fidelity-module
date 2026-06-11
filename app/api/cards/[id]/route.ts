@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getBusinessFromSession, handleApiError, NotFoundError, ValidationError } from "@/lib/api-utils"
+import { getBusinessFromSession, handleApiError, NotFoundError, ValidationError, requireRole } from "@/lib/api-utils"
 import { isExpired } from "@/lib/card-utils"
 
 /**
@@ -207,7 +207,8 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const business = await getBusinessFromSession()
+    const { business, user } = await getBusinessFromSession()
+    requireRole(user, "admin")
     const { id } = await params
 
     const existing = await prisma.loyaltyCard.findUnique({ where: { id } })
@@ -252,7 +253,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const business = await getBusinessFromSession()
+    const { business, user } = await getBusinessFromSession()
+    requireRole(user, "admin")
     const { id } = await params
 
     const existing = await prisma.loyaltyCard.findUnique({ where: { id } })

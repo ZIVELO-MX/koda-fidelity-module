@@ -51,9 +51,22 @@ async function main() {
   const existingBusiness = await prisma.business.findUnique({ where: { email } })
   if (existingBusiness) {
     console.log(`El negocio ya existe: ${name}`)
+    const existingUser = await prisma.user.findUnique({ where: { email } })
+    if (!existingUser) {
+      await prisma.user.create({ data: { email, name, role: "admin", businessId: existingBusiness.id } })
+      console.log(`Usuario admin creado para negocio existente: ${email}`)
+    }
   } else {
-    await prisma.business.create({ data: { email, name } })
-    console.log(`Negocio creado: ${name}`)
+    await prisma.business.create({
+      data: {
+        email,
+        name,
+        users: {
+          create: { email, name, role: "admin" },
+        },
+      },
+    })
+    console.log(`Negocio y usuario admin creados: ${name}`)
   }
 
   console.log("\n--- Credenciales ---")
