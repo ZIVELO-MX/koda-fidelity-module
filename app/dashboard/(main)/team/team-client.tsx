@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import {
   UserPlus, UserMinus, UsersRound, Shield, Stamp,
-  Copy, Check, MessageCircle, ChevronRight, Loader2, Lock,
+  Copy, Check, MessageCircle, ChevronRight, Loader2, Lock, Clock,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -44,6 +44,7 @@ type TeamUser = {
   name: string
   role: Role
   createdAt: Date
+  hasLoggedIn?: boolean
 }
 
 type InviteStep = "form" | "credentials"
@@ -337,6 +338,12 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
                               tú
                             </span>
                           )}
+                          {!member.hasLoggedIn && (
+                            <span className="flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                              <Clock className="h-2.5 w-2.5" />
+                              Pendiente
+                            </span>
+                          )}
                         </div>
                         <p className="text-xs text-muted-foreground sm:hidden truncate">{member.email}</p>
                       </div>
@@ -502,32 +509,34 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
             <>
               <DialogHeader>
                 <DialogTitle>Cuenta creada ✓</DialogTitle>
-                <DialogDescription>
-                  Comparte las credenciales con <strong>{invitedUser?.name}</strong> para que pueda acceder.
+                <DialogDescription className="break-words">
+                  Comparte las credenciales con{" "}
+                  <strong className="text-foreground">{invitedUser?.name}</strong>{" "}
+                  para que pueda acceder.
                 </DialogDescription>
               </DialogHeader>
 
               <div className="space-y-4 py-1">
                 {/* Credentials box */}
-                <div className="rounded-xl bg-muted/50 border border-border p-4 space-y-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0">
+                <div className="rounded-xl bg-muted/50 border border-border p-4 space-y-3 overflow-hidden">
+                  <div className="flex items-center justify-between gap-2 min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="text-xs text-muted-foreground mb-0.5">Correo</p>
                       <p className="text-sm font-mono font-medium text-foreground truncate">{invitedUser?.email}</p>
                     </div>
                     <CopyButton text={invitedUser?.email ?? ""} />
                   </div>
                   <Separator />
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
+                  <div className="flex items-center justify-between gap-2 min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="text-xs text-muted-foreground mb-0.5">Contraseña temporal</p>
                       <p className="text-sm font-mono font-medium text-foreground">{invitedUser?.password}</p>
                     </div>
                     <CopyButton text={invitedUser?.password ?? ""} />
                   </div>
                   <Separator />
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0">
+                  <div className="flex items-center justify-between gap-2 min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="text-xs text-muted-foreground mb-0.5">Link de acceso</p>
                       <p className="text-xs font-mono text-muted-foreground truncate">{loginUrl}</p>
                     </div>

@@ -14,7 +14,7 @@ import {
   BookOpen,
   Smartphone,
   LogOut,
-  UsersRound,
+  UserCog,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -47,7 +47,7 @@ const allNavItems = [
   { name: "Códigos QR", href: "/dashboard/qr-codes", icon: QrCode, roles: ["admin", "sellador"] as Role[] },
   { name: "Marca", href: "/dashboard/branding", icon: Palette, roles: ["admin"] as Role[] },
   { name: "Configuración", href: "/dashboard/settings", icon: Settings, roles: ["admin"] as Role[] },
-  { name: "Equipo", href: "/dashboard/team", icon: UsersRound, roles: ["admin"] as Role[] },
+  { name: "Equipo", href: "/dashboard/team", icon: UserCog, roles: ["admin"] as Role[] },
   { name: "Documentación", href: "/dashboard/docs", icon: BookOpen, roles: ["admin"] as Role[] },
 ]
 
@@ -110,7 +110,7 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
           {role === "sellador" && (
             <div className="px-3 py-1.5 mb-1">
               <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">
-                <UsersRound className="h-3 w-3" />
+                <UserCog className="h-3 w-3" />
                 Sellador
               </span>
             </div>
