@@ -440,7 +440,11 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
         open={inviteOpen}
         onOpenChange={(open) => { if (!open) { setInviteOpen(false); resetInviteModal() } else setInviteOpen(true) }}
       >
-        <DialogContent className="sm:max-w-md max-h-[90svh] overflow-y-auto">
+        <DialogContent
+          className="sm:max-w-md max-h-[90svh] overflow-y-auto"
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
           {inviteStep === "form" ? (
             <>
               <DialogHeader>
