@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import {
   Dialog,
@@ -36,6 +37,7 @@ interface CardActionsProps {
   initialReward?: string
   initialColor?: string
   initialIcon?: string | null
+  initialDescription?: string | null
 }
 
 export function CardActions({
@@ -44,6 +46,7 @@ export function CardActions({
   initialReward = "",
   initialColor = "#f97316",
   initialIcon = null,
+  initialDescription = null,
 }: CardActionsProps) {
   const router = useRouter()
 
@@ -58,6 +61,7 @@ export function CardActions({
   const [reward, setReward] = useState(initialReward)
   const [color, setColor] = useState(initialColor)
   const [iconName, setIconName] = useState<string | null>(initialIcon)
+  const [description, setDescription] = useState(initialDescription ?? "")
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
@@ -79,6 +83,7 @@ export function CardActions({
     setReward(initialReward)
     setColor(initialColor)
     setIconName(initialIcon)
+    setDescription(initialDescription ?? "")
     setEditError(null)
     setSaved(false)
     setEditOpen(true)
@@ -94,7 +99,7 @@ export function CardActions({
     const res = await fetch(`/api/cards/${cardId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: name.trim(), reward: reward.trim(), brandColor: color, iconName }),
+      body: JSON.stringify({ name: name.trim(), reward: reward.trim(), brandColor: color, iconName, description: description.trim() || null }),
     })
 
     if (res.ok) {
@@ -178,6 +183,21 @@ export function CardActions({
                 value={reward}
                 onChange={(e) => setReward(e.target.value)}
                 placeholder="Ej: Café gratis"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">
+                Descripción <span className="text-muted-foreground font-normal text-xs">(opcional)</span>
+              </Label>
+              <Textarea
+                id="edit-description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Ayuda a tus clientes a identificar esta tarjeta"
+                className="resize-none"
+                rows={2}
+                maxLength={200}
               />
             </div>
 

@@ -112,6 +112,7 @@ export default async function CardDetailPage({
           initialReward={card.reward}
           initialColor={card.brandColor}
           initialIcon={card.iconName}
+          initialDescription={card.description}
         />
       </div>
 
