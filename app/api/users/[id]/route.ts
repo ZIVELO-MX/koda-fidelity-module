@@ -19,6 +19,10 @@ export async function PUT(
     requireRole(user, "admin")
     const { id } = await params
 
+    if (user.id === id) {
+      throw new ForbiddenError("You cannot change your own role")
+    }
+
     const target = await prisma.user.findUnique({ where: { id } })
     if (!target || target.businessId !== business.id) {
       throw new NotFoundError("User not found")
