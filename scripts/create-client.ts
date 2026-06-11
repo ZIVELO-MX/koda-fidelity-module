@@ -15,12 +15,12 @@ function parseArgs(): { email: string; name: string; password: string } {
       i++
     }
   }
-  if (!result.email || !result.name) {
-    console.error("Uso: pnpm create:client --email <email> --name <nombre> [--password <password>]")
-    console.error("Ejemplo: pnpm create:client --email cafe@ejemplo.com --name \"Café El Sol\"")
+  if (!result.email || !result.business) {
+    console.error("Uso: pnpm create:client --email <email> --business <nombre> [--password <password>]")
+    console.error("Ejemplo: pnpm create:client --email cafe@ejemplo.com --business \"Café El Sol\"")
     process.exit(1)
   }
-  return { email: result.email, name: result.name, password: result.password || DEFAULT_PASSWORD }
+  return { email: result.email, name: result.business, password: result.password || DEFAULT_PASSWORD }
 }
 
 async function main() {
