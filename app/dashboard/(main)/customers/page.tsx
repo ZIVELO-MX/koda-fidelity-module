@@ -96,7 +96,7 @@ export default async function CustomersPage({
           <p className="text-muted-foreground">Consulta y gestiona los miembros de tu programa de lealtad</p>
         </div>
         <Button asChild variant="outline" className="w-full sm:w-auto">
-          <Link href="/dashboard/my-cards">Ver mis tarjetas</Link>
+          <Link href="/dashboard/cards">Ver tarjetas</Link>
         </Button>
       </div>
 
