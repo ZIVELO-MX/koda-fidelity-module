@@ -322,15 +322,15 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
               {users.map((member) => {
                 const isSelf = member.id === currentUserId
                 return (
-                  <li key={member.id} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto_auto] items-center gap-3 sm:gap-4 px-5 py-4">
-                    {/* Avatar + name */}
+                  <li key={member.id} className="px-4 py-4 sm:px-5 sm:grid sm:grid-cols-[1fr_1fr_auto_auto] sm:items-center sm:gap-4">
+                    {/* Row 1 on mobile: avatar + name/badges + delete button */}
                     <div className="flex items-center gap-3 min-w-0">
                       <div
                         className="h-9 w-9 rounded-full flex items-center justify-center text-sm font-bold text-primary bg-primary/10 shrink-0"
                       >
                         {member.name.charAt(0).toUpperCase()}
                       </div>
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-medium text-foreground truncate">{member.name}</span>
                           {isSelf && (
@@ -347,41 +347,54 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
                         </div>
                         <p className="text-xs text-muted-foreground sm:hidden truncate">{member.email}</p>
                       </div>
+                      {/* Delete — visible only on mobile, end of row 1 */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="sm:hidden h-8 w-8 ml-auto shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        disabled={isSelf}
+                        onClick={() => setRemoveTarget(member)}
+                        aria-label={`Eliminar a ${member.name}`}
+                      >
+                        <UserMinus className="h-4 w-4" />
+                      </Button>
                     </div>
 
-                    {/* Email */}
+                    {/* Email — sm+ only */}
                     <p className="hidden sm:block text-sm text-muted-foreground truncate">{member.email}</p>
 
-                    {/* Role selector */}
-                    <Select
-                      value={member.role}
-                      onValueChange={(val) => handleRoleChange(member.id, val as Role)}
-                      disabled={isSelf || roleChangeId === member.id}
-                    >
-                      <SelectTrigger className="h-8 w-36 text-xs gap-1.5">
-                        {roleChangeId === member.id
-                          ? <Loader2 className="h-3 w-3 animate-spin" />
-                          : <SelectValue />
-                        }
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="admin">
-                          <span className="flex items-center gap-1.5">
-                            <Shield className="h-3.5 w-3.5" />
-                            Admin
-                          </span>
-                        </SelectItem>
-                        <SelectItem value="sellador">
-                          <span className="flex items-center gap-1.5">
-                            <Stamp className="h-3.5 w-3.5" />
-                            Sellador
-                          </span>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                    {/* Role selector: full-width on mobile, compact on sm+ */}
+                    <div className="mt-3 sm:mt-0">
+                      <Select
+                        value={member.role}
+                        onValueChange={(val) => handleRoleChange(member.id, val as Role)}
+                        disabled={isSelf || roleChangeId === member.id}
+                      >
+                        <SelectTrigger className="h-9 w-full sm:h-8 sm:w-36 text-xs gap-1.5">
+                          {roleChangeId === member.id
+                            ? <Loader2 className="h-3 w-3 animate-spin" />
+                            : <SelectValue />
+                          }
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="admin">
+                            <span className="flex items-center gap-1.5">
+                              <Shield className="h-3.5 w-3.5" />
+                              Admin
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="sellador">
+                            <span className="flex items-center gap-1.5">
+                              <Stamp className="h-3.5 w-3.5" />
+                              Sellador
+                            </span>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                    {/* Remove */}
-                    <div className="flex justify-end">
+                    {/* Delete — sm+ column (hidden on mobile) */}
+                    <div className="hidden sm:flex justify-end">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -454,8 +467,8 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="space-y-5 py-2">
-                <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-5 py-2 overflow-y-auto flex-1 min-h-0">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label htmlFor="invite-name">Nombre</Label>
                     <Input
@@ -510,7 +523,7 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
               </div>
             </>
           ) : (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 min-h-0">
               <DialogHeader>
                 <DialogTitle>Cuenta creada ✓</DialogTitle>
                 <DialogDescription className="break-words">

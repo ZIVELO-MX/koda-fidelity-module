@@ -462,9 +462,8 @@ model StampLog {
 - [x] **Bottom navbar mobile** — 5 tabs fijos: Panel, Tarjetas, [Escáner FAB central], Clientes, Menú
 - [x] **Escáner FAB** — botón circular elevado en el centro, prominente, link a `/dashboard/scan`
 - [x] **Desktop sidebar** — grupos colapsables "Gestión" y "Administración" con `Collapsible` de shadcn/ui
-- [x] **Panel "Menú" mobile** — muestra solo items NO disponibles en el bottom bar (QR + Administración para admin)
-- [x] **Role-aware mobile** — sellador ve solo Gestión (QR); admin ve Gestión + Administración
-- [x] **Fix: sin items repetidos en el panel** — `moreNavGroups` derivado de `navGroups` filtrando hrefs del bottom bar
+- [x] **Panel "Menú" mobile (v1)** — mostraba solo items NO disponibles en el bottom bar (QR + Administración para admin); ampliado a mapa completo en Fase 11
+- [x] **Role-aware mobile** — sellador ve Gestión; admin ve Gestión + Administración
 
 #### Scripts de Operación
 - [x] **`pnpm reset:password`** — script CLI para resetear contraseña por email: genera nueva pass, marca `must_change_password`, cierra todas las sesiones, opcionalmente envía correo
@@ -480,6 +479,23 @@ model StampLog {
 - [x] **QR inline en detalle de tarjeta** — `CardQRInline` en `/dashboard/cards/[id]` antes de la tabla; preview 80px + link a QR codes
 - [x] **Tabla sorteable en detalle de tarjeta** — `/dashboard/cards/[id]` reutiliza `CustomersTable` compartido, `showCardColumn={false}`
 - [x] **Componente `CustomersTable` compartido** — extrae lógica de tabla, `SortField`, `SortOrder`, `buildSortLink`, `timeAgo` a `components/dashboard/customers-table.tsx`
+- [x] 238 tests, 0 errores de tipo
+
+### Fase 11 — UI Mobile: Menú Completo y Equipo Responsive ✅ Completada
+
+> Rama: `feat/mobile-ui-team-and-menu` (PR pendiente)
+
+#### Panel "Menú" mobile — mapa completo de navegación
+- [x] **Panel "Menú" muestra todos los destinos** — grupo "General" (Panel), grupo "Gestión" (Tarjetas de Lealtad, Clientes, Códigos QR, Escáner), grupo "Administración" (admin: Marca, Configuración, Equipo, Documentación)
+- [x] **"Escáner" agregado al panel** — visible en el panel de menú para acceso rápido, además del FAB central del bottom bar
+- [x] **`isMenuActive` corregido** — el botón "Menú" no se ilumina cuando una pestaña inferior (Panel, Tarjetas, Clientes, Escáner) ya está activa; solo se resalta en rutas exclusivas del panel
+- [x] **Role-aware** — sellador ve General + Gestión; admin ve los tres grupos
+
+#### `/dashboard/team` — responsividad mobile
+- [x] **Filas de miembro en mobile** — tarjeta de dos líneas: avatar + nombre/badges + botón eliminar (fila 1), selector de rol a ancho completo (fila 2)
+- [x] **Formulario de invitación** — Nombre y Correo se apilan en una columna en mobile (`sm:` vuelve a 2 columnas)
+- [x] **Scroll del diálogo** — el paso de formulario tiene `overflow-y-auto` propio dentro del `max-h-[90svh]`; los RoleCards altos no empujan los botones fuera de la pantalla
+- [x] Tests de sidebar actualizados — reflejan el nuevo contrato del panel (mapa completo por rol)
 - [x] 238 tests, 0 errores de tipo
 
 ---
