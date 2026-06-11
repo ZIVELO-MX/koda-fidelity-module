@@ -17,10 +17,15 @@ import {
 } from "@/components/ui/alert-dialog"
 import { logout } from "@/lib/actions/auth"
 
-interface NavItem {
+export interface NavItem {
   name: string
   href: string
   icon: LucideIcon
+}
+
+export interface NavGroup {
+  label: string
+  items: NavItem[]
 }
 
 interface MobileSettingsPanelProps {
@@ -28,7 +33,7 @@ interface MobileSettingsPanelProps {
   businessName: string
   brandColor: string
   role?: Role
-  navItems: NavItem[]
+  navGroups: NavGroup[]
   onClose: () => void
 }
 
@@ -36,10 +41,12 @@ export function MobileSettingsPanel({
   userEmail,
   businessName,
   brandColor,
-  navItems,
+  navGroups,
   onClose,
 }: MobileSettingsPanelProps) {
   const [confirmOpen, setConfirmOpen] = useState(false)
+
+  const hasNav = navGroups.some((g) => g.items.length > 0)
 
   return (
     <>
@@ -88,22 +95,31 @@ export function MobileSettingsPanel({
             </div>
           </div>
 
-          <div className="p-4 space-y-4 pb-10">
-            {/* Nav grid */}
-            {navItems.length > 0 && (
-              <div className="grid grid-cols-2 gap-2">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={onClose}
-                    className="flex flex-col items-center gap-2 p-4 rounded-xl bg-muted hover:bg-muted/70 transition-colors"
-                  >
-                    <item.icon className="h-5 w-5 text-muted-foreground" />
-                    <span className="text-xs font-medium text-foreground text-center leading-tight">{item.name}</span>
-                  </Link>
-                ))}
-              </div>
+          <div className="p-4 space-y-5 pb-10">
+            {/* Grouped nav sections */}
+            {hasNav && navGroups.map((group) =>
+              group.items.length === 0 ? null : (
+                <div key={group.label} className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1">
+                    {group.label}
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {group.items.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={onClose}
+                        className="flex flex-col items-center gap-2 p-4 rounded-xl bg-muted hover:bg-muted/70 transition-colors"
+                      >
+                        <item.icon className="h-5 w-5 text-muted-foreground" />
+                        <span className="text-xs font-medium text-foreground text-center leading-tight">
+                          {item.name}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )
             )}
 
             {/* Bottom actions */}

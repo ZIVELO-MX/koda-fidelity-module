@@ -70,12 +70,24 @@ const navGroups = [
   },
 ]
 
-const allMoreItems = [
-  { name: "Códigos QR", href: "/dashboard/qr-codes", icon: QrCode, roles: ["admin", "sellador"] as Role[] },
-  { name: "Marca", href: "/dashboard/branding", icon: Palette, roles: ["admin"] as Role[] },
-  { name: "Configuración", href: "/dashboard/settings", icon: Settings, roles: ["admin"] as Role[] },
-  { name: "Equipo", href: "/dashboard/team", icon: UserCog, roles: ["admin"] as Role[] },
-  { name: "Documentación", href: "/dashboard/docs", icon: BookOpen, roles: ["admin"] as Role[] },
+const mobileMoreGroups = [
+  {
+    label: "Gestión",
+    roles: ["admin", "sellador"] as Role[],
+    items: [
+      { name: "Códigos QR", href: "/dashboard/qr-codes", icon: QrCode },
+    ],
+  },
+  {
+    label: "Administración",
+    roles: ["admin"] as Role[],
+    items: [
+      { name: "Marca", href: "/dashboard/branding", icon: Palette },
+      { name: "Configuración", href: "/dashboard/settings", icon: Settings },
+      { name: "Equipo", href: "/dashboard/team", icon: UserCog },
+      { name: "Documentación", href: "/dashboard/docs", icon: BookOpen },
+    ],
+  },
 ]
 
 export function DashboardSidebar({ userEmail, businessName, brandColor, nickname, role }: DashboardSidebarProps) {
@@ -87,11 +99,15 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
     Administración: true,
   })
 
-  const moreNavItems = allMoreItems.filter((item) => item.roles.includes(role))
   const visibleGroups = navGroups.filter((g) => g.roles.includes(role))
+  const moreNavGroups = mobileMoreGroups
+    .filter((g) => g.roles.includes(role))
+    .map((g) => ({ label: g.label, items: g.items }))
 
   const isScanActive = pathname === "/dashboard/scan"
-  const isMenuActive = moreNavItems.some((item) => pathname.startsWith(item.href))
+  const isMenuActive = moreNavGroups.some((g) =>
+    g.items.some((item) => pathname.startsWith(item.href))
+  )
 
   const mobileMainItems = [
     { name: "Panel", href: "/dashboard", icon: LayoutDashboard },
@@ -315,7 +331,7 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
           businessName={businessName}
           brandColor={brandColor}
           role={role}
-          navItems={moreNavItems}
+          navGroups={moreNavGroups}
           onClose={() => setMoreOpen(false)}
         />
       )}
