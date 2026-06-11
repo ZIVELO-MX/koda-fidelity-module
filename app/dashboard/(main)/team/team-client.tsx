@@ -440,7 +440,7 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
         open={inviteOpen}
         onOpenChange={(open) => { if (!open) { setInviteOpen(false); resetInviteModal() } else setInviteOpen(true) }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90svh] overflow-y-auto">
           {inviteStep === "form" ? (
             <>
               <DialogHeader>
@@ -560,19 +560,15 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
                       className="flex-1"
                     />
                     <Button
-                      asChild
+                      type="button"
                       disabled={!whatsappPhone.trim()}
                       className="bg-[#25D366] hover:bg-[#1ebe5d] text-white shrink-0 gap-1.5"
+                      onClick={() => {
+                        if (whatsappUrl) window.open(whatsappUrl, "_blank", "noopener,noreferrer")
+                      }}
                     >
-                      <a
-                        href={whatsappUrl ?? "#"}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => { if (!whatsappUrl) e.preventDefault() }}
-                      >
-                        <MessageCircle className="h-4 w-4" />
-                        Enviar
-                      </a>
+                      <MessageCircle className="h-4 w-4" />
+                      Enviar
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">
