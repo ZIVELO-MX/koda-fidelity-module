@@ -100,10 +100,18 @@ async function main() {
   }
   console.log(`✓ Contraseña restablecida para: ${email}`)
 
-  // 3. Sign out all active sessions
+  // 3. Sign out all active sessions (Supabase may return a JWT error if the user
+  //    has no active sessions — that's benign, so we only warn on other errors)
   const { error: signOutError } = await supabase.auth.admin.signOut(user.id, "global")
   if (signOutError) {
-    console.warn(`Advertencia al cerrar sesiones: ${signOutError.message}`)
+    const isNoSession =
+      signOutError.message.toLowerCase().includes("jwt") ||
+      signOutError.message.toLowerCase().includes("session")
+    if (isNoSession) {
+      console.log("✓ Sin sesiones activas que cerrar")
+    } else {
+      console.warn(`Advertencia al cerrar sesiones: ${signOutError.message}`)
+    }
   } else {
     console.log("✓ Sesiones activas cerradas")
   }
