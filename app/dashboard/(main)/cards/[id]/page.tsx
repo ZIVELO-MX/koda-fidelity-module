@@ -3,34 +3,26 @@ import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 import { Input } from "@/components/ui/input"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ArrowLeft, Gift, Users, Stamp, Calendar, Search, AlertTriangle } from "lucide-react"
 import { CardActions } from "@/components/dashboard/card-actions"
 import { CardQRInline } from "@/components/dashboard/card-qr-inline"
-import { CustomerActionsMenu } from "@/components/dashboard/customer-actions-menu"
+import { CustomersTable, SortField, SortOrder } from "@/components/dashboard/customers-table"
 import { getCardIcon } from "@/lib/card-icons"
 import { isExpired } from "@/lib/card-utils"
-
-function timeAgo(date: Date): string {
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
-  if (seconds < 60) return "hace unos segundos"
-  const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `hace ${minutes} min`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `hace ${hours}h`
-  const days = Math.floor(hours / 24)
-  return `hace ${days}d`
-}
 
 export default async function CardDetailPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ q?: string }>
+  searchParams: Promise<{ q?: string; sort?: string; order?: string }>
 }) {
   const { id } = await params
-  const { q } = await searchParams
+  const { q, sort: sortParam, order: orderParam } = await searchParams
+
+  const sort: SortField = (["name", "stamps", "createdAt"].includes(sortParam ?? "") ? sortParam : "createdAt") as SortField
+  const order: SortOrder = orderParam === "asc" ? "asc" : "desc"
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -48,7 +40,7 @@ export default async function CardDetailPage({
         include: {
           _count: { select: { stampsLog: { where: { type: "redeem" } } } },
         },
-        orderBy: { createdAt: "desc" },
+        orderBy: { [sort]: order },
       },
     },
   })
@@ -66,10 +58,16 @@ export default async function CardDetailPage({
     : 0
 
   const filteredCustomers = q?.trim()
-    ? allCustomers.filter((c) =>
-        c.name.toLowerCase().includes(q.trim().toLowerCase()),
-      )
+    ? allCustomers.filter((c) => c.name.toLowerCase().includes(q.trim().toLowerCase()))
     : allCustomers
+
+  const tableCustomers = filteredCustomers.map((c) => ({
+    ...c,
+    card: { name: card.name, stampsRequired: card.stampsRequired, reward: card.reward },
+  }))
+
+  const basePath = `/dashboard/cards/${id}`
+  const baseParams = new URLSearchParams({ ...(q ? { q } : {}) })
 
   return (
     <div className="space-y-8">
@@ -161,97 +159,46 @@ export default async function CardDetailPage({
       )}
 
       <div className="space-y-4">
-        <form className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-          <Input
-            name="q"
-            placeholder="Buscar clientes..."
-            defaultValue={q || ""}
-            className="pl-10"
-          />
-        </form>
-
-        <div className="bg-card rounded-2xl border border-border overflow-hidden">
-          <div className="p-4 border-b border-border bg-muted/20 flex items-center justify-between">
-            <h2 className="font-semibold text-foreground">Clientes ({filteredCustomers.length})</h2>
-            {q?.trim() && (
-              <Link
-                href={`/dashboard/cards/${id}`}
-                className="text-sm text-muted-foreground hover:text-foreground"
-              >
-                Limpiar filtro
-              </Link>
-            )}
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <form method="GET">
+              <Input
+                name="q"
+                placeholder="Buscar clientes..."
+                defaultValue={q || ""}
+                className="pl-10"
+              />
+              {sortParam && <input type="hidden" name="sort" value={sortParam} />}
+              {orderParam && <input type="hidden" name="order" value={orderParam} />}
+            </form>
           </div>
-          {filteredCustomers.length === 0 ? (
-            <div className="p-8 text-center text-sm text-muted-foreground">
-              {q?.trim()
-                ? "No se encontraron clientes con ese nombre."
-                : "Aún no hay clientes en esta tarjeta. Comparte el código QR para que se unan."}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border bg-muted/30">
-                    <th className="text-left text-sm font-medium text-muted-foreground px-6 py-3">Cliente</th>
-                    <th className="text-left text-sm font-medium text-muted-foreground px-6 py-3">Progreso</th>
-                    <th className="text-left text-sm font-medium text-muted-foreground px-6 py-3">Canjes</th>
-                    <th className="text-left text-sm font-medium text-muted-foreground px-6 py-3">Registro</th>
-                    <th className="text-right text-sm font-medium text-muted-foreground px-6 py-3">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {filteredCustomers.map((customer) => (
-                    <tr key={customer.id} className="hover:bg-muted/30">
-                      <td className="px-6 py-3">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
-                              {customer.name.split(" ").map((n) => n[0]).join("")}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="font-medium text-foreground">{customer.name}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-3">
-                        <div className="flex items-center gap-3 min-w-[100px] max-w-[180px]">
-                          <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-primary rounded-full transition-all"
-                              style={{ width: `${Math.min(100, (customer.stamps / card.stampsRequired) * 100)}%` }}
-                            />
-                          </div>
-                          <span className="text-sm text-muted-foreground whitespace-nowrap">
-                            {customer.stamps}/{card.stampsRequired}
-                          </span>
-                          {customer.stamps >= card.stampsRequired && (
-                            <Gift className="h-4 w-4 text-green-600 flex-shrink-0" />
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-3">
-                        <span className="text-sm text-foreground">{customer._count.stampsLog}</span>
-                      </td>
-                      <td className="px-6 py-3">
-                        <span className="text-sm text-muted-foreground">{timeAgo(customer.createdAt)}</span>
-                      </td>
-                      <td className="px-6 py-3 text-right">
-                        <CustomerActionsMenu
-                          customerId={customer.id}
-                          customerName={customer.name}
-                          currentStamps={customer.stamps}
-                          maxStamps={card.stampsRequired}
-                          reward={card.reward}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          {q?.trim() && (
+            <Link
+              href={basePath}
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              Limpiar filtro
+            </Link>
           )}
         </div>
+
+        {filteredCustomers.length === 0 ? (
+          <div className="bg-card rounded-2xl border border-border p-8 text-center text-sm text-muted-foreground">
+            {q?.trim()
+              ? "No se encontraron clientes con ese nombre."
+              : "Aún no hay clientes en esta tarjeta. Comparte el código QR para que se unan."}
+          </div>
+        ) : (
+          <CustomersTable
+            customers={tableCustomers}
+            sort={sort}
+            order={order}
+            basePath={basePath}
+            baseParams={baseParams}
+            showCardColumn={false}
+          />
+        )}
       </div>
     </div>
   )

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
-import { render, screen, cleanup } from "@testing-library/react"
+import { render, screen, cleanup, fireEvent } from "@testing-library/react"
 import { DashboardSidebar } from "../sidebar"
 
 vi.mock("next/navigation", () => ({ usePathname: () => "/dashboard" }))
@@ -7,8 +7,14 @@ vi.mock("next/image", () => ({
   default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => <img {...props} />,
 }))
 vi.mock("@/lib/actions/auth", () => ({ logout: vi.fn() }))
+
+// Capture navGroups prop so we can assert mobile menu content per role
+const capturedProps = { current: null as any }
 vi.mock("../mobile-settings-panel", () => ({
-  MobileSettingsPanel: () => <div data-testid="mobile-settings" />,
+  MobileSettingsPanel: (props: any) => {
+    capturedProps.current = props
+    return <div data-testid="mobile-settings" />
+  },
 }))
 
 const BASE_PROPS = {
@@ -21,8 +27,18 @@ const BASE_PROPS = {
 const hasText = (text: string) => screen.getAllByText(text).length > 0
 const lacksText = (text: string) => screen.queryAllByText(text).length === 0
 
+// hrefs that belong to the 4 fixed bottom-nav tabs and must NOT appear in the panel
+const BOTTOM_NAV_HREFS = ["/dashboard", "/dashboard/cards", "/dashboard/customers", "/dashboard/scan"]
+
+function openMobileMenu() {
+  fireEvent.click(screen.getByLabelText("Abrir menú"))
+}
+
 describe("DashboardSidebar — role-based navigation", () => {
-  afterEach(() => cleanup())
+  afterEach(() => {
+    cleanup()
+    capturedProps.current = null
+  })
 
   describe("admin role", () => {
     beforeEach(() => {
@@ -37,6 +53,41 @@ describe("DashboardSidebar — role-based navigation", () => {
     it("shows Equipo", () => expect(hasText("Equipo")).toBe(true))
     it("shows Documentación", () => expect(hasText("Documentación")).toBe(true))
     it("does not show Sellador badge", () => expect(lacksText("Sellador")).toBe(true))
+
+    describe("mobile menu panel (admin)", () => {
+      beforeEach(() => openMobileMenu())
+
+      it("opens MobileSettingsPanel with navGroups", () => {
+        expect(capturedProps.current).not.toBeNull()
+        expect(Array.isArray(capturedProps.current.navGroups)).toBe(true)
+      })
+
+      it("does not include bottom-nav hrefs in panel items", () => {
+        const allHrefs = capturedProps.current.navGroups.flatMap((g: any) =>
+          g.items.map((i: any) => i.href)
+        )
+        for (const href of BOTTOM_NAV_HREFS) {
+          expect(allHrefs).not.toContain(href)
+        }
+      })
+
+      it("includes admin-only items (Marca, Configuración, Equipo, Docs)", () => {
+        const allHrefs = capturedProps.current.navGroups.flatMap((g: any) =>
+          g.items.map((i: any) => i.href)
+        )
+        expect(allHrefs).toContain("/dashboard/branding")
+        expect(allHrefs).toContain("/dashboard/settings")
+        expect(allHrefs).toContain("/dashboard/team")
+        expect(allHrefs).toContain("/dashboard/docs")
+      })
+
+      it("includes QR codes in panel", () => {
+        const allHrefs = capturedProps.current.navGroups.flatMap((g: any) =>
+          g.items.map((i: any) => i.href)
+        )
+        expect(allHrefs).toContain("/dashboard/qr-codes")
+      })
+    })
   })
 
   describe("sellador role", () => {
@@ -50,5 +101,34 @@ describe("DashboardSidebar — role-based navigation", () => {
     it("does NOT show Equipo", () => expect(lacksText("Equipo")).toBe(true))
     it("does NOT show Documentación", () => expect(lacksText("Documentación")).toBe(true))
     it("shows Sellador badge", () => expect(hasText("Sellador")).toBe(true))
+
+    describe("mobile menu panel (sellador)", () => {
+      beforeEach(() => openMobileMenu())
+
+      it("does not include bottom-nav hrefs in panel items", () => {
+        const allHrefs = capturedProps.current.navGroups.flatMap((g: any) =>
+          g.items.map((i: any) => i.href)
+        )
+        for (const href of BOTTOM_NAV_HREFS) {
+          expect(allHrefs).not.toContain(href)
+        }
+      })
+
+      it("does NOT include admin-only items (Marca, Equipo, Docs)", () => {
+        const allHrefs = capturedProps.current.navGroups.flatMap((g: any) =>
+          g.items.map((i: any) => i.href)
+        )
+        expect(allHrefs).not.toContain("/dashboard/branding")
+        expect(allHrefs).not.toContain("/dashboard/team")
+        expect(allHrefs).not.toContain("/dashboard/docs")
+      })
+
+      it("includes QR codes for sellador", () => {
+        const allHrefs = capturedProps.current.navGroups.flatMap((g: any) =>
+          g.items.map((i: any) => i.href)
+        )
+        expect(allHrefs).toContain("/dashboard/qr-codes")
+      })
+    })
   })
 })

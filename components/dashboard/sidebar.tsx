@@ -70,25 +70,13 @@ const navGroups = [
   },
 ]
 
-const mobileMoreGroups = [
-  {
-    label: "Gestión",
-    roles: ["admin", "sellador"] as Role[],
-    items: [
-      { name: "Códigos QR", href: "/dashboard/qr-codes", icon: QrCode },
-    ],
-  },
-  {
-    label: "Administración",
-    roles: ["admin"] as Role[],
-    items: [
-      { name: "Marca", href: "/dashboard/branding", icon: Palette },
-      { name: "Configuración", href: "/dashboard/settings", icon: Settings },
-      { name: "Equipo", href: "/dashboard/team", icon: UserCog },
-      { name: "Documentación", href: "/dashboard/docs", icon: BookOpen },
-    ],
-  },
-]
+// hrefs already covered by the 4 fixed bottom-nav tabs (Panel, Tarjetas, Escáner, Clientes)
+const BOTTOM_NAV_HREFS = new Set([
+  "/dashboard",
+  "/dashboard/cards",
+  "/dashboard/scan",
+  "/dashboard/customers",
+])
 
 export function DashboardSidebar({ userEmail, businessName, brandColor, nickname, role }: DashboardSidebarProps) {
   const pathname = usePathname()
@@ -100,9 +88,15 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
   })
 
   const visibleGroups = navGroups.filter((g) => g.roles.includes(role))
-  const moreNavGroups = mobileMoreGroups
+  // Panel groups for the mobile "Menú" panel — same role filtering as desktop,
+  // but strip any item already accessible via the 4 fixed bottom-nav tabs.
+  const moreNavGroups = navGroups
     .filter((g) => g.roles.includes(role))
-    .map((g) => ({ label: g.label, items: g.items }))
+    .map((g) => ({
+      label: g.label,
+      items: g.items.filter((item) => !BOTTOM_NAV_HREFS.has(item.href)),
+    }))
+    .filter((g) => g.items.length > 0)
 
   const isScanActive = pathname === "/dashboard/scan"
   const isMenuActive = moreNavGroups.some((g) =>

@@ -407,7 +407,7 @@ model StampLog {
 ### Verificaciones actuales
 
 - [x] `pnpm exec tsc --noEmit` pasa sin errores.
-- [x] `pnpm test` — 191 tests, 0 errores (Fases 0–9).
+- [x] `pnpm test` — 238 tests, 0 errores (Fases 0–10).
 - [x] `pnpm lint` funcional (ESLint v9.39.4, solo warnings).
 - [x] `ignoreBuildErrors` removido de `next.config.mjs`.
 - [x] Vercel Analytics integrado en `app/layout.tsx`.
@@ -453,6 +453,47 @@ model StampLog {
 - [x] **`/invite` — landing de bienvenida** — página intermedia (`app/invite/page.tsx`) que muestra el negocio y CTA de acceso, permite renderizado de OG antes del login
 - [x] **`/invite/opengraph-image.tsx`** — OG 1200×630 con nombre del colaborador (si aplica), nombre del negocio y CTA; se muestra en preview de WhatsApp al compartir el link
 - [x] 191 tests, 0 errores de tipo
+
+### Fase 10 — UX del Dashboard y Herramientas de Operación ✅ Completada
+
+> Ramas: `feat/mobile-navbar-redesign` (PR #82), `feat/reset-password-script` (PR #83), `feat/customers-sort-filter` (PR pendiente)
+
+#### Mobile Navbar Redesign
+- [x] **Bottom navbar mobile** — 5 tabs fijos: Panel, Tarjetas, [Escáner FAB central], Clientes, Menú
+- [x] **Escáner FAB** — botón circular elevado en el centro, prominente, link a `/dashboard/scan`
+- [x] **Desktop sidebar** — grupos colapsables "Gestión" y "Administración" con `Collapsible` de shadcn/ui
+- [x] **Panel "Menú" mobile** — muestra solo items NO disponibles en el bottom bar (QR + Administración para admin)
+- [x] **Role-aware mobile** — sellador ve solo Gestión (QR); admin ve Gestión + Administración
+- [x] **Fix: sin items repetidos en el panel** — `moreNavGroups` derivado de `navGroups` filtrando hrefs del bottom bar
+
+#### Scripts de Operación
+- [x] **`pnpm reset:password`** — script CLI para resetear contraseña por email: genera nueva pass, marca `must_change_password`, cierra todas las sesiones, opcionalmente envía correo
+- [x] **`--business`** en `create-client` — renombrado de `--name` a `--business` para mayor claridad
+- [x] **Email modular** — `sendPasswordResetEmail()` como función exportable, reutiliza template `invite.html`
+
+#### Dashboard UX
+- [x] **Tabla Clientes sorteable** — columnas Cliente, Progreso, Registro ordenables via URL (`?sort=&order=`)
+- [x] **Filtro por tarjeta** — pills de filtro en `/dashboard/customers` cuando hay más de una tarjeta activa
+- [x] **Layout home** — Actividad Reciente movida debajo de Tarjetas (era sidebar igual nivel)
+- [x] **Campo descripción** en dialog "Editar Tarjeta" — textarea con `resize-none`, max 200 chars; solo visible en dashboard
+- [x] **"Ver tarjetas"** — botón en `/dashboard/customers` corregido a `/dashboard/cards`
+- [x] **QR inline en detalle de tarjeta** — `CardQRInline` en `/dashboard/cards/[id]` antes de la tabla; preview 80px + link a QR codes
+- [x] **Tabla sorteable en detalle de tarjeta** — `/dashboard/cards/[id]` reutiliza `CustomersTable` compartido, `showCardColumn={false}`
+- [x] **Componente `CustomersTable` compartido** — extrae lógica de tabla, `SortField`, `SortOrder`, `buildSortLink`, `timeAgo` a `components/dashboard/customers-table.tsx`
+- [x] 238 tests, 0 errores de tipo
+
+---
+
+### Post-MVP — Landing Page
+
+> Observaciones post-polish para aumentar conversión y credibilidad.
+
+- [ ] **Testimoniales** — 3 quotes con nombre, tipo de negocio y calificación (tarjetas en fila horizontal)
+- [ ] **Sección de números grandes** — bloque de fondo oscuro con 3 stats visibles (+N sellos, % retención, setup en X min)
+- [ ] **FAQ** — 5 preguntas clave con `shadcn/Accordion` (¿necesitan app?, pricing, personalización, cancelación, seguridad QR)
+- [ ] **Pricing beta más claro** — aunque sea "Gratis durante beta", mostrar features incluidas para reducir objeción
+
+---
 
 ### Post-MVP — Infraestructura
 
