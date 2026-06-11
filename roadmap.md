@@ -407,7 +407,7 @@ model StampLog {
 ### Verificaciones actuales
 
 - [x] `pnpm exec tsc --noEmit` pasa sin errores.
-- [x] `pnpm test` — 167 tests, 0 errores.
+- [x] `pnpm test` — 191 tests, 0 errores.
 - [x] `pnpm lint` funcional (ESLint v9.39.4, solo warnings).
 - [x] `ignoreBuildErrors` removido de `next.config.mjs`.
 - [x] Vercel Analytics integrado en `app/layout.tsx`.
@@ -424,17 +424,20 @@ model StampLog {
 
 > **A partir de ahora todo el desarrollo se hace en `dev`.** Las ramas de feature se crean desde `dev`, los PRs se mergean a `dev`, y `main` solo recibe merges desde `dev` para releases estables.
 
-### Siguiente prioridad (inmediata después de MVP)
+### Fase 8 — Sistema Multi-Usuario ✅ Completada
 
-> Sistema multi-usuario con roles para que los negocios puedan invitar colaboradores.
+> Mergeada a `dev` vía PR #79. Tests en `test/multi-user-roles` (PR pendiente).
 
-- [ ] **Soporte multiusuarios** — modelo `User` vinculado a `Business` con dos roles:
-  - `admin` (dueño, control total del negocio)
-  - `sellador` (puede sellar/canjear tarjetas, ver clientes)
-- [ ] Login con selección de negocio si aplica
-- [ ] Pantalla de invitación — admin envía magic link con rol asignado
-- [ ] Restringir acciones según rol en API routes y UI
-- [ ] Migración de `Business.email` como owner implícito al nuevo modelo User
+- [x] **Modelo `User`** vinculado a `Business` con roles `admin` y `sellador`
+- [x] `getBusinessFromSession()` resuelve vía `User` — soporta múltiples colaboradores por negocio
+- [x] Guards de rol en todas las API routes (`requireRole`, `ForbiddenError`, 403)
+- [x] `/api/users` — CRUD de colaboradores: listar, invitar, cambiar rol, eliminar
+- [x] Invitación crea cuenta en Supabase Auth con contraseña temporal (`must_change_password`)
+- [x] UI role-aware: sidebar, header, profile panel y mobile settings filtran según rol
+- [x] `/dashboard/team` — gestión de equipo: tabla, modal invitar, cambio de rol, eliminar con confirmación
+- [x] `prisma db push` aplicado + 9 negocios existentes migrados con usuario admin
+- [x] `scripts/create-client.ts` actualizado — crea `User{admin}` junto con el `Business`
+- [x] 191 tests, 0 errores de tipo
 
 ### Post-MVP — Infraestructura
 
