@@ -73,6 +73,7 @@ export async function GET(request: NextRequest) {
 
     const where: Record<string, unknown> = {
       card: { businessId: business.id },
+      isActive: true,
     }
 
     if (q) {

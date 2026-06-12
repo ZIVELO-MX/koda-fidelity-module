@@ -109,6 +109,12 @@ describe("POST /api/stamps", () => {
     expect(res.status).toBe(404)
   })
 
+  it("returns 404 when customer is inactive (soft-deleted)", async () => {
+    mockPrisma.customer.findUnique.mockResolvedValue(makeCustomer({ isActive: false }))
+    const res = await POST(makeRequest({ customerId: "cust1" }))
+    expect(res.status).toBe(404)
+  })
+
   it("returns 400 when card is expired", async () => {
     mockPrisma.customer.findUnique.mockResolvedValue(makeCustomer({ expiresAt: new Date("2020-01-01") }))
     const res = await POST(makeRequest({ customerId: "cust1" }))
