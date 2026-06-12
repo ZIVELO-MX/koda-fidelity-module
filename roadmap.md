@@ -228,6 +228,27 @@
 
 ---
 
+### Deuda Técnica — Contraseña Temporal Hardcodeada
+
+La constante `DEFAULT_PASSWORD = "Koda1234!"` existe en `app/api/users/route.ts:6` y en los scripts
+`create-user`, `create-client`, `reset-password`, `send-invite`. Es la contraseña temporal asignada
+a todo colaborador invitado, sin importar el negocio.
+
+**Riesgo:** Quien conozca el email de un invitado puede acceder a su cuenta antes de que él lo haga,
+hasta que complete el cambio de contraseña forzado (`must_change_password`). El valor ya está quemado
+en el historial de git.
+
+**Mitigación actual:** El login forzado a `/dashboard/update-password` reduce la ventana de riesgo si
+el admin comparte las credenciales por WhatsApp de inmediato. El sistema está en lanzamiento controlado
+(`INVITE_ONLY=true`), lo que limita el volumen de cuentas expuestas.
+
+**Solución pendiente (`plans/002-random-temp-passwords.md`):**
+- Crear `lib/temp-password.ts` con `generateTempPassword()` usando `crypto.randomBytes(12).toString("base64url")`
+- Reemplazar la constante en la ruta API y los 4 scripts CLI
+- Tras el deploy: rotar manualmente las cuentas existentes (la contraseña vieja está en git history)
+
+---
+
 ### Deuda Técnica — Magic Links por Email
 
 El plan Free de Supabase limita el envío de emails a 30/hora por proyecto.
