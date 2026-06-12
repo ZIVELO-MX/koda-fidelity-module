@@ -27,9 +27,6 @@ const BASE_PROPS = {
 const hasText = (text: string) => screen.getAllByText(text).length > 0
 const lacksText = (text: string) => screen.queryAllByText(text).length === 0
 
-// hrefs that belong to the 4 fixed bottom-nav tabs and must NOT appear in the panel
-const BOTTOM_NAV_HREFS = ["/dashboard", "/dashboard/cards", "/dashboard/customers", "/dashboard/scan"]
-
 function openMobileMenu() {
   fireEvent.click(screen.getByLabelText("Abrir menú"))
 }
@@ -62,13 +59,23 @@ describe("DashboardSidebar — role-based navigation", () => {
         expect(Array.isArray(capturedProps.current.navGroups)).toBe(true)
       })
 
-      it("does not include bottom-nav hrefs in panel items", () => {
+      it("includes the complete navigation map (Panel, Tarjetas, Clientes, Escáner, QR)", () => {
         const allHrefs = capturedProps.current.navGroups.flatMap((g: any) =>
           g.items.map((i: any) => i.href)
         )
-        for (const href of BOTTOM_NAV_HREFS) {
-          expect(allHrefs).not.toContain(href)
+        for (const href of [
+          "/dashboard", "/dashboard/cards", "/dashboard/customers",
+          "/dashboard/scan", "/dashboard/qr-codes",
+        ]) {
+          expect(allHrefs).toContain(href)
         }
+      })
+
+      it("groups Panel under General and Escáner under Gestión", () => {
+        const general = capturedProps.current.navGroups.find((g: any) => g.label === "General")
+        const gestion = capturedProps.current.navGroups.find((g: any) => g.label === "Gestión")
+        expect(general.items.map((i: any) => i.href)).toEqual(["/dashboard"])
+        expect(gestion.items.map((i: any) => i.href)).toContain("/dashboard/scan")
       })
 
       it("includes admin-only items (Marca, Configuración, Equipo, Docs)", () => {
@@ -79,13 +86,6 @@ describe("DashboardSidebar — role-based navigation", () => {
         expect(allHrefs).toContain("/dashboard/settings")
         expect(allHrefs).toContain("/dashboard/team")
         expect(allHrefs).toContain("/dashboard/docs")
-      })
-
-      it("includes QR codes in panel", () => {
-        const allHrefs = capturedProps.current.navGroups.flatMap((g: any) =>
-          g.items.map((i: any) => i.href)
-        )
-        expect(allHrefs).toContain("/dashboard/qr-codes")
       })
     })
   })
@@ -105,12 +105,15 @@ describe("DashboardSidebar — role-based navigation", () => {
     describe("mobile menu panel (sellador)", () => {
       beforeEach(() => openMobileMenu())
 
-      it("does not include bottom-nav hrefs in panel items", () => {
+      it("includes the complete navigation map (Panel, Tarjetas, Clientes, Escáner, QR)", () => {
         const allHrefs = capturedProps.current.navGroups.flatMap((g: any) =>
           g.items.map((i: any) => i.href)
         )
-        for (const href of BOTTOM_NAV_HREFS) {
-          expect(allHrefs).not.toContain(href)
+        for (const href of [
+          "/dashboard", "/dashboard/cards", "/dashboard/customers",
+          "/dashboard/scan", "/dashboard/qr-codes",
+        ]) {
+          expect(allHrefs).toContain(href)
         }
       })
 

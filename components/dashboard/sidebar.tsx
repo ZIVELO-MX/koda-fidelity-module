@@ -88,19 +88,30 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
   })
 
   const visibleGroups = navGroups.filter((g) => g.roles.includes(role))
-  // Panel groups for the mobile "Menú" panel — same role filtering as desktop,
-  // but strip any item already accessible via the 4 fixed bottom-nav tabs.
-  const moreNavGroups = navGroups
-    .filter((g) => g.roles.includes(role))
-    .map((g) => ({
-      label: g.label,
-      items: g.items.filter((item) => !BOTTOM_NAV_HREFS.has(item.href)),
-    }))
-    .filter((g) => g.items.length > 0)
+
+  // Mobile "Menú" panel: complete navigation map with all destinations visible.
+  // BOTTOM_NAV_HREFS is kept only to avoid lighting up "Menú" while a bottom-tab is active.
+  const moreNavGroups = [
+    {
+      label: "General",
+      items: [{ name: "Panel", href: "/dashboard", icon: LayoutDashboard }],
+    },
+    ...navGroups
+      .filter((g) => g.roles.includes(role))
+      .map((g) => ({
+        label: g.label,
+        items:
+          g.label === "Gestión"
+            ? [...g.items, { name: "Escáner", href: "/dashboard/scan", icon: Camera }]
+            : [...g.items],
+      })),
+  ]
 
   const isScanActive = pathname === "/dashboard/scan"
   const isMenuActive = moreNavGroups.some((g) =>
-    g.items.some((item) => pathname.startsWith(item.href))
+    g.items.some(
+      (item) => !BOTTOM_NAV_HREFS.has(item.href) && pathname.startsWith(item.href),
+    ),
   )
 
   const mobileMainItems = [
