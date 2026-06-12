@@ -94,6 +94,10 @@ export async function POST(request: NextRequest) {
       throw new NotFoundError("Customer not found")
     }
 
+    if (!customer.isActive) {
+      throw new NotFoundError("Customer not found")
+    }
+
     if (isExpired(customer.card.expiresAt)) {
       throw new ValidationError("This loyalty card has expired")
     }
