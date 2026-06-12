@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { getBusinessFromSession, handleApiError, ValidationError, NotFoundError } from "@/lib/api-utils"
 import { isExpired } from "@/lib/card-utils"
@@ -104,7 +105,7 @@ export async function POST(request: NextRequest) {
       }
 
       const updated = await prisma.customer.update({
-        where: { id: customer.id },
+        where: { id: customer.id, stamps: { lt: customer.card.stampsRequired } },
         data: {
           stamps: { increment: 1 },
           stampsLog: {
@@ -114,6 +115,10 @@ export async function POST(request: NextRequest) {
         include: {
           card: { select: { name: true, stampsRequired: true, reward: true } },
         },
+      }).catch((e: unknown) => {
+        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025")
+          throw new ValidationError("Customer has completed the card and must redeem first.")
+        throw e
       })
 
       return NextResponse.json({
@@ -131,7 +136,7 @@ export async function POST(request: NextRequest) {
       }
 
       const updated = await prisma.customer.update({
-        where: { id: customer.id },
+        where: { id: customer.id, stamps: { gte: customer.card.stampsRequired } },
         data: {
           stamps: 0,
           stampsLog: {
@@ -141,6 +146,10 @@ export async function POST(request: NextRequest) {
         include: {
           card: { select: { name: true, stampsRequired: true, reward: true } },
         },
+      }).catch((e: unknown) => {
+        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025")
+          throw new ValidationError("Customer needs more stamps to redeem")
+        throw e
       })
 
       return NextResponse.json({

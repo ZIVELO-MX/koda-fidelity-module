@@ -127,7 +127,7 @@ describe("POST /api/stamps", () => {
       expect(body.event).toBe("stamp")
       expect(mockPrisma.customer.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { id: "cust1" },
+          where: expect.objectContaining({ id: "cust1", stamps: { lt: 10 } }),
           data: expect.objectContaining({ stamps: { increment: 1 } }),
         }),
       )
@@ -162,7 +162,7 @@ describe("POST /api/stamps", () => {
       expect(body.event).toBe("redeem")
       expect(mockPrisma.customer.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { id: "cust1" },
+          where: expect.objectContaining({ id: "cust1", stamps: { gte: 10 } }),
           data: expect.objectContaining({ stamps: 0 }),
         }),
       )
