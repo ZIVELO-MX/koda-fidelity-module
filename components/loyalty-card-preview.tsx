@@ -1,6 +1,7 @@
 "use client"
 
 import { QRCodeSVG } from "qrcode.react"
+import { Stamp } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getCardIcon } from "@/lib/card-icons"
 
@@ -8,6 +9,7 @@ interface LoyaltyCardPreviewProps {
   businessName: string
   businessLogo?: string
   iconName?: string | null
+  stampIconName?: string | null
   customerName?: string
   currentStamps: number
   maxStamps: number
@@ -24,6 +26,7 @@ export function LoyaltyCardPreview({
   businessName,
   businessLogo,
   iconName,
+  stampIconName,
   customerName = "Tu Nombre",
   currentStamps,
   maxStamps,
@@ -53,17 +56,17 @@ export function LoyaltyCardPreview({
             <img
               src={businessLogo}
               alt={businessName}
-              className="w-10 h-10 rounded-xl object-contain p-0.5"
+              className="w-16 h-16 rounded-2xl object-contain p-1"
             />
           ) : (() => {
             const icon = getCardIcon(iconName)
             const IconComp = icon?.Icon
             return (
               <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-lg"
+                className="w-16 h-16 rounded-2xl flex items-center justify-center text-white font-bold text-2xl"
                 style={{ backgroundColor: "rgba(255,255,255,0.2)" }}
               >
-                {IconComp ? <IconComp className="h-5 w-5" /> : businessName.charAt(0)}
+                {IconComp ? <IconComp className="h-7 w-7" /> : businessName.charAt(0)}
               </div>
             )
           })()}
@@ -114,22 +117,15 @@ export function LoyaltyCardPreview({
                   : { borderColor: "rgba(255,255,255,0.3)" }
               }
             >
-              {filled && (
-                <svg
-                  className="w-5 h-5"
-                  style={{ color: brandColor }}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={3}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              )}
+              {filled && (() => {
+                const effectiveStampIcon = stampIconName ?? iconName
+                if (effectiveStampIcon === "logo" && businessLogo) {
+                  return <img src={businessLogo} alt="" className="w-5 h-5 object-contain rounded" />
+                }
+                const cardIcon = getCardIcon(effectiveStampIcon)
+                const StampIcon = cardIcon?.Icon ?? Stamp
+                return <StampIcon className="w-5 h-5" style={{ color: brandColor }} strokeWidth={2} />
+              })()}
             </div>
           ))}
         </div>

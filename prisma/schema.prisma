@@ -52,6 +52,7 @@ model LoyaltyCard {
   stampsRequired Int        @default(10)
   brandColor     String     @default("#ff6b35")
   iconName       String?
+  stampIconName  String?
   isActive       Boolean    @default(true)
   expiresAt      DateTime?
   description    String?

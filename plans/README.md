@@ -19,6 +19,10 @@ the plan fully before starting, honor its STOP conditions, and update your row w
 | 004  | Atomic stamp/redeem (fix check-then-act races on the money path) | P1 | S | 003 | DONE |
 | 005  | Soft-delete filtering + accurate redemptions stat | P2 | S | 003 | DONE |
 | 006  | Mobile UI: complete menu nav map + responsive team page | P2 | M | — | DONE |
+| 007  | UI polish: logo más grande en tarjeta + ícono de sello configurable (sigue iconName) con preview en vivo en edit dialog | P2 | S | — | IN PROGRESS — PR #90 feat/ui-polish |
+| 008  | Hard delete de tarjetas (además del archive/soft-delete existente) | P2 | S | — | DONE — PR #91 mergeado |
+| 009  | Vista de tarjetas archivadas + restaurar; clientes existentes siguen viendo sus tarjetas archivadas | P2 | M | 008 | IN PROGRESS — PR #92 feat/archived-cards-view |
+| 010  | Opciones avanzadas de configuración de tarjeta: desactivar marca de agua Koda, modo "cerrado" (no acepta nuevos miembros sin archivar) | P3 | M | 009 | TODO |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
 
@@ -51,6 +55,37 @@ Worth doing later; no plan written this run:
 - **`supabase.auth.admin.listUsers()` in user deletion** flagged as security: it's an efficiency/robustness wart, not an exposure (response never leaves the server). Revisit only if user counts grow.
 - **Committed certificates**: investigated — `certificates/` contains only `.gitkeep`; `*.pem/p12/der/json` are gitignored. No issue.
 - **lucide-react minor lag, Prisma 6→7 migration**: routine maintenance, no current cost justifying a plan.
+
+## Plan 010 — Opciones avanzadas de configuración de tarjeta
+
+**Contexto**: Actualmente, la única forma de cerrar una tarjeta a nuevos miembros es archivarla (lo que la oculta del dashboard). Los negocios pueden necesitar cerrar el registro sin afectar la visibilidad ni los sellos activos. También se solicita poder quitar la marca de agua "Con tecnología de Koda" para negocios que quieran una experiencia más white-label.
+
+**Alcance**:
+
+### A) Modo "cerrado" — tarjeta activa pero sin nuevos registros
+
+- Nuevo campo en Prisma: `LoyaltyCard.acceptingNewMembers Boolean @default(true)`
+- Migración: `add_card_settings` (non-destructive, default true)
+- API: `PUT /api/cards/:id` acepta `acceptingNewMembers` (boolean)
+- `POST /api/join`: rechaza si `!card.acceptingNewMembers` con mensaje "Esta tarjeta ya no acepta nuevos miembros"
+- `GET /api/cards/:id`: expone `acceptingNewMembers`
+- UI dashboard: toggle en el edit dialog de `card-actions.tsx` — "Aceptar nuevos miembros"
+- UI cliente (`/join/[cardId]`): mostrar error específico (distinto al de tarjeta archivada)
+
+### B) Desactivar marca de agua
+
+- Nuevo campo en Prisma: `Business.hideWatermark Boolean @default(false)` (o `LoyaltyCard.hideWatermark`)
+- Decisión de granularidad: ¿por negocio (aplica a todas sus tarjetas) o por tarjeta?  Recomendado: por negocio, desde la sección Marca/Branding del dashboard
+- `LoyaltyCardPreview`: prop `hideWatermark?: boolean` oculta el footer "Con tecnología de Koda"
+- Pasar `hideWatermark` desde el server component en `/join/[cardId]` y `/dashboard/my-cards`
+
+**Dependencias**: 009 (establece el patrón de flags en tarjetas y visibilidad customer-side)
+
+**Effort**: M (2 migraciones + 2 props + toggle UI)
+
+**STOP conditions**: No implementar si los dos campos se fusionan en un solo modelo `CardSettings` — ese refactor es fuera de scope aquí.
+
+---
 
 ## Direction findings (maintainer decisions, not defects)
 

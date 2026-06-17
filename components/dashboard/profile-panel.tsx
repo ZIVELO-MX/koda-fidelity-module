@@ -43,7 +43,7 @@ export function ProfilePanel({
 
   const avatar = (
     <div
-      className="rounded-full flex items-center justify-center font-bold text-white shadow-lg"
+      className="rounded-full flex items-center justify-center font-bold text-white shadow-lg overflow-hidden"
       style={{ backgroundColor: brandColor }}
     >
       {initial}
@@ -143,7 +143,7 @@ export function ProfilePanel({
           </div>
           <div className="p-4 flex flex-col items-center gap-4">
             <div
-              className="h-16 w-16 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-lg"
+              className="h-16 w-16 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-lg overflow-hidden"
               style={{ backgroundColor: brandColor }}
             >
               {businessName.charAt(0).toUpperCase()}

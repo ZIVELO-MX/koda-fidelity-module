@@ -148,7 +148,7 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
                   isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
-                <LayoutDashboard className="h-5 w-5 flex-shrink-0" />
+                <LayoutDashboard className={cn("h-5 w-5 flex-shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
                 Panel
               </Link>
             )
@@ -185,7 +185,7 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
                           : "text-muted-foreground hover:bg-muted hover:text-foreground"
                       )}
                     >
-                      <item.icon className="h-5 w-5 flex-shrink-0" />
+                      <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
                       {item.name}
                     </Link>
                   )
@@ -255,13 +255,10 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
               <Link
                 key={item.name}
                 href={item.href}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-0.5 min-w-0 px-2 py-1 rounded-lg transition-colors",
-                  isActive ? "text-primary" : "text-muted-foreground"
-                )}
+                className="flex flex-col items-center justify-center gap-0.5 min-w-0 px-2 py-1 rounded-lg transition-colors"
               >
-                <item.icon className="h-5 w-5" />
-                <span className="text-[10px] font-medium leading-tight truncate w-full text-center">
+                <item.icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted-foreground")} />
+                <span className={cn("text-[10px] font-medium leading-tight truncate w-full text-center", isActive ? "text-primary" : "text-muted-foreground")}>
                   {item.name}
                 </span>
               </Link>
@@ -301,13 +298,10 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
               <Link
                 key={item.name}
                 href={item.href}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-0.5 min-w-0 px-2 py-1 rounded-lg transition-colors",
-                  isActive ? "text-primary" : "text-muted-foreground"
-                )}
+                className="flex flex-col items-center justify-center gap-0.5 min-w-0 px-2 py-1 rounded-lg transition-colors"
               >
-                <item.icon className="h-5 w-5" />
-                <span className="text-[10px] font-medium leading-tight truncate w-full text-center">
+                <item.icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted-foreground")} />
+                <span className={cn("text-[10px] font-medium leading-tight truncate w-full text-center", isActive ? "text-primary" : "text-muted-foreground")}>
                   {item.name}
                 </span>
               </Link>
@@ -317,14 +311,11 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
           {/* Menú button */}
           <button
             onClick={() => setMoreOpen(true)}
-            className={cn(
-              "flex flex-col items-center justify-center gap-0.5 min-w-0 px-2 py-1 rounded-lg transition-colors",
-              isMenuActive ? "text-primary" : "text-muted-foreground"
-            )}
+            className="flex flex-col items-center justify-center gap-0.5 min-w-0 px-2 py-1 rounded-lg transition-colors"
             aria-label="Abrir menú"
           >
-            <Menu className="h-5 w-5" />
-            <span className="text-[10px] font-medium leading-tight truncate w-full text-center">Menú</span>
+            <Menu className={cn("h-5 w-5", isMenuActive ? "text-primary" : "text-muted-foreground")} />
+            <span className={cn("text-[10px] font-medium leading-tight truncate w-full text-center", isMenuActive ? "text-primary" : "text-muted-foreground")}>Menú</span>
           </button>
         </div>
       </nav>

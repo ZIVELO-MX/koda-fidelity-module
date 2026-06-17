@@ -84,7 +84,7 @@ export function MobileSettingsPanel({
           {/* Profile strip */}
           <div className="flex items-center gap-4 px-6 py-5 border-b border-border bg-card">
             <div
-              className="h-14 w-14 rounded-full flex items-center justify-center font-bold text-white text-2xl shrink-0 shadow"
+              className="h-14 w-14 rounded-full flex items-center justify-center font-bold text-white text-2xl shrink-0 shadow overflow-hidden"
               style={{ backgroundColor: brandColor }}
             >
               {businessName.charAt(0).toUpperCase()}

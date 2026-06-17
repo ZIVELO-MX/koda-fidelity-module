@@ -151,6 +151,7 @@ export async function POST(request: NextRequest) {
         stampsRequired,
         brandColor: body.brandColor || business.brandColor,
         iconName: body.iconName || business.iconName || null,
+        stampIconName: body.stampIconName ?? null,
         description: body.description?.trim() || null,
         expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
       },
