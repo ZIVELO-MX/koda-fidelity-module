@@ -26,6 +26,7 @@ import {
 import { Archive, QrCode, Pencil, Loader2, Check, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { IconPicker } from "@/components/dashboard/icon-picker"
+import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 
 const colorPresets = [
   "#f97316", "#3b82f6", "#10b981", "#8b5cf6", "#ec4899", "#f59e0b",
@@ -33,6 +34,8 @@ const colorPresets = [
 
 interface CardActionsProps {
   cardId: string
+  businessName: string
+  maxStamps: number
   initialName?: string
   initialReward?: string
   initialColor?: string
@@ -42,6 +45,8 @@ interface CardActionsProps {
 
 export function CardActions({
   cardId,
+  businessName,
+  maxStamps,
   initialName = "",
   initialReward = "",
   initialColor = "#f97316",
@@ -210,12 +215,28 @@ export function CardActions({
 
       {/* Edit dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Tarjeta</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-5 py-2">
+          <div className="grid sm:grid-cols-2 gap-6 py-2">
+            {/* Live preview */}
+            <div className="sm:order-2 flex flex-col gap-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Vista previa</p>
+              <LoyaltyCardPreview
+                businessName={businessName}
+                iconName={iconName}
+                brandColor={color}
+                reward={reward || "Tu recompensa"}
+                currentStamps={Math.ceil(maxStamps / 2)}
+                maxStamps={maxStamps}
+                showQR={false}
+                className="text-sm"
+              />
+            </div>
+
+          <div className="sm:order-1 space-y-5">
             <div className="space-y-2">
               <Label htmlFor="edit-name">Nombre</Label>
               <Input
@@ -280,6 +301,7 @@ export function CardActions({
             </div>
 
             {editError && <p className="text-sm text-destructive">{editError}</p>}
+          </div>
           </div>
 
           <DialogFooter>

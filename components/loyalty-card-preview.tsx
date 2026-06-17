@@ -115,13 +115,11 @@ export function LoyaltyCardPreview({
                   : { borderColor: "rgba(255,255,255,0.3)" }
               }
             >
-              {filled && (
-                <Stamp
-                  className="w-5 h-5"
-                  style={{ color: brandColor }}
-                  strokeWidth={2}
-                />
-              )}
+              {filled && (() => {
+                const cardIcon = getCardIcon(iconName)
+                const StampIcon = cardIcon?.Icon ?? Stamp
+                return <StampIcon className="w-5 h-5" style={{ color: brandColor }} strokeWidth={2} />
+              })()}
             </div>
           ))}
         </div>
