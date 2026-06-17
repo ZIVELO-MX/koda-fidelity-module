@@ -249,7 +249,7 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
@@ -262,7 +262,12 @@ export async function DELETE(
       throw new NotFoundError("Loyalty card not found")
     }
 
-    await prisma.loyaltyCard.update({ where: { id }, data: { isActive: false } })
+    const permanent = new URL(request.url).searchParams.get("permanent") === "true"
+    if (permanent) {
+      await prisma.loyaltyCard.delete({ where: { id } })
+    } else {
+      await prisma.loyaltyCard.update({ where: { id }, data: { isActive: false } })
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

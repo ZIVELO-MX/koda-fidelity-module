@@ -23,7 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Archive, QrCode, Pencil, Loader2, Check } from "lucide-react"
+import { Archive, QrCode, Pencil, Loader2, Check, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { IconPicker } from "@/components/dashboard/icon-picker"
 
@@ -55,6 +55,11 @@ export function CardActions({
   const [archiving, setArchiving] = useState(false)
   const [archiveError, setArchiveError] = useState<string | null>(null)
 
+  // permanent delete state
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+
   // edit state
   const [editOpen, setEditOpen] = useState(false)
   const [name, setName] = useState(initialName)
@@ -75,6 +80,18 @@ export function CardActions({
     } else {
       setArchiveError("No fue posible archivar la tarjeta")
       setArchiving(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    setDeleting(true)
+    setDeleteError(null)
+    const res = await fetch(`/api/cards/${cardId}?permanent=true`, { method: "DELETE" })
+    if (res.ok) {
+      router.push("/dashboard/cards")
+    } else {
+      setDeleteError("No fue posible eliminar la tarjeta")
+      setDeleting(false)
     }
   }
 
@@ -135,8 +152,17 @@ export function CardActions({
           )}
           Archivar
         </Button>
+        <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)} disabled={deleting} className="text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30">
+          {deleting ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Trash2 className="h-4 w-4 mr-2" />
+          )}
+          Eliminar
+        </Button>
       </div>
       {archiveError && <p className="text-sm text-destructive mt-2">{archiveError}</p>}
+      {deleteError && <p className="text-sm text-destructive mt-2">{deleteError}</p>}
 
       {/* Archive confirmation */}
       <AlertDialog open={archiveOpen} onOpenChange={setArchiveOpen}>
@@ -153,6 +179,30 @@ export function CardActions({
               {archiving && <Loader2 className="h-4 w-4 animate-spin" />}
               <Archive className="h-4 w-4" />
               Archivar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Permanent delete confirmation */}
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar tarjeta permanentemente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción <strong>no se puede deshacer</strong>. La tarjeta <strong>{initialName}</strong> y todos los datos de sus clientes serán eliminados para siempre.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="gap-2 bg-destructive hover:bg-destructive/90"
+            >
+              {deleting && <Loader2 className="h-4 w-4 animate-spin" />}
+              <Trash2 className="h-4 w-4" />
+              Eliminar permanentemente
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
