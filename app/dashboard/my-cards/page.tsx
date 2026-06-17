@@ -39,6 +39,7 @@ interface MyCard {
     reward: string
     brandColor: string
     iconName: string | null
+    isActive: boolean
     expiresAt: string | null
     business: { name: string; brandColor: string; logoUrl: string | null; iconName: string | null }
   }
@@ -137,8 +138,10 @@ export default function DashboardMyCardsPage() {
     loadCards().finally(() => setRefreshing(false))
   }, [loadCards])
 
-  const activeCards = useMemo(() => cards.filter((c) => !isExpired(c.card.expiresAt)), [cards])
-  const expiredCards = useMemo(() => cards.filter((c) => isExpired(c.card.expiresAt)), [cards])
+  const activeCards = useMemo(() => cards.filter((c) => c.card.isActive && !isExpired(c.card.expiresAt)), [cards])
+  const expiredCards = useMemo(() => cards.filter((c) => c.card.isActive && isExpired(c.card.expiresAt)), [cards])
+  const archivedCards = useMemo(() => cards.filter((c) => !c.card.isActive), [cards])
+  const [showArchived, setShowArchived] = useState(false)
 
   const filteredActive = useMemo(() => {
     if (!search.trim()) return activeCards
@@ -494,6 +497,94 @@ export default function DashboardMyCardsPage() {
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Archived cards section */}
+          {archivedCards.length > 0 && (
+            <div className="space-y-3">
+              <button
+                onClick={() => setShowArchived((v) => !v)}
+                className="w-full flex items-center gap-2 py-1 hover:opacity-75 transition-opacity"
+                aria-expanded={showArchived}
+              >
+                <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex-1 text-left">
+                  Tarjetas archivadas
+                </span>
+                <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
+                  {archivedCards.length}
+                </span>
+                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${showArchived ? "" : "-rotate-90"}`} />
+              </button>
+
+              <div className={`grid transition-all duration-300 ease-in-out ${showArchived ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
+                <div className="overflow-hidden space-y-3">
+                  {archivedCards.map((c) => {
+                    const isExpanded = expandedCards.has(c.id)
+                    return (
+                      <div key={c.id} className="bg-card rounded-2xl border border-border overflow-hidden opacity-80">
+                        <button onClick={() => toggleCard(c.id)}
+                          className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+                          aria-expanded={isExpanded}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            {(() => {
+                              const icon = getCardIcon(c.card.iconName ?? c.card.business.iconName)
+                              const IconComp = icon?.Icon
+                              return (
+                                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shrink-0 overflow-hidden grayscale"
+                                  style={{ backgroundColor: c.card.brandColor }}>
+                                  {c.card.business.logoUrl ? (
+                                    <img src={c.card.business.logoUrl} alt="" className="w-full h-full object-contain" />
+                                  ) : IconComp ? <IconComp className="h-5 w-5" /> : c.card.business.name.charAt(0)}
+                                </div>
+                              )
+                            })()}
+                            <div className="text-left min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="font-semibold text-foreground truncate">{c.card.name}</p>
+                                <span className="inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground shrink-0">
+                                  Archivada
+                                </span>
+                              </div>
+                              <p className="text-sm text-muted-foreground truncate">
+                                {c.stamps}/{c.card.stampsRequired} sellos · {c.card.business.name}
+                              </p>
+                            </div>
+                          </div>
+                          <ChevronDown className={`h-5 w-5 text-muted-foreground shrink-0 transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`} />
+                        </button>
+                        <div className={`grid transition-all duration-300 ease-in-out ${isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
+                          <div className="overflow-hidden">
+                            <div className="px-4 pb-4 space-y-3">
+                              <div className="bg-muted/50 rounded-xl p-3 text-center">
+                                <p className="text-xs text-muted-foreground">
+                                  Este negocio archivó la tarjeta. Tu progreso se conserva.
+                                </p>
+                              </div>
+                              <LoyaltyCardPreview
+                                businessName={c.card.business.name}
+                                businessLogo={c.card.business.logoUrl ?? undefined}
+                                iconName={c.card.iconName ?? c.card.business.iconName}
+                                customerName={c.name}
+                                currentStamps={c.stamps}
+                                maxStamps={c.card.stampsRequired}
+                                reward={c.card.reward}
+                                brandColor={c.card.brandColor}
+                                showQR={true}
+                                qrValue={c.id}
+                              />
+                              <p className="text-xs text-muted-foreground text-center">
+                                Muestra este código QR al negocio si deseas canjear tu recompensa
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             </div>

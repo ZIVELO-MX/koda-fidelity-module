@@ -24,6 +24,7 @@ interface JoinCustomer {
     reward: string
     brandColor: string
     iconName: string | null
+    isActive: boolean
     expiresAt: string | null
     expired: boolean
     business: { name: string; brandColor: string; logoUrl: string | null; iconName: string | null }
@@ -75,6 +76,15 @@ export default function JoinCardPage() {
 
       const supabase = createBrowserSupabase()
       const { data: { session } } = await supabase.auth.getSession()
+
+      // Archived cards: existing members can still view; new members cannot join
+      if (!cardJson.card.isActive) {
+        if (!session?.user?.email) {
+          setCardError("Esta tarjeta ya no acepta nuevos miembros.")
+          setStep("error")
+          return
+        }
+      }
 
       if (session?.user?.email) {
         const email = session.user.email
@@ -128,7 +138,12 @@ export default function JoinCardPage() {
         }
       }
 
-      setStep("form")
+      if (!cardJson.card.isActive) {
+        setCardError("Esta tarjeta ya no acepta nuevos miembros.")
+        setStep("error")
+      } else {
+        setStep("form")
+      }
       checkedSession.current = true
     }
 

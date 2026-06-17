@@ -189,6 +189,7 @@ export async function GET(
         stampsRequired: card.stampsRequired,
         brandColor: card.brandColor,
         iconName: card.iconName,
+        isActive: card.isActive,
         expiresAt: card.expiresAt,
         expired: isExpired(card.expiresAt),
         businessName: card.business.name,
