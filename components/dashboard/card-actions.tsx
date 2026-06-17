@@ -26,6 +26,7 @@ import {
 import { Archive, QrCode, Pencil, Loader2, Check, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { IconPicker } from "@/components/dashboard/icon-picker"
+import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 
 const colorPresets = [
   "#f97316", "#3b82f6", "#10b981", "#8b5cf6", "#ec4899", "#f59e0b",
@@ -33,19 +34,27 @@ const colorPresets = [
 
 interface CardActionsProps {
   cardId: string
+  businessName: string
+  businessLogo?: string | null
+  maxStamps: number
   initialName?: string
   initialReward?: string
   initialColor?: string
   initialIcon?: string | null
+  initialStampIcon?: string | null
   initialDescription?: string | null
 }
 
 export function CardActions({
   cardId,
+  businessName,
+  businessLogo,
+  maxStamps,
   initialName = "",
   initialReward = "",
   initialColor = "#f97316",
   initialIcon = null,
+  initialStampIcon = null,
   initialDescription = null,
 }: CardActionsProps) {
   const router = useRouter()
@@ -66,6 +75,8 @@ export function CardActions({
   const [reward, setReward] = useState(initialReward)
   const [color, setColor] = useState(initialColor)
   const [iconName, setIconName] = useState<string | null>(initialIcon)
+  const [stampIconName, setStampIconName] = useState<string | null>(initialStampIcon)
+  const [previewMode, setPreviewMode] = useState<"normal" | "sellada">("normal")
   const [description, setDescription] = useState(initialDescription ?? "")
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -100,6 +111,8 @@ export function CardActions({
     setReward(initialReward)
     setColor(initialColor)
     setIconName(initialIcon)
+    setStampIconName(initialStampIcon)
+    setPreviewMode("normal")
     setDescription(initialDescription ?? "")
     setEditError(null)
     setSaved(false)
@@ -116,7 +129,7 @@ export function CardActions({
     const res = await fetch(`/api/cards/${cardId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: name.trim(), reward: reward.trim(), brandColor: color, iconName, description: description.trim() || null }),
+      body: JSON.stringify({ name: name.trim(), reward: reward.trim(), brandColor: color, iconName, stampIconName, description: description.trim() || null }),
     })
 
     if (res.ok) {
@@ -210,12 +223,48 @@ export function CardActions({
 
       {/* Edit dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Tarjeta</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-5 py-2">
+          <div className="grid sm:grid-cols-2 gap-6 py-2">
+            {/* Live preview */}
+            <div className="sm:order-2 flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Vista previa</p>
+                <div className="flex rounded-lg overflow-hidden border border-border text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewMode("normal")}
+                    className={`px-2.5 py-1 transition-colors ${previewMode === "normal" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground"}`}
+                  >
+                    Normal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewMode("sellada")}
+                    className={`px-2.5 py-1 transition-colors ${previewMode === "sellada" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground"}`}
+                  >
+                    Sellada
+                  </button>
+                </div>
+              </div>
+              <LoyaltyCardPreview
+                businessName={businessName}
+                businessLogo={businessLogo ?? undefined}
+                iconName={iconName}
+                stampIconName={stampIconName}
+                brandColor={color}
+                reward={reward || "Tu recompensa"}
+                currentStamps={previewMode === "sellada" ? maxStamps : Math.ceil(maxStamps / 2)}
+                maxStamps={maxStamps}
+                showQR={false}
+                className="text-sm"
+              />
+            </div>
+
+          <div className="sm:order-1 space-y-5">
             <div className="space-y-2">
               <Label htmlFor="edit-name">Nombre</Label>
               <Input
@@ -275,11 +324,17 @@ export function CardActions({
             </div>
 
             <div className="space-y-3">
-              <Label>Ícono <span className="text-muted-foreground font-normal text-xs">(opcional)</span></Label>
-              <IconPicker value={iconName} onChange={setIconName} />
+              <Label>Ícono de tarjeta <span className="text-muted-foreground font-normal text-xs">(opcional)</span></Label>
+              <IconPicker value={iconName} onChange={setIconName} businessLogoUrl={businessLogo} />
+            </div>
+
+            <div className="space-y-3">
+              <Label>Ícono del sello <span className="text-muted-foreground font-normal text-xs">(opcional — por defecto igual al de tarjeta)</span></Label>
+              <IconPicker value={stampIconName} onChange={setStampIconName} businessLogoUrl={businessLogo} />
             </div>
 
             {editError && <p className="text-sm text-destructive">{editError}</p>}
+          </div>
           </div>
 
           <DialogFooter>

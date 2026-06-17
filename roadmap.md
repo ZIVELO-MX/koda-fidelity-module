@@ -519,6 +519,27 @@ model StampLog {
 - [x] Tests de sidebar actualizados — reflejan el nuevo contrato del panel (mapa completo por rol)
 - [x] 238 tests, 0 errores de tipo
 
+### Fase 12 — UI Polish + Ícono de Sello 🔄 En progreso
+
+> Ramas: `feat/ui-polish` (PR #90), `hotfix/navbar-header-icons` (PR #93 → target: `feat/ui-polish`)
+
+#### Ícono de Sello y Vista Previa Sellada
+- [x] Campo `stampIconName String?` en `LoyaltyCard` — permite un ícono distinto para las celdas selladas
+- [x] `LoyaltyCardPreview` acepta prop `stampIconName` — renderiza ícono de sello o fallback al ícono de tarjeta
+- [x] Vista previa "sellada" en `/cards/new` y dialog de edición — toggle Normal/Sellada + `IconPicker` secundario para el sello
+- [x] Opción "Logo" en `IconPicker` — si el negocio tiene logo, aparece como opción de ícono de tarjeta/sello
+- [x] Vista previa en `/dashboard/branding` usa `LoyaltyCardPreview` en lugar de preview custom
+
+#### Hotfix — Bugs de Navegación (PR #93)
+
+> **Causa raíz de los 3 bugs:**
+>
+> 1. **Iconos invisibles en el picker** — `next/image` en `icon-picker.tsx` inyecta `style="color: transparent"` en el `<img>` renderizado; ese valor se propagaba por `currentColor` a los `<svg>` Lucide cercanos, volviéndolos invisibles. Fix: revertir a `<img>` plano.
+>
+> 2. **Ícono y texto activo del navbar desaparecían** — `text-primary` aplicado en el `<Link>` padre dependía de herencia de CSS variables (`var(--primary)`) con Tailwind v4 `@theme inline`. En ciertos contextos la herencia se rompía. Fix: aplicar `text-primary`/`text-muted-foreground` directamente en cada `<icon>` y `<span>`.
+>
+> 3. **Logo propagado a toda la navegación** — al agregar la opción "Logo" en el picker de tarjetas, `logoUrl` se pasó erróneamente por toda la cadena layout → sidebar → header → profile panel. El logo del negocio es solo una opción de ícono de tarjeta; no debe aparecer en la UI de navegación.
+
 ---
 
 ### Post-MVP — Landing Page
@@ -563,6 +584,19 @@ model StampLog {
 - Los emails **no requieren cambios** si se mantiene la paleta stone — la implementación ya está lista
 - Si se cambian los colores base de la app, actualizar el bloque `@media (prefers-color-scheme: dark)`
   en los 5 templates (`docs/email-templates/*.html`)
+
+#### Tarjetas con fondo claro — modo oscuro de tarjeta
+
+> Cuando el negocio configura un color de marca muy claro (blanco, crema, gris pálido), el texto blanco y los elementos
+> semitransparentes de `LoyaltyCardPreview` quedan ilegibles. Se necesita un modo oscuro de tarjeta independiente del
+> dark mode de la app.
+
+**Comportamiento propuesto:**
+- [ ] **Auto-detección**: calcular la luminancia relativa del `brandColor`; si supera un umbral (~0.7), aplicar automáticamente el tema oscuro de tarjeta (texto oscuro, fondos opacos claros → oscuros)
+- [ ] **Control manual**: radio button en el edit dialog (`Tema de tarjeta: Auto / Claro / Oscuro`) guardado como `LoyaltyCard.cardTheme String @default("auto")` — valores: `"auto"`, `"light"`, `"dark"`
+- [ ] `LoyaltyCardPreview` recibe prop `cardTheme?: "auto" | "light" | "dark"` y aplica la paleta correcta de foreground/background para texto y stamps
+
+**Impacto**: sólo afecta a `LoyaltyCardPreview` + un campo de BD + un control en el edit dialog. No requiere dark mode global de la app.
 
 ### Post-MVP — UX
 
