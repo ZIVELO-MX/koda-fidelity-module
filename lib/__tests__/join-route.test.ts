@@ -31,7 +31,7 @@ function makeRequest(body: unknown) {
   return { json: async () => body } as never
 }
 
-const validCard = { id: "card1", expiresAt: null }
+const validCard = { id: "card1", expiresAt: null, isActive: true }
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -74,7 +74,7 @@ describe("POST /api/join", () => {
   })
 
   it("returns 400 when card is expired", async () => {
-    mockPrisma.loyaltyCard.findUnique.mockResolvedValue({ id: "card1", expiresAt: new Date("2020-01-01") })
+    mockPrisma.loyaltyCard.findUnique.mockResolvedValue({ id: "card1", expiresAt: new Date("2020-01-01"), isActive: true })
     const res = await POST(makeRequest({ name: "Ana", email: "a@b.com", cardId: "card1" }))
     expect(res.status).toBe(400)
     const body = await res.json()
