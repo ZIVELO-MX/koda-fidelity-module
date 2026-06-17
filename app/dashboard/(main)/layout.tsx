@@ -19,7 +19,7 @@ export default async function DashboardLayout({
 
   const userRecord = await prisma.user.findUnique({
     where: { email: user.email },
-    include: { business: { select: { name: true, brandColor: true, nickname: true } } },
+    include: { business: { select: { name: true, brandColor: true, nickname: true, logoUrl: true } } },
   })
 
   if (!userRecord) {
@@ -43,6 +43,7 @@ export default async function DashboardLayout({
         userEmail={user.email}
         businessName={business.name}
         brandColor={business.brandColor}
+        logoUrl={business.logoUrl ?? undefined}
         nickname={business.nickname ?? undefined}
         role={role}
       />
@@ -51,6 +52,7 @@ export default async function DashboardLayout({
           userEmail={user.email}
           businessName={business.name}
           brandColor={business.brandColor}
+          logoUrl={business.logoUrl ?? undefined}
           nickname={business.nickname ?? undefined}
           role={role}
         />

@@ -1,6 +1,5 @@
 "use client"
 
-import Image from "next/image"
 import { CARD_ICONS } from "@/lib/card-icons"
 import { cn } from "@/lib/utils"
 
@@ -26,7 +25,7 @@ export function IconPicker({ value, onChange, businessLogoUrl }: IconPickerProps
               : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground",
           )}
         >
-          <Image src={businessLogoUrl} alt="Logo" width={20} height={20} className="h-5 w-5 object-contain rounded" />
+          <img src={businessLogoUrl} alt="Logo" className="h-5 w-5 object-contain rounded" />
           <span className="text-[10px] font-medium leading-none">Logo</span>
         </button>
       )}
