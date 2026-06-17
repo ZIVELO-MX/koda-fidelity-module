@@ -32,7 +32,6 @@ interface MobileSettingsPanelProps {
   userEmail: string
   businessName: string
   brandColor: string
-  logoUrl?: string
   role?: Role
   navGroups: NavGroup[]
   onClose: () => void
@@ -42,7 +41,6 @@ export function MobileSettingsPanel({
   userEmail,
   businessName,
   brandColor,
-  logoUrl,
   navGroups,
   onClose,
 }: MobileSettingsPanelProps) {
@@ -87,13 +85,9 @@ export function MobileSettingsPanel({
           <div className="flex items-center gap-4 px-6 py-5 border-b border-border bg-card">
             <div
               className="h-14 w-14 rounded-full flex items-center justify-center font-bold text-white text-2xl shrink-0 shadow overflow-hidden"
-              style={{ backgroundColor: logoUrl ? undefined : brandColor }}
+              style={{ backgroundColor: brandColor }}
             >
-              {logoUrl ? (
-                <img src={logoUrl} alt={businessName} className="w-full h-full object-contain p-1" />
-              ) : (
-                businessName.charAt(0).toUpperCase()
-              )}
+              {businessName.charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0">
               <p className="font-semibold text-foreground truncate">{businessName}</p>

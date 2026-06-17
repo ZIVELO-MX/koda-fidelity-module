@@ -44,7 +44,6 @@ interface DashboardSidebarProps {
   userEmail: string
   businessName: string
   brandColor: string
-  logoUrl?: string
   nickname?: string
   role: Role
 }
@@ -79,7 +78,7 @@ const BOTTOM_NAV_HREFS = new Set([
   "/dashboard/customers",
 ])
 
-export function DashboardSidebar({ userEmail, businessName, brandColor, logoUrl, nickname, role }: DashboardSidebarProps) {
+export function DashboardSidebar({ userEmail, businessName, brandColor, nickname, role }: DashboardSidebarProps) {
   const pathname = usePathname()
   const [moreOpen, setMoreOpen] = useState(false)
   const [logoutOpen, setLogoutOpen] = useState(false)
@@ -327,7 +326,6 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, logoUrl,
           userEmail={userEmail}
           businessName={businessName}
           brandColor={brandColor}
-          logoUrl={logoUrl}
           role={role}
           navGroups={moreNavGroups}
           onClose={() => setMoreOpen(false)}

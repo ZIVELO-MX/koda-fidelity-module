@@ -1,6 +1,6 @@
 "use client"
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ProfilePanel } from "./profile-panel"
 import { useState } from "react"
 
@@ -10,12 +10,11 @@ interface DashboardHeaderProps {
   userEmail: string
   businessName: string
   brandColor: string
-  logoUrl?: string
   nickname?: string
   role: Role
 }
 
-export function DashboardHeader({ userEmail, businessName, brandColor, logoUrl, nickname, role }: DashboardHeaderProps) {
+export function DashboardHeader({ userEmail, businessName, brandColor, nickname, role }: DashboardHeaderProps) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -30,7 +29,6 @@ export function DashboardHeader({ userEmail, businessName, brandColor, logoUrl, 
           className="relative cursor-pointer"
         >
           <Avatar className="h-9 w-9 border-2 border-border hover:opacity-80 transition-opacity">
-            {logoUrl && <AvatarImage src={logoUrl} alt={businessName} className="object-contain p-0.5" />}
             <AvatarFallback
               className="text-sm font-medium text-white"
               style={{ backgroundColor: brandColor }}
@@ -44,7 +42,6 @@ export function DashboardHeader({ userEmail, businessName, brandColor, logoUrl, 
               userEmail={userEmail}
               businessName={businessName}
               brandColor={brandColor}
-              logoUrl={logoUrl}
               nickname={nickname}
               role={role}
               onClose={() => setOpen(false)}

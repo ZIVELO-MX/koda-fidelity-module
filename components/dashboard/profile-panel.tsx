@@ -21,7 +21,6 @@ interface ProfilePanelProps {
   userEmail: string
   businessName: string
   brandColor: string
-  logoUrl?: string
   nickname?: string
   role: Role
   onClose: () => void
@@ -33,7 +32,6 @@ export function ProfilePanel({
   userEmail,
   businessName,
   brandColor,
-  logoUrl,
   nickname,
   role,
   onClose,
@@ -46,13 +44,9 @@ export function ProfilePanel({
   const avatar = (
     <div
       className="rounded-full flex items-center justify-center font-bold text-white shadow-lg overflow-hidden"
-      style={{ backgroundColor: logoUrl ? undefined : brandColor }}
+      style={{ backgroundColor: brandColor }}
     >
-      {logoUrl ? (
-        <img src={logoUrl} alt={businessName} className="w-full h-full object-contain p-1" />
-      ) : (
-        initial
-      )}
+      {initial}
     </div>
   )
 
@@ -150,13 +144,9 @@ export function ProfilePanel({
           <div className="p-4 flex flex-col items-center gap-4">
             <div
               className="h-16 w-16 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-lg overflow-hidden"
-              style={{ backgroundColor: logoUrl ? undefined : brandColor }}
+              style={{ backgroundColor: brandColor }}
             >
-              {logoUrl ? (
-                <img src={logoUrl} alt={businessName} className="w-full h-full object-contain p-1" />
-              ) : (
-                businessName.charAt(0).toUpperCase()
-              )}
+              {businessName.charAt(0).toUpperCase()}
             </div>
             <div className="text-center">
               <p className="font-semibold text-foreground">{businessName}</p>
