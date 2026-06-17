@@ -564,6 +564,19 @@ model StampLog {
 - Si se cambian los colores base de la app, actualizar el bloque `@media (prefers-color-scheme: dark)`
   en los 5 templates (`docs/email-templates/*.html`)
 
+#### Tarjetas con fondo claro — modo oscuro de tarjeta
+
+> Cuando el negocio configura un color de marca muy claro (blanco, crema, gris pálido), el texto blanco y los elementos
+> semitransparentes de `LoyaltyCardPreview` quedan ilegibles. Se necesita un modo oscuro de tarjeta independiente del
+> dark mode de la app.
+
+**Comportamiento propuesto:**
+- [ ] **Auto-detección**: calcular la luminancia relativa del `brandColor`; si supera un umbral (~0.7), aplicar automáticamente el tema oscuro de tarjeta (texto oscuro, fondos opacos claros → oscuros)
+- [ ] **Control manual**: radio button en el edit dialog (`Tema de tarjeta: Auto / Claro / Oscuro`) guardado como `LoyaltyCard.cardTheme String @default("auto")` — valores: `"auto"`, `"light"`, `"dark"`
+- [ ] `LoyaltyCardPreview` recibe prop `cardTheme?: "auto" | "light" | "dark"` y aplica la paleta correcta de foreground/background para texto y stamps
+
+**Impacto**: sólo afecta a `LoyaltyCardPreview` + un campo de BD + un control en el edit dialog. No requiere dark mode global de la app.
+
 ### Post-MVP — UX
 
 - [ ] `/login`: mejorar UI/UX del campo "ingresa tu contraseña" (padding, spacing, diseño del input)

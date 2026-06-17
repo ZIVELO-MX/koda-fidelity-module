@@ -108,11 +108,13 @@ export default async function CardDetailPage({
         <CardActions
           cardId={card.id}
           businessName={business.name}
+          businessLogo={business.logoUrl}
           maxStamps={card.stampsRequired}
           initialName={card.name}
           initialReward={card.reward}
           initialColor={card.brandColor}
           initialIcon={card.iconName}
+          initialStampIcon={card.stampIconName}
           initialDescription={card.description}
         />
       </div>

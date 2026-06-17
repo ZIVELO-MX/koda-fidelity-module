@@ -40,7 +40,9 @@ export default function CreateCardPage() {
     businessName: "",
   })
   const [iconName, setIconName] = useState<string | null>(null)
+  const [stampIconName, setStampIconName] = useState<string | null>(null)
   const [businessLogo, setBusinessLogo] = useState<string | null>(null)
+  const [previewMode, setPreviewMode] = useState<"normal" | "sellada">("normal")
 
   useEffect(() => {
     fetch("/api/business")
@@ -100,6 +102,7 @@ export default function CreateCardPage() {
           stampsRequired: formData.maxStamps,
           brandColor: formData.brandColor,
           iconName: iconName || undefined,
+          stampIconName: stampIconName || undefined,
           description: formData.description || undefined,
           expiresAt: formData.expirationDate || undefined,
         }),
@@ -318,8 +321,13 @@ export default function CreateCardPage() {
                 </div>
 
                 <div className="space-y-3">
-                  <Label>Ícono <span className="text-xs text-muted-foreground font-normal">(opcional)</span></Label>
-                  <IconPicker value={iconName} onChange={setIconName} />
+                  <Label>Ícono de tarjeta <span className="text-xs text-muted-foreground font-normal">(opcional)</span></Label>
+                  <IconPicker value={iconName} onChange={setIconName} businessLogoUrl={businessLogo} />
+                </div>
+
+                <div className="space-y-3">
+                  <Label>Ícono del sello <span className="text-xs text-muted-foreground font-normal">(opcional — por defecto igual al de tarjeta)</span></Label>
+                  <IconPicker value={stampIconName} onChange={setStampIconName} businessLogoUrl={businessLogo} />
                 </div>
               </div>
             </div>
@@ -413,15 +421,32 @@ export default function CreateCardPage() {
         {/* Preview */}
         <div className="lg:sticky lg:top-24 h-fit">
           <div className="bg-muted/30 rounded-2xl p-8 border border-border">
-            <h3 className="text-sm font-medium text-muted-foreground mb-6 text-center">
-              Vista Previa
-            </h3>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-sm font-medium text-muted-foreground">Vista Previa</h3>
+              <div className="flex rounded-lg overflow-hidden border border-border text-xs">
+                <button
+                  type="button"
+                  onClick={() => setPreviewMode("normal")}
+                  className={`px-3 py-1.5 transition-colors ${previewMode === "normal" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground"}`}
+                >
+                  Normal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewMode("sellada")}
+                  className={`px-3 py-1.5 transition-colors ${previewMode === "sellada" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground"}`}
+                >
+                  Sellada
+                </button>
+              </div>
+            </div>
             <LoyaltyCardPreview
               businessName={formData.businessName || "Tu Negocio"}
               businessLogo={businessLogo ?? undefined}
               iconName={iconName}
+              stampIconName={stampIconName}
               customerName="Cliente Feliz"
-              currentStamps={Math.floor(formData.maxStamps * 0.6)}
+              currentStamps={previewMode === "sellada" ? formData.maxStamps : Math.floor(formData.maxStamps * 0.6)}
               maxStamps={formData.maxStamps}
               reward={formData.reward || "Tu Recompensa"}
               expirationDate={formData.expirationDate ? new Date(formData.expirationDate + "T12:00:00").toLocaleDateString("es-MX") : undefined}

@@ -9,6 +9,7 @@ interface LoyaltyCardPreviewProps {
   businessName: string
   businessLogo?: string
   iconName?: string | null
+  stampIconName?: string | null
   customerName?: string
   currentStamps: number
   maxStamps: number
@@ -25,6 +26,7 @@ export function LoyaltyCardPreview({
   businessName,
   businessLogo,
   iconName,
+  stampIconName,
   customerName = "Tu Nombre",
   currentStamps,
   maxStamps,
@@ -116,7 +118,11 @@ export function LoyaltyCardPreview({
               }
             >
               {filled && (() => {
-                const cardIcon = getCardIcon(iconName)
+                const effectiveStampIcon = stampIconName ?? iconName
+                if (effectiveStampIcon === "logo" && businessLogo) {
+                  return <img src={businessLogo} alt="" className="w-5 h-5 object-contain rounded" />
+                }
+                const cardIcon = getCardIcon(effectiveStampIcon)
                 const StampIcon = cardIcon?.Icon ?? Stamp
                 return <StampIcon className="w-5 h-5" style={{ color: brandColor }} strokeWidth={2} />
               })()}
