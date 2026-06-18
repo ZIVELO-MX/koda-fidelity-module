@@ -30,8 +30,17 @@ export default async function DashboardPage() {
       redirect("/login")
     }
 
-    const business = await prisma.business.findUnique({
+    const userRecord = await prisma.user.findUnique({
       where: { email: user.email },
+      select: { businessId: true },
+    })
+
+    if (!userRecord) {
+      redirect("/login")
+    }
+
+    const business = await prisma.business.findUnique({
+      where: { id: userRecord.businessId },
       select: { id: true, name: true, brandColor: true, logoUrl: true, iconName: true },
     })
 
