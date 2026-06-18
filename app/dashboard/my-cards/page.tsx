@@ -76,12 +76,9 @@ function ExpiryBadge({ expiresAt }: { expiresAt: string | null }) {
 }
 
 function ArchivedSection({
-  title, cards, badge, message, expandedCards, toggleCard,
+  cards, expandedCards, toggleCard,
 }: {
-  title: string
   cards: MyCard[]
-  badge: string
-  message: string
   expandedCards: Set<string>
   toggleCard: (id: string) => void
 }) {
@@ -94,7 +91,7 @@ function ArchivedSection({
         aria-expanded={open}
       >
         <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex-1 text-left">
-          {title}
+          Archivadas
         </span>
         <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
           {cards.length}
@@ -108,6 +105,11 @@ function ArchivedSection({
             const isExpanded = expandedCards.has(c.id)
             const icon = getCardIcon(c.card.iconName ?? c.card.business.iconName)
             const IconComp = icon?.Icon
+            const byBusiness = !c.card.isActive
+            const badge = byBusiness ? "Archivada por el negocio" : "Archivada"
+            const message = byBusiness
+              ? "El negocio archivó esta tarjeta. Tu progreso se conserva."
+              : "Archivaste esta tarjeta. Tu progreso se conserva."
             return (
               <div key={c.id} className="bg-card rounded-2xl border border-border overflow-hidden opacity-80">
                 <button
@@ -235,8 +237,7 @@ export default function DashboardMyCardsPage() {
 
   const activeCards = useMemo(() => cards.filter((c) => c.isActive && c.card.isActive && !isExpired(c.card.expiresAt)), [cards])
   const expiredCards = useMemo(() => cards.filter((c) => c.isActive && c.card.isActive && isExpired(c.card.expiresAt)), [cards])
-  const selfArchivedCards = useMemo(() => cards.filter((c) => !c.isActive && c.card.isActive), [cards])
-  const businessArchivedCards = useMemo(() => cards.filter((c) => !c.card.isActive), [cards])
+  const allArchivedCards = useMemo(() => cards.filter((c) => !c.isActive || !c.card.isActive), [cards])
   const filteredActive = useMemo(() => {
     if (!search.trim()) return activeCards
     const q = search.toLowerCase()
@@ -596,25 +597,10 @@ export default function DashboardMyCardsPage() {
             </div>
           )}
 
-          {/* Self-archived cards section */}
-          {selfArchivedCards.length > 0 && (
+          {/* Archived cards section */}
+          {allArchivedCards.length > 0 && (
             <ArchivedSection
-              title="Archivadas"
-              cards={selfArchivedCards}
-              badge="Archivada"
-              message="Archivaste esta tarjeta. Tu progreso se conserva."
-              expandedCards={expandedCards}
-              toggleCard={toggleCard}
-            />
-          )}
-
-          {/* Business-archived cards section */}
-          {businessArchivedCards.length > 0 && (
-            <ArchivedSection
-              title="Archivadas por el negocio"
-              cards={businessArchivedCards}
-              badge="Archivada por el negocio"
-              message="El negocio archivó esta tarjeta. Tu progreso se conserva."
+              cards={allArchivedCards}
               expandedCards={expandedCards}
               toggleCard={toggleCard}
             />
