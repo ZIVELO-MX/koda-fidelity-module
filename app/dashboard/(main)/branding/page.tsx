@@ -146,7 +146,7 @@ export default function BrandingPage() {
           </div>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Sube un logo cuadrado (recomendado 512×512 px). Habilita la opción "Logo" en los pickers de ícono.
+              Sube un logo cuadrado (recomendado 512×512 px). Habilita la opción &ldquo;Logo&rdquo; en los pickers de ícono.
             </p>
             <input
               ref={fileInputRef}
