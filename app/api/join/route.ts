@@ -130,6 +130,7 @@ const cardInclude = {
       reward: true,
       brandColor: true,
       iconName: true,
+      isActive: true,
       expiresAt: true,
       business: { select: { name: true, brandColor: true, logoUrl: true, iconName: true } },
     },
@@ -154,6 +155,10 @@ export async function POST(request: NextRequest) {
     const card = await prisma.loyaltyCard.findUnique({ where: { id: cardId } })
     if (!card) {
       throw new NotFoundError("Loyalty card not found")
+    }
+
+    if (!card.isActive) {
+      throw new ValidationError("This loyalty card is no longer accepting new members")
     }
 
     if (isExpired(card.expiresAt)) {

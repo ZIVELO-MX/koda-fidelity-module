@@ -32,6 +32,7 @@ interface MyCard {
   id: string
   name: string
   stamps: number
+  isActive: boolean
   createdAt: string
   card: {
     name: string
@@ -39,6 +40,7 @@ interface MyCard {
     reward: string
     brandColor: string
     iconName: string | null
+    isActive: boolean
     expiresAt: string | null
     business: { name: string; brandColor: string; logoUrl: string | null; iconName: string | null }
   }
@@ -71,6 +73,102 @@ function ExpiryBadge({ expiresAt }: { expiresAt: string | null }) {
       </span>
     )
   return null
+}
+
+function ArchivedSection({
+  cards, expandedCards, toggleCard,
+}: {
+  cards: MyCard[]
+  expandedCards: Set<string>
+  toggleCard: (id: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="space-y-3">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center gap-2 py-1 hover:opacity-75 transition-opacity"
+        aria-expanded={open}
+      >
+        <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex-1 text-left">
+          Archivadas
+        </span>
+        <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
+          {cards.length}
+        </span>
+        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${open ? "" : "-rotate-90"}`} />
+      </button>
+
+      <div className={`grid transition-all duration-300 ease-in-out ${open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
+        <div className="overflow-hidden space-y-3">
+          {cards.map((c) => {
+            const isExpanded = expandedCards.has(c.id)
+            const icon = getCardIcon(c.card.iconName ?? c.card.business.iconName)
+            const IconComp = icon?.Icon
+            const byBusiness = !c.card.isActive
+            const badge = byBusiness ? "Archivada por el negocio" : "Archivada"
+            const message = byBusiness
+              ? "El negocio archivó esta tarjeta. Tu progreso se conserva."
+              : "Archivaste esta tarjeta. Tu progreso se conserva."
+            return (
+              <div key={c.id} className="bg-card rounded-2xl border border-border overflow-hidden opacity-80">
+                <button
+                  onClick={() => toggleCard(c.id)}
+                  className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+                  aria-expanded={isExpanded}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shrink-0 overflow-hidden grayscale"
+                      style={{ backgroundColor: c.card.brandColor }}>
+                      {c.card.business.logoUrl
+                        ? <img src={c.card.business.logoUrl} alt="" className="w-full h-full object-contain" />
+                        : IconComp ? <IconComp className="h-5 w-5" /> : c.card.business.name.charAt(0)}
+                    </div>
+                    <div className="text-left min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-semibold text-foreground truncate">{c.card.name}</p>
+                        <span className="inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground shrink-0 whitespace-nowrap">
+                          {badge}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {c.stamps}/{c.card.stampsRequired} sellos · {c.card.business.name}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronDown className={`h-5 w-5 text-muted-foreground shrink-0 transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`} />
+                </button>
+                <div className={`grid transition-all duration-300 ease-in-out ${isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
+                  <div className="overflow-hidden">
+                    <div className="px-4 pb-4 space-y-3">
+                      <div className="bg-muted/50 rounded-xl p-3 text-center">
+                        <p className="text-xs text-muted-foreground">{message}</p>
+                      </div>
+                      <LoyaltyCardPreview
+                        businessName={c.card.business.name}
+                        businessLogo={c.card.business.logoUrl ?? undefined}
+                        iconName={c.card.iconName ?? c.card.business.iconName}
+                        customerName={c.name}
+                        currentStamps={c.stamps}
+                        maxStamps={c.card.stampsRequired}
+                        reward={c.card.reward}
+                        brandColor={c.card.brandColor}
+                        showQR={true}
+                        qrValue={c.id}
+                      />
+                      <p className="text-xs text-muted-foreground text-center">
+                        Muestra este código QR al negocio si deseas canjear tu recompensa
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function DashboardMyCardsPage() {
@@ -137,9 +235,9 @@ export default function DashboardMyCardsPage() {
     loadCards().finally(() => setRefreshing(false))
   }, [loadCards])
 
-  const activeCards = useMemo(() => cards.filter((c) => !isExpired(c.card.expiresAt)), [cards])
-  const expiredCards = useMemo(() => cards.filter((c) => isExpired(c.card.expiresAt)), [cards])
-
+  const activeCards = useMemo(() => cards.filter((c) => c.isActive && c.card.isActive && !isExpired(c.card.expiresAt)), [cards])
+  const expiredCards = useMemo(() => cards.filter((c) => c.isActive && c.card.isActive && isExpired(c.card.expiresAt)), [cards])
+  const allArchivedCards = useMemo(() => cards.filter((c) => !c.isActive || !c.card.isActive), [cards])
   const filteredActive = useMemo(() => {
     if (!search.trim()) return activeCards
     const q = search.toLowerCase()
@@ -497,6 +595,15 @@ export default function DashboardMyCardsPage() {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* Archived cards section */}
+          {allArchivedCards.length > 0 && (
+            <ArchivedSection
+              cards={allArchivedCards}
+              expandedCards={expandedCards}
+              toggleCard={toggleCard}
+            />
           )}
 
           {cards.length === 0 && (
