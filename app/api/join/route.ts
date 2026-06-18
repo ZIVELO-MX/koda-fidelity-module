@@ -220,7 +220,7 @@ export async function GET(request: NextRequest) {
         throw new UnauthorizedError()
       }
 
-      const where: Record<string, unknown> = { email, isActive: true }
+      const where: Record<string, unknown> = { email }
       if (cardId) where.cardId = cardId
 
       const customers = await prisma.customer.findMany({
