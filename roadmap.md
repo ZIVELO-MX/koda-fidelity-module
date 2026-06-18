@@ -519,7 +519,7 @@ model StampLog {
 - [x] Tests de sidebar actualizados — reflejan el nuevo contrato del panel (mapa completo por rol)
 - [x] 238 tests, 0 errores de tipo
 
-### Fase 12 — UI Polish + Ícono de Sello 🔄 En progreso
+### Fase 12 — UI Polish + Ícono de Sello ✅ Completada
 
 > Ramas: `feat/ui-polish` (PR #90 → mergeado a `dev`), `hotfix/navbar-header-icons` (PR #93 → `dev`), `feat/branding-stamp-icon-picker` (PR #94 → `dev`)
 
@@ -539,6 +539,14 @@ model StampLog {
 > 2. **Ícono y texto activo del navbar desaparecían** — `text-primary` aplicado en el `<Link>` padre dependía de herencia de CSS variables (`var(--primary)`) con Tailwind v4 `@theme inline`. En ciertos contextos la herencia se rompía. Fix: aplicar `text-primary`/`text-muted-foreground` directamente en cada `<icon>` y `<span>`.
 >
 > 3. **Logo propagado a toda la navegación** — al agregar la opción "Logo" en el picker de tarjetas, `logoUrl` se pasó erróneamente por toda la cadena layout → sidebar → header → profile panel. El logo del negocio es solo una opción de ícono de tarjeta; no debe aparecer en la UI de navegación.
+
+---
+
+### Fase 13 — Ícono Sello en Picker
+
+> Tarea simple: agregar el ícono `Stamp` de lucide-react como opción seleccionable en el `IconPicker` para íconos de carta y de sello.
+
+- [x] Agregar `{ name: "stamp", label: "Sello", Icon: Stamp }` a `CARD_ICONS` en `lib/card-icons.ts`
 
 ---
 

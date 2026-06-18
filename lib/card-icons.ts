@@ -1,4 +1,4 @@
-import { Coffee, Utensils, ShoppingBag, Star, Crown, type LucideIcon } from "lucide-react"
+import { Coffee, Utensils, ShoppingBag, Star, Crown, Stamp, type LucideIcon } from "lucide-react"
 
 export interface CardIcon {
   name: string
@@ -12,6 +12,7 @@ export const CARD_ICONS: CardIcon[] = [
   { name: "shopping-bag", label: "Tienda", Icon: ShoppingBag },
   { name: "star", label: "General", Icon: Star },
   { name: "crown", label: "Premium", Icon: Crown },
+  { name: "stamp", label: "Sello", Icon: Stamp },
 ]
 
 export function getCardIcon(name: string | null | undefined): CardIcon | undefined {
