@@ -521,7 +521,7 @@ model StampLog {
 
 ### Fase 12 — UI Polish + Ícono de Sello 🔄 En progreso
 
-> Ramas: `feat/ui-polish` (PR #90), `hotfix/navbar-header-icons` (PR #93 → target: `feat/ui-polish`)
+> Ramas: `feat/ui-polish` (PR #90 → mergeado a `dev`), `hotfix/navbar-header-icons` (PR #93 → `dev`), `feat/branding-stamp-icon-picker` (PR #94 → `dev`)
 
 #### Ícono de Sello y Vista Previa Sellada
 - [x] Campo `stampIconName String?` en `LoyaltyCard` — permite un ícono distinto para las celdas selladas
