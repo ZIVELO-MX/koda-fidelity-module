@@ -52,7 +52,7 @@ export function LoyaltyCardPreview({
       {/* Hero section */}
       <div className="relative px-6 pt-6 pb-4">
         <div className="flex items-center gap-3 mb-4">
-          {businessLogo ? (
+          {iconName === "logo" && businessLogo ? (
             <img
               src={businessLogo}
               alt={businessName}

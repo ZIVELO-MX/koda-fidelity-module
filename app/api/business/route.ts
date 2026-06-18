@@ -107,6 +107,7 @@ export async function PUT(request: NextRequest) {
         ...(body.website !== undefined && { website: body.website || null }),
         ...(body.instagram !== undefined && { instagram: body.instagram || null }),
         ...(body.iconName !== undefined && { iconName: body.iconName || null }),
+        ...(body.stampIconName !== undefined && { stampIconName: body.stampIconName || null }),
       },
     })
 

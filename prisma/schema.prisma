@@ -17,9 +17,10 @@ model Business {
   id           String        @id @default(cuid())
   name         String
   brandColor   String        @default("#ff6b35")
-  logoUrl      String?
-  iconName     String?
-  email        String        @unique
+  logoUrl       String?
+  iconName      String?
+  stampIconName String?
+  email         String        @unique
   nickname     String?
   businessType String?
   address      String?

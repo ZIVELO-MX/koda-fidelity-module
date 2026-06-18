@@ -146,6 +146,16 @@ export default async function DashboardPage() {
                     {(() => {
                       const icon = getCardIcon(card.iconName)
                       const IconComp = icon?.Icon
+                      if (card.iconName === "logo" && business.logoUrl) {
+                        return (
+                          <div
+                            className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shrink-0"
+                            style={{ backgroundColor: card.brandColor }}
+                          >
+                            <img src={business.logoUrl} alt="" className="w-6 h-6 object-contain" />
+                          </div>
+                        )
+                      }
                       return (
                         <div
                           className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shrink-0"

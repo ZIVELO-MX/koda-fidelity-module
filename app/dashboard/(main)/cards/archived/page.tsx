@@ -70,6 +70,16 @@ export default async function ArchivedCardsPage() {
                   {(() => {
                     const icon = getCardIcon(card.iconName)
                     const IconComp = icon?.Icon
+                    if (card.iconName === "logo" && business.logoUrl) {
+                      return (
+                        <div
+                          className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shrink-0 grayscale"
+                          style={{ backgroundColor: card.brandColor }}
+                        >
+                          <img src={business.logoUrl} alt="" className="w-8 h-8 object-contain" />
+                        </div>
+                      )
+                    }
                     return (
                       <div
                         className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shrink-0 grayscale"

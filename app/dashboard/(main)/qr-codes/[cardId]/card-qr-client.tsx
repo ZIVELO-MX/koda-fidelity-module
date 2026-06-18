@@ -16,7 +16,7 @@ interface CardData {
   iconName: string | null
 }
 
-export function CardQRClient({ card }: { card: CardData }) {
+export function CardQRClient({ card, businessLogo }: { card: CardData; businessLogo: string | null }) {
   const [baseUrl, setBaseUrl] = useState("")
   const [copied, setCopied] = useState(false)
 
@@ -82,7 +82,13 @@ export function CardQRClient({ card }: { card: CardData }) {
           className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold shrink-0"
           style={{ backgroundColor: card.brandColor }}
         >
-          {IconComp ? <IconComp className="h-5 w-5" /> : card.name.charAt(0)}
+          {card.iconName === "logo" && businessLogo ? (
+            <img src={businessLogo} alt="" className="w-7 h-7 object-contain" />
+          ) : IconComp ? (
+            <IconComp className="h-5 w-5" />
+          ) : (
+            card.name.charAt(0)
+          )}
         </div>
         <div>
           <h1 className="text-xl font-bold text-foreground">{card.name}</h1>

@@ -16,7 +16,7 @@ export default async function CardQRPage({
 
   const business = await prisma.business.findUnique({
     where: { email: user.email },
-    select: { id: true },
+    select: { id: true, logoUrl: true },
   })
   if (!business) redirect("/login")
 
@@ -39,5 +39,5 @@ export default async function CardQRPage({
     redirect("/dashboard/qr-codes")
   }
 
-  return <CardQRClient card={card} />
+  return <CardQRClient card={card} businessLogo={business.logoUrl} />
 }
