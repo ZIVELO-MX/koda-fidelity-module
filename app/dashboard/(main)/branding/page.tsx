@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { IconPicker } from "@/components/dashboard/icon-picker"
-import { getCardIcon } from "@/lib/card-icons"
+import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { Upload, Check, Loader2 } from "lucide-react"
 
 const colorPresets = [
@@ -17,6 +17,8 @@ export default function BrandingPage() {
   const [businessName, setBusinessName] = useState("")
   const [logoUrl, setLogoUrl] = useState("")
   const [iconName, setIconName] = useState<string | null>(null)
+  const [stampIconName, setStampIconName] = useState<string | null>(null)
+  const [previewMode, setPreviewMode] = useState<"normal" | "sellada">("normal")
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState(false)
@@ -26,6 +28,7 @@ export default function BrandingPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const MAX_LOGO_MB = 2
+  const PREVIEW_MAX_STAMPS = 10
 
   useEffect(() => {
     fetch("/api/business")
@@ -36,6 +39,7 @@ export default function BrandingPage() {
           setBrandColor(data.business.brandColor || "#f97316")
           setLogoUrl(data.business.logoUrl || "")
           setIconName(data.business.iconName || null)
+          setStampIconName(data.business.stampIconName || null)
         }
       })
       .catch(() => setFetchError(true))
@@ -67,6 +71,7 @@ export default function BrandingPage() {
           brandColor,
           logoUrl: logoUrl || null,
           iconName: iconName || null,
+          stampIconName: stampIconName || null,
         }),
       })
       if (res.ok) {
@@ -100,9 +105,6 @@ export default function BrandingPage() {
       </div>
     )
   }
-
-  const previewIcon = getCardIcon(iconName)
-  const PreviewIcon = previewIcon?.Icon
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
@@ -138,15 +140,13 @@ export default function BrandingPage() {
           >
             {logoUrl ? (
               <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-1" />
-            ) : PreviewIcon ? (
-              <PreviewIcon className="h-9 w-9" />
             ) : (
               businessName.charAt(0)
             )}
           </div>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Sube un logo cuadrado (recomendado 512×512 px). Aparecerá en tus tarjetas y páginas para clientes.
+              Sube un logo cuadrado (recomendado 512×512 px). Habilita la opción "Logo" en los pickers de ícono.
             </p>
             <input
               ref={fileInputRef}
@@ -178,10 +178,21 @@ export default function BrandingPage() {
         <div>
           <h2 className="font-semibold text-foreground">Ícono de Marca <span className="text-muted-foreground font-normal text-sm">(opcional)</span></h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Se usa cuando no tienes un logo. Aparece en la tarjeta como símbolo de tu negocio.
+            Aparece en la tarjeta cuando no hay logo. Si subiste logo, puedes seleccionarlo como ícono.
           </p>
         </div>
-        <IconPicker value={iconName} onChange={setIconName} />
+        <IconPicker value={iconName} onChange={setIconName} businessLogoUrl={logoUrl || undefined} />
+      </div>
+
+      {/* Stamp Icon Selection */}
+      <div className="bg-card rounded-2xl p-6 border border-border space-y-4">
+        <div>
+          <h2 className="font-semibold text-foreground">Ícono del Sello <span className="text-muted-foreground font-normal text-sm">(opcional)</span></h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Se muestra en las celdas selladas. Si no se elige, usa el mismo ícono de marca.
+          </p>
+        </div>
+        <IconPicker value={stampIconName} onChange={setStampIconName} businessLogoUrl={logoUrl || undefined} />
       </div>
 
       {/* Brand Color */}
@@ -224,36 +235,36 @@ export default function BrandingPage() {
 
       {/* Preview */}
       <div className="bg-card rounded-2xl p-6 border border-border space-y-4">
-        <h2 className="font-semibold text-foreground">Vista Previa de Tarjeta</h2>
-        <div className="bg-muted/30 rounded-xl p-6">
-          <div className="flex items-center gap-4 mb-4">
-            <div
-              className="w-14 h-14 rounded-xl flex items-center justify-center text-white text-xl font-bold overflow-hidden shrink-0"
-              style={{ backgroundColor: brandColor }}
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold text-foreground">Vista Previa de Tarjeta</h2>
+          <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+            <button
+              type="button"
+              onClick={() => setPreviewMode("normal")}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${previewMode === "normal" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}
             >
-              {logoUrl ? (
-                <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-1" />
-              ) : PreviewIcon ? (
-                <PreviewIcon className="h-7 w-7" />
-              ) : (
-                businessName.charAt(0) || "N"
-              )}
-            </div>
-            <div>
-              <p className="font-semibold text-foreground text-lg">{businessName || "Tu Negocio"}</p>
-              <p className="text-sm text-muted-foreground">Tarjeta de Lealtad</p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div
-                key={i}
-                className={`w-8 h-8 rounded-lg ${i <= 3 ? "" : "border-2 border-dashed border-border"}`}
-                style={i <= 3 ? { backgroundColor: brandColor } : {}}
-              />
-            ))}
+              Normal
+            </button>
+            <button
+              type="button"
+              onClick={() => setPreviewMode("sellada")}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${previewMode === "sellada" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Sellada
+            </button>
           </div>
         </div>
+        <LoyaltyCardPreview
+          businessName={businessName || "Tu Negocio"}
+          businessLogo={logoUrl || undefined}
+          iconName={iconName}
+          stampIconName={stampIconName}
+          brandColor={brandColor}
+          currentStamps={previewMode === "sellada" ? PREVIEW_MAX_STAMPS : Math.floor(PREVIEW_MAX_STAMPS * 0.6)}
+          maxStamps={PREVIEW_MAX_STAMPS}
+          reward="Tu recompensa aquí"
+          showQR={false}
+        />
       </div>
 
       {/* Save */}
