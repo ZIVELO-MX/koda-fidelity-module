@@ -55,6 +55,7 @@ export default function CreateCardPage() {
             brandColor: data.business.brandColor || "#f97316",
           }))
           setIconName(data.business.iconName || null)
+          setStampIconName(data.business.stampIconName || null)
           setBusinessLogo(data.business.logoUrl || null)
         }
       })

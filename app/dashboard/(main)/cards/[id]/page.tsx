@@ -84,6 +84,16 @@ export default async function CardDetailPage({
           {(() => {
             const icon = getCardIcon(card.iconName)
             const IconComp = icon?.Icon
+            if (card.iconName === "logo" && business.logoUrl) {
+              return (
+                <div
+                  className="w-14 h-14 rounded-xl flex items-center justify-center text-white font-bold text-xl shrink-0"
+                  style={{ backgroundColor: card.brandColor }}
+                >
+                  <img src={business.logoUrl} alt="" className="w-9 h-9 object-contain" />
+                </div>
+              )
+            }
             return (
               <div
                 className="w-14 h-14 rounded-xl flex items-center justify-center text-white font-bold text-xl shrink-0"
