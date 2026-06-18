@@ -77,8 +77,7 @@ import { getBusinessFromSession, handleApiError, ValidationError, requireRole } 
  */
 export async function GET() {
   try {
-    const { business, user } = await getBusinessFromSession()
-    requireRole(user, "admin")
+    const { business } = await getBusinessFromSession()
     return NextResponse.json({ business })
   } catch (error) {
     return handleApiError(error)
