@@ -643,6 +643,16 @@ model StampLog {
 - [ ] Generar certificado Apple Wallet (Pass Type ID + certificado de firma)
 - [ ] Publicar en Wallet Console (Google) para quitar modo prueba
 
+### Post-MVP — QR Impresión y PDF
+
+> La vista previa actual redirige al join flow en vivo y el botón Imprimir usa `window.print()` sin formato. Falta un PDF funcional que el negocio pueda imprimir y colocar en su local para que los clientes escaneen y se unan.
+
+- [ ] **PDF con pdfslick** — generar PDF descargable con QR, nombre del negocio, logo, tarjeta de fidelidad, instrucciones y diseño profesional para imprimir
+- [ ] **Vista previa del PDF** — mostrar el PDF embebido en la página en lugar de redirigir al join flow
+- [ ] **Múltiples tamaños** — opción para descargar en tamaño tarjeta de crédito, media carta o carta completa
+- [ ] **Personalización** — incluir nombre del negocio, logo, color de marca, nombre de la tarjeta, recompensa e instrucciones de uso
+- [ ] **Imprimir desde PDF** — reemplazar `window.print()` con apertura del PDF para impresión nativa del navegador
+
 ### Post-MVP — Usuarios y Permisos (ampliación)
 
 > `1.1.0` ya incorpora roles `admin` y `sellador`. Esta sección amplía permisos para versiones posteriores.

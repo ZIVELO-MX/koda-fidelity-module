@@ -32,7 +32,7 @@ export default async function InvitePage({ searchParams }: Props) {
     : "/login"
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-6 bg-background">
+    <main className="min-h-screen flex items-center justify-center p-6 bg-background forced-light">
       <div className="w-full max-w-sm text-center space-y-8">
         {/* Icon */}
         <div className="mx-auto h-20 w-20 rounded-2xl bg-primary/10 flex items-center justify-center text-4xl">

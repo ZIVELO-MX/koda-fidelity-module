@@ -4,6 +4,7 @@ import { useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Stamp, Loader2, Check, Gift } from "lucide-react"
+import { isLight } from "@/lib/color-utils"
 
 interface StampButtonProps {
   customerId: string
@@ -79,7 +80,7 @@ export function StampButton({
         onClick={handleStamp}
         disabled={state === "loading"}
         className="gap-1.5 h-8 px-2.5 text-xs"
-        style={brandColor ? { color: brandColor } : undefined}
+        style={brandColor ? { color: isLight(brandColor) ? "#1a1a1a" : brandColor } : undefined}
       >
         {state === "loading" ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin" />

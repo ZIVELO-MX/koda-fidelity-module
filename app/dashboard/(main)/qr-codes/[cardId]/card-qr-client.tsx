@@ -6,6 +6,7 @@ import { QRCodeSVG } from "qrcode.react"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Download, Printer, Copy, ExternalLink, Check } from "lucide-react"
 import { getCardIcon } from "@/lib/card-icons"
+import { isLight } from "@/lib/color-utils"
 
 interface CardData {
   id: string
@@ -104,7 +105,7 @@ export function CardQRClient({ card, businessLogo }: { card: CardData; businessL
             className="bg-white rounded-2xl p-6 flex items-center justify-center border border-border"
           >
             {joinUrl && (
-              <QRCodeSVG value={joinUrl} size={220} level="H" fgColor={card.brandColor} />
+              <QRCodeSVG value={joinUrl} size={220} level="H" fgColor={isLight(card.brandColor) ? "#1a1a1a" : card.brandColor} />
             )}
           </div>
         </div>

@@ -226,7 +226,7 @@ export default function JoinCardPage() {
 
   if (step === "loading") {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-background forced-light flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     )
@@ -234,7 +234,7 @@ export default function JoinCardPage() {
 
   if (step === "error") {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-background forced-light flex flex-col items-center justify-center p-4">
         <h1 className="text-2xl font-bold text-foreground mb-2">Tarjeta no encontrada</h1>
         <p className="text-muted-foreground mb-4">{cardError || "El enlace no es válido"}</p>
         <Link href="/">
@@ -248,7 +248,7 @@ export default function JoinCardPage() {
     const joinUrl = `${window.location.origin}/join/${cardId}`
 
     return (
-      <div className="min-h-screen bg-background flex flex-col">
+      <div className="min-h-screen bg-background forced-light flex flex-col">
         <header className="border-b border-border bg-card">
           <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-center">
             <div className="flex items-center gap-2">
@@ -334,7 +334,7 @@ export default function JoinCardPage() {
 
   if (step === "sent") {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
+      <div className="min-h-screen bg-background forced-light flex flex-col">
         <header className="border-b border-border bg-card">
           <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-center">
             <span className="font-semibold text-foreground">Revisa tu correo electrónico</span>
@@ -370,7 +370,7 @@ export default function JoinCardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background forced-light flex flex-col">
       <header className="border-b border-border bg-card">
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center gap-2">
           <Link href="/" className="text-muted-foreground hover:text-foreground">

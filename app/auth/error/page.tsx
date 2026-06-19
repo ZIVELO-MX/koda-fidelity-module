@@ -14,11 +14,10 @@ import { getFriendlyAuthError, getFriendlySendError } from "@/lib/auth-errors"
 export default function AuthErrorPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-background forced-light flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     }>
-      <AuthErrorContent />
     </Suspense>
   )
 }
@@ -71,7 +70,7 @@ function AuthErrorContent() {
 
   if (sent) {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
+      <div className="min-h-screen bg-background forced-light flex flex-col">
         <header className="border-b border-border bg-card">
           <div className="max-w-lg mx-auto px-4 py-4">
             <span className="font-semibold text-foreground">Revisa tu correo electrónico</span>
@@ -109,7 +108,7 @@ function AuthErrorContent() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background forced-light flex flex-col">
       <header className="border-b border-border bg-card">
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center gap-2">
           <Link href="/" className="text-muted-foreground hover:text-foreground">

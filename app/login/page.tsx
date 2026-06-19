@@ -14,7 +14,7 @@ const brandingFeatures = [
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background forced-light">
       <div className="grid lg:grid-cols-2 min-h-screen">
 
         {/* Left branding panel */}

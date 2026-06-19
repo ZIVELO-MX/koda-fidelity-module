@@ -6,6 +6,7 @@ import { Download, Printer, Copy, ExternalLink, Check, Loader2 } from "lucide-re
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { getCardIcon } from "@/lib/card-icons"
+import { isLight } from "@/lib/color-utils"
 
 interface CardQR {
   id: string
@@ -137,7 +138,7 @@ export default function QRCodesPage() {
                       value={url}
                       size={180}
                       level="H"
-                      fgColor={card.brandColor}
+                      fgColor={isLight(card.brandColor) ? "#1a1a1a" : card.brandColor}
                     />
                   </div>
 
