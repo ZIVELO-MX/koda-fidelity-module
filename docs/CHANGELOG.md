@@ -1,4 +1,4 @@
-# Changelog — dev vs main
+# Changelog — dev `1.1.0` vs main `1.0.0`
 
 > Cambios acumulados en `dev` que aún no están en `main`.
 > Preparado para release. 62 commits desde el último merge a `main`.
