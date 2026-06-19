@@ -24,6 +24,18 @@
 
 ---
 
+## Versiones
+
+| Versión | Rama | Estado | Fases incluidas |
+| ------- | ---- | ------ | --------------- |
+| `1.0.0` | `main` | ✅ MVP estable | Fases 0–7. Tarjetas, clientes, QR, join flow, scan, portal cliente, Google OAuth/magic link, caducidad y guards. |
+| `1.1.0` | `dev` | 🟡 En cierre, no liberada | Fases 8–13. Multiusuario, equipo, UX móvil, operación, archivado/restauración, CI/plans, tabla de clientes compartida, ícono de sello y polish. |
+| `1.2.0+` | futuras ramas desde `dev` | ⏳ Post-release | Wallets, landing comercial, permisos avanzados, auditoría y mejoras de auth. |
+
+> `main` debe reflejar siempre la última versión estable. `dev` contiene la próxima versión candidata. En este momento los cambios acumulados en `dev` corresponden a `1.1.0`; está casi completa, pero aún requiere cierre de release antes de mergear a `main`.
+
+---
+
 ## Fases
 
 ### Fase 0 — Setup de infraestructura ✅ Completada
@@ -184,7 +196,7 @@
 - [x] Mejorar OG image de `/join/[cardId]` — fondo blanco, barra de color de marca, nombre del negocio en grande, titular "Obtén tu Fidelity Card", reward pill, puntos de sellos, badge "⚡ Por tiempo limitado" cuando hay caducidad; corregidos bugs de Satori (z-index, text nodes, backgroundImage) y tabla Prisma incorrecta
 - [x] `/dashboard/my-cards`: botón de recargar — icono giratorio que recarga los datos del customer sin recargar la página
 
-### Fase 7 — Caducidad de Tarjetas
+### Fase 7 — Caducidad de Tarjetas ✅ Completada
 
 > El schema ya tiene `expiresAt` en `LoyaltyCard`. Esta fase lo hace funcional de extremo a extremo.
 
@@ -406,14 +418,29 @@ model StampLog {
 
 ---
 
-## Estado del MVP
+## Estado por Versión
 
-> **✅ MVP completo** — Fases 0–6 + guards de caducidad (Fase 7.5) completados y desplegados en `fidelity.zivelo.dev`.
-> Lanzamiento controlado activo (`INVITE_ONLY=true`). Las secciones Post-MVP agrupan el trabajo futuro.
+### `1.0.0` — MVP en `main` ✅ Estable
 
-## Prioridades inmediatas
+> **MVP completo** — Fases 0–7 completadas y desplegadas en `fidelity.zivelo.dev`.
+> Lanzamiento controlado activo (`INVITE_ONLY=true`). Las secciones Post-MVP agrupan trabajo futuro, no bloqueos del MVP.
 
-> MVP completo. Fases 0–6 y guards de caducidad (7.1–7.5) en producción.
+### `1.1.0` — Próxima versión en `dev` 🟡 Casi completa
+
+> Incluye Fases 8–13. El desarrollo funcional está mayormente cerrado, pero la versión todavía no debe considerarse estable hasta pasar verificación final y merge a `main`.
+
+**Pendiente para liberar `1.1.0`:**
+
+- [ ] Ejecutar `pnpm typecheck`
+- [ ] Ejecutar `pnpm test`
+- [ ] Ejecutar `pnpm lint`
+- [ ] Ejecutar `pnpm build`
+- [ ] Validar manualmente login admin, login sellador, invitación de equipo, sellado/canje, archivado/restauración y branding con logo/ícono de sello
+- [ ] Confirmar que schema/migraciones de Supabase estén aplicadas en el entorno objetivo
+- [ ] Actualizar `docs/CHANGELOG.md` con resultado final de pruebas
+- [ ] Mergear `dev` a `main` y taggear `v1.1.0`
+
+## Historial del MVP `1.0.0`
 
 ### Pre-lanzamiento ✅ Completado
 
@@ -444,6 +471,8 @@ model StampLog {
 - [x] Cooldown de magic links desactivado (beta). Se re-activarán límites de tasa post-MVP.
 
 > **A partir de ahora todo el desarrollo se hace en `dev`.** Las ramas de feature se crean desde `dev`, los PRs se mergean a `dev`, y `main` solo recibe merges desde `dev` para releases estables.
+
+## Alcance de `1.1.0`
 
 ### Fase 8 — Sistema Multi-Usuario ✅ Completada
 
@@ -542,11 +571,41 @@ model StampLog {
 
 ---
 
-### Fase 13 — Ícono Sello en Picker
+### Fase 13 — Ícono Sello en Picker ✅ Completada
 
 > Tarea simple: agregar el ícono `Stamp` de lucide-react como opción seleccionable en el `IconPicker` para íconos de carta y de sello.
 
 - [x] Agregar `{ name: "stamp", label: "Sello", Icon: Stamp }` a `CARD_ICONS` en `lib/card-icons.ts`
+
+---
+
+### Pendientes UI para `1.1.0`
+
+#### Dark mode de la app
+
+> La app aún no implementa dark mode oficialmente (Tailwind CSS maneja colores con variables CSS light-only).
+> Los 5 templates de email ya responden a `@media (prefers-color-scheme: dark)` usando las clases `.em-*` con `!important`.
+
+- [ ] Extender la configuración de Tailwind con selector `.dark`
+- [ ] Definir tokens dark para la app sin romper colores de marca por negocio
+- [ ] Validar dashboard, login, join flow, my-cards, scan y componentes shadcn/ui en modo oscuro
+- [ ] Si cambian los colores base, actualizar el bloque `@media (prefers-color-scheme: dark)` en `docs/email-templates/*.html`
+
+#### Tema automático para tarjetas con colores claros
+
+> Cuando el negocio configura un color de marca muy claro, el texto blanco y elementos semitransparentes de `LoyaltyCardPreview` quedan ilegibles. Se necesita un tema de tarjeta independiente del dark mode global.
+
+- [ ] **Auto-detección**: calcular la luminancia relativa del `brandColor`; si supera un umbral (~0.7), aplicar automáticamente tema oscuro de tarjeta
+- [ ] **Control manual**: radio button en el edit dialog (`Tema de tarjeta: Auto / Claro / Oscuro`)
+- [ ] Guardar `LoyaltyCard.cardTheme String @default("auto")` con valores `"auto"`, `"light"`, `"dark"`
+- [ ] `LoyaltyCardPreview` recibe prop `cardTheme?: "auto" | "light" | "dark"` y aplica la paleta correcta de foreground/background para texto y stamps
+
+#### Avatar / foto de perfil
+
+- [ ] Subir/cambiar avatar del negocio con flujo similar al logo en Branding
+- [ ] Mostrar avatar en `ProfilePanel`, sidebar y header en lugar del círculo con inicial
+- [ ] Agregar `avatarUrl` a `Business`
+- [ ] Evaluar `avatarUrl` para `Customer` en portal de cliente
 
 ---
 
@@ -567,50 +626,10 @@ model StampLog {
 - [ ] Custom Domain en Supabase Auth — elimina el dominio técnico de Supabase visible durante Google OAuth
 - [x] Templates de email personalizados — todos los 5 templates activos con logo real
 
-### Post-MVP — Dark Mode
-
-> La app aún no implementa dark mode oficialmente (Tailwind CSS maneja colores con variables CSS light-only).
-> Sin embargo, los 5 templates de email ya responden a `@media (prefers-color-scheme: dark)` usando
-> las clases `.em-*` con `!important` para sobrescribir estilos inline.
-
-**Paleta de emails (stone de Tailwind):**
-
-| Token      | Clase       | Light       | Dark        | Tailwind  |
-| ---------- | ----------- | ----------- | ----------- | --------- |
-| Fondo      | `.em-body`  | `#f5f5f4`   | `#0c0a09`   | stone-950 |
-| Tarjeta    | `.em-card`  | `#ffffff`   | `#1c1917`   | stone-900 |
-| Credenciales | `.em-creds` | `#f5f5f4` | `#292524`   | stone-800 |
-| Heading    | `.em-h1`    | `#1c1917`   | `#fafaf9`   | stone-50  |
-| Body text  | `.em-p`     | `#78716c`   | `#d6d3d1`   | stone-300 |
-| Muted text | `.em-muted` | `#a8a29e`   | `#78716c`   | stone-500 |
-| Divider    | `.em-divider` | `#e7e5e4` | `#44403c`   | stone-700 |
-| Links      | `.em-link`  | `#a8a29e`   | `#78716c`   | stone-500 |
-| CTA button | —           | `#f97316`   | `#f97316`   | orange-500 (sin cambio) |
-
-**Al implementar dark mode en la app:**
-- Extender `tailwind.config` con la clase `.dark` (selector strategy)
-- Los emails **no requieren cambios** si se mantiene la paleta stone — la implementación ya está lista
-- Si se cambian los colores base de la app, actualizar el bloque `@media (prefers-color-scheme: dark)`
-  en los 5 templates (`docs/email-templates/*.html`)
-
-#### Tarjetas con fondo claro — modo oscuro de tarjeta
-
-> Cuando el negocio configura un color de marca muy claro (blanco, crema, gris pálido), el texto blanco y los elementos
-> semitransparentes de `LoyaltyCardPreview` quedan ilegibles. Se necesita un modo oscuro de tarjeta independiente del
-> dark mode de la app.
-
-**Comportamiento propuesto:**
-- [ ] **Auto-detección**: calcular la luminancia relativa del `brandColor`; si supera un umbral (~0.7), aplicar automáticamente el tema oscuro de tarjeta (texto oscuro, fondos opacos claros → oscuros)
-- [ ] **Control manual**: radio button en el edit dialog (`Tema de tarjeta: Auto / Claro / Oscuro`) guardado como `LoyaltyCard.cardTheme String @default("auto")` — valores: `"auto"`, `"light"`, `"dark"`
-- [ ] `LoyaltyCardPreview` recibe prop `cardTheme?: "auto" | "light" | "dark"` y aplica la paleta correcta de foreground/background para texto y stamps
-
-**Impacto**: sólo afecta a `LoyaltyCardPreview` + un campo de BD + un control en el edit dialog. No requiere dark mode global de la app.
-
 ### Post-MVP — UX
 
 - [ ] `/login`: mejorar UI/UX del campo "ingresa tu contraseña" (padding, spacing, diseño del input)
 - [ ] `/login`: aumentar padding/margin sobre el texto "Bienvenido de vuelta, [email]" para mejorar la respiración visual
-- [ ] Foto de perfil para client y customer — subir/cambiar avatar similar al flujo de logo en tarjetas (Branding); mostrar en `ProfilePanel`, sidebar y header en lugar del círculo con inicial; campo `avatarUrl` en `Business` y en `Customer`
 
 ### Post-MVP — Magic Links
 
@@ -626,8 +645,7 @@ model StampLog {
 
 ### Post-MVP — Usuarios y Permisos (ampliación)
 
-> El MVP con roles admin/sellador está priorizado como siguiente hito.
-> Esta sección amplía con funcionalidad futura post-lanzamiento.
+> `1.1.0` ya incorpora roles `admin` y `sellador`. Esta sección amplía permisos para versiones posteriores.
 
 - [ ] Roles adicionales: `viewer` (solo lectura de reportes)
 - [ ] Registro de auditoría: quién hizo qué acción (selló, canjeó, editó)
