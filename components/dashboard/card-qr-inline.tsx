@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { QRCodeSVG } from "qrcode.react"
 import Link from "next/link"
 import { ExternalLink } from "lucide-react"
+import { isLight } from "@/lib/color-utils"
 
 interface CardQRInlineProps {
   cardId: string
@@ -21,7 +22,7 @@ export function CardQRInline({ cardId, brandColor }: CardQRInlineProps) {
     <div className="bg-card rounded-xl border border-border p-4 flex items-center gap-4">
       <div className="bg-white rounded-lg p-2 border border-border shrink-0">
         {joinUrl ? (
-          <QRCodeSVG value={joinUrl} size={80} level="H" fgColor={brandColor} />
+          <QRCodeSVG value={joinUrl} size={80} level="H" fgColor={isLight(brandColor) ? "#1a1a1a" : brandColor} />
         ) : (
           <div className="w-20 h-20 bg-muted/30 rounded animate-pulse" />
         )}

@@ -134,7 +134,7 @@ export function LoyaltyCardPreview({
                 }
                 const cardIcon = getCardIcon(effectiveStampIcon)
                 const StampIcon = cardIcon?.Icon ?? Stamp
-                return <StampIcon className="w-5 h-5" style={{ color: brandColor }} strokeWidth={2} />
+                return <StampIcon className="w-5 h-5" style={{ color: light ? "#1a1a1a" : brandColor }} strokeWidth={2} />
               })()}
             </div>
           ))}
@@ -163,7 +163,7 @@ export function LoyaltyCardPreview({
               value={qrValue}
               size={80}
               level="M"
-              fgColor={brandColor}
+              fgColor={light ? "#1a1a1a" : brandColor}
             />
           </div>
         </div>
