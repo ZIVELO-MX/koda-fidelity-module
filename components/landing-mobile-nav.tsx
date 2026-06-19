@@ -124,7 +124,7 @@ export function LandingMobileNav() {
         </DrawerTrigger>
 
         <DrawerContent
-          className="focus:outline-none"
+          className="focus:outline-none forced-light"
           aria-label="Navegación móvil"
         >
           {/* Brand header */}
