@@ -1,5 +1,6 @@
 "use client"
 
+import { ThemeToggle } from "@/components/theme-toggle"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -153,6 +154,22 @@ export default function SettingsPage() {
         <div className="space-y-2">
           <Label htmlFor="email">Correo Electrónico</Label>
           <Input id="email" type="email" value={email} disabled />
+        </div>
+      </div>
+
+      <div className="bg-card rounded-2xl p-6 border border-border">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <ThemeToggle className="text-foreground" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-foreground">Apariencia</h2>
+            <p className="text-sm text-muted-foreground">Cambia entre modo claro y oscuro</p>
+          </div>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">Activar modo oscuro</span>
+          <ThemeToggle />
         </div>
       </div>
 
