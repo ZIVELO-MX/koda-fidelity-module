@@ -1,5 +1,6 @@
 "use client"
 
+import { ThemeToggle } from "@/components/theme-toggle"
 import { useState } from "react"
 import Link from "next/link"
 import { Mail, LogOut, X, ArrowLeft, Smartphone, Settings } from "lucide-react"
@@ -87,14 +88,17 @@ export function ProfilePanel({
         </Link>
       )}
 
-      <Button
-        variant="outline"
-        className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10"
-        onClick={() => setConfirmOpen(true)}
-      >
-        <LogOut className="h-4 w-4" />
-        Cerrar Sesión
-      </Button>
+      <div className="flex items-center gap-2">
+        <ThemeToggle className="text-muted-foreground hover:text-foreground shrink-0" />
+        <Button
+          variant="outline"
+          className="flex-1 gap-2 text-destructive border-destructive/30 hover:bg-destructive/10"
+          onClick={() => setConfirmOpen(true)}
+        >
+          <LogOut className="h-4 w-4" />
+          Cerrar Sesión
+        </Button>
+      </div>
     </div>
   )
 
@@ -172,15 +176,18 @@ export function ProfilePanel({
                 Configuración
               </Link>
             )}
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full gap-2 text-destructive border-destructive/30 hover:bg-destructive/10"
-              onClick={() => setConfirmOpen(true)}
-            >
-              <LogOut className="h-4 w-4" />
-              Cerrar Sesión
-            </Button>
+            <div className="flex items-center gap-2 w-full">
+              <ThemeToggle className="text-muted-foreground hover:text-foreground shrink-0" />
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 gap-2 text-destructive border-destructive/30 hover:bg-destructive/10"
+                onClick={() => setConfirmOpen(true)}
+              >
+                <LogOut className="h-4 w-4" />
+                Cerrar Sesión
+              </Button>
+            </div>
           </div>
         </div>
       )}

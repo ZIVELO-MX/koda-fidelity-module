@@ -1,5 +1,6 @@
 "use client"
 
+import { ThemeToggle } from "@/components/theme-toggle"
 import { useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, LogOut, Smartphone, type LucideIcon } from "lucide-react"
@@ -132,14 +133,17 @@ export function MobileSettingsPanel({
                 <Smartphone className="h-4 w-4" />
                 Mis Tarjetas
               </Link>
-              <Button
-                variant="outline"
-                className="w-full gap-2 text-destructive border-destructive/30 hover:bg-destructive/10"
-                onClick={() => setConfirmOpen(true)}
-              >
-                <LogOut className="h-4 w-4" />
-                Cerrar Sesión
-              </Button>
+              <div className="flex items-center gap-2">
+                <ThemeToggle className="text-muted-foreground hover:text-foreground shrink-0" />
+                <Button
+                  variant="outline"
+                  className="flex-1 gap-2 text-destructive border-destructive/30 hover:bg-destructive/10"
+                  onClick={() => setConfirmOpen(true)}
+                >
+                  <LogOut className="h-4 w-4" />
+                  Cerrar Sesión
+                </Button>
+              </div>
             </div>
           </div>
         </div>

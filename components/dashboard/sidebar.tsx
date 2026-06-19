@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { logout } from "@/lib/actions/auth"
 import { MobileSettingsPanel } from "./mobile-settings-panel"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { useState } from "react"
 import type { Role } from "@prisma/client"
 
@@ -211,15 +212,18 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
             <Smartphone className="h-5 w-5" />
             Mis Tarjetas
           </Link>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="w-full justify-start gap-3 text-xs text-muted-foreground hover:text-destructive"
-            onClick={() => setLogoutOpen(true)}
-          >
-            <LogOut className="h-5 w-5" />
-            Cerrar Sesión
-          </Button>
+          <div className="flex items-center gap-1 mt-2">
+            <ThemeToggle className="text-muted-foreground hover:text-foreground" />
+            <Button
+              size="sm"
+              variant="ghost"
+              className="flex-1 justify-start gap-3 text-xs text-muted-foreground hover:text-destructive"
+              onClick={() => setLogoutOpen(true)}
+            >
+              <LogOut className="h-5 w-5" />
+              Cerrar Sesión
+            </Button>
+          </div>
 
           <AlertDialog open={logoutOpen} onOpenChange={setLogoutOpen}>
             <AlertDialogContent>

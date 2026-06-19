@@ -44,7 +44,7 @@ export function LoyaltyCardPreview({
   return (
     <div
       className={cn(
-        "relative w-full max-w-sm mx-auto rounded-3xl overflow-hidden shadow-xl",
+        "relative w-full max-w-sm mx-auto rounded-3xl overflow-hidden shadow-xl dark:ring-1 dark:ring-white/10",
         className,
       )}
       style={{ backgroundColor: brandColor }}
