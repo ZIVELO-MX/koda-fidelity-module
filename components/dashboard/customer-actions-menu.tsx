@@ -28,6 +28,7 @@ interface CustomerActionsMenuProps {
   currentStamps: number
   maxStamps: number
   reward: string
+  hideStampAction?: boolean
 }
 
 type StampState = "idle" | "loading" | "stamped" | "redeemed" | "error"
@@ -38,11 +39,66 @@ export function CustomerActionsMenu({
   currentStamps,
   maxStamps,
   reward,
+  hideStampAction = false,
 }: CustomerActionsMenuProps) {
   const router = useRouter()
   const [stampState, setStampState] = useState<StampState>("idle")
   const [archiveOpen, setArchiveOpen] = useState(false)
   const [archiving, setArchiving] = useState(false)
+
+  const handleArchive = async () => {
+    setArchiving(true)
+    await fetch(`/api/customers/${customerId}`, { method: "DELETE" })
+    setArchiving(false)
+    setArchiveOpen(false)
+    router.refresh()
+  }
+
+  // Don't render stamp action when disabled (e.g., in /dashboard/customers)
+  if (hideStampAction) {
+    return (
+      <>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground data-[state=open]:bg-muted">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenuItem
+              onClick={() => setArchiveOpen(true)}
+              className="gap-2 cursor-pointer text-muted-foreground focus:text-foreground"
+            >
+              <Archive className="h-4 w-4" />
+              Archivar
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <AlertDialog open={archiveOpen} onOpenChange={setArchiveOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Archivar cliente?</AlertDialogTitle>
+              <AlertDialogDescription>
+                <strong>{customerName}</strong> será archivado. Sus datos se conservarán pero ya no aparecerá en las listas.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={archiving}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleArchive}
+                disabled={archiving}
+                className="gap-2"
+              >
+                {archiving && <Loader2 className="h-4 w-4 animate-spin" />}
+                <Archive className="h-4 w-4" />
+                Archivar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
+    )
+  }
 
   const handleStamp = useCallback(async () => {
     setStampState("loading")
@@ -63,14 +119,6 @@ export function CustomerActionsMenu({
       setTimeout(() => setStampState("idle"), 3000)
     }
   }, [customerId, currentStamps, maxStamps, router])
-
-  const handleArchive = async () => {
-    setArchiving(true)
-    await fetch(`/api/customers/${customerId}`, { method: "DELETE" })
-    setArchiving(false)
-    setArchiveOpen(false)
-    router.refresh()
-  }
 
   const isReady = currentStamps >= maxStamps
 

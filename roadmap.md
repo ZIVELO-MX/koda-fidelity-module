@@ -301,6 +301,15 @@ Custom Domain). Requiere plan Pro y dominio propio verificado.
 
 **Decisión:** Post-MVP. Se evaluará al escalar o cambiar de provider de auth.
 
+### Deuda Técnica — Recompensas Sorpresa en /dashboard/customers
+
+La tabla `/dashboard/customers` usa `CustomersTable` compartido, pero el `_count` y la query no incluyen `milestoneClaims`. Los clientes no ven cuántos bonos sorpresa tienen.
+
+**Pendiente:**
+- [ ] Incluir `_count.milestoneClaims` en la query de `GET /dashboard/customers`
+- [ ] Mostrar columna "Bonos" en la tabla (similar a `/dashboard/cards/[id]`)
+- [ ] Si se desea el detalle de recompensas obtenidas, considerar modal o expand row
+
 ### Issues conocidos
 
 - ~~**📷 Cámara en escáner QR no funciona**~~ ✅ Resuelto — se reemplazó `html5-qrcode` por `@yudiel/react-qr-scanner` (usa Barcode Detection API con fallback ZXing). Ver PR `fix/qr-scanner-library`.

@@ -29,6 +29,7 @@ export interface CustomersTableProps {
   basePath: string
   baseParams: URLSearchParams
   showCardColumn?: boolean
+  hideStampAction?: boolean
   footerSuffix?: string
 }
 
@@ -70,6 +71,7 @@ export function CustomersTable({
   basePath,
   baseParams,
   showCardColumn = true,
+  hideStampAction = false,
   footerSuffix = "",
 }: CustomersTableProps) {
   return (
@@ -190,6 +192,7 @@ export function CustomersTable({
                     currentStamps={customer.stamps}
                     maxStamps={customer.card.stampsRequired}
                     reward={customer.card.reward}
+                    hideStampAction={hideStampAction}
                   />
                 </td>
               </tr>

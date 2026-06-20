@@ -150,6 +150,7 @@ export default async function CustomersPage({
           order={order}
           basePath="/dashboard/customers"
           baseParams={baseParams}
+          hideStampAction={true}
           footerSuffix={activeCard ? ` en "${activeCard.name}"` : ""}
         />
       )}
