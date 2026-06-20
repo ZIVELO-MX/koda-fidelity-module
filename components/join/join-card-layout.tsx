@@ -24,6 +24,7 @@ export interface JoinCardData {
 interface JoinCardLayoutProps {
   cardInfo: JoinCardData | null
   preview?: boolean
+  previewBackHref?: string
   cardId?: string
   name?: string
   email?: string
@@ -41,6 +42,7 @@ interface JoinCardLayoutProps {
 export function JoinCardLayout({
   cardInfo,
   preview = false,
+  previewBackHref,
   cardId,
   name = "",
   email = "",
@@ -64,7 +66,11 @@ export function JoinCardLayout({
 
       <header className="border-b border-border bg-card">
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center gap-2">
-          {preview ? (
+          {preview && previewBackHref ? (
+            <Link href={previewBackHref} className="text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+          ) : preview ? (
             <span className="text-muted-foreground">
               <ArrowLeft className="h-5 w-5" />
             </span>

@@ -46,5 +46,11 @@ export default async function QRJoinPreviewPage({
     businessIconName: card.business.iconName,
   }
 
-  return <JoinCardLayout cardInfo={cardInfo} preview />
+  return (
+    <JoinCardLayout
+      cardInfo={cardInfo}
+      preview
+      previewBackHref={`/dashboard/qr-codes/${cardId}`}
+    />
+  )
 }

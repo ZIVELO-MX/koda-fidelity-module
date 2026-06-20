@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ArrowLeft, Download, FileText, Copy, Check, ChevronDown, Loader2, QrCode } from "lucide-react"
+import { ArrowLeft, Download, FileText, Copy, Check, ChevronDown, Loader2, QrCode, ExternalLink } from "lucide-react"
 import { getCardIcon } from "@/lib/card-icons"
 import { isLight } from "@/lib/color-utils"
 import { generateQRDataUrl, PDF_SIZES, CTA_TEMPLATES, DEFAULT_CTA_INDEX, type PdfSizeKey } from "@/lib/qr-pdf-utils"
@@ -377,25 +377,23 @@ export function CardQRClient({
         </Button>
       </div>
 
-      {/* QR-only downloads */}
-      <div className="flex items-center justify-center gap-3">
-        <span className="text-xs text-muted-foreground">Solo QR:</span>
-        <Button variant="ghost" size="sm" onClick={downloadQRPNG} disabled={!qrDataUrl} className="gap-1.5 text-xs h-7">
-          <Download className="h-3 w-3" />
+      {/* QR-only downloads + Preview link */}
+      <div className="flex items-center justify-center gap-4">
+        <span className="text-xs text-muted-foreground shrink-0">Solo QR:</span>
+        <Button variant="outline" size="sm" onClick={downloadQRPNG} disabled={!qrDataUrl} className="gap-1.5">
+          <Download className="h-4 w-4" />
           PNG
         </Button>
-        <Button variant="ghost" size="sm" onClick={downloadQRSVG} disabled={!joinUrl} className="gap-1.5 text-xs h-7">
-          <QrCode className="h-3 w-3" />
+        <Button variant="outline" size="sm" onClick={downloadQRSVG} disabled={!joinUrl} className="gap-1.5">
+          <QrCode className="h-4 w-4" />
           SVG
         </Button>
-      </div>
-
-      <div className="text-center">
-        <Link
-          href={`/dashboard/qr-codes/${card.id}/preview`}
-          className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
-        >
-          Vista previa de la página de registro
+        <div className="w-px h-6 bg-border" />
+        <Link href={`/dashboard/qr-codes/${card.id}/preview`}>
+          <Button variant="outline" size="sm" className="gap-1.5">
+            <ExternalLink className="h-4 w-4" />
+            Vista previa registro
+          </Button>
         </Link>
       </div>
 
