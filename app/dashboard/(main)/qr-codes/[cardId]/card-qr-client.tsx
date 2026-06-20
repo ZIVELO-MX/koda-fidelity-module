@@ -47,6 +47,7 @@ export function CardQRClient({
   const [loading, setLoading] = useState(false)
   const previewCanvasRef = useRef<HTMLCanvasElement>(null)
   const qrImageRef = useRef<HTMLImageElement | null>(null)
+  const logoImageRef = useRef<HTMLImageElement | null>(null)
 
   useEffect(() => {
     queueMicrotask(() => setBaseUrl(window.location.origin))
@@ -74,60 +75,127 @@ export function CardQRClient({
     ctx.fillStyle = "#ffffff"
     ctx.fillRect(0, 0, cw, ch)
 
-    const barH = Math.max(1, Math.round(8 * scale))
+    const isCompact = pdfSize === "tarjeta"
+    const isMedium = pdfSize === "media-carta"
+    const barH = Math.max(1, Math.round((isCompact ? 6 : 8) * scale))
+    const pad = Math.round(scale * (isCompact ? 20 : isMedium ? 30 : 40))
+    const logoSize = Math.round(scale * (isCompact ? 28 : 36))
+    const qrSize = Math.round(scale * (isCompact ? 150 : isMedium ? 180 : 220))
+    const qrPad = Math.round(12 * scale)
+    const qrBox = qrSize + qrPad * 2
+    const ctaSize = Math.round(scale * (isCompact ? 10 : isMedium ? 13 : 15))
+    const titleSize = Math.round(scale * (isCompact ? 13 : isMedium ? 16 : 18))
+    const rewardSize = Math.round(scale * (isCompact ? 10 : isMedium ? 13 : 14))
+    const instructionSize = Math.round(scale * (isCompact ? 6 : 8))
+    const footerSize = Math.round(scale * (isCompact ? 6 : 8))
+
     ctx.fillStyle = card.brandColor
     ctx.fillRect(0, 0, cw, barH)
 
-    const pad = Math.round(scale * (pdfSize === "carta" ? 36 : pdfSize === "media-carta" ? 28 : 18))
-    let y = pad + barH
+    const footerH = Math.round((isCompact ? 24 : 32) * scale)
+    ctx.strokeStyle = "#e5e7eb"
+    ctx.lineWidth = Math.max(1, Math.round(scale))
+    ctx.beginPath()
+    ctx.moveTo(0, ch - footerH)
+    ctx.lineTo(cw, ch - footerH)
+    ctx.stroke()
+    ctx.fillStyle = "#9ca3af"
+    ctx.font = `${footerSize}px sans-serif`
+    ctx.textAlign = "center"
+    ctx.textBaseline = "middle"
+    ctx.fillText("Con tecnología de Koda Fidelity", cw / 2, ch - footerH / 2)
 
-    if (pdfSize !== "tarjeta") {
+    let y = barH + pad
+
+    if (!isCompact) {
+      const headerH = logoSize
+      const gap = Math.round(10 * scale)
+      const businessSize = Math.round(scale * (isMedium ? 14 : 16))
+      ctx.font = `bold ${businessSize}px sans-serif`
+      const businessW = ctx.measureText(businessName).width
+      const headerW = logoSize + gap + businessW
+      const logoX = (cw - headerW) / 2
+      const logoY = y
+
+      const logoImg = logoImageRef.current
+      if (card.iconName === "logo" && businessLogo && logoImg?.complete) {
+        ctx.save()
+        ctx.beginPath()
+        ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2)
+        ctx.clip()
+        ctx.fillStyle = "#ffffff"
+        ctx.fillRect(logoX, logoY, logoSize, logoSize)
+        ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize)
+        ctx.restore()
+      } else {
+        ctx.fillStyle = card.brandColor
+        ctx.beginPath()
+        ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.fillStyle = "#ffffff"
+        ctx.font = `bold ${Math.round(logoSize * 0.45)}px sans-serif`
+        ctx.textAlign = "center"
+        ctx.textBaseline = "middle"
+        ctx.fillText(businessName.charAt(0).toUpperCase(), logoX + logoSize / 2, logoY + logoSize / 2)
+      }
+
       ctx.fillStyle = "#1a1a1a"
-      ctx.font = `bold ${Math.round(14 * scale)}px sans-serif`
-      ctx.textAlign = "center"
-      ctx.fillText(businessName, cw / 2, y)
-      y += Math.round(18 * scale)
+      ctx.font = `bold ${businessSize}px sans-serif`
+      ctx.textAlign = "left"
+      ctx.textBaseline = "middle"
+      ctx.fillText(businessName, logoX + logoSize + gap, logoY + logoSize / 2)
+      y += headerH + Math.round((isCompact ? 12 : 20) * scale)
     }
 
-    y += Math.round(8 * scale)
+    const qrBoxX = (cw - qrBox) / 2
+    ctx.fillStyle = "#ffffff"
+    ctx.strokeStyle = "#e5e7eb"
+    roundedRect(ctx, qrBoxX, y, qrBox, qrBox, Math.round(8 * scale))
+    ctx.fill()
+    ctx.stroke()
+    ctx.drawImage(qrImg, qrBoxX + qrPad, y + qrPad, qrSize, qrSize)
 
-    const qrSize = Math.round(scale * (pdfSize === "carta" ? 220 : pdfSize === "media-carta" ? 180 : 150))
-    const qrX = (cw - qrSize) / 2
-    ctx.drawImage(qrImg, qrX, y, qrSize, qrSize)
+    y += qrBox + Math.round((isCompact ? 8 : 12) * scale)
 
-    y += qrSize + Math.round(12 * scale)
-
-    const ctaSize = Math.round(scale * (pdfSize === "carta" ? 14 : pdfSize === "media-carta" ? 12 : 10))
     ctx.fillStyle = card.brandColor
     ctx.font = `bold ${ctaSize}px sans-serif`
     ctx.textAlign = "center"
-    const ctaLines = wrapText(ctx, ctaText, cw / 2, y, cw - pad * 2, ctaSize + 3)
-    y += ctaLines * (ctaSize + 3) + Math.round(6 * scale)
+    ctx.textBaseline = "alphabetic"
+    const ctaLines = wrapText(ctx, ctaText, cw / 2, y + ctaSize, cw - pad * 2, ctaSize * 1.4)
+    y += ctaLines * ctaSize * 1.4 + Math.round((isCompact ? 8 : 14) * scale)
 
-    const titleSize = Math.round(scale * (pdfSize === "carta" ? 16 : pdfSize === "media-carta" ? 14 : 11))
     ctx.fillStyle = "#1a1a1a"
     ctx.font = `bold ${titleSize}px sans-serif`
     ctx.textAlign = "center"
-    ctx.fillText(card.name, cw / 2, y)
-    y += titleSize + Math.round(4 * scale)
+    ctx.fillText(card.name, cw / 2, y + titleSize)
+    y += titleSize + Math.round((isCompact ? 2 : 4) * scale)
 
-    const rewardSize = Math.round(scale * 11)
     ctx.fillStyle = "#374151"
     ctx.font = `${rewardSize}px sans-serif`
     ctx.textAlign = "center"
-    ctx.fillText(`${card.stampsRequired} sellos · Recompensa: ${card.reward}`, cw / 2, y)
+    ctx.fillText(`${card.stampsRequired} sellos · Recompensa: ${card.reward}`, cw / 2, y + rewardSize)
+    y += rewardSize + Math.round((isCompact ? 4 : 8) * scale)
 
-    const remaining = ch - y
-    if (remaining > Math.round(20 * scale)) {
-      const fy = ch - Math.round(12 * scale)
+    if (!isCompact) {
+      y += Math.round((isCompact ? 8 : 14) * scale)
       ctx.fillStyle = "#e5e7eb"
-      ctx.fillRect(pad, fy - Math.round(6 * scale), cw - pad * 2, 1)
-      ctx.fillStyle = "#9ca3af"
-      ctx.font = `${Math.round(7 * scale)}px sans-serif`
+      ctx.fillRect(pad, y, cw - pad * 2, Math.max(1, Math.round(scale)))
+      y += Math.round((isCompact ? 8 : 14) * scale)
+
+      ctx.fillStyle = "#6b7280"
+      ctx.font = `${instructionSize}px sans-serif`
       ctx.textAlign = "center"
-      ctx.fillText("Con tecnología de Koda Fidelity", cw / 2, fy + Math.round(3 * scale))
+      const instructions = [
+        "Escanea el código QR con tu teléfono y obtén tu tarjeta digital",
+        "Acumula sellos en cada visita y canjea tu recompensa",
+        "Sin apps — todo funciona desde tu navegador",
+      ]
+      for (const instruction of instructions) {
+        ctx.fillText(instruction, cw / 2, y + instructionSize)
+        y += instructionSize + Math.round(2 * scale)
+      }
     }
-  }, [pdfSize, ctaText, card, businessName])
+  }, [pdfSize, ctaText, card, businessName, businessLogo])
 
   const drawPreview = useCallback(() => {
     const canvas = previewCanvasRef.current
@@ -157,6 +225,18 @@ export function CardQRClient({
     img.src = qrDataUrl
     qrImageRef.current = img
   }, [qrDataUrl, drawPreview])
+
+  useEffect(() => {
+    if (card.iconName !== "logo" || !businessLogo) {
+      logoImageRef.current = null
+      return
+    }
+    const img = new Image()
+    img.crossOrigin = "anonymous"
+    img.onload = drawPreview
+    img.src = businessLogo
+    logoImageRef.current = img
+  }, [businessLogo, card.iconName, drawPreview])
 
   useEffect(() => {
     if (qrImageRef.current?.complete) {
@@ -524,4 +604,26 @@ function wrapText(
     lines++
   }
   return lines
+}
+
+function roundedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+) {
+  const r = Math.min(radius, width / 2, height / 2)
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.lineTo(x + width - r, y)
+  ctx.quadraticCurveTo(x + width, y, x + width, y + r)
+  ctx.lineTo(x + width, y + height - r)
+  ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height)
+  ctx.lineTo(x + r, y + height)
+  ctx.quadraticCurveTo(x, y + height, x, y + height - r)
+  ctx.lineTo(x, y + r)
+  ctx.quadraticCurveTo(x, y, x + r, y)
+  ctx.closePath()
 }
