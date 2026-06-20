@@ -19,3 +19,11 @@ export async function generateQRDataUrl(value: string): Promise<string> {
 export function formatPdfSizeLabel(key: PdfSizeKey): string {
   return PDF_SIZES[key].label
 }
+
+export const CTA_TEMPLATES = [
+  (name: string) => `¡Escanea para obtener tu tarjeta de fidelidad de ${name}!`,
+  (name: string) => `Únete al programa de recompensas de ${name}`,
+  (name: string) => `Escanea y comienza a acumular puntos en ${name}`,
+] as const
+
+export const DEFAULT_CTA_INDEX = 0

@@ -1,20 +1,19 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, useRef } from "react"
 import Link from "next/link"
-import dynamic from "next/dynamic"
 import { QRCodeSVG } from "qrcode.react"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Download, Printer, Copy, ExternalLink, Check, FileDown, Eye, Loader2 } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { ArrowLeft, Download, Printer, Copy, Check, ChevronDown, Loader2 } from "lucide-react"
 import { getCardIcon } from "@/lib/card-icons"
 import { isLight } from "@/lib/color-utils"
-import { generateQRDataUrl, PDF_SIZES, type PdfSizeKey } from "@/lib/qr-pdf-utils"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-
-const PDFDocument = dynamic(
-  () => import("@/components/dashboard/qr-pdf-document").then((m) => m.QRPDFDocument),
-  { ssr: false },
-)
+import { generateQRDataUrl, PDF_SIZES, CTA_TEMPLATES, DEFAULT_CTA_INDEX, type PdfSizeKey } from "@/lib/qr-pdf-utils"
 
 interface CardData {
   id: string
@@ -38,8 +37,10 @@ export function CardQRClient({
   const [copied, setCopied] = useState(false)
   const [qrDataUrl, setQrDataUrl] = useState("")
   const [pdfSize, setPdfSize] = useState<PdfSizeKey>("carta")
-  const [showPreview, setShowPreview] = useState(false)
-  const [pdfLoading, setPdfLoading] = useState(false)
+  const [ctaText, setCtaText] = useState(CTA_TEMPLATES[DEFAULT_CTA_INDEX](businessName))
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const previewTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   useEffect(() => {
     setBaseUrl(window.location.origin)
@@ -53,6 +54,38 @@ export function CardQRClient({
     }
   }, [joinUrl])
 
+  useEffect(() => {
+    if (!qrDataUrl) return
+    clearTimeout(previewTimerRef.current)
+    const generate = async () => {
+      setLoading(true)
+      try {
+        const { pdf } = await import("@react-pdf/renderer")
+        const { QRPDFDocument } = await import("@/components/dashboard/qr-pdf-document")
+        const doc = (
+          <QRPDFDocument
+            card={card}
+            businessName={businessName}
+            businessLogo={businessLogo}
+            qrDataUrl={qrDataUrl}
+            size={pdfSize}
+            ctaText={ctaText}
+          />
+        )
+        const blob = await pdf(doc).toBlob()
+        const url = URL.createObjectURL(blob)
+        if (previewUrl) URL.revokeObjectURL(previewUrl)
+        setPreviewUrl(url)
+      } finally {
+        setLoading(false)
+      }
+    }
+    previewTimerRef.current = setTimeout(generate, 200)
+    return () => {
+      clearTimeout(previewTimerRef.current)
+    }
+  }, [qrDataUrl, pdfSize, ctaText, card, businessName, businessLogo, previewUrl])
+
   const copyUrl = useCallback(async () => {
     if (!joinUrl) return
     await navigator.clipboard.writeText(joinUrl).catch(() => {})
@@ -60,7 +93,7 @@ export function CardQRClient({
     setTimeout(() => setCopied(false), 2000)
   }, [joinUrl])
 
-  const downloadQR = useCallback(() => {
+  const downloadPNG = useCallback(() => {
     const canvas = document.createElement("canvas")
     const ctx = canvas.getContext("2d")
     if (!ctx) return
@@ -91,15 +124,27 @@ export function CardQRClient({
     }
   }, [card])
 
+  const generatePDFBlob = useCallback(async () => {
+    const { pdf } = await import("@react-pdf/renderer")
+    const { QRPDFDocument } = await import("@/components/dashboard/qr-pdf-document")
+    const doc = (
+      <QRPDFDocument
+        card={card}
+        businessName={businessName}
+        businessLogo={businessLogo}
+        qrDataUrl={qrDataUrl}
+        size={pdfSize}
+        ctaText={ctaText}
+      />
+    )
+    return pdf(doc).toBlob()
+  }, [card, businessName, businessLogo, qrDataUrl, pdfSize, ctaText])
+
   const downloadPDF = useCallback(async () => {
     if (!qrDataUrl) return
-    setPdfLoading(true)
+    setLoading(true)
     try {
-      const { pdf } = await import("@react-pdf/renderer")
-      const doc = (
-        <PDFDocument card={card} businessName={businessName} businessLogo={businessLogo} qrDataUrl={qrDataUrl} size={pdfSize} />
-      )
-      const blob = await pdf(doc).toBlob()
+      const blob = await generatePDFBlob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
@@ -107,31 +152,34 @@ export function CardQRClient({
       a.click()
       URL.revokeObjectURL(url)
     } finally {
-      setPdfLoading(false)
+      setLoading(false)
     }
-  }, [card, businessName, businessLogo, qrDataUrl, pdfSize])
+  }, [qrDataUrl, generatePDFBlob, card.id])
 
   const printPDF = useCallback(async () => {
     if (!qrDataUrl) return
-    setPdfLoading(true)
+    setLoading(true)
     try {
-      const { pdf } = await import("@react-pdf/renderer")
-      const doc = (
-        <PDFDocument card={card} businessName={businessName} businessLogo={businessLogo} qrDataUrl={qrDataUrl} size={pdfSize} />
-      )
-      const blob = await pdf(doc).toBlob()
+      const blob = await generatePDFBlob()
       const url = URL.createObjectURL(blob)
       window.open(url, "_blank")
     } finally {
-      setPdfLoading(false)
+      setLoading(false)
     }
-  }, [card, businessName, businessLogo, qrDataUrl, pdfSize])
+  }, [qrDataUrl, generatePDFBlob])
+
+  const handleCTAPreset = useCallback(
+    (index: number) => {
+      setCtaText(CTA_TEMPLATES[index](businessName))
+    },
+    [businessName],
+  )
 
   const icon = getCardIcon(card.iconName)
   const IconComp = icon?.Icon
 
   return (
-    <div className="max-w-md mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto space-y-6">
       <Link
         href={`/dashboard/cards/${card.id}`}
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
@@ -159,6 +207,7 @@ export function CardQRClient({
         </div>
       </div>
 
+      {/* QR Code */}
       <div className="bg-card rounded-2xl border border-border overflow-hidden">
         <div className="h-2" style={{ backgroundColor: card.brandColor }} />
         <div className="p-8">
@@ -173,12 +222,7 @@ export function CardQRClient({
         </div>
       </div>
 
-      <div className="bg-muted/40 rounded-xl p-4">
-        <p className="text-xs text-muted-foreground mb-1">URL de destino</p>
-        <p className="text-sm font-mono text-foreground break-all">{joinUrl || "—"}</p>
-      </div>
-
-      {/* PDF Size selector */}
+      {/* Size selector */}
       <div>
         <p className="text-sm text-muted-foreground mb-2">Tamaño de impresión</p>
         <div className="flex gap-2">
@@ -196,104 +240,108 @@ export function CardQRClient({
         </div>
       </div>
 
+      {/* CTA text */}
+      <div>
+        <p className="text-sm text-muted-foreground mb-2">Mensaje promocional</p>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={ctaText}
+            onChange={(e) => setCtaText(e.target.value)}
+            className="flex-1 h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+            placeholder="Escribe un mensaje..."
+          />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="shrink-0 gap-1">
+                Recomendados <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {CTA_TEMPLATES.map((tmpl, i) => (
+                <DropdownMenuItem key={i} onClick={() => handleCTAPreset(i)}>
+                  {tmpl(businessName)}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      {/* Live preview */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-sm text-muted-foreground">Vista previa</p>
+          {loading && (
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <Loader2 className="h-3 w-3 animate-spin" /> Actualizando…
+            </span>
+          )}
+        </div>
+        <div
+          className="bg-card rounded-2xl border border-border overflow-hidden"
+          style={{
+            height: pdfSize === "carta" ? 480 : pdfSize === "media-carta" ? 400 : 340,
+          }}
+        >
+          {previewUrl ? (
+            <iframe
+              src={previewUrl}
+              className="w-full h-full"
+              title="Vista previa del PDF"
+              style={{ pointerEvents: "none" }}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+              {loading ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : (
+                "Selecciona un tamaño para ver la vista previa"
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Action buttons */}
-      <div className="grid grid-cols-2 gap-3">
-        <Button variant="outline" onClick={downloadQR} className="w-full" disabled={!joinUrl}>
-          <Download className="h-4 w-4 mr-2" />
-          Descargar PNG
-        </Button>
-        <Button variant="outline" onClick={downloadPDF} className="w-full" disabled={!qrDataUrl || pdfLoading}>
-          {pdfLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileDown className="h-4 w-4 mr-2" />}
-          Descargar PDF
-        </Button>
-        <Button variant="outline" onClick={printPDF} className="w-full" disabled={!qrDataUrl || pdfLoading}>
-          {pdfLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Printer className="h-4 w-4 mr-2" />}
+      <div className="grid grid-cols-3 gap-3">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="default" className="w-full gap-1" disabled={!qrDataUrl}>
+              <Download className="h-4 w-4" />
+              Descargar
+              <ChevronDown className="h-3 w-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuItem onClick={downloadPNG} disabled={!joinUrl}>
+              <Download className="h-4 w-4 mr-2" />
+              PNG
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={downloadPDF} disabled={!qrDataUrl || loading}>
+              <Download className="h-4 w-4 mr-2" />
+              PDF
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <Button variant="outline" onClick={printPDF} className="w-full gap-2" disabled={!qrDataUrl || loading}>
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
           Imprimir
         </Button>
-        <Button variant="outline" onClick={() => setShowPreview(true)} className="w-full" disabled={!qrDataUrl}>
-          <Eye className="h-4 w-4 mr-2" />
-          Vista Previa
-        </Button>
-        <Button variant="outline" onClick={copyUrl} className="w-full" disabled={!joinUrl}>
+
+        <Button variant="outline" onClick={copyUrl} className="w-full gap-2" disabled={!joinUrl}>
           {copied ? (
-            <><Check className="h-4 w-4 mr-2" />¡Copiado!</>
+            <><Check className="h-4 w-4" />Copiado</>
           ) : (
-            <><Copy className="h-4 w-4 mr-2" />Copiar URL</>
+            <><Copy className="h-4 w-4" />Copiar URL</>
           )}
         </Button>
-        <Link href={`/join/${card.id}`} className="w-full">
-          <Button variant="outline" className="w-full">
-            <ExternalLink className="h-4 w-4 mr-2" />
-            Join Flow
-          </Button>
-        </Link>
       </div>
 
       <p className="text-xs text-muted-foreground text-center">
         Coloca este código QR en tu negocio para que los clientes se unan al programa
       </p>
-
-      {/* PDF Preview Dialog */}
-      <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle>Vista Previa — {PDF_SIZES[pdfSize].label}</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 min-h-0">
-            {qrDataUrl && (
-              <PDFPreviewInner
-                card={card}
-                businessName={businessName}
-                businessLogo={businessLogo}
-                qrDataUrl={qrDataUrl}
-                size={pdfSize}
-              />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
-  )
-}
-
-function PDFPreviewInner(props: {
-  card: CardData
-  businessName: string
-  businessLogo: string | null
-  qrDataUrl: string
-  size: PdfSizeKey
-}) {
-  const [url, setUrl] = useState<string | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    async function generate() {
-      const { pdf } = await import("@react-pdf/renderer")
-      const doc = <PDFDocument {...props} />
-      const blob = await pdf(doc).toBlob()
-      if (!cancelled) {
-        setUrl(URL.createObjectURL(blob))
-      }
-    }
-    generate()
-    return () => { cancelled = true }
-  }, [props.card, props.businessName, props.businessLogo, props.qrDataUrl, props.size])
-
-  useEffect(() => {
-    return () => {
-      if (url) URL.revokeObjectURL(url)
-    }
-  }, [url])
-
-  if (!url) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    )
-  }
-
-  return (
-    <iframe src={url} className="w-full h-full rounded-lg border border-border" title="Vista previa PDF" />
   )
 }
