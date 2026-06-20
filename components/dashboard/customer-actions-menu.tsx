@@ -54,6 +54,28 @@ export function CustomerActionsMenu({
     router.refresh()
   }
 
+  const handleStamp = useCallback(async () => {
+    setStampState("loading")
+    try {
+      const type = currentStamps >= maxStamps ? "redeem" : "stamp"
+      const res = await fetch("/api/stamps", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customerId, type }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error()
+      setStampState(data.event === "redeem" ? "redeemed" : "stamped")
+      router.refresh()
+      setTimeout(() => setStampState("idle"), 2000)
+    } catch {
+      setStampState("error")
+      setTimeout(() => setStampState("idle"), 3000)
+    }
+  }, [customerId, currentStamps, maxStamps, router])
+
+  const isReady = currentStamps >= maxStamps
+
   // Don't render stamp action when disabled (e.g., in /dashboard/customers)
   if (hideStampAction) {
     return (
@@ -99,28 +121,6 @@ export function CustomerActionsMenu({
       </>
     )
   }
-
-  const handleStamp = useCallback(async () => {
-    setStampState("loading")
-    try {
-      const type = currentStamps >= maxStamps ? "redeem" : "stamp"
-      const res = await fetch("/api/stamps", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customerId, type }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error()
-      setStampState(data.event === "redeem" ? "redeemed" : "stamped")
-      router.refresh()
-      setTimeout(() => setStampState("idle"), 2000)
-    } catch {
-      setStampState("error")
-      setTimeout(() => setStampState("idle"), 3000)
-    }
-  }, [customerId, currentStamps, maxStamps, router])
-
-  const isReady = currentStamps >= maxStamps
 
   return (
     <>
