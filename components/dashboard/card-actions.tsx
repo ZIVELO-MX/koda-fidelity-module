@@ -472,10 +472,10 @@ export function CardActions({
                     </div>
                     <div className="flex items-center gap-2 text-xs">
                       <span
-                        className="inline-block w-3 h-3 rounded-full"
+                        className="inline-block w-3 h-3 rounded-full shrink-0"
                         style={{ backgroundColor: getRarityColor(m.probability) }}
                       />
-                      <span className="font-medium w-20">{getRarityLabel(m.probability)}</span>
+                      <span className="font-medium w-20 shrink-0">{getRarityLabel(m.probability)}</span>
                       <span className="text-muted-foreground">— {getRarityDescription(m.probability)}</span>
                     </div>
                       </div>
