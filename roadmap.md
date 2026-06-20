@@ -624,6 +624,12 @@ model StampLog {
 
 ---
 
+### Backlog
+
+> Ideas y tareas priorizadas para sprints futuros, sin fecha asignada.
+
+- [ ] **Estados vacíos con shadcn Empty** — agregar `pnpm dlx shadcn@latest add empty` y reemplazar las secciones sin datos (clientes, actividad reciente, etc.) con el componente `Empty` de shadcn/ui, eliminando los textos planos actuales
+
 ### Post-MVP — Landing Page
 
 > Observaciones post-polish para aumentar conversión y credibilidad.
