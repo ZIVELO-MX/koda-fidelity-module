@@ -64,7 +64,7 @@ export default function QRCodesPage() {
             return (
               <div
                 key={card.id}
-                className="bg-card rounded-2xl border border-border overflow-hidden"
+                className="bg-card rounded-2xl border border-border overflow-hidden transition-shadow hover:shadow-md"
               >
                 <div className="h-2" style={{ backgroundColor: card.brandColor }} />
                 

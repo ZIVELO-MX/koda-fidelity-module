@@ -386,7 +386,7 @@ export function CardQRClient({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <section className="overflow-hidden rounded-xl border border-border bg-card">
+        <section className="overflow-hidden rounded-xl border border-border bg-card transition-shadow hover:shadow-md">
           <div className="h-2" style={{ backgroundColor: card.brandColor }} />
           <div className="grid gap-6 p-5 sm:p-6 md:grid-cols-[18rem_minmax(0,1fr)] md:items-center">
             <div
@@ -458,7 +458,7 @@ export function CardQRClient({
           </div>
         </section>
 
-        <aside className="rounded-xl border border-border bg-card p-5">
+        <aside className="rounded-xl border border-border bg-card p-5 transition-shadow hover:shadow-md">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Tarjeta</h2>
           <div className="mt-4 space-y-4">
             <div>
@@ -480,7 +480,7 @@ export function CardQRClient({
         </aside>
       </div>
 
-      <section className="rounded-xl border border-border bg-card p-5 sm:p-6">
+      <section className="rounded-xl border border-border bg-card p-5 sm:p-6 transition-shadow hover:shadow-md">
         <div className="mb-5 flex flex-col gap-1">
           <h2 className="text-lg font-semibold text-foreground">Material Impreso</h2>
           <p className="text-sm text-muted-foreground">
