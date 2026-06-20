@@ -456,6 +456,7 @@ model StampLog {
 - [ ] **Recompensas sorpresa** — al canjear, en lugar de recompensa fija, el negocio configura una lista de recompensas posibles; al llegar a N sellos, el sistema elige 1 aleatoriamente y se la asigna al cliente. Inspirado en cofres/recompensas de Clash Royale. Incluye toggle activable por tarjeta, soporte multi-recompensa en schema, UI de configuración en creación/edición, lógica de selección aleatoria en `POST /api/stamps`, y UI de revelación en scan/dashboard.
 - [ ] **Sidebar unificada con shadcn Sidebar** — `pnpm dlx shadcn@latest add sidebar` y migrar la sidebar actual a la nueva implementación de shadcn/ui (`<SidebarProvider>`, `<Sidebar>`, `<SidebarInset>`), integrando navegación mobile/desktop, menú colapsable por grupo y responsividad.
 - [ ] **Toast con Sonner** — `pnpm dlx shadcn@latest add sonner` y migrar los mensajes de toast/notificación actuales a `<Toaster>` + `toast()` de Sonner, reemplazando los estados de éxito/error manuales
+- [ ] **Tooltip con shadcn Tooltip** — `pnpm dlx shadcn@latest add tooltip` y migrar los tooltips nativos (`title` attr / CSS `:hover`) a `<Tooltip>` de shadcn/ui en IconPicker y otros componentes
 
 ## Historial del MVP `1.0.0`
 
