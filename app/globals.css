@@ -83,6 +83,7 @@
 }
 
 .forced-light {
+  color: var(--foreground);
   --background: oklch(0.985 0 0);
   --foreground: oklch(0.25 0 0);
   --card: oklch(1 0 0);
@@ -413,5 +414,20 @@
 @media (prefers-reduced-motion: reduce) {
   .marquee-track {
     animation: none;
+  }
+}
+
+/* Print — hide sidebar, navbar, and chrome when printing the web page directly */
+@media print {
+  body > header,
+  body > nav,
+  [data-sidebar],
+  [data-mobile-nav],
+  .sidebar-wrapper,
+  .print-hidden {
+    display: none !important;
+  }
+  body {
+    background: white !important;
   }
 }

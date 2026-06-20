@@ -41,7 +41,7 @@ export default async function DashboardPage() {
 
     const business = await prisma.business.findUnique({
       where: { id: userRecord.businessId },
-      select: { id: true, name: true, brandColor: true, logoUrl: true, iconName: true },
+      select: { id: true, name: true, nickname: true, brandColor: true, logoUrl: true, iconName: true },
     })
 
     if (!business) {
@@ -82,7 +82,7 @@ export default async function DashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Panel</h1>
-          <p className="text-muted-foreground">¡Bienvenido, {business.name}! Esto es lo que está pasando.</p>
+          <p className="text-muted-foreground">¡Bienvenido, {business.nickname ?? business.name}! Esto es lo que está pasando.</p>
         </div>
         <div className="flex gap-2">
           <Link href="/dashboard/scan">
