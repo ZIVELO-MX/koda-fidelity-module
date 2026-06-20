@@ -60,14 +60,6 @@ export function CardQRClient({
     }
   }, [joinUrl])
 
-  // Preload QR image for preview drawing
-  useEffect(() => {
-    if (!qrDataUrl) return
-    const img = new Image()
-    img.src = qrDataUrl
-    qrImageRef.current = img
-  }, [qrDataUrl])
-
   const drawLayout = useCallback((
     ctx: CanvasRenderingContext2D,
     cw: number,
@@ -145,7 +137,7 @@ export function CardQRClient({
     if (!ctx) return
 
     const { width: pw, height: ph } = PDF_SIZES[pdfSize]
-    const scale = Math.min(PREVIEW_MAX_W / pw, PREVIEW_MAX_H / ph, 0.8)
+    const scale = Math.min(PREVIEW_MAX_W / pw, PREVIEW_MAX_H / ph, 1)
     const cw = Math.round(pw * scale)
     const ch = Math.round(ph * scale)
 
@@ -156,6 +148,15 @@ export function CardQRClient({
 
     drawLayout(ctx, cw, ch, qrImg)
   }, [pdfSize, drawLayout])
+
+  // Preload QR image for preview drawing
+  useEffect(() => {
+    if (!qrDataUrl) return
+    const img = new Image()
+    img.onload = drawPreview
+    img.src = qrDataUrl
+    qrImageRef.current = img
+  }, [qrDataUrl, drawPreview])
 
   useEffect(() => {
     if (qrImageRef.current?.complete) {

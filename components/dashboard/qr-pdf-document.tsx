@@ -19,17 +19,18 @@ interface QRPDFDocumentProps {
   ctaText: string
 }
 
-export function QRPDFDocument({ card, businessName, businessLogo, qrDataUrl, size, ctaText }: QRPDFDocumentProps) {
+export function QRPDFDocument({ card, businessName, qrDataUrl, size, ctaText }: QRPDFDocumentProps) {
   const { width, height } = PDF_SIZES[size]
   const isCompact = size === "tarjeta"
   const isMedium = size === "media-carta"
 
-  const logoSize = isCompact ? 28 : 36
+  const pad = size === "carta" ? 36 : size === "media-carta" ? 28 : 18
+  const brandBarHeight = 8
   const qrSize = isCompact ? 150 : isMedium ? 180 : 220
-  const fontSize = isCompact ? 9 : isMedium ? 11 : 12
-  const titleSize = isCompact ? 13 : isMedium ? 16 : 18
-  const rewardSize = isCompact ? 10 : isMedium ? 13 : 14
-  const ctaSize = isCompact ? 10 : isMedium ? 13 : 15
+  const businessSize = isCompact ? 0 : 14
+  const titleSize = size === "carta" ? 16 : size === "media-carta" ? 14 : 11
+  const rewardSize = 11
+  const ctaSize = size === "carta" ? 14 : size === "media-carta" ? 12 : 10
 
   const styles = StyleSheet.create({
     page: {
@@ -38,63 +39,29 @@ export function QRPDFDocument({ card, businessName, businessLogo, qrDataUrl, siz
       fontFamily: "Helvetica",
     },
     brandBar: {
-      height: isCompact ? 6 : 8,
+      height: brandBarHeight,
       backgroundColor: card.brandColor,
     },
     content: {
-      padding: isCompact ? 20 : isMedium ? 30 : 40,
+      padding: pad,
       flex: 1,
       alignItems: "center",
     },
-    header: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-      marginBottom: isCompact ? 12 : 20,
-      width: "100%",
-      justifyContent: "center",
-    },
-    logoImage: {
-      width: logoSize,
-      height: logoSize,
-      borderRadius: logoSize / 2,
-      objectFit: "cover",
-    },
-    logoPlaceholder: {
-      width: logoSize,
-      height: logoSize,
-      borderRadius: logoSize / 2,
-      backgroundColor: card.brandColor,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    placeholderText: {
-      color: "#ffffff",
-      fontSize: logoSize * 0.45,
-      fontFamily: "Helvetica-Bold",
-    },
     businessName: {
-      fontSize: isCompact ? 11 : isMedium ? 14 : 16,
+      fontSize: businessSize,
       fontFamily: "Helvetica-Bold",
       color: "#1a1a1a",
-    },
-    qrWrapper: {
-      backgroundColor: "#ffffff",
-      borderRadius: 8,
-      padding: 12,
-      borderWidth: 1,
-      borderColor: "#e5e7eb",
-      marginBottom: isCompact ? 8 : 12,
-      alignItems: "center",
+      marginBottom: 18,
+      textAlign: "center",
     },
     qrImage: {
       width: qrSize,
       height: qrSize,
+      marginBottom: 12,
     },
     ctaSection: {
       width: "100%",
-      marginBottom: isCompact ? 8 : 14,
+      marginBottom: 6,
       alignItems: "center",
     },
     ctaText: {
@@ -102,42 +69,26 @@ export function QRPDFDocument({ card, businessName, businessLogo, qrDataUrl, siz
       fontFamily: "Helvetica-Bold",
       color: card.brandColor,
       textAlign: "center",
-      lineHeight: 1.4,
+      lineHeight: 1.3,
     },
     cardName: {
       fontSize: titleSize,
       fontFamily: "Helvetica-Bold",
       color: "#1a1a1a",
       textAlign: "center",
-      marginBottom: isCompact ? 2 : 4,
+      marginBottom: 4,
     },
     rewardText: {
       fontSize: rewardSize,
       color: "#374151",
       fontFamily: "Helvetica",
       textAlign: "center",
-      marginBottom: isCompact ? 4 : 8,
-    },
-    divider: {
-      width: "100%",
-      height: 1,
-      backgroundColor: "#e5e7eb",
-      marginVertical: isCompact ? 8 : 14,
-    },
-    instructionsSection: {
-      width: "100%",
-    },
-    instruction: {
-      fontSize: isCompact ? 6 : 8,
-      color: "#6b7280",
-      fontFamily: "Helvetica",
-      marginBottom: isCompact ? 1 : 2,
-      textAlign: "center",
     },
     footer: {
       width: "100%",
       textAlign: "center",
-      paddingVertical: isCompact ? 8 : 12,
+      paddingHorizontal: pad,
+      paddingVertical: 8,
       borderTopWidth: 1,
       borderTopColor: "#e5e7eb",
     },
@@ -154,21 +105,11 @@ export function QRPDFDocument({ card, businessName, businessLogo, qrDataUrl, siz
         <View style={styles.brandBar} />
         <View style={styles.content}>
           {!isCompact && (
-            <View style={styles.header}>
-              {businessLogo ? (
-                <Image style={styles.logoImage} src={businessLogo} />
-              ) : (
-                <View style={styles.logoPlaceholder}>
-                  <Text style={styles.placeholderText}>{businessName.charAt(0).toUpperCase()}</Text>
-                </View>
-              )}
-              <Text style={styles.businessName}>{businessName}</Text>
-            </View>
+            <Text style={styles.businessName}>{businessName}</Text>
           )}
 
-          <View style={styles.qrWrapper}>
-            <Image style={styles.qrImage} src={qrDataUrl} />
-          </View>
+          {/* eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/renderer Image does not support alt. */}
+          <Image style={styles.qrImage} src={qrDataUrl} />
 
           <View style={styles.ctaSection}>
             <Text style={styles.ctaText}>{ctaText}</Text>
@@ -178,15 +119,6 @@ export function QRPDFDocument({ card, businessName, businessLogo, qrDataUrl, siz
           <Text style={styles.rewardText}>
             {card.stampsRequired} sellos · Recompensa: {card.reward}
           </Text>
-
-          {!isCompact && (
-            <View style={styles.instructionsSection}>
-              <View style={styles.divider} />
-              <Text style={styles.instruction}>Escanea el código QR con tu teléfono y obtén tu tarjeta digital</Text>
-              <Text style={styles.instruction}>Acumula sellos en cada visita y canjea tu recompensa</Text>
-              <Text style={styles.instruction}>Sin apps — todo funciona desde tu navegador</Text>
-            </View>
-          )}
         </View>
 
         <View style={styles.footer}>
