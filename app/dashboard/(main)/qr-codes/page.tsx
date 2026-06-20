@@ -2,7 +2,7 @@
 
 import { QRCodeSVG } from "qrcode.react"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { getCardIcon } from "@/lib/card-icons"
@@ -101,12 +101,9 @@ export default function QRCodesPage() {
                     <p className="text-sm text-foreground font-mono truncate">{url}</p>
                   </div>
 
-                  <Button asChild className="w-full gap-2">
-                    <Link href={`/dashboard/qr-codes/${card.id}`}>
-                      Ver detalle
-                      <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                    </Link>
-                  </Button>
+                  <Link href={`/dashboard/qr-codes/${card.id}`}>
+                    <Button variant="outline" className="w-full">Ver Detalles</Button>
+                  </Link>
                 </div>
               </div>
             )
