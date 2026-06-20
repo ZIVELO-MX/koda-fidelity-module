@@ -24,8 +24,8 @@ interface CardData {
   iconName: string | null
 }
 
-const PREVIEW_MAX_W = 520
-const PREVIEW_MAX_H = 520
+const PREVIEW_MAX_W = 440
+const PREVIEW_MAX_H = 560
 
 export function CardQRClient({
   card,
@@ -43,6 +43,7 @@ export function CardQRClient({
   const [ctaText, setCtaText] = useState(CTA_TEMPLATES[DEFAULT_CTA_INDEX](businessName))
   const [loading, setLoading] = useState(false)
   const previewCanvasRef = useRef<HTMLCanvasElement>(null)
+  const qrImageRef = useRef<HTMLImageElement | null>(null)
 
   useEffect(() => {
     setBaseUrl(window.location.origin)
@@ -56,14 +57,23 @@ export function CardQRClient({
     }
   }, [joinUrl])
 
+  // Preload QR image for preview drawing
+  useEffect(() => {
+    if (!qrDataUrl) return
+    const img = new Image()
+    img.src = qrDataUrl
+    qrImageRef.current = img
+  }, [qrDataUrl])
+
   const drawPreview = useCallback(() => {
     const canvas = previewCanvasRef.current
-    if (!canvas || !qrDataUrl) return
+    const qrImg = qrImageRef.current
+    if (!canvas || !qrImg || !qrImg.complete) return
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
     const { width: pw, height: ph } = PDF_SIZES[pdfSize]
-    const scale = Math.min(PREVIEW_MAX_W / pw, PREVIEW_MAX_H / ph, 1)
+    const scale = Math.min(PREVIEW_MAX_W / pw, PREVIEW_MAX_H / ph, 0.8)
     const cw = Math.round(pw * scale)
     const ch = Math.round(ph * scale)
 
@@ -78,13 +88,13 @@ export function CardQRClient({
     ctx.fillStyle = "#ffffff"
     ctx.fillRect(0, 0, cw, ch)
 
-    // Brand bar
-    const barH = Math.round(8 * scale)
+    // Brand bar at top
+    const barH = Math.max(1, Math.round(8 * scale))
     ctx.fillStyle = card.brandColor
     ctx.fillRect(0, 0, cw, barH)
 
-    const pad = Math.round(scale * (pdfSize === "carta" ? 40 : pdfSize === "media-carta" ? 30 : 20))
-    let y = pad
+    const pad = Math.round(scale * (pdfSize === "carta" ? 36 : pdfSize === "media-carta" ? 28 : 18))
+    let y = pad + barH
 
     // Business name
     if (pdfSize !== "tarjeta") {
@@ -92,65 +102,61 @@ export function CardQRClient({
       ctx.font = `bold ${Math.round(14 * scale)}px sans-serif`
       ctx.textAlign = "center"
       ctx.fillText(businessName, cw / 2, y)
-      y += Math.round(18 * scale) + Math.round(12 * scale)
+      y += Math.round(18 * scale)
     }
+
+    y += Math.round(8 * scale)
 
     // QR code
     const qrSize = Math.round(scale * (pdfSize === "carta" ? 220 : pdfSize === "media-carta" ? 180 : 150))
     const qrX = (cw - qrSize) / 2
+    ctx.drawImage(qrImg, qrX, y, qrSize, qrSize)
 
-    const svg = document.getElementById("card-qr-svg")?.querySelector("svg")
-    if (svg) {
-      const svgData = new XMLSerializer().serializeToString(svg)
-      const img = new Image()
-      img.onload = () => {
-        ctx.drawImage(img, qrX, y, qrSize, qrSize)
-      }
-      img.src = `data:image/svg+xml;base64,${btoa(svgData)}`
-    }
-
-    y += qrSize + Math.round(10 * scale)
+    y += qrSize + Math.round(12 * scale)
 
     // CTA text
-    const ctaSize = Math.round(scale * (pdfSize === "carta" ? 15 : pdfSize === "media-carta" ? 13 : 10))
+    const ctaSize = Math.round(scale * (pdfSize === "carta" ? 14 : pdfSize === "media-carta" ? 12 : 10))
     ctx.fillStyle = card.brandColor
     ctx.font = `bold ${ctaSize}px sans-serif`
     ctx.textAlign = "center"
-    wrapText(ctx, ctaText, cw / 2, y, cw - pad * 2, ctaSize + 2)
-    y += measureWrappedText(ctx, ctaText, cw - pad * 2, ctaSize + 2) + Math.round(8 * scale)
+    const ctaLines = wrapText(ctx, ctaText, cw / 2, y, cw - pad * 2, ctaSize + 3)
+    y += ctaLines * (ctaSize + 3) + Math.round(6 * scale)
 
     // Card name
-    const titleSize = Math.round(scale * (pdfSize === "carta" ? 18 : pdfSize === "media-carta" ? 16 : 13))
+    const titleSize = Math.round(scale * (pdfSize === "carta" ? 16 : pdfSize === "media-carta" ? 14 : 11))
     ctx.fillStyle = "#1a1a1a"
     ctx.font = `bold ${titleSize}px sans-serif`
     ctx.textAlign = "center"
     ctx.fillText(card.name, cw / 2, y)
-    y += titleSize + 2
+    y += titleSize + Math.round(4 * scale)
 
     // Reward
-    const rewardSize = Math.round(scale * 12)
+    const rewardSize = Math.round(scale * 11)
     ctx.fillStyle = "#374151"
     ctx.font = `${rewardSize}px sans-serif`
+    ctx.textAlign = "center"
     ctx.fillText(`${card.stampsRequired} sellos · Recompensa: ${card.reward}`, cw / 2, y)
-    y += Math.round(14 * scale)
 
     // Footer
-    if (ch - y > Math.round(20 * scale)) {
-      y = ch - Math.round(14 * scale)
+    const remaining = ch - y
+    if (remaining > Math.round(20 * scale)) {
+      const fy = ch - Math.round(12 * scale)
       ctx.fillStyle = "#e5e7eb"
-      ctx.fillRect(pad, y - Math.round(6 * scale), cw - pad * 2, 1)
+      ctx.fillRect(pad, fy - Math.round(6 * scale), cw - pad * 2, 1)
       ctx.fillStyle = "#9ca3af"
-      ctx.font = `${Math.round(8 * scale)}px sans-serif`
+      ctx.font = `${Math.round(7 * scale)}px sans-serif`
       ctx.textAlign = "center"
-      ctx.fillText("Con tecnología de Koda Fidelity", cw / 2, y + Math.round(4 * scale))
+      ctx.fillText("Con tecnología de Koda Fidelity", cw / 2, fy + Math.round(3 * scale))
     }
-  }, [qrDataUrl, pdfSize, ctaText, card, businessName, businessLogo])
+  }, [qrDataUrl, pdfSize, ctaText, card, businessName])
 
   useEffect(() => {
-    if (qrDataUrl) {
+    if (qrImageRef.current?.complete) {
       drawPreview()
+    } else if (qrImageRef.current) {
+      qrImageRef.current.onload = drawPreview
     }
-  }, [qrDataUrl, drawPreview])
+  }, [drawPreview, qrDataUrl])
 
   const copyUrl = useCallback(async () => {
     if (!joinUrl) return
@@ -314,12 +320,12 @@ export function CardQRClient({
         </div>
       </div>
 
-      {/* PNG Preview */}
+      {/* Preview */}
       <div>
         <p className="text-sm text-muted-foreground mb-2">Vista previa</p>
-        <div className="bg-card rounded-2xl border border-border p-4 flex items-center justify-center min-h-[200px]">
+        <div className="bg-card rounded-2xl border border-border p-4 flex items-center justify-center min-h-[160px] overflow-auto">
           {qrDataUrl ? (
-            <canvas ref={previewCanvasRef} className="max-w-full rounded shadow-sm" />
+            <canvas ref={previewCanvasRef} className="rounded shadow-sm shrink-0" />
           ) : (
             <span className="text-sm text-muted-foreground">Generando vista previa…</span>
           )}
@@ -328,21 +334,10 @@ export function CardQRClient({
 
       {/* Action buttons */}
       <div className="grid grid-cols-3 gap-3">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="default" className="w-full gap-1" disabled={!joinUrl}>
-              <Download className="h-4 w-4" />
-              Descargar
-              <ChevronDown className="h-3 w-3" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            <DropdownMenuItem onClick={downloadPNG} disabled={!joinUrl}>
-              <Download className="h-4 w-4 mr-2" />
-              PNG
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Button variant="default" onClick={downloadPNG} className="w-full gap-2" disabled={!joinUrl}>
+          <Download className="h-4 w-4" />
+          PNG
+        </Button>
 
         <Button variant="outline" onClick={generateAndOpenPDF} className="w-full gap-2" disabled={!qrDataUrl || loading}>
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
@@ -365,36 +360,31 @@ export function CardQRClient({
   )
 }
 
-function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number) {
+function wrapText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  lineHeight: number,
+): number {
   const words = text.split(" ")
   let line = ""
+  let lines = 0
   for (const word of words) {
     const testLine = line ? `${line} ${word}` : word
     if (ctx.measureText(testLine).width > maxWidth && line) {
       ctx.fillText(line, x, y)
       line = word
       y += lineHeight
+      lines++
     } else {
       line = testLine
     }
   }
   if (line) {
     ctx.fillText(line, x, y)
+    lines++
   }
-}
-
-function measureWrappedText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, lineHeight: number): number {
-  const words = text.split(" ")
-  let line = ""
-  let lines = 1
-  for (const word of words) {
-    const testLine = line ? `${line} ${word}` : word
-    if (ctx.measureText(testLine).width > maxWidth && line) {
-      line = word
-      lines++
-    } else {
-      line = testLine
-    }
-  }
-  return lines * lineHeight
+  return lines
 }
