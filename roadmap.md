@@ -29,7 +29,7 @@
 | Versión | Rama | Estado | Fases incluidas |
 | ------- | ---- | ------ | --------------- |
 | `1.0.0` | `main` | ✅ MVP estable | Fases 0–7. Tarjetas, clientes, QR, join flow, scan, portal cliente, Google OAuth/magic link, caducidad y guards. |
-| `1.1.0` | `dev` | 🟡 En cierre, no liberada | Fases 8–13. Multiusuario, equipo, UX móvil, operación, archivado/restauración, CI/plans, tabla de clientes compartida, ícono de sello y polish. |
+| `1.1.0` | `dev` | 🟡 En cierre, no liberada | Fases 8–13 + QR print & share. Multiusuario, equipo, UX móvil, operación, archivado/restauración, CI/plans, tabla de clientes compartida, ícono de sello, polish, QR PDF personalizable con preview, descarga QR solo (PNG/SVG) y preview de página de registro. |
 | `1.2.0+` | futuras ramas desde `dev` | ⏳ Post-release | Wallets, landing comercial, permisos avanzados, auditoría y mejoras de auth. |
 
 > `main` debe reflejar siempre la última versión estable. `dev` contiene la próxima versión candidata. En este momento los cambios acumulados en `dev` corresponden a `1.1.0`; está casi completa, pero aún requiere cierre de release antes de mergear a `main`.
@@ -440,7 +440,18 @@ model StampLog {
 - [ ] Actualizar `docs/CHANGELOG.md` con resultado final de pruebas
 - [ ] Mergear `dev` a `main` y taggear `v1.1.0`
 
-**Features propuestas para `1.1.0` (pendientes de priorizar):**
+**Features incluidas en `1.1.0` (completadas):**
+
+- [x] **QR PDF profesional** — PDF descargable con QR, nombre del negocio, logo, tarjeta de fidelidad, instrucciones y diseño profesional para imprimir. Implementado con `@react-pdf/renderer`.
+- [x] **Vista previa del PDF en canvas** — preview en vivo del layout de impresión usando canvas PNG, se actualiza al cambiar tamaño o CTA.
+- [x] **Múltiples tamaños** — tarjeta de crédito, media carta y carta completa.
+- [x] **Personalización** — nombre del negocio, logo, color de marca, nombre de tarjeta, recompensa e instrucciones de uso.
+- [x] **CTA promocional** — mensaje configurable con presets recomendados; aparece tanto en PNG como en PDF.
+- [x] **Descarga de QR solo** — botones para descargar el código QR únicamente en PNG y SVG.
+- [x] **Preview de página de registro** — `/dashboard/qr-codes/{cardId}/preview` muestra la UI real de `/join/{cardId}` en modo no funcional, usando el mismo componente compartido `JoinCardLayout`.
+- [x] **UI de QR codes renovada** — página de detalle con layout de dos columnas, preview en vivo, y botones de acción primaria (copiar link, descargar QR solo, probar registro).
+
+**Features propuestas para `1.2.0`:**
 
 - [ ] **Recompensas sorpresa** — al canjear, en lugar de recompensa fija, mostrar una selección aleatoria de 3 recompensas configuradas por el negocio; el cliente elige una. Incluir configuración en creación/edición de tarjeta, lógica de selección aleatoria en `POST /api/stamps`, y UI de selección en el scan o portal del cliente.
 
@@ -647,15 +658,9 @@ model StampLog {
 - [ ] Generar certificado Apple Wallet (Pass Type ID + certificado de firma)
 - [ ] Publicar en Wallet Console (Google) para quitar modo prueba
 
-### Post-MVP — QR Impresión y PDF
+### QR Impresión y PDF — Completado
 
-> La vista previa actual redirige al join flow en vivo y el botón Imprimir usa `window.print()` sin formato. Falta un PDF funcional que el negocio pueda imprimir y colocar en su local para que los clientes escaneen y se unan.
-
-- [ ] **PDF con pdfslick** — generar PDF descargable con QR, nombre del negocio, logo, tarjeta de fidelidad, instrucciones y diseño profesional para imprimir
-- [ ] **Vista previa del PDF** — mostrar el PDF embebido en la página en lugar de redirigir al join flow
-- [ ] **Múltiples tamaños** — opción para descargar en tamaño tarjeta de crédito, media carta o carta completa
-- [ ] **Personalización** — incluir nombre del negocio, logo, color de marca, nombre de la tarjeta, recompensa e instrucciones de uso
-- [ ] **Imprimir desde PDF** — reemplazar `window.print()` con apertura del PDF para impresión nativa del navegador
+> Implementado en `feat/qr-print-pdf` y `feat/qr-code-sharing-ui`. Se usó `@react-pdf/renderer` (no pdfslick, que es un visor, no generador). El preview usa canvas PNG en lugar de PDF embebido para evitar bugs con `BlobProvider`/iframe. El PDF se abre en nueva pestaña donde el usuario puede guardar o imprimir nativamente.
 
 ### Post-MVP — Usuarios y Permisos (ampliación)
 
