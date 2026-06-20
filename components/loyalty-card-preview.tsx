@@ -130,7 +130,7 @@ export function LoyaltyCardPreview({
                 )}
                 style={
                   isMilestone && filled
-                    ? { background: "linear-gradient(135deg, #9333ea, #ec4899)" }
+                    ? { backgroundColor: brandColor, boxShadow: `0 0 0 2px ${light ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.4)"} inset` }
                     : filled
                       ? {
                           backgroundColor: stampBg,
@@ -143,7 +143,7 @@ export function LoyaltyCardPreview({
                   if (isMilestone) {
                     const milestoneIcon = getCardIcon(milestoneClaim.iconName)
                     const MilestoneIconComp = milestoneIcon?.Icon ?? Stamp
-                    return <MilestoneIconComp className="w-5 h-5 text-white" strokeWidth={2} />
+                    return <MilestoneIconComp className="w-5 h-5" style={{ color: light ? "rgba(0,0,0,0.7)" : "#ffffff" }} strokeWidth={2} />
                   }
                   const effectiveStampIcon = stampIconName ?? iconName
                   if (effectiveStampIcon === "logo" && businessLogo) {

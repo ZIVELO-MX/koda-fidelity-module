@@ -432,7 +432,8 @@ function ScanPageInner() {
                   <AlertDialog open={true} onOpenChange={(o) => { if (!o) setMilestoneClaim(null) }}>
                     <AlertDialogContent className="max-w-sm">
                       <AlertDialogHeader>
-                        <div className="mx-auto w-14 h-14 rounded-full bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center mb-2">
+                        <div className="mx-auto w-14 h-14 rounded-full flex items-center justify-center mb-2"
+                          style={{ backgroundColor: selectedCustomer?.cardBrandColor ?? "#f97316" }}>
                           {MilestoneIconComp ? <MilestoneIconComp className="h-7 w-7 text-white" /> : <Gift className="h-7 w-7 text-white" />}
                         </div>
                         <AlertDialogTitle className="text-center text-xl">¡Bono Sorpresa!</AlertDialogTitle>
@@ -445,7 +446,10 @@ function ScanPageInner() {
                       </div>
                       <AlertDialogFooter className="sm:justify-center gap-2">
                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white">
+                        <AlertDialogAction
+                          className="text-white"
+                          style={{ backgroundColor: selectedCustomer?.cardBrandColor ?? "#f97316" }}
+                        >
                           Canjear recompensa
                         </AlertDialogAction>
                       </AlertDialogFooter>
