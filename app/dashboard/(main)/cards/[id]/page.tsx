@@ -69,7 +69,7 @@ export default async function CardDetailPage({
 
   const tableCustomers = filteredCustomers.map((c) => ({
     ...c,
-    card: { name: card.name, stampsRequired: card.stampsRequired, reward: card.reward },
+    card: { name: card.name, stampsRequired: card.stampsRequired, reward: card.reward, brandColor: card.brandColor },
   }))
 
   const basePath = `/dashboard/cards/${id}`

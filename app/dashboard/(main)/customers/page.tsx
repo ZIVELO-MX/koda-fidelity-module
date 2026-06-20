@@ -39,8 +39,8 @@ export default async function CustomersPage({
         ...(cardFilter ? { cardId: cardFilter } : {}),
       },
       include: {
-        card: { select: { name: true, stampsRequired: true, reward: true } },
-        _count: { select: { stampsLog: { where: { type: "redeem" } } } },
+        card: { select: { name: true, stampsRequired: true, reward: true, brandColor: true } },
+        _count: { select: { stampsLog: { where: { type: "redeem" } }, milestoneClaims: true } },
       },
       orderBy: { [sort]: order },
     }),
@@ -150,7 +150,6 @@ export default async function CustomersPage({
           order={order}
           basePath="/dashboard/customers"
           baseParams={baseParams}
-          hideStampAction={true}
           footerSuffix={activeCard ? ` en "${activeCard.name}"` : ""}
         />
       )}

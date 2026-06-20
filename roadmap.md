@@ -627,6 +627,16 @@ model StampLog {
 - [ ] Guardar `LoyaltyCard.cardTheme String @default("auto")` con valores `"auto"`, `"light"`, `"dark"`
 - [ ] `LoyaltyCardPreview` recibe prop `cardTheme?: "auto" | "light" | "dark"` y aplica la paleta correcta de foreground/background para texto y stamps
 
+#### Color de texto configurable para tarjetas (blanco / negro)
+
+> Cuando el `brandColor` es muy claro, el texto blanco de la tarjeta queda ilegible. Se necesita permitir elegir el color del texto.
+
+- [ ] Agregar campo `textColor String @default("white")` al modelo `LoyaltyCard` en Prisma
+- [ ] Crear migración para el nuevo campo
+- [ ] Agregar radio button o toggle en el dialog de edición y en el wizard de creación (`/cards/new`)
+- [ ] `LoyaltyCardPreview` acepta prop `textColor` y aplica `text-white` o `text-black` según corresponda
+- [ ] Propagar `textColor` en todas las vistas: detalle de tarjeta, join flow, my-cards, scan, etc.
+
 #### Avatar / foto de perfil
 
 - [ ] Subir/cambiar avatar del negocio con flujo similar al logo en Branding
