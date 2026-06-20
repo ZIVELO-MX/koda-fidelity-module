@@ -177,7 +177,7 @@ export default function QRCodesPage() {
                         </>
                       )}
                     </Button>
-                    <Link href={`/dashboard/qr-codes/${card.id}`}>
+                    <Link href={`/dashboard/qr-codes/${card.id}/preview`}>
                       <Button variant="ghost" className="w-full">
                         <ExternalLink className="h-4 w-4 mr-2" />
                         Vista Previa
