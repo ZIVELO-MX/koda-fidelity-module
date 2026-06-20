@@ -2,7 +2,10 @@
 
 > Inspirado en cofres/recompensas de Clash Royale: en lugar de una recompensa fija,
 > el negocio configura un pool de recompensas posibles. Al canjear N sellos, el sistema
-> elige 1 aleatoriamente y se la asigna al cliente.
+> elige 1 aleatoriamente y se la asigna al cliente. Además, el cliente recibe un **sello
+> de regalo** (bonus stamp) como incentivo extra. Ese sello usa el ícono de sello
+> configurado en la tarjeta (`stampIconName`), creando una distinción visual entre
+> sellos normales y sellos de regalo.
 
 ---
 
@@ -48,10 +51,27 @@ model CustomerRewardClaim {
   rewardId   String
   reward     Reward   @relation(fields: [rewardId], references: [id])
   createdAt  DateTime @default(now())
+  stampLogId String?  // referencia al StampLog del sello de regalo
+  stampLog   StampLog? @relation(fields: [stampLogId], references: [id])
 
   @@index([customerId])
 }
 ```
+
+### Modificación a `StampLog`
+
+```prisma
+model StampLog {
+  id         String          @id @default(cuid())
+  customerId String
+  customer   Customer        @relation(fields: [customerId], references: [id])
+  type       String          // "stamp" | "redeem" | "gift"
+  metadata   Json?           // metadata adicional (rewardClaimId, rewardLabel)
+  createdAt  DateTime        @default(now())
+}
+```
+
+Se agrega el campo `metadata Json?` y el tipo `"gift"` al uso existente.
 
 ### Migración
 
@@ -59,6 +79,8 @@ model CustomerRewardClaim {
 2. `ALTER TABLE LoyaltyCard ADD COLUMN surpriseRewardsEnabled BOOLEAN NOT NULL DEFAULT false;`
 3. Crear tabla `Reward` con FK a `LoyaltyCard`
 4. Crear tabla `CustomerRewardClaim` con FK a `Customer` y `Reward`
+5. `ALTER TABLE StampLog ADD COLUMN metadata JSONB;`
+6. Actualizar constraint de `StampLog.type` para aceptar `"gift"` (si hay enum check)
 
 ---
 
@@ -99,15 +121,16 @@ Incluir en respuesta:
 
 ### 2.3 Canje — `POST /api/stamps`
 
-Lógica ampliada:
+Lógica ampliada (se ejecuta después de la lógica de redeem existente):
 
 ```ts
 // Cuando type === "redeem"
 if (card.surpriseRewardsEnabled && card.rewards.length > 0) {
-  // Selección ponderada aleatoria
+  // 1. Selección ponderada aleatoria
   const totalWeight = card.rewards.reduce((sum, r) => sum + r.weight, 0)
   const roll = Math.random() * totalWeight
   let acc = 0
+  let selectedReward: Reward | null = null
   for (const reward of card.rewards) {
     acc += reward.weight
     if (roll <= acc) {
@@ -115,10 +138,32 @@ if (card.surpriseRewardsEnabled && card.rewards.length > 0) {
       break
     }
   }
-  // Crear CustomerRewardClaim + actualizar customer.stamps
-  // Se puede exponer en respuesta para mostrar en UI
+
+  if (selectedReward) {
+    // 2. Crear CustomerRewardClaim
+    const claim = await prisma.customerRewardClaim.create({
+      data: { customerId, rewardId: selectedReward.id },
+    })
+
+    // 3. Sello de regalo — sumar 1 stamp al customer + log tipo "gift"
+    await prisma.customer.update({
+      where: { id: customerId },
+      data: { stamps: { increment: 1 } },
+    })
+    await prisma.stampLog.create({
+      data: {
+        customerId,
+        type: "gift",
+        metadata: { rewardClaimId: claim.id, rewardLabel: selectedReward.label },
+      },
+    })
+
+    // Registrar en respuesta
+  }
 }
 ```
+
+**Nuevo tipo en StampLog:** `type: "gift"` — se agrega al enum existente `"stamp" | "redeem" | "gift"`.
 
 **Respuesta ampliada:**
 
@@ -129,6 +174,7 @@ if (card.surpriseRewardsEnabled && card.rewards.length > 0) {
     id: string
     label: string
     emoji: string | null
+    giftStampAdded: true   // siempre true cuando hay rewardClaim
   }
 }
 ```
@@ -193,6 +239,7 @@ Cuando el admin/sellador hace clic en "Canjear":
 1. POST /api/stamps con type="redeem"
 2. Si `rewardClaim` viene en respuesta:
    - Modal/mensaje especial: "🎉 ¡El cliente ganó **[recompensa]**!" con emoji
+   - Badge adicional: "⭐ +1 sello de regalo" con el ícono de sello de la tarjeta (`stampIconName`)
    - Animación tipo cofre/ticket (opcional)
 3. Si no (recompensa fija): comportamiento actual
 
@@ -225,7 +272,8 @@ Dentro del acordeón/expansor de cada tarjeta:
 └──────────────────────────────────────────┘
 ```
 
-- Cada claim muestra: emoji (si existe) + label + fecha de obtención
+- Cada claim muestra: emoji (si existe) + label + fecha de obtención + badge "⭐ +1" (indicando el sello de regalo)
+- El badge del sello de regalo usa el `stampIconName` de la tarjeta (si está configurado)
 - Ordenado del más reciente al más antiguo
 - Si la tarjeta tiene `surpriseRewardsEnabled`, mostrar badge junto al título: "🎲 Recompensa aleatoria"
 
@@ -236,22 +284,28 @@ Cuando el cliente canjea en el scan (o se confirma vía magic link):
 1. La pantalla de "✅ ¡Recompensa canjeada!" se reemplaza por una animación tipo cofre/ticket:
 
 ```
-┌─────────────────────────────────┐
-│                                 │
-│        🎉 ¡Felicidades!        │
-│                                 │
-│      ┌─────────────────┐       │
-│      │                 │       │
-│      │      🍺         │       │
-│      │                 │       │
-│      └─────────────────┘       │
-│                                 │
-│   Has ganado:                   │
-│   Una cerveza gratis            │
-│                                 │
-│   [  ¡Reclamar!  ]              │
-│                                 │
-└─────────────────────────────────┘
+┌──────────────────────────────────┐
+│                                  │
+│         🎉 ¡Felicidades!        │
+│                                  │
+│       ┌─────────────────┐       │
+│       │                 │       │
+│       │      🍺         │       │
+│       │                 │       │
+│       └─────────────────┘       │
+│                                  │
+│   Has ganado:                    │
+│   Una cerveza gratis             │
+│                                  │
+│   ╔══════════════════════╗       │
+│   ║  ⭐ +1 sello de regalo║      │
+│   ╚══════════════════════╝       │
+│   (usa el stampIconName de la    │
+│    tarjeta para el ícono)        │
+│                                  │
+│   [   ¡Reclamar!   ]             │
+│                                  │
+└──────────────────────────────────┘
 ```
 
 2. En `/my-cards` la tarjeta muestra un badge "🎁 Nuevo" en la recompensa más reciente durante 7 días.
@@ -308,7 +362,7 @@ Ruta: `/my-cards/rewards` o modal "Ver todas" desde el card detail:
 
 | Archivo | Acción |
 |---|---|
-| `prisma/schema.prisma` | Agregar `Reward`, `CustomerRewardClaim`, modificar `LoyaltyCard.reward` a opcional + `surpriseRewardsEnabled` |
+| `prisma/schema.prisma` | Agregar `Reward`, `CustomerRewardClaim`, modificar `LoyaltyCard.reward` a opcional + `surpriseRewardsEnabled`, agregar `metadata Json?` a `StampLog` |
 | `lib/card-utils.ts` | Helper `pickWeightedReward(rewards)` |
 | `app/api/cards/route.ts` | Validar y persistir `rewards` array en `POST` |
 | `app/api/cards/[id]/route.ts` | Validar y persistir `rewards` array en `PUT`; incluirlos en `GET` |
