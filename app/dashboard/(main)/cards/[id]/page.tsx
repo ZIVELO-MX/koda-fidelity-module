@@ -39,12 +39,12 @@ export default async function CardDetailPage({
       customers: {
         where: { isActive: true },
         include: {
-          _count: {
-            select: {
-              stampsLog: { where: { type: "redeem" } },
-              customerMilestoneClaims: true,
-            },
-          },
+              _count: {
+                select: {
+                  stampsLog: { where: { type: "redeem" } },
+                  milestoneClaims: true,
+                },
+              },
         },
         orderBy: { [sort]: order },
       },

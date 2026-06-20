@@ -136,7 +136,7 @@ const customerInclude = {
       business: { select: { name: true, brandColor: true, logoUrl: true, iconName: true } },
     },
   },
-  customerMilestoneClaims: {
+  milestoneClaims: {
     select: { id: true, label: true, iconName: true, createdAt: true },
     orderBy: { createdAt: "desc" },
   },

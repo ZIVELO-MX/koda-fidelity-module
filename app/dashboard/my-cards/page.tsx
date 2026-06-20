@@ -41,7 +41,7 @@ interface MyCard {
   stamps: number
   isActive: boolean
   createdAt: string
-  customerMilestoneClaims: MilestoneClaim[]
+  milestoneClaims: MilestoneClaim[]
   card: {
     id: string
     name: string
@@ -495,11 +495,11 @@ export default function DashboardMyCardsPage() {
                                   showQR={true}
                                   qrValue={c.id}
                                 />
-                                {c.customerMilestoneClaims.length > 0 && (
+                                {c.milestoneClaims.length > 0 && (
                                   <div className="space-y-2">
                                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Bonos Obtenidos</p>
                                     <div className="flex flex-wrap gap-2">
-                                      {c.customerMilestoneClaims.map((cl) => {
+                                      {c.milestoneClaims.map((cl) => {
                                         const icon = getCardIcon(cl.iconName)
                                         const IconComp = icon?.Icon
                                         return (
