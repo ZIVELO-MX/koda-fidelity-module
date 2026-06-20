@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  admin
+  sellador
+}
+
+model Business {
+  id           String        @id @default(cuid())
+  name         String
+  brandColor   String        @default("#ff6b35")
+  logoUrl       String?
+  iconName      String?
+  stampIconName String?
+  email         String        @unique
+  nickname     String?
+  businessType String?
+  address      String?
+  phone        String?
+  website      String?
+  instagram    String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  loyaltyCards LoyaltyCard[]
+  users        User[]
+}
+
+model User {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  name       String
+  role       Role     @default(admin)
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model LoyaltyCard {
+  id               String             @id @default(cuid())
+  businessId       String
+  business         Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name             String
+  reward           String
+  stampsRequired   Int                @default(10)
+  brandColor       String             @default("#ff6b35")
+  iconName         String?
+  stampIconName    String?
+  isActive         Boolean            @default(true)
+  expiresAt        DateTime?
+  description      String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  customers        Customer[]
+  milestoneRewards MilestoneReward[]
+}
+
+model Customer {
+  id               String                   @id @default(cuid())
+  name             String
+  email            String?
+  cardId           String
+  card             LoyaltyCard              @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  stamps           Int                      @default(0)
+  isActive         Boolean                  @default(true)
+  applePassId      String?
+  googlePassId     String?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  stampsLog        StampLog[]
+  milestoneClaims  CustomerMilestoneClaim[]
+}
+
+model MilestoneReward {
+  id              String                   @id @default(cuid())
+  cardId          String
+  card            LoyaltyCard              @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  stampNumber     Int
+  label           String
+  iconName        String?
+  probability     Int                      @default(100)
+  sortOrder       Int                      @default(0)
+  createdAt       DateTime                 @default(now())
+  customerClaims  CustomerMilestoneClaim[]
+
+  @@unique([cardId, stampNumber])
+  @@index([cardId])
+}
+
+model CustomerMilestoneClaim {
+  id          String   @id @default(cuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id])
+  milestoneId String
+  milestone   MilestoneReward @relation(fields: [milestoneId], references: [id])
+  cardId      String
+  label       String
+  iconName    String?
+  createdAt   DateTime @default(now())
+
+  @@index([customerId])
+  @@index([milestoneId])
+  @@index([cardId])
+}
+
+model StampLog {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  type       String // "stamp" | "redeem" | "milestone"
+  metadata   Json?
+  createdAt  DateTime @default(now())
+}

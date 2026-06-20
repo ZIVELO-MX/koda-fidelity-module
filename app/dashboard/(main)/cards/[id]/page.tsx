@@ -35,6 +35,7 @@ export default async function CardDetailPage({
     where: { id },
     include: {
       _count: { select: { customers: { where: { isActive: true } } } },
+      milestoneRewards: { orderBy: { stampNumber: "asc" } },
       customers: {
         where: { isActive: true },
         include: {
@@ -126,6 +127,7 @@ export default async function CardDetailPage({
           initialIcon={card.iconName}
           initialStampIcon={card.stampIconName}
           initialDescription={card.description}
+          initialMilestones={card.milestoneRewards}
         />
       </div>
 

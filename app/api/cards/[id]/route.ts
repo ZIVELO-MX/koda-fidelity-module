@@ -173,6 +173,9 @@ export async function GET(
         business: {
           select: { name: true, brandColor: true, logoUrl: true, iconName: true },
         },
+        milestoneRewards: {
+          orderBy: { stampNumber: "asc" },
+        },
       },
     })
 
@@ -197,6 +200,9 @@ export async function GET(
         businessBrandColor: card.business.brandColor,
         businessLogoUrl: card.business.logoUrl,
         businessIconName: card.business.iconName,
+        milestoneRewards: card.milestoneRewards.map(m => ({
+          id: m.id, stampNumber: m.stampNumber, label: m.label, iconName: m.iconName, probability: m.probability,
+        })),
       },
     })
   } catch (error) {
@@ -213,7 +219,10 @@ export async function PUT(
     requireRole(user, "admin")
     const { id } = await params
 
-    const existing = await prisma.loyaltyCard.findUnique({ where: { id } })
+    const existing = await prisma.loyaltyCard.findUnique({
+      where: { id },
+      include: { milestoneRewards: { select: { id: true } } },
+    })
     if (!existing || existing.businessId !== business.id) {
       throw new NotFoundError("Loyalty card not found")
     }
@@ -231,12 +240,59 @@ export async function PUT(
       if (s < 1 || s > 100) throw new ValidationError("Required stamps must be between 1 and 100")
     }
 
+    const stampsRequired = body.stampsRequired !== undefined ? Number(body.stampsRequired) : existing.stampsRequired
+
+    if (body.milestoneRewards !== undefined) {
+      if (!Array.isArray(body.milestoneRewards)) {
+        throw new ValidationError("milestoneRewards must be an array")
+      }
+      for (const m of body.milestoneRewards) {
+        if (m.stampNumber < 1 || m.stampNumber > stampsRequired) {
+          throw new ValidationError(`stampNumber ${m.stampNumber} is out of range (1-${stampsRequired})`)
+        }
+        if (!m.label || typeof m.label !== "string" || !m.label.trim()) {
+          throw new ValidationError("Each milestone must have a label")
+        }
+        if (typeof m.probability !== "number" || m.probability < 0 || m.probability > 100) {
+          throw new ValidationError("probability must be between 0 and 100")
+        }
+      }
+      const seen = new Set<number>()
+      for (const m of body.milestoneRewards) {
+        if (seen.has(m.stampNumber)) {
+          throw new ValidationError(`Duplicate stampNumber: ${m.stampNumber}`)
+        }
+        seen.add(m.stampNumber)
+      }
+
+      const incomingIds = body.milestoneRewards.filter((m: { id?: string }) => m.id).map((m: { id: string }) => m.id)
+      const toDelete = existing.milestoneRewards.filter(m => !incomingIds.includes(m.id)).map(m => m.id)
+
+      await prisma.$transaction(async tx => {
+        if (toDelete.length > 0) {
+          await tx.milestoneReward.deleteMany({ where: { id: { in: toDelete }, cardId: id } })
+        }
+        for (const m of body.milestoneRewards) {
+          if (m.id && incomingIds.includes(m.id)) {
+            await tx.milestoneReward.update({
+              where: { id: m.id },
+              data: { stampNumber: m.stampNumber, label: m.label.trim(), iconName: m.iconName || null, probability: m.probability },
+            })
+          } else {
+            await tx.milestoneReward.create({
+              data: { cardId: id, stampNumber: m.stampNumber, label: m.label.trim(), iconName: m.iconName || null, probability: m.probability },
+            })
+          }
+        }
+      })
+    }
+
     const card = await prisma.loyaltyCard.update({
       where: { id },
       data: {
         ...(body.name?.trim() && { name: body.name.trim() }),
         ...(body.reward?.trim() && { reward: body.reward.trim() }),
-        ...(body.stampsRequired !== undefined && { stampsRequired: Number(body.stampsRequired) }),
+        ...(body.stampsRequired !== undefined && { stampsRequired }),
         ...(body.brandColor !== undefined && { brandColor: body.brandColor }),
         ...(body.iconName !== undefined && { iconName: body.iconName || null }),
         ...(body.stampIconName !== undefined && { stampIconName: body.stampIconName || null }),
@@ -245,7 +301,12 @@ export async function PUT(
       },
     })
 
-    return NextResponse.json({ card })
+    const milestones = await prisma.milestoneReward.findMany({
+      where: { cardId: id },
+      orderBy: { stampNumber: "asc" },
+    })
+
+    return NextResponse.json({ card, milestoneRewards: milestones })
   } catch (error) {
     return handleApiError(error)
   }
