@@ -440,6 +440,10 @@ model StampLog {
 - [ ] Actualizar `docs/CHANGELOG.md` con resultado final de pruebas
 - [ ] Mergear `dev` a `main` y taggear `v1.1.0`
 
+**Features propuestas para `1.1.0` (pendientes de priorizar):**
+
+- [ ] **Recompensas sorpresa** — al canjear, en lugar de recompensa fija, mostrar una selección aleatoria de 3 recompensas configuradas por el negocio; el cliente elige una. Incluir configuración en creación/edición de tarjeta, lógica de selección aleatoria en `POST /api/stamps`, y UI de selección en el scan o portal del cliente.
+
 ## Historial del MVP `1.0.0`
 
 ### Pre-lanzamiento ✅ Completado
