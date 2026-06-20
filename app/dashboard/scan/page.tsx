@@ -438,11 +438,11 @@ function ScanPageInner() {
                         </div>
                         <AlertDialogTitle className="text-center text-xl">¡Bono Sorpresa!</AlertDialogTitle>
                         <AlertDialogDescription className="text-center text-base">
-                          <strong className="text-foreground">{selectedCustomer?.name}</strong> obtuvo <strong className="text-purple-600 dark:text-purple-400">{milestoneClaim.label}</strong>
+                          <strong className="text-foreground">{selectedCustomer?.name}</strong> obtuvo <strong className="text-foreground">{milestoneClaim.label}</strong>
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg px-4 py-3 text-sm text-amber-700 dark:text-amber-400 text-center">
-                        Notifica al cliente sobre su recompensa — generalmente se canjea en la próxima visita.
+                        Notifica al cliente sobre su recompensa
                       </div>
                       <AlertDialogFooter className="sm:justify-center gap-2">
                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
