@@ -65,6 +65,75 @@ export function CardQRClient({
     qrImageRef.current = img
   }, [qrDataUrl])
 
+  const drawLayout = useCallback((
+    ctx: CanvasRenderingContext2D,
+    cw: number,
+    ch: number,
+    qrImg: HTMLImageElement,
+  ) => {
+    const { width: pw, height: ph } = PDF_SIZES[pdfSize]
+    const scale = cw / pw
+
+    ctx.clearRect(0, 0, cw, ch)
+
+    ctx.fillStyle = "#ffffff"
+    ctx.fillRect(0, 0, cw, ch)
+
+    const barH = Math.max(1, Math.round(8 * scale))
+    ctx.fillStyle = card.brandColor
+    ctx.fillRect(0, 0, cw, barH)
+
+    const pad = Math.round(scale * (pdfSize === "carta" ? 36 : pdfSize === "media-carta" ? 28 : 18))
+    let y = pad + barH
+
+    if (pdfSize !== "tarjeta") {
+      ctx.fillStyle = "#1a1a1a"
+      ctx.font = `bold ${Math.round(14 * scale)}px sans-serif`
+      ctx.textAlign = "center"
+      ctx.fillText(businessName, cw / 2, y)
+      y += Math.round(18 * scale)
+    }
+
+    y += Math.round(8 * scale)
+
+    const qrSize = Math.round(scale * (pdfSize === "carta" ? 220 : pdfSize === "media-carta" ? 180 : 150))
+    const qrX = (cw - qrSize) / 2
+    ctx.drawImage(qrImg, qrX, y, qrSize, qrSize)
+
+    y += qrSize + Math.round(12 * scale)
+
+    const ctaSize = Math.round(scale * (pdfSize === "carta" ? 14 : pdfSize === "media-carta" ? 12 : 10))
+    ctx.fillStyle = card.brandColor
+    ctx.font = `bold ${ctaSize}px sans-serif`
+    ctx.textAlign = "center"
+    const ctaLines = wrapText(ctx, ctaText, cw / 2, y, cw - pad * 2, ctaSize + 3)
+    y += ctaLines * (ctaSize + 3) + Math.round(6 * scale)
+
+    const titleSize = Math.round(scale * (pdfSize === "carta" ? 16 : pdfSize === "media-carta" ? 14 : 11))
+    ctx.fillStyle = "#1a1a1a"
+    ctx.font = `bold ${titleSize}px sans-serif`
+    ctx.textAlign = "center"
+    ctx.fillText(card.name, cw / 2, y)
+    y += titleSize + Math.round(4 * scale)
+
+    const rewardSize = Math.round(scale * 11)
+    ctx.fillStyle = "#374151"
+    ctx.font = `${rewardSize}px sans-serif`
+    ctx.textAlign = "center"
+    ctx.fillText(`${card.stampsRequired} sellos · Recompensa: ${card.reward}`, cw / 2, y)
+
+    const remaining = ch - y
+    if (remaining > Math.round(20 * scale)) {
+      const fy = ch - Math.round(12 * scale)
+      ctx.fillStyle = "#e5e7eb"
+      ctx.fillRect(pad, fy - Math.round(6 * scale), cw - pad * 2, 1)
+      ctx.fillStyle = "#9ca3af"
+      ctx.font = `${Math.round(7 * scale)}px sans-serif`
+      ctx.textAlign = "center"
+      ctx.fillText("Con tecnología de Koda Fidelity", cw / 2, fy + Math.round(3 * scale))
+    }
+  }, [pdfSize, ctaText, card, businessName])
+
   const drawPreview = useCallback(() => {
     const canvas = previewCanvasRef.current
     const qrImg = qrImageRef.current
@@ -82,73 +151,8 @@ export function CardQRClient({
     canvas.style.width = `${cw}px`
     canvas.style.height = `${ch}px`
 
-    ctx.clearRect(0, 0, cw, ch)
-
-    // White background
-    ctx.fillStyle = "#ffffff"
-    ctx.fillRect(0, 0, cw, ch)
-
-    // Brand bar at top
-    const barH = Math.max(1, Math.round(8 * scale))
-    ctx.fillStyle = card.brandColor
-    ctx.fillRect(0, 0, cw, barH)
-
-    const pad = Math.round(scale * (pdfSize === "carta" ? 36 : pdfSize === "media-carta" ? 28 : 18))
-    let y = pad + barH
-
-    // Business name
-    if (pdfSize !== "tarjeta") {
-      ctx.fillStyle = "#1a1a1a"
-      ctx.font = `bold ${Math.round(14 * scale)}px sans-serif`
-      ctx.textAlign = "center"
-      ctx.fillText(businessName, cw / 2, y)
-      y += Math.round(18 * scale)
-    }
-
-    y += Math.round(8 * scale)
-
-    // QR code
-    const qrSize = Math.round(scale * (pdfSize === "carta" ? 220 : pdfSize === "media-carta" ? 180 : 150))
-    const qrX = (cw - qrSize) / 2
-    ctx.drawImage(qrImg, qrX, y, qrSize, qrSize)
-
-    y += qrSize + Math.round(12 * scale)
-
-    // CTA text
-    const ctaSize = Math.round(scale * (pdfSize === "carta" ? 14 : pdfSize === "media-carta" ? 12 : 10))
-    ctx.fillStyle = card.brandColor
-    ctx.font = `bold ${ctaSize}px sans-serif`
-    ctx.textAlign = "center"
-    const ctaLines = wrapText(ctx, ctaText, cw / 2, y, cw - pad * 2, ctaSize + 3)
-    y += ctaLines * (ctaSize + 3) + Math.round(6 * scale)
-
-    // Card name
-    const titleSize = Math.round(scale * (pdfSize === "carta" ? 16 : pdfSize === "media-carta" ? 14 : 11))
-    ctx.fillStyle = "#1a1a1a"
-    ctx.font = `bold ${titleSize}px sans-serif`
-    ctx.textAlign = "center"
-    ctx.fillText(card.name, cw / 2, y)
-    y += titleSize + Math.round(4 * scale)
-
-    // Reward
-    const rewardSize = Math.round(scale * 11)
-    ctx.fillStyle = "#374151"
-    ctx.font = `${rewardSize}px sans-serif`
-    ctx.textAlign = "center"
-    ctx.fillText(`${card.stampsRequired} sellos · Recompensa: ${card.reward}`, cw / 2, y)
-
-    // Footer
-    const remaining = ch - y
-    if (remaining > Math.round(20 * scale)) {
-      const fy = ch - Math.round(12 * scale)
-      ctx.fillStyle = "#e5e7eb"
-      ctx.fillRect(pad, fy - Math.round(6 * scale), cw - pad * 2, 1)
-      ctx.fillStyle = "#9ca3af"
-      ctx.font = `${Math.round(7 * scale)}px sans-serif`
-      ctx.textAlign = "center"
-      ctx.fillText("Con tecnología de Koda Fidelity", cw / 2, fy + Math.round(3 * scale))
-    }
-  }, [qrDataUrl, pdfSize, ctaText, card, businessName])
+    drawLayout(ctx, cw, ch, qrImg)
+  }, [qrDataUrl, pdfSize, drawLayout])
 
   useEffect(() => {
     if (qrImageRef.current?.complete) {
@@ -165,36 +169,35 @@ export function CardQRClient({
     setTimeout(() => setCopied(false), 2000)
   }, [joinUrl])
 
-  const downloadPNG = useCallback(() => {
+  const downloadPNG = useCallback(async () => {
+    let qrImg = qrImageRef.current
+    if (!qrImg || !qrImg.complete) {
+      qrImg = new Image()
+      qrImg.src = qrDataUrl
+      await new Promise<void>((resolve, reject) => {
+        qrImg!.onload = () => resolve()
+        qrImg!.onerror = reject
+      })
+    }
+
+    const { width: pw, height: ph } = PDF_SIZES[pdfSize]
+    const exportScale = 2
+    const cw = Math.round(pw * exportScale)
+    const ch = Math.round(ph * exportScale)
+
     const canvas = document.createElement("canvas")
+    canvas.width = cw
+    canvas.height = ch
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
-    canvas.width = 400
-    canvas.height = 500
-    ctx.fillStyle = "#ffffff"
-    ctx.fillRect(0, 0, 400, 500)
-    ctx.fillStyle = card.brandColor
-    ctx.fillRect(0, 0, 400, 8)
-    ctx.fillStyle = "#000000"
-    ctx.font = "bold 20px sans-serif"
-    ctx.textAlign = "center"
-    ctx.fillText(card.name, 200, 50)
+    drawLayout(ctx, cw, ch, qrImg)
 
-    const svg = document.getElementById("card-qr-svg")?.querySelector("svg")
-    if (svg) {
-      const svgData = new XMLSerializer().serializeToString(svg)
-      const img = new Image()
-      img.onload = () => {
-        ctx.drawImage(img, 100, 70, 200, 200)
-        const link = document.createElement("a")
-        link.download = `koda-${card.id}-qr.png`
-        link.href = canvas.toDataURL("image/png")
-        link.click()
-      }
-      img.src = `data:image/svg+xml;base64,${btoa(svgData)}`
-    }
-  }, [card])
+    const link = document.createElement("a")
+    link.download = `koda-${card.id}-qr.png`
+    link.href = canvas.toDataURL("image/png")
+    link.click()
+  }, [card, pdfSize, drawLayout])
 
   const generateAndOpenPDF = useCallback(async () => {
     if (!qrDataUrl) return
