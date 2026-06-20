@@ -28,13 +28,22 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
+interface MilestoneClaim {
+  id: string
+  label: string
+  iconName: string | null
+  createdAt: string
+}
+
 interface MyCard {
   id: string
   name: string
   stamps: number
   isActive: boolean
   createdAt: string
+  customerMilestoneClaims: MilestoneClaim[]
   card: {
+    id: string
     name: string
     stampsRequired: number
     reward: string
@@ -486,6 +495,24 @@ export default function DashboardMyCardsPage() {
                                   showQR={true}
                                   qrValue={c.id}
                                 />
+                                {c.customerMilestoneClaims.length > 0 && (
+                                  <div className="space-y-2">
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Bonos Obtenidos</p>
+                                    <div className="flex flex-wrap gap-2">
+                                      {c.customerMilestoneClaims.map((cl) => {
+                                        const icon = getCardIcon(cl.iconName)
+                                        const IconComp = icon?.Icon
+                                        return (
+                                          <div key={cl.id} className="inline-flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-pink-500 text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-sm">
+                                            {IconComp && <IconComp className="h-3.5 w-3.5" />}
+                                            <span>{cl.label}</span>
+                                          </div>
+                                        )
+                                      })}
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground">Estos bonos se canjean directamente en el negocio presentando esta tarjeta</p>
+                                  </div>
+                                )}
                                 <p className="text-xs text-muted-foreground text-center">
                                   Muestra este código QR en el negocio para acumular sellos
                                 </p>

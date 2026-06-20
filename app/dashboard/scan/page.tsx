@@ -45,6 +45,7 @@ function ScanPageInner() {
   const [searching, setSearching] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
+  const [milestoneClaim, setMilestoneClaim] = useState<{ id: string; label: string; iconName: string | null } | null>(null)
   const [useCamera, setUseCamera] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
 
@@ -121,6 +122,7 @@ function ScanPageInner() {
         setScanState("redeemed")
       } else {
         setSelectedCustomer({ ...selectedCustomer, stamps: selectedCustomer.stamps + 1 })
+        setMilestoneClaim(data.milestoneClaim ?? null)
         setScanState("stamped")
       }
     } catch (err) {
@@ -136,6 +138,7 @@ function ScanPageInner() {
     setSearchQuery("")
     setSearchResults([])
     setActionError(null)
+    setMilestoneClaim(null)
     setCameraError(null)
   }
 
@@ -408,6 +411,14 @@ function ScanPageInner() {
                       />
                     ))}
                   </div>
+                </div>
+              )}
+
+              {milestoneClaim && (
+                <div className="bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl p-4 text-center space-y-1 shadow-lg">
+                  <p className="text-xs uppercase tracking-widest font-semibold opacity-90">¡Bono Sorpresa!</p>
+                  <p className="text-lg font-bold">{milestoneClaim.label}</p>
+                  <p className="text-xs opacity-80">El cliente puede canjear este bonus en su próxima visita</p>
                 </div>
               )}
 
