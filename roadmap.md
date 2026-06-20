@@ -427,7 +427,7 @@ model StampLog {
 
 ### `1.1.0` — Próxima versión en `dev` 🟡 Casi completa
 
-> Incluye Fases 8–13. El desarrollo funcional está mayormente cerrado, pero la versión todavía no debe considerarse estable hasta pasar verificación final y merge a `main`.
+> Incluye Fases 8–13 + QR print/share. El desarrollo funcional base está cerrado. "Recompensas sorpresa" está en planeación activa en rama separada y se integrará antes del release final.
 
 **Pendiente para liberar `1.1.0`:**
 
@@ -440,7 +440,7 @@ model StampLog {
 - [ ] Actualizar `docs/CHANGELOG.md` con resultado final de pruebas
 - [ ] Mergear `dev` a `main` y taggear `v1.1.0`
 
-**Features incluidas en `1.1.0` (completadas):**
+**Features incluidas en `1.1.0` (completadas listas para deploy estable):**
 
 - [x] **QR PDF profesional** — PDF descargable con QR, nombre del negocio, logo, tarjeta de fidelidad, instrucciones y diseño profesional para imprimir. Implementado con `@react-pdf/renderer`.
 - [x] **Vista previa del PDF en canvas** — preview en vivo del layout de impresión usando canvas PNG, se actualiza al cambiar tamaño o CTA.
@@ -451,9 +451,9 @@ model StampLog {
 - [x] **Preview de página de registro** — `/dashboard/qr-codes/{cardId}/preview` muestra la UI real de `/join/{cardId}` en modo no funcional, usando el mismo componente compartido `JoinCardLayout`.
 - [x] **UI de QR codes renovada** — página de detalle con layout de dos columnas, preview en vivo, y botones de acción primaria (copiar link, descargar QR solo, probar registro).
 
-**Features propuestas para `1.2.0`:**
+**Features en planeación para `1.1.0`:**
 
-- [ ] **Recompensas sorpresa** — al canjear, en lugar de recompensa fija, mostrar una selección aleatoria de 3 recompensas configuradas por el negocio; el cliente elige una. Incluir configuración en creación/edición de tarjeta, lógica de selección aleatoria en `POST /api/stamps`, y UI de selección en el scan o portal del cliente.
+- [ ] **Recompensas sorpresa** — al canjear, en lugar de recompensa fija, el negocio configura una lista de recompensas posibles; al llegar a N sellos, el sistema elige 1 aleatoriamente y se la asigna al cliente. Inspirado en cofres/recompensas de Clash Royale. Incluye toggle activable por tarjeta, soporte multi-recompensa en schema, UI de configuración en creación/edición, lógica de selección aleatoria en `POST /api/stamps`, y UI de revelación en scan/dashboard.
 
 ## Historial del MVP `1.0.0`
 
