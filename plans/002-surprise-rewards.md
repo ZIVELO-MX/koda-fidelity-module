@@ -203,11 +203,91 @@ En `/dashboard/cards/[id]`:
 - En la tabla de clientes: columna "Última recompensa" con el label + emoji
 - En el perfil del cliente: historial de `CustomerRewardClaim`
 
-### 4.3 Portal del cliente — `/my-cards`
+### 4.3 Portal del cliente — `/my-cards` y `/dashboard/my-cards`
 
-En el detalle de la tarjeta del cliente:
-- Sección "Tus recompensas obtenidas" con lista de claims
-- Animación al revelar una nueva recompensa
+Hay dos rutas de portal cliente: `/my-cards` (standalone, acceso via magic link) y `/dashboard/my-cards` (dentro del dashboard del negocio, usado por clientes que también son staff). Ambas comparten el mismo componente de tarjeta.
+
+#### 4.3.1 Card detail — sección "Tus Recompensas"
+
+Dentro del acordeón/expansor de cada tarjeta:
+
+```
+┌──────────────────────────────────────────┐
+│  ☕ Café Zivelo              🟡 8/10     │
+│  ─────────────────────────────────────── │
+│  🎁 Tus Recompensas Obtenidas           │
+│                                          │
+│  🍺 Cerveza gratis        — 15/05/2026  │
+│  🧁 Poste de regalo       — 02/04/2026  │
+│  🍕 Pizza mediana         — 21/03/2026  │
+│                                          │
+│  [Ver todas] si hay más de 3            │
+└──────────────────────────────────────────┘
+```
+
+- Cada claim muestra: emoji (si existe) + label + fecha de obtención
+- Ordenado del más reciente al más antiguo
+- Si la tarjeta tiene `surpriseRewardsEnabled`, mostrar badge junto al título: "🎲 Recompensa aleatoria"
+
+#### 4.3.2 Modal de revelación (justo después del canje)
+
+Cuando el cliente canjea en el scan (o se confirma vía magic link):
+
+1. La pantalla de "✅ ¡Recompensa canjeada!" se reemplaza por una animación tipo cofre/ticket:
+
+```
+┌─────────────────────────────────┐
+│                                 │
+│        🎉 ¡Felicidades!        │
+│                                 │
+│      ┌─────────────────┐       │
+│      │                 │       │
+│      │      🍺         │       │
+│      │                 │       │
+│      └─────────────────┘       │
+│                                 │
+│   Has ganado:                   │
+│   Una cerveza gratis            │
+│                                 │
+│   [  ¡Reclamar!  ]              │
+│                                 │
+└─────────────────────────────────┘
+```
+
+2. En `/my-cards` la tarjeta muestra un badge "🎁 Nuevo" en la recompensa más reciente durante 7 días.
+
+#### 4.3.3 Página de historial completo
+
+Ruta: `/my-cards/rewards` o modal "Ver todas" desde el card detail:
+
+```
+┌────────────────────────────────────────────┐
+│  🎁 Historial de Recompensas               │
+│                                            │
+│  Filtrar por tarjeta: [Todas ▼]           │
+│                                            │
+│  ┌────────────────────────────────────┐   │
+│  │ 🍺 Cerveza gratis                  │   │
+│  │ ☕ Café Zivelo · 15/05/2026        │   │
+│  ├────────────────────────────────────┤   │
+│  │ 🧁 Postre de regalo                │   │
+│  │ ☕ Café Zivelo · 02/04/2026        │   │
+│  ├────────────────────────────────────┤   │
+│  │ 🍕 Pizza mediana                   │   │
+│  │ 🍕 Pizzería Roma · 21/03/2026     │   │
+│  └────────────────────────────────────┘   │
+└────────────────────────────────────────────┘
+```
+
+#### 4.3.4 Estados
+
+| Estado | UI |
+|---|---|
+| Sin recompensas aún | Texto "Aún no has obtenido recompensas. Sigue acumulando sellos." con icono de cofre cerrado |
+| Cargando | Skeleton de lista (3 filas grises animadas) |
+| Error al cargar claims | "No pudimos cargar tus recompensas" + botón reintentar |
+| Nueva recompensa (≤7 días) | Badge "🎁 Nuevo" + borde highlight en la fila |
+| Tarjeta con surprise desactivado | No mostrar la sección de recompensas ni el badge |
 
 ---
 
@@ -238,7 +318,12 @@ En el detalle de la tarjeta del cliente:
 | `components/dashboard/edit-card-dialog.tsx` | Misma UI que wizard |
 | `app/dashboard/scan/page.tsx` | Mostrar `rewardClaim` en modal al canjear |
 | `components/dashboard/customers-table.tsx` | Columna "Última recompensa" |
-| `app/dashboard/my-cards/page.tsx` | Sección de historial de recompensas |
+| `app/dashboard/my-cards/page.tsx` | Sección de historial de recompensas en card detail |
+| `app/my-cards/page.tsx` | Misma sección en portal cliente standalone |
+| `components/dashboard/reward-history.tsx` | **Nuevo** — componente compartido de lista de claims |
+| `components/dashboard/reward-reveal-modal.tsx` | **Nuevo** — modal de revelación tipo cofre |
+| `app/my-cards/rewards/page.tsx` | **Nuevo** — página de historial completo con filtro |
+| `components/dashboard/reward-claim-row.tsx` | **Nuevo** — fila individual de claim con estados |
 
 ---
 
@@ -252,7 +337,11 @@ En el detalle de la tarjeta del cliente:
 6. API: POST /api/stamps lógica de selección + crear claim
 7. API: GET /api/customers/:id/claims
 8. UI: Wizard paso de recompensa en /new
-9. UI: Edit card dialog
-10. UI: Scan — modal al canjear
-11. UI: Customers table — columna última recompensa
-12. UI: My cards — historial de recompensas
+9.  UI: Edit card dialog
+10. UI: Scan — modal al canjear (rewardClaim en respuesta)
+11. UI: `RewardRevealModal` — animación tipo cofre en scan
+12. UI: `RewardHistory` componente compartido
+13. UI: Customers table — columna "Última recompensa"
+14. UI: My cards (dashboard) — integrar `RewardHistory` en card detail
+15. UI: My cards (standalone /my-cards) — integrar `RewardHistory`
+16. UI: `/my-cards/rewards` — página de historial completo con filtro por tarjeta
