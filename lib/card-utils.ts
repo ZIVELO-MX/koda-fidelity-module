@@ -83,3 +83,12 @@ export function getRarityDescription(probability: number): string {
   const denominator = Math.round(100 / probability)
   return `1 de cada ${denominator} clientes obtendrá este bonus`
 }
+
+export function getRarityRange(probability: number): string {
+  if (probability === 0) return "0%"
+  if (probability === 100) return "100%"
+  if (probability >= 50) return "50–99%"
+  if (probability >= 25) return "25–49%"
+  if (probability >= 10) return "10–24%"
+  return "<10%"
+}

@@ -32,7 +32,7 @@ import {
 import Link from "next/link"
 import { IconPicker } from "@/components/dashboard/icon-picker"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
-import { getRarityColor, getRarityLabel, getRarityDescription } from "@/lib/card-utils"
+import { getRarityColor, getRarityLabel, getRarityDescription, getRarityRange } from "@/lib/card-utils"
 import { cn } from "@/lib/utils"
 
 const colorPresets = [
@@ -476,7 +476,7 @@ export function CardActions({
                         style={{ backgroundColor: getRarityColor(m.probability) }}
                       />
                       <span className="font-medium w-20 shrink-0">{getRarityLabel(m.probability)}</span>
-                      <span className="text-muted-foreground">— {getRarityDescription(m.probability)}</span>
+                      <span className="text-muted-foreground w-14 shrink-0 text-right" title={getRarityDescription(m.probability)}>{getRarityRange(m.probability)}</span>
                     </div>
                       </div>
                       <Button variant="ghost" size="sm" onClick={() => removeMilestone(i)} className="text-destructive hover:text-destructive">
