@@ -28,28 +28,24 @@ export function IconPicker({ value, onChange, businessLogoUrl }: IconPickerProps
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              className={cn(
-                "flex items-center justify-center w-10 h-10 rounded-xl border-2 transition-all",
-                value
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground",
-              )}
-            >
-              {value === "logo" && businessLogoUrl ? (
-                <img src={businessLogoUrl} alt="" className="h-5 w-5 object-contain rounded" />
-              ) : selected ? (
-                <selected.Icon className="h-5 w-5" />
-              ) : (
-                <Search className="h-4 w-4" />
-              )}
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="top">{selected?.label ?? "Seleccionar ícono"}</TooltipContent>
-        </Tooltip>
+        <button
+          type="button"
+          title={selected?.label ?? "Seleccionar ícono"}
+          className={cn(
+            "flex items-center justify-center w-10 h-10 rounded-xl border-2 transition-all",
+            value
+              ? "border-primary bg-primary/10 text-primary"
+              : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground",
+          )}
+        >
+          {value === "logo" && businessLogoUrl ? (
+            <img src={businessLogoUrl} alt="" className="h-5 w-5 object-contain rounded" />
+          ) : selected ? (
+            <selected.Icon className="h-5 w-5" />
+          ) : (
+            <Search className="h-4 w-4" />
+          )}
+        </button>
       </PopoverTrigger>
       <PopoverContent align="start" side="bottom" className="w-64 p-2">
         <div className="relative mb-2">
