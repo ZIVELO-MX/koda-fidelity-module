@@ -390,6 +390,15 @@ export function CardQRClient({
         </Button>
       </div>
 
+      <div className="text-center">
+        <Link
+          href={`/dashboard/qr-codes/${card.id}/preview`}
+          className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+        >
+          Vista previa de la página de registro
+        </Link>
+      </div>
+
       <p className="text-xs text-muted-foreground text-center">
         Coloca este código QR en tu negocio para que los clientes se unan al programa
       </p>

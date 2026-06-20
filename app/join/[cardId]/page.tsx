@@ -4,11 +4,9 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { JoinCardLayout, type JoinCardData } from "@/components/join/join-card-layout"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
-import { GoogleButton } from "@/components/auth/google-button"
-import { Check, Mail, Loader2, ArrowLeft, ChevronDown } from "lucide-react"
+import { Check, Mail, Loader2 } from "lucide-react"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
 import { getFriendlySendError } from "@/lib/auth-errors"
 
@@ -370,117 +368,20 @@ export default function JoinCardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background forced-light flex flex-col">
-      <header className="border-b border-border bg-card">
-        <div className="max-w-lg mx-auto px-4 py-4 flex items-center gap-2">
-          <Link href="/" className="text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <span className="font-semibold text-foreground">Obtén tu tarjeta de lealtad</span>
-        </div>
-      </header>
-
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-8">
-        <div className="w-full max-w-md space-y-8">
-          {cardInfo ? (
-            <div className="scale-75 sm:scale-90 origin-top">
-              <LoyaltyCardPreview
-                businessName={cardInfo.businessName}
-                businessLogo={cardInfo.businessLogoUrl ?? undefined}
-                iconName={cardInfo.iconName ?? cardInfo.businessIconName}
-                customerName={name || "Tu Nombre"}
-                currentStamps={0}
-                maxStamps={cardInfo.stampsRequired}
-                reward={cardInfo.reward}
-                expirationDate={cardInfo.expiresAt ? new Date(cardInfo.expiresAt).toLocaleDateString("es-MX") : undefined}
-                brandColor={cardInfo.brandColor}
-                showQR={false}
-                onMemberClick={scrollToForm}
-              />
-            </div>
-          ) : (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          )}
-
-          {/* Scroll indicator */}
-          <div className="flex flex-col items-center gap-2 text-muted-foreground animate-bounce">
-            <ChevronDown className="h-6 w-6" />
-            <span className="text-xs font-medium">Completa tus datos abajo</span>
-            <ChevronDown className="h-6 w-6" />
-          </div>
-
-          <div ref={formRef} className="bg-card rounded-2xl p-6 border border-border">
-            <h1 className="text-xl font-bold text-foreground text-center mb-1">
-              Obtén tu tarjeta de lealtad
-            </h1>
-            <p className="text-sm text-muted-foreground text-center mb-6">
-              Un solo clic y tendrás tu tarjeta lista
-            </p>
-
-            <GoogleButton redirectTo={`/join/${cardId}`} />
-
-            <p className="mt-3 text-center text-sm text-muted-foreground">
-              Te recomendamos continuar con Google para guardar tu tarjeta de forma más rápida y segura.
-            </p>
-
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">o con correo electrónico</span>
-              </div>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Tu Nombre</Label>
-                <Input
-                  id="name"
-                  placeholder="Ej: Juan Pérez"
-                  value={name}
-                  onChange={(e) => { setName(e.target.value); setNameError(false) }}
-                  className="text-base"
-                  autoComplete="name"
-                  aria-invalid={nameError}
-                />
-                {nameError && <p className="text-sm text-red-500">El nombre es obligatorio</p>}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Correo Electrónico</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="ejemplo@correo.com"
-                  value={email}
-                  onChange={(e) => { setEmail(e.target.value); setEmailError(false) }}
-                  className="text-base"
-                  autoComplete="email"
-                  aria-invalid={emailError}
-                />
-                {emailError && <p className="text-sm text-red-500">Ingresa un correo electrónico válido</p>}
-              </div>
-
-              {sendError && <p className="text-sm text-red-500 text-center">{sendError}</p>}
-
-              <Button type="submit" className="w-full" size="lg" disabled={sending}>
-                {sending ? (
-                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                ) : (
-                  "Enviar enlace mágico"
-                )}
-              </Button>
-            </form>
-
-            <p className="text-xs text-muted-foreground text-center mt-4">
-              Te enviaremos un enlace por correo para confirmar tu identidad.
-            </p>
-          </div>
-        </div>
-      </main>
-    </div>
+    <JoinCardLayout
+      cardInfo={cardInfo as JoinCardData | null}
+      cardId={cardId}
+      name={name}
+      email={email}
+      nameError={nameError}
+      emailError={emailError}
+      sendError={sendError}
+      sending={sending}
+      onNameChange={(v) => { setName(v); setNameError(false) }}
+      onEmailChange={(v) => { setEmail(v); setEmailError(false) }}
+      onSubmit={handleSubmit}
+      formRef={formRef}
+      onMemberClick={scrollToForm}
+    />
   )
 }
