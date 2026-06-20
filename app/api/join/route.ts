@@ -131,13 +131,21 @@ const customerInclude = {
       reward: true,
       brandColor: true,
       iconName: true,
+      stampIconName: true,
       isActive: true,
       expiresAt: true,
       business: { select: { name: true, brandColor: true, logoUrl: true, iconName: true } },
+      milestoneRewards: { select: { stampNumber: true, iconName: true, label: true } },
     },
   },
   milestoneClaims: {
-    select: { id: true, label: true, iconName: true, createdAt: true },
+    select: {
+      id: true,
+      label: true,
+      iconName: true,
+      createdAt: true,
+      milestone: { select: { stampNumber: true, iconName: true } },
+    },
     orderBy: { createdAt: "desc" },
   },
 } as const

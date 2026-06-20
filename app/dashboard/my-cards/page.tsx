@@ -33,6 +33,7 @@ interface MilestoneClaim {
   label: string
   iconName: string | null
   createdAt: string
+  milestone: { stampNumber: number; iconName: string | null }
 }
 
 interface MyCard {
@@ -494,25 +495,8 @@ export default function DashboardMyCardsPage() {
                                   brandColor={c.card.brandColor}
                                   showQR={true}
                                   qrValue={c.id}
+                                  milestoneClaims={c.milestoneClaims.map(cl => ({ stampNumber: cl.milestone.stampNumber, iconName: cl.iconName }))}
                                 />
-                                {c.milestoneClaims.length > 0 && (
-                                  <div className="space-y-2">
-                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Bonos Obtenidos</p>
-                                    <div className="flex flex-wrap gap-2">
-                                      {c.milestoneClaims.map((cl) => {
-                                        const icon = getCardIcon(cl.iconName)
-                                        const IconComp = icon?.Icon
-                                        return (
-                                          <div key={cl.id} className="inline-flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-pink-500 text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-sm">
-                                            {IconComp && <IconComp className="h-3.5 w-3.5" />}
-                                            <span>{cl.label}</span>
-                                          </div>
-                                        )
-                                      })}
-                                    </div>
-                                    <p className="text-[10px] text-muted-foreground">Estos bonos se canjean directamente en el negocio presentando esta tarjeta</p>
-                                  </div>
-                                )}
                                 <p className="text-xs text-muted-foreground text-center">
                                   Muestra este código QR en el negocio para acumular sellos
                                 </p>

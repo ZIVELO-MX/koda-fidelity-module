@@ -21,6 +21,17 @@ import {
   AlertTriangle,
 } from "lucide-react"
 import { daysUntilExpiry } from "@/lib/card-utils"
+import { getCardIcon } from "@/lib/card-icons"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface SearchCustomer {
   id: string
@@ -414,13 +425,34 @@ function ScanPageInner() {
                 </div>
               )}
 
-              {milestoneClaim && (
-                <div className="bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl p-4 text-center space-y-1 shadow-lg">
-                  <p className="text-xs uppercase tracking-widest font-semibold opacity-90">¡Bono Sorpresa!</p>
-                  <p className="text-lg font-bold">{milestoneClaim.label}</p>
-                  <p className="text-xs opacity-80">El cliente puede canjear este bonus en su próxima visita</p>
-                </div>
-              )}
+              {milestoneClaim && (() => {
+                const milestoneIcon = getCardIcon(milestoneClaim.iconName)
+                const MilestoneIconComp = milestoneIcon?.Icon
+                return (
+                  <AlertDialog open={true} onOpenChange={(o) => { if (!o) setMilestoneClaim(null) }}>
+                    <AlertDialogContent className="max-w-sm">
+                      <AlertDialogHeader>
+                        <div className="mx-auto w-14 h-14 rounded-full bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center mb-2">
+                          {MilestoneIconComp ? <MilestoneIconComp className="h-7 w-7 text-white" /> : <Gift className="h-7 w-7 text-white" />}
+                        </div>
+                        <AlertDialogTitle className="text-center text-xl">¡Bono Sorpresa!</AlertDialogTitle>
+                        <AlertDialogDescription className="text-center text-base">
+                          <strong className="text-foreground">{selectedCustomer?.name}</strong> obtuvo <strong className="text-purple-600 dark:text-purple-400">{milestoneClaim.label}</strong>
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg px-4 py-3 text-sm text-amber-700 dark:text-amber-400 text-center">
+                        Notifica al cliente sobre su recompensa — generalmente se canjea en la próxima visita.
+                      </div>
+                      <AlertDialogFooter className="sm:justify-center gap-2">
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white">
+                          Canjear recompensa
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )
+              })()}
 
               {scanState === "stamped" && (() => {
                 const days = daysUntilExpiry(selectedCustomer.cardExpiresAt)
