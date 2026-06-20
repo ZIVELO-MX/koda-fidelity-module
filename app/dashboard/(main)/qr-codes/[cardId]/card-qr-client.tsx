@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ArrowLeft, Download, FileText, Copy, Check, ChevronDown, Loader2 } from "lucide-react"
+import { ArrowLeft, Download, FileText, Copy, Check, ChevronDown, Loader2, QrCode } from "lucide-react"
 import { getCardIcon } from "@/lib/card-icons"
 import { isLight } from "@/lib/color-utils"
 import { generateQRDataUrl, PDF_SIZES, CTA_TEMPLATES, DEFAULT_CTA_INDEX, type PdfSizeKey } from "@/lib/qr-pdf-utils"
@@ -39,7 +39,7 @@ export function CardQRClient({
   const [baseUrl, setBaseUrl] = useState("")
   const [copied, setCopied] = useState(false)
   const [qrDataUrl, setQrDataUrl] = useState("")
-  const [pdfSize, setPdfSize] = useState<PdfSizeKey>("carta")
+  const [pdfSize, setPdfSize] = useState<PdfSizeKey>("tarjeta")
   const [ctaText, setCtaText] = useState(CTA_TEMPLATES[DEFAULT_CTA_INDEX](businessName))
   const [loading, setLoading] = useState(false)
   const previewCanvasRef = useRef<HTMLCanvasElement>(null)
@@ -223,6 +223,27 @@ export function CardQRClient({
     }
   }, [card, businessName, businessLogo, qrDataUrl, pdfSize, ctaText])
 
+  const downloadQRPNG = useCallback(() => {
+    if (!qrDataUrl) return
+    const link = document.createElement("a")
+    link.download = `koda-${card.id}-qr-code.png`
+    link.href = qrDataUrl
+    link.click()
+  }, [qrDataUrl, card.id])
+
+  const downloadQRSVG = useCallback(() => {
+    const svgEl = document.querySelector("#card-qr-svg svg")
+    if (!svgEl) return
+    const clone = svgEl.cloneNode(true) as SVGElement
+    clone.setAttribute("xmlns", "http://www.w3.org/2000/svg")
+    const svgData = new XMLSerializer().serializeToString(clone)
+    const blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" })
+    const link = document.createElement("a")
+    link.download = `koda-${card.id}-qr-code.svg`
+    link.href = URL.createObjectURL(blob)
+    link.click()
+  }, [card.id])
+
   const handleCTAPreset = useCallback(
     (index: number) => {
       setCtaText(CTA_TEMPLATES[index](businessName))
@@ -353,6 +374,19 @@ export function CardQRClient({
           ) : (
             <><Copy className="h-4 w-4" />Copiar URL</>
           )}
+        </Button>
+      </div>
+
+      {/* QR-only downloads */}
+      <div className="flex items-center justify-center gap-3">
+        <span className="text-xs text-muted-foreground">Solo QR:</span>
+        <Button variant="ghost" size="sm" onClick={downloadQRPNG} disabled={!qrDataUrl} className="gap-1.5 text-xs h-7">
+          <Download className="h-3 w-3" />
+          PNG
+        </Button>
+        <Button variant="ghost" size="sm" onClick={downloadQRSVG} disabled={!joinUrl} className="gap-1.5 text-xs h-7">
+          <QrCode className="h-3 w-3" />
+          SVG
         </Button>
       </div>
 
