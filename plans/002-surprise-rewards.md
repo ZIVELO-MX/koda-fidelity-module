@@ -1,0 +1,258 @@
+# Recompensas Sorpresa — Plan de Implementación
+
+> Inspirado en cofres/recompensas de Clash Royale: en lugar de una recompensa fija,
+> el negocio configura un pool de recompensas posibles. Al canjear N sellos, el sistema
+> elige 1 aleatoriamente y se la asigna al cliente.
+
+---
+
+## 1. Schema
+
+### Nuevo modelo `Reward`
+
+```prisma
+model Reward {
+  id        String       @id @default(cuid())
+  cardId    String
+  card      LoyaltyCard  @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  label     String       // texto visible: "Una cerveza gratis", "20% OFF", etc.
+  emoji     String?      // opcional, para display con ícono
+  weight    Int          @default(1) // peso para selección aleatoria (1-100)
+  sortOrder Int          @default(0)
+  createdAt DateTime     @default(now())
+  claims    CustomerRewardClaim[]
+
+  @@index([cardId])
+}
+```
+
+### Campos nuevos en `LoyaltyCard`
+
+```prisma
+model LoyaltyCard {
+  // ...existing fields...
+
+  reward               String?   // ahora nullable — fallback cuando surpriseRewards=false
+  surpriseRewardsEnabled Boolean  @default(false)
+  rewards              Reward[]  // pool de recompensas cuando surpriseRewards=true
+}
+```
+
+### Modelo `CustomerRewardClaim` (historial)
+
+```prisma
+model CustomerRewardClaim {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+  rewardId   String
+  reward     Reward   @relation(fields: [rewardId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@index([customerId])
+}
+```
+
+### Migración
+
+1. `ALTER TABLE LoyaltyCard ALTER COLUMN reward DROP NOT NULL;`
+2. `ALTER TABLE LoyaltyCard ADD COLUMN surpriseRewardsEnabled BOOLEAN NOT NULL DEFAULT false;`
+3. Crear tabla `Reward` con FK a `LoyaltyCard`
+4. Crear tabla `CustomerRewardClaim` con FK a `Customer` y `Reward`
+
+---
+
+## 2. API
+
+### 2.1 Crear/Editar Tarjeta — `POST /api/cards` / `PUT /api/cards/:id`
+
+Aceptar nuevos campos:
+
+```ts
+// Body opcional cuando surpriseRewardsEnabled=true
+{
+  surpriseRewardsEnabled: boolean
+  rewards?: { label: string; emoji?: string; weight?: number }[]
+  // reward sigue siendo obligatorio cuando surpriseRewardsEnabled=false
+  reward?: string  // ahora opcional
+}
+```
+
+**Validaciones:**
+- Si `surpriseRewardsEnabled=true`: `rewards` debe tener al menos 2 items
+- Si `surpriseRewardsEnabled=false`: `reward` sigue siendo obligatorio
+- Si se desactiva `surpriseRewardsEnabled` teniendo claims existentes: permitir (los claims históricos se conservan)
+
+### 2.2 Obtener Tarjeta — `GET /api/cards/:id`
+
+Incluir en respuesta:
+
+```ts
+{
+  card: {
+    // ...existing...
+    surpriseRewardsEnabled: boolean
+    rewards: { id: string; label: string; emoji: string | null; weight: number }[]
+  }
+}
+```
+
+### 2.3 Canje — `POST /api/stamps`
+
+Lógica ampliada:
+
+```ts
+// Cuando type === "redeem"
+if (card.surpriseRewardsEnabled && card.rewards.length > 0) {
+  // Selección ponderada aleatoria
+  const totalWeight = card.rewards.reduce((sum, r) => sum + r.weight, 0)
+  const roll = Math.random() * totalWeight
+  let acc = 0
+  for (const reward of card.rewards) {
+    acc += reward.weight
+    if (roll <= acc) {
+      selectedReward = reward
+      break
+    }
+  }
+  // Crear CustomerRewardClaim + actualizar customer.stamps
+  // Se puede exponer en respuesta para mostrar en UI
+}
+```
+
+**Respuesta ampliada:**
+
+```ts
+{
+  customer: { ... }
+  rewardClaim?: {
+    id: string
+    label: string
+    emoji: string | null
+  }
+}
+```
+
+### 2.4 Listar Claims — `GET /api/customers/:customerId/claims`
+
+Endpoint nuevo para que el dashboard/portal del cliente muestre el historial de recompensas obtenidas.
+
+---
+
+## 3. UI — Configuración
+
+### 3.1 Wizard Crear Tarjeta (`/dashboard/cards/new`)
+
+Agregar un paso (o toggle dentro del paso actual de Recompensa):
+
+```
+┌─────────────────────────────────────┐
+│  ¿Recompensa sorpresa?              │
+│                                     │
+│  [○] Recompensa fija                │
+│       [___________] (input reward)  │
+│                                     │
+│  [●] Recompensa aleatoria           │
+│       + Agregar posible recompensa  │
+│       ┌─────────────────────────┐   │
+│       │ 🍺 Una cerveza gratis   ✕ │   │
+│       │ 🍕 Pizza mediana gratis ✕ │   │
+│       │ 🧁 Postre de regalo     ✕ │   │
+│       └─────────────────────────┘   │
+│       [ + Agregar otra ]            │
+│                                     │
+│  (mínimo 2 recompensas requeridas)  │
+└─────────────────────────────────────┘
+```
+
+**UX:**
+- Radio group: "Fija" / "Aleatoria"
+- Al seleccionar "Aleatoria", se muestra lista dinámica con input inline
+- Cada item: input label + emoji picker (opcional, íconos predefinidos) + peso (opcional, slider)
+- Botón "Agregar otra" añade fila vacía
+- Botón ✕ elimina item
+- Validación: mínimo 2 items
+- Al cambiar de "Aleatoria" a "Fija", se descartan los items no guardados
+
+### 3.2 Editar Tarjeta — Dialog
+
+Misma UI que en creación, dentro del dialog de edición existente.
+
+Si la tarjeta ya tiene `CustomerRewardClaim`:
+- Al desactivar surprise rewards: confirmación "Hay N clientes con recompensas sorpresa. ¿Desactivar de todas formas?"
+- No se borran los rewards existentes ni los claims históricos
+
+---
+
+## 4. UI — Cliente (Scan & Dashboard)
+
+### 4.1 Scan al canjear
+
+Cuando el admin/sellador hace clic en "Canjear":
+
+1. POST /api/stamps con type="redeem"
+2. Si `rewardClaim` viene en respuesta:
+   - Modal/mensaje especial: "🎉 ¡El cliente ganó **[recompensa]**!" con emoji
+   - Animación tipo cofre/ticket (opcional)
+3. Si no (recompensa fija): comportamiento actual
+
+### 4.2 Dashboard del negocio — Detalle de tarjeta
+
+En `/dashboard/cards/[id]`:
+- Badge "Recompensa sorpresa activa" en el header de la tarjeta
+- En la tabla de clientes: columna "Última recompensa" con el label + emoji
+- En el perfil del cliente: historial de `CustomerRewardClaim`
+
+### 4.3 Portal del cliente — `/my-cards`
+
+En el detalle de la tarjeta del cliente:
+- Sección "Tus recompensas obtenidas" con lista de claims
+- Animación al revelar una nueva recompensa
+
+---
+
+## 5. Edge Cases
+
+| Escenario | Comportamiento |
+|---|---|
+| Pool vacío con surprise enabled | Rechazar en API (validación) |
+| Se elimina la última reward del pool estando enabled | Deshabilitar automáticamente surprise + mostrar error |
+| Cliente canjea justo cuando se edita el pool | La reward ya se asignó en el momento del canje, los claims son inmutables |
+| Migración: tarjetas existentes sin rewards | `surpriseRewardsEnabled` por defecto `false`, `reward` se conserva |
+| Peso no especificado | Default 1 (distribución uniforme) |
+| Todos los pesos = 0 | Asignar weight=1 automáticamente a todos |
+
+---
+
+## 6. Archivos a Modificar / Crear
+
+| Archivo | Acción |
+|---|---|
+| `prisma/schema.prisma` | Agregar `Reward`, `CustomerRewardClaim`, modificar `LoyaltyCard.reward` a opcional + `surpriseRewardsEnabled` |
+| `lib/card-utils.ts` | Helper `pickWeightedReward(rewards)` |
+| `app/api/cards/route.ts` | Validar y persistir `rewards` array en `POST` |
+| `app/api/cards/[id]/route.ts` | Validar y persistir `rewards` array en `PUT`; incluirlos en `GET` |
+| `app/api/stamps/route.ts` | Lógica de selección aleatoria en `type === "redeem"` |
+| `app/api/customers/[customerId]/claims/route.ts` | Nuevo endpoint GET |
+| `components/dashboard/card-wizard` | Paso de recompensa con toggle fija/aleatoria |
+| `components/dashboard/edit-card-dialog.tsx` | Misma UI que wizard |
+| `app/dashboard/scan/page.tsx` | Mostrar `rewardClaim` en modal al canjear |
+| `components/dashboard/customers-table.tsx` | Columna "Última recompensa" |
+| `app/dashboard/my-cards/page.tsx` | Sección de historial de recompensas |
+
+---
+
+## 7. Orden de Implementación
+
+1. Schema + migración
+2. `pickWeightedReward()` helper + tests
+3. API: GET /api/cards/:id incluye rewards
+4. API: POST /api/cards acepta rewards
+5. API: PUT /api/cards/:id acepta rewards
+6. API: POST /api/stamps lógica de selección + crear claim
+7. API: GET /api/customers/:id/claims
+8. UI: Wizard paso de recompensa en /new
+9. UI: Edit card dialog
+10. UI: Scan — modal al canjear
+11. UI: Customers table — columna última recompensa
+12. UI: My cards — historial de recompensas
