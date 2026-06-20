@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ArrowLeft, Download, Printer, Copy, Check, ChevronDown, Loader2 } from "lucide-react"
+import { ArrowLeft, Download, FileText, Copy, Check, ChevronDown, Loader2 } from "lucide-react"
 import { getCardIcon } from "@/lib/card-icons"
 import { isLight } from "@/lib/color-utils"
 import { generateQRDataUrl, PDF_SIZES, CTA_TEMPLATES, DEFAULT_CTA_INDEX, type PdfSizeKey } from "@/lib/qr-pdf-utils"
@@ -23,6 +23,9 @@ interface CardData {
   brandColor: string
   iconName: string | null
 }
+
+const PREVIEW_MAX_W = 520
+const PREVIEW_MAX_H = 520
 
 export function CardQRClient({
   card,
@@ -38,9 +41,8 @@ export function CardQRClient({
   const [qrDataUrl, setQrDataUrl] = useState("")
   const [pdfSize, setPdfSize] = useState<PdfSizeKey>("carta")
   const [ctaText, setCtaText] = useState(CTA_TEMPLATES[DEFAULT_CTA_INDEX](businessName))
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const previewTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const previewCanvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
     setBaseUrl(window.location.origin)
@@ -54,37 +56,101 @@ export function CardQRClient({
     }
   }, [joinUrl])
 
-  useEffect(() => {
-    if (!qrDataUrl) return
-    clearTimeout(previewTimerRef.current)
-    const generate = async () => {
-      setLoading(true)
-      try {
-        const { pdf } = await import("@react-pdf/renderer")
-        const { QRPDFDocument } = await import("@/components/dashboard/qr-pdf-document")
-        const doc = (
-          <QRPDFDocument
-            card={card}
-            businessName={businessName}
-            businessLogo={businessLogo}
-            qrDataUrl={qrDataUrl}
-            size={pdfSize}
-            ctaText={ctaText}
-          />
-        )
-        const blob = await pdf(doc).toBlob()
-        const url = URL.createObjectURL(blob)
-        if (previewUrl) URL.revokeObjectURL(previewUrl)
-        setPreviewUrl(url)
-      } finally {
-        setLoading(false)
+  const drawPreview = useCallback(() => {
+    const canvas = previewCanvasRef.current
+    if (!canvas || !qrDataUrl) return
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    const { width: pw, height: ph } = PDF_SIZES[pdfSize]
+    const scale = Math.min(PREVIEW_MAX_W / pw, PREVIEW_MAX_H / ph, 1)
+    const cw = Math.round(pw * scale)
+    const ch = Math.round(ph * scale)
+
+    canvas.width = cw
+    canvas.height = ch
+    canvas.style.width = `${cw}px`
+    canvas.style.height = `${ch}px`
+
+    ctx.clearRect(0, 0, cw, ch)
+
+    // White background
+    ctx.fillStyle = "#ffffff"
+    ctx.fillRect(0, 0, cw, ch)
+
+    // Brand bar
+    const barH = Math.round(8 * scale)
+    ctx.fillStyle = card.brandColor
+    ctx.fillRect(0, 0, cw, barH)
+
+    const pad = Math.round(scale * (pdfSize === "carta" ? 40 : pdfSize === "media-carta" ? 30 : 20))
+    let y = pad
+
+    // Business name
+    if (pdfSize !== "tarjeta") {
+      ctx.fillStyle = "#1a1a1a"
+      ctx.font = `bold ${Math.round(14 * scale)}px sans-serif`
+      ctx.textAlign = "center"
+      ctx.fillText(businessName, cw / 2, y)
+      y += Math.round(18 * scale) + Math.round(12 * scale)
+    }
+
+    // QR code
+    const qrSize = Math.round(scale * (pdfSize === "carta" ? 220 : pdfSize === "media-carta" ? 180 : 150))
+    const qrX = (cw - qrSize) / 2
+
+    const svg = document.getElementById("card-qr-svg")?.querySelector("svg")
+    if (svg) {
+      const svgData = new XMLSerializer().serializeToString(svg)
+      const img = new Image()
+      img.onload = () => {
+        ctx.drawImage(img, qrX, y, qrSize, qrSize)
       }
+      img.src = `data:image/svg+xml;base64,${btoa(svgData)}`
     }
-    previewTimerRef.current = setTimeout(generate, 200)
-    return () => {
-      clearTimeout(previewTimerRef.current)
+
+    y += qrSize + Math.round(10 * scale)
+
+    // CTA text
+    const ctaSize = Math.round(scale * (pdfSize === "carta" ? 15 : pdfSize === "media-carta" ? 13 : 10))
+    ctx.fillStyle = card.brandColor
+    ctx.font = `bold ${ctaSize}px sans-serif`
+    ctx.textAlign = "center"
+    wrapText(ctx, ctaText, cw / 2, y, cw - pad * 2, ctaSize + 2)
+    y += measureWrappedText(ctx, ctaText, cw - pad * 2, ctaSize + 2) + Math.round(8 * scale)
+
+    // Card name
+    const titleSize = Math.round(scale * (pdfSize === "carta" ? 18 : pdfSize === "media-carta" ? 16 : 13))
+    ctx.fillStyle = "#1a1a1a"
+    ctx.font = `bold ${titleSize}px sans-serif`
+    ctx.textAlign = "center"
+    ctx.fillText(card.name, cw / 2, y)
+    y += titleSize + 2
+
+    // Reward
+    const rewardSize = Math.round(scale * 12)
+    ctx.fillStyle = "#374151"
+    ctx.font = `${rewardSize}px sans-serif`
+    ctx.fillText(`${card.stampsRequired} sellos · Recompensa: ${card.reward}`, cw / 2, y)
+    y += Math.round(14 * scale)
+
+    // Footer
+    if (ch - y > Math.round(20 * scale)) {
+      y = ch - Math.round(14 * scale)
+      ctx.fillStyle = "#e5e7eb"
+      ctx.fillRect(pad, y - Math.round(6 * scale), cw - pad * 2, 1)
+      ctx.fillStyle = "#9ca3af"
+      ctx.font = `${Math.round(8 * scale)}px sans-serif`
+      ctx.textAlign = "center"
+      ctx.fillText("Con tecnología de Koda Fidelity", cw / 2, y + Math.round(4 * scale))
     }
-  }, [qrDataUrl, pdfSize, ctaText, card, businessName, businessLogo, previewUrl])
+  }, [qrDataUrl, pdfSize, ctaText, card, businessName, businessLogo])
+
+  useEffect(() => {
+    if (qrDataUrl) {
+      drawPreview()
+    }
+  }, [qrDataUrl, drawPreview])
 
   const copyUrl = useCallback(async () => {
     if (!joinUrl) return
@@ -124,49 +190,29 @@ export function CardQRClient({
     }
   }, [card])
 
-  const generatePDFBlob = useCallback(async () => {
-    const { pdf } = await import("@react-pdf/renderer")
-    const { QRPDFDocument } = await import("@/components/dashboard/qr-pdf-document")
-    const doc = (
-      <QRPDFDocument
-        card={card}
-        businessName={businessName}
-        businessLogo={businessLogo}
-        qrDataUrl={qrDataUrl}
-        size={pdfSize}
-        ctaText={ctaText}
-      />
-    )
-    return pdf(doc).toBlob()
-  }, [card, businessName, businessLogo, qrDataUrl, pdfSize, ctaText])
-
-  const downloadPDF = useCallback(async () => {
+  const generateAndOpenPDF = useCallback(async () => {
     if (!qrDataUrl) return
     setLoading(true)
     try {
-      const blob = await generatePDFBlob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = `koda-${card.id}-qr.pdf`
-      a.click()
-      URL.revokeObjectURL(url)
-    } finally {
-      setLoading(false)
-    }
-  }, [qrDataUrl, generatePDFBlob, card.id])
-
-  const printPDF = useCallback(async () => {
-    if (!qrDataUrl) return
-    setLoading(true)
-    try {
-      const blob = await generatePDFBlob()
+      const { pdf } = await import("@react-pdf/renderer")
+      const { QRPDFDocument } = await import("@/components/dashboard/qr-pdf-document")
+      const doc = (
+        <QRPDFDocument
+          card={card}
+          businessName={businessName}
+          businessLogo={businessLogo}
+          qrDataUrl={qrDataUrl}
+          size={pdfSize}
+          ctaText={ctaText}
+        />
+      )
+      const blob = await pdf(doc).toBlob()
       const url = URL.createObjectURL(blob)
       window.open(url, "_blank")
     } finally {
       setLoading(false)
     }
-  }, [qrDataUrl, generatePDFBlob])
+  }, [card, businessName, businessLogo, qrDataUrl, pdfSize, ctaText])
 
   const handleCTAPreset = useCallback(
     (index: number) => {
@@ -268,37 +314,14 @@ export function CardQRClient({
         </div>
       </div>
 
-      {/* Live preview */}
+      {/* PNG Preview */}
       <div>
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-sm text-muted-foreground">Vista previa</p>
-          {loading && (
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <Loader2 className="h-3 w-3 animate-spin" /> Actualizando…
-            </span>
-          )}
-        </div>
-        <div
-          className="bg-card rounded-2xl border border-border overflow-hidden"
-          style={{
-            height: pdfSize === "carta" ? 480 : pdfSize === "media-carta" ? 400 : 340,
-          }}
-        >
-          {previewUrl ? (
-            <iframe
-              src={previewUrl}
-              className="w-full h-full"
-              title="Vista previa del PDF"
-              style={{ pointerEvents: "none" }}
-            />
+        <p className="text-sm text-muted-foreground mb-2">Vista previa</p>
+        <div className="bg-card rounded-2xl border border-border p-4 flex items-center justify-center min-h-[200px]">
+          {qrDataUrl ? (
+            <canvas ref={previewCanvasRef} className="max-w-full rounded shadow-sm" />
           ) : (
-            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-              {loading ? (
-                <Loader2 className="h-6 w-6 animate-spin" />
-              ) : (
-                "Selecciona un tamaño para ver la vista previa"
-              )}
-            </div>
+            <span className="text-sm text-muted-foreground">Generando vista previa…</span>
           )}
         </div>
       </div>
@@ -307,7 +330,7 @@ export function CardQRClient({
       <div className="grid grid-cols-3 gap-3">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="default" className="w-full gap-1" disabled={!qrDataUrl}>
+            <Button variant="default" className="w-full gap-1" disabled={!joinUrl}>
               <Download className="h-4 w-4" />
               Descargar
               <ChevronDown className="h-3 w-3" />
@@ -318,16 +341,12 @@ export function CardQRClient({
               <Download className="h-4 w-4 mr-2" />
               PNG
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={downloadPDF} disabled={!qrDataUrl || loading}>
-              <Download className="h-4 w-4 mr-2" />
-              PDF
-            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button variant="outline" onClick={printPDF} className="w-full gap-2" disabled={!qrDataUrl || loading}>
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
-          Imprimir
+        <Button variant="outline" onClick={generateAndOpenPDF} className="w-full gap-2" disabled={!qrDataUrl || loading}>
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+          PDF
         </Button>
 
         <Button variant="outline" onClick={copyUrl} className="w-full gap-2" disabled={!joinUrl}>
@@ -344,4 +363,38 @@ export function CardQRClient({
       </p>
     </div>
   )
+}
+
+function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number) {
+  const words = text.split(" ")
+  let line = ""
+  for (const word of words) {
+    const testLine = line ? `${line} ${word}` : word
+    if (ctx.measureText(testLine).width > maxWidth && line) {
+      ctx.fillText(line, x, y)
+      line = word
+      y += lineHeight
+    } else {
+      line = testLine
+    }
+  }
+  if (line) {
+    ctx.fillText(line, x, y)
+  }
+}
+
+function measureWrappedText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, lineHeight: number): number {
+  const words = text.split(" ")
+  let line = ""
+  let lines = 1
+  for (const word of words) {
+    const testLine = line ? `${line} ${word}` : word
+    if (ctx.measureText(testLine).width > maxWidth && line) {
+      line = word
+      lines++
+    } else {
+      line = testLine
+    }
+  }
+  return lines * lineHeight
 }
