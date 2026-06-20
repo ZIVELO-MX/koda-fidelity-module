@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/alt-text -- @react-pdf/renderer Image does not support alt. */
 import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/renderer"
 import { PDF_SIZES, type PdfSizeKey } from "@/lib/qr-pdf-utils"
 

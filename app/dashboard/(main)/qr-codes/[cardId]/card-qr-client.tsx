@@ -1,9 +1,11 @@
 "use client"
 
 import { useState, useCallback, useEffect, useRef } from "react"
+import NextImage from "next/image"
 import Link from "next/link"
 import { QRCodeSVG } from "qrcode.react"
 import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,15 +40,17 @@ export function CardQRClient({
 }) {
   const [baseUrl, setBaseUrl] = useState("")
   const [copied, setCopied] = useState(false)
+  const [copyMessage, setCopyMessage] = useState("")
   const [qrDataUrl, setQrDataUrl] = useState("")
   const [pdfSize, setPdfSize] = useState<PdfSizeKey>("tarjeta")
   const [ctaText, setCtaText] = useState(CTA_TEMPLATES[DEFAULT_CTA_INDEX](businessName))
   const [loading, setLoading] = useState(false)
   const previewCanvasRef = useRef<HTMLCanvasElement>(null)
   const qrImageRef = useRef<HTMLImageElement | null>(null)
+  const logoImageRef = useRef<HTMLImageElement | null>(null)
 
   useEffect(() => {
-    setBaseUrl(window.location.origin)
+    queueMicrotask(() => setBaseUrl(window.location.origin))
   }, [])
 
   const joinUrl = baseUrl ? `${baseUrl}/join/${card.id}` : ""
@@ -56,14 +60,6 @@ export function CardQRClient({
       generateQRDataUrl(joinUrl).then(setQrDataUrl)
     }
   }, [joinUrl])
-
-  // Preload QR image for preview drawing
-  useEffect(() => {
-    if (!qrDataUrl) return
-    const img = new Image()
-    img.src = qrDataUrl
-    qrImageRef.current = img
-  }, [qrDataUrl])
 
   const drawLayout = useCallback((
     ctx: CanvasRenderingContext2D,
@@ -79,60 +75,127 @@ export function CardQRClient({
     ctx.fillStyle = "#ffffff"
     ctx.fillRect(0, 0, cw, ch)
 
-    const barH = Math.max(1, Math.round(8 * scale))
+    const isCompact = pdfSize === "tarjeta"
+    const isMedium = pdfSize === "media-carta"
+    const barH = Math.max(1, Math.round((isCompact ? 6 : 8) * scale))
+    const pad = Math.round(scale * (isCompact ? 20 : isMedium ? 30 : 40))
+    const logoSize = Math.round(scale * (isCompact ? 28 : 36))
+    const qrSize = Math.round(scale * (isCompact ? 150 : isMedium ? 180 : 220))
+    const qrPad = Math.round(12 * scale)
+    const qrBox = qrSize + qrPad * 2
+    const ctaSize = Math.round(scale * (isCompact ? 10 : isMedium ? 13 : 15))
+    const titleSize = Math.round(scale * (isCompact ? 13 : isMedium ? 16 : 18))
+    const rewardSize = Math.round(scale * (isCompact ? 10 : isMedium ? 13 : 14))
+    const instructionSize = Math.round(scale * (isCompact ? 6 : 8))
+    const footerSize = Math.round(scale * (isCompact ? 6 : 8))
+
     ctx.fillStyle = card.brandColor
     ctx.fillRect(0, 0, cw, barH)
 
-    const pad = Math.round(scale * (pdfSize === "carta" ? 36 : pdfSize === "media-carta" ? 28 : 18))
-    let y = pad + barH
+    const footerH = Math.round((isCompact ? 24 : 32) * scale)
+    ctx.strokeStyle = "#e5e7eb"
+    ctx.lineWidth = Math.max(1, Math.round(scale))
+    ctx.beginPath()
+    ctx.moveTo(0, ch - footerH)
+    ctx.lineTo(cw, ch - footerH)
+    ctx.stroke()
+    ctx.fillStyle = "#9ca3af"
+    ctx.font = `${footerSize}px sans-serif`
+    ctx.textAlign = "center"
+    ctx.textBaseline = "middle"
+    ctx.fillText("Con tecnología de Koda Fidelity", cw / 2, ch - footerH / 2)
 
-    if (pdfSize !== "tarjeta") {
+    let y = barH + pad
+
+    if (!isCompact) {
+      const headerH = logoSize
+      const gap = Math.round(10 * scale)
+      const businessSize = Math.round(scale * (isMedium ? 14 : 16))
+      ctx.font = `bold ${businessSize}px sans-serif`
+      const businessW = ctx.measureText(businessName).width
+      const headerW = logoSize + gap + businessW
+      const logoX = (cw - headerW) / 2
+      const logoY = y
+
+      const logoImg = logoImageRef.current
+      if (card.iconName === "logo" && businessLogo && logoImg?.complete) {
+        ctx.save()
+        ctx.beginPath()
+        ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2)
+        ctx.clip()
+        ctx.fillStyle = "#ffffff"
+        ctx.fillRect(logoX, logoY, logoSize, logoSize)
+        ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize)
+        ctx.restore()
+      } else {
+        ctx.fillStyle = card.brandColor
+        ctx.beginPath()
+        ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.fillStyle = "#ffffff"
+        ctx.font = `bold ${Math.round(logoSize * 0.45)}px sans-serif`
+        ctx.textAlign = "center"
+        ctx.textBaseline = "middle"
+        ctx.fillText(businessName.charAt(0).toUpperCase(), logoX + logoSize / 2, logoY + logoSize / 2)
+      }
+
       ctx.fillStyle = "#1a1a1a"
-      ctx.font = `bold ${Math.round(14 * scale)}px sans-serif`
-      ctx.textAlign = "center"
-      ctx.fillText(businessName, cw / 2, y)
-      y += Math.round(18 * scale)
+      ctx.font = `bold ${businessSize}px sans-serif`
+      ctx.textAlign = "left"
+      ctx.textBaseline = "middle"
+      ctx.fillText(businessName, logoX + logoSize + gap, logoY + logoSize / 2)
+      y += headerH + Math.round((isCompact ? 12 : 20) * scale)
     }
 
-    y += Math.round(8 * scale)
+    const qrBoxX = (cw - qrBox) / 2
+    ctx.fillStyle = "#ffffff"
+    ctx.strokeStyle = "#e5e7eb"
+    roundedRect(ctx, qrBoxX, y, qrBox, qrBox, Math.round(8 * scale))
+    ctx.fill()
+    ctx.stroke()
+    ctx.drawImage(qrImg, qrBoxX + qrPad, y + qrPad, qrSize, qrSize)
 
-    const qrSize = Math.round(scale * (pdfSize === "carta" ? 220 : pdfSize === "media-carta" ? 180 : 150))
-    const qrX = (cw - qrSize) / 2
-    ctx.drawImage(qrImg, qrX, y, qrSize, qrSize)
+    y += qrBox + Math.round((isCompact ? 8 : 12) * scale)
 
-    y += qrSize + Math.round(12 * scale)
-
-    const ctaSize = Math.round(scale * (pdfSize === "carta" ? 14 : pdfSize === "media-carta" ? 12 : 10))
     ctx.fillStyle = card.brandColor
     ctx.font = `bold ${ctaSize}px sans-serif`
     ctx.textAlign = "center"
-    const ctaLines = wrapText(ctx, ctaText, cw / 2, y, cw - pad * 2, ctaSize + 3)
-    y += ctaLines * (ctaSize + 3) + Math.round(6 * scale)
+    ctx.textBaseline = "alphabetic"
+    const ctaLines = wrapText(ctx, ctaText, cw / 2, y + ctaSize, cw - pad * 2, ctaSize * 1.4)
+    y += ctaLines * ctaSize * 1.4 + Math.round((isCompact ? 8 : 14) * scale)
 
-    const titleSize = Math.round(scale * (pdfSize === "carta" ? 16 : pdfSize === "media-carta" ? 14 : 11))
     ctx.fillStyle = "#1a1a1a"
     ctx.font = `bold ${titleSize}px sans-serif`
     ctx.textAlign = "center"
-    ctx.fillText(card.name, cw / 2, y)
-    y += titleSize + Math.round(4 * scale)
+    ctx.fillText(card.name, cw / 2, y + titleSize)
+    y += titleSize + Math.round((isCompact ? 2 : 4) * scale)
 
-    const rewardSize = Math.round(scale * 11)
     ctx.fillStyle = "#374151"
     ctx.font = `${rewardSize}px sans-serif`
     ctx.textAlign = "center"
-    ctx.fillText(`${card.stampsRequired} sellos · Recompensa: ${card.reward}`, cw / 2, y)
+    ctx.fillText(`${card.stampsRequired} sellos · Recompensa: ${card.reward}`, cw / 2, y + rewardSize)
+    y += rewardSize + Math.round((isCompact ? 4 : 8) * scale)
 
-    const remaining = ch - y
-    if (remaining > Math.round(20 * scale)) {
-      const fy = ch - Math.round(12 * scale)
+    if (!isCompact) {
+      y += Math.round((isCompact ? 8 : 14) * scale)
       ctx.fillStyle = "#e5e7eb"
-      ctx.fillRect(pad, fy - Math.round(6 * scale), cw - pad * 2, 1)
-      ctx.fillStyle = "#9ca3af"
-      ctx.font = `${Math.round(7 * scale)}px sans-serif`
+      ctx.fillRect(pad, y, cw - pad * 2, Math.max(1, Math.round(scale)))
+      y += Math.round((isCompact ? 8 : 14) * scale)
+
+      ctx.fillStyle = "#6b7280"
+      ctx.font = `${instructionSize}px sans-serif`
       ctx.textAlign = "center"
-      ctx.fillText("Con tecnología de Koda Fidelity", cw / 2, fy + Math.round(3 * scale))
+      const instructions = [
+        "Escanea el código QR con tu teléfono y obtén tu tarjeta digital",
+        "Acumula sellos en cada visita y canjea tu recompensa",
+        "Sin apps — todo funciona desde tu navegador",
+      ]
+      for (const instruction of instructions) {
+        ctx.fillText(instruction, cw / 2, y + instructionSize)
+        y += instructionSize + Math.round(2 * scale)
+      }
     }
-  }, [pdfSize, ctaText, card, businessName])
+  }, [pdfSize, ctaText, card, businessName, businessLogo])
 
   const drawPreview = useCallback(() => {
     const canvas = previewCanvasRef.current
@@ -142,7 +205,7 @@ export function CardQRClient({
     if (!ctx) return
 
     const { width: pw, height: ph } = PDF_SIZES[pdfSize]
-    const scale = Math.min(PREVIEW_MAX_W / pw, PREVIEW_MAX_H / ph, 0.8)
+    const scale = Math.min(PREVIEW_MAX_W / pw, PREVIEW_MAX_H / ph, 1)
     const cw = Math.round(pw * scale)
     const ch = Math.round(ph * scale)
 
@@ -152,7 +215,28 @@ export function CardQRClient({
     canvas.style.height = `${ch}px`
 
     drawLayout(ctx, cw, ch, qrImg)
-  }, [qrDataUrl, pdfSize, drawLayout])
+  }, [pdfSize, drawLayout])
+
+  // Preload QR image for preview drawing
+  useEffect(() => {
+    if (!qrDataUrl) return
+    const img = new Image()
+    img.onload = drawPreview
+    img.src = qrDataUrl
+    qrImageRef.current = img
+  }, [qrDataUrl, drawPreview])
+
+  useEffect(() => {
+    if (card.iconName !== "logo" || !businessLogo) {
+      logoImageRef.current = null
+      return
+    }
+    const img = new Image()
+    img.crossOrigin = "anonymous"
+    img.onload = drawPreview
+    img.src = businessLogo
+    logoImageRef.current = img
+  }, [businessLogo, card.iconName, drawPreview])
 
   useEffect(() => {
     if (qrImageRef.current?.complete) {
@@ -164,9 +248,17 @@ export function CardQRClient({
 
   const copyUrl = useCallback(async () => {
     if (!joinUrl) return
-    await navigator.clipboard.writeText(joinUrl).catch(() => {})
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    try {
+      await navigator.clipboard.writeText(joinUrl)
+      setCopied(true)
+      setCopyMessage("Link de registro copiado.")
+      setTimeout(() => {
+        setCopied(false)
+        setCopyMessage("")
+      }, 2000)
+    } catch {
+      setCopyMessage("No se pudo copiar el link. Selecciona la URL manualmente.")
+    }
   }, [joinUrl])
 
   const downloadPNG = useCallback(async () => {
@@ -197,7 +289,7 @@ export function CardQRClient({
     link.download = `koda-${card.id}-qr.png`
     link.href = canvas.toDataURL("image/png")
     link.click()
-  }, [card, pdfSize, drawLayout])
+  }, [card, pdfSize, drawLayout, qrDataUrl])
 
   const generateAndOpenPDF = useCallback(async () => {
     if (!qrDataUrl) return
@@ -255,151 +347,232 @@ export function CardQRClient({
   const IconComp = icon?.Icon
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <Link
-        href={`/dashboard/cards/${card.id}`}
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Volver a la tarjeta
-      </Link>
+    <div className="mx-auto max-w-6xl space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 space-y-3">
+          <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit gap-2 text-muted-foreground">
+            <Link href={`/dashboard/cards/${card.id}`}>
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+              Volver a la Tarjeta
+            </Link>
+          </Button>
 
-      <div className="flex items-center gap-3">
-        <div
-          className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold shrink-0"
-          style={{ backgroundColor: card.brandColor }}
-        >
-          {card.iconName === "logo" && businessLogo ? (
-            <img src={businessLogo} alt="" className="w-7 h-7 object-contain" />
-          ) : IconComp ? (
-            <IconComp className="h-5 w-5" />
-          ) : (
-            card.name.charAt(0)
-          )}
-        </div>
-        <div>
-          <h1 className="text-xl font-bold text-foreground">{card.name}</h1>
-          <p className="text-sm text-muted-foreground">{card.stampsRequired} sellos · {card.reward}</p>
-        </div>
-      </div>
-
-      {/* QR Code */}
-      <div className="bg-card rounded-2xl border border-border overflow-hidden">
-        <div className="h-2" style={{ backgroundColor: card.brandColor }} />
-        <div className="p-8">
-          <div
-            id="card-qr-svg"
-            className="bg-white rounded-2xl p-6 flex items-center justify-center border border-border"
-          >
-            {joinUrl && (
-              <QRCodeSVG value={joinUrl} size={220} level="H" fgColor={isLight(card.brandColor) ? "#1a1a1a" : card.brandColor} />
-            )}
+          <div className="flex min-w-0 items-center gap-3">
+            <div
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-base font-bold text-white"
+              style={{ backgroundColor: card.brandColor }}
+            >
+              {card.iconName === "logo" && businessLogo ? (
+                <NextImage src={businessLogo} alt="" width={32} height={32} className="h-8 w-8 object-contain" />
+              ) : IconComp ? (
+                <IconComp className="h-5 w-5" aria-hidden="true" />
+              ) : (
+                card.name.charAt(0)
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm text-muted-foreground">Link de Registro</p>
+              <h1 className="truncate text-2xl font-bold text-foreground text-balance">{card.name}</h1>
+            </div>
           </div>
         </div>
+
+        <Button asChild variant="outline" className="w-full gap-2 sm:w-auto">
+          <Link href={`/dashboard/qr-codes/${card.id}/preview`}>
+            <ExternalLink className="h-4 w-4" aria-hidden="true" />
+            Abrir Vista de Registro
+          </Link>
+        </Button>
       </div>
 
-      {/* Size selector */}
-      <div>
-        <p className="text-sm text-muted-foreground mb-2">Tamaño de impresión</p>
-        <div className="flex gap-2">
-          {(Object.entries(PDF_SIZES) as [PdfSizeKey, typeof PDF_SIZES[PdfSizeKey]][]).map(([key, { label }]) => (
-            <Button
-              key={key}
-              variant={pdfSize === key ? "default" : "outline"}
-              size="sm"
-              onClick={() => setPdfSize(key)}
-              className="flex-1"
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <section className="overflow-hidden rounded-xl border border-border bg-card transition-shadow hover:shadow-md">
+          <div className="h-2" style={{ backgroundColor: card.brandColor }} />
+          <div className="grid gap-6 p-5 sm:p-6 md:grid-cols-[18rem_minmax(0,1fr)] md:items-center">
+            <div
+              id="card-qr-svg"
+              className="mx-auto flex aspect-square w-full max-w-72 items-center justify-center rounded-xl border border-border bg-white p-6"
             >
-              {label}
-            </Button>
-          ))}
-        </div>
+              {joinUrl && (
+                <QRCodeSVG
+                  value={joinUrl}
+                  size={220}
+                  level="H"
+                  title={`Código QR para registrarse en ${card.name}`}
+                  fgColor={isLight(card.brandColor) ? "#1a1a1a" : card.brandColor}
+                />
+              )}
+            </div>
+
+            <div className="min-w-0 space-y-4">
+              <div className="space-y-1">
+                <h2 className="text-lg font-semibold text-foreground text-balance">
+                  Comparte este QR para registrar clientes
+                </h2>
+                <p className="text-sm text-muted-foreground text-pretty">
+                  El link lleva a la página pública donde tus clientes pueden unirse a esta tarjeta de lealtad.
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-border bg-muted/40 p-3">
+                <p className="mb-1 text-xs font-medium text-muted-foreground">URL de destino</p>
+                <p className="break-words font-mono text-sm text-foreground" translate="no">
+                  {joinUrl || "Generando link…"}
+                </p>
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Button variant="default" onClick={copyUrl} className="w-full gap-2" disabled={!joinUrl}>
+                  {copied ? (
+                    <>
+                      <Check className="h-4 w-4" aria-hidden="true" />
+                      Link Copiado
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4" aria-hidden="true" />
+                      Copiar Link
+                    </>
+                  )}
+                </Button>
+                <Button variant="outline" onClick={downloadQRPNG} disabled={!qrDataUrl} className="w-full gap-2">
+                  <Download className="h-4 w-4" aria-hidden="true" />
+                  Descargar QR PNG
+                </Button>
+                <Button variant="outline" onClick={downloadQRSVG} disabled={!joinUrl} className="w-full gap-2">
+                  <QrCode className="h-4 w-4" aria-hidden="true" />
+                  Descargar QR SVG
+                </Button>
+                <Button asChild variant="outline" className="w-full gap-2">
+                  <Link href={`/dashboard/qr-codes/${card.id}/preview`}>
+                    <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                    Probar Registro
+                  </Link>
+                </Button>
+              </div>
+
+              <p className="sr-only" aria-live="polite" aria-atomic="true">
+                {copyMessage}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <aside className="rounded-xl border border-border bg-card p-5 transition-shadow hover:shadow-md">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Tarjeta</h2>
+          <div className="mt-4 space-y-4">
+            <div>
+              <p className="text-xs text-muted-foreground">Nombre</p>
+              <p className="break-words text-sm font-medium text-foreground">{card.name}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Recompensa</p>
+              <p className="break-words text-sm font-medium text-foreground">{card.reward}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Meta</p>
+              <p className="text-sm font-medium text-foreground">{card.stampsRequired} sellos</p>
+            </div>
+            <div className="rounded-lg bg-muted/40 p-3 text-sm text-muted-foreground">
+              Usa este QR en redes sociales, mensajes o materiales digitales. Para piezas impresas, ajusta el formato abajo.
+            </div>
+          </div>
+        </aside>
       </div>
 
-      {/* CTA text */}
-      <div>
-        <p className="text-sm text-muted-foreground mb-2">Mensaje promocional</p>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={ctaText}
-            onChange={(e) => setCtaText(e.target.value)}
-            className="flex-1 h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
-            placeholder="Escribe un mensaje..."
-          />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="shrink-0 gap-1">
-                Recomendados <ChevronDown className="h-3 w-3" />
+      <section className="rounded-xl border border-border bg-card p-5 sm:p-6 transition-shadow hover:shadow-md">
+        <div className="mb-5 flex flex-col gap-1">
+          <h2 className="text-lg font-semibold text-foreground">Material Impreso</h2>
+          <p className="text-sm text-muted-foreground">
+            Personaliza el texto y descarga una pieza lista para imprimir.
+          </p>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]">
+          <div className="space-y-5">
+            <div>
+              <p className="mb-2 text-sm font-medium text-foreground">Tamaño de impresión</p>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {(Object.entries(PDF_SIZES) as [PdfSizeKey, typeof PDF_SIZES[PdfSizeKey]][]).map(([key, { label }]) => (
+                  <Button
+                    key={key}
+                    variant={pdfSize === key ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setPdfSize(key)}
+                    className="w-full"
+                    aria-pressed={pdfSize === key}
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <Label htmlFor="qr-cta" className="text-sm font-medium text-foreground">
+                  Mensaje promocional
+                </Label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="shrink-0 gap-1">
+                      Recomendados <ChevronDown className="h-3 w-3" aria-hidden="true" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {CTA_TEMPLATES.map((tmpl, i) => (
+                      <DropdownMenuItem key={i} onClick={() => handleCTAPreset(i)}>
+                        {tmpl(businessName)}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <input
+                id="qr-cta"
+                name="qr-cta"
+                type="text"
+                value={ctaText}
+                onChange={(e) => setCtaText(e.target.value)}
+                aria-describedby="qr-cta-help"
+                autoComplete="off"
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                placeholder="Escanea para unirte…"
+              />
+              <p id="qr-cta-help" className="mt-2 text-xs text-muted-foreground">
+                Este texto aparece en el PNG y PDF de impresión.
+              </p>
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Button variant="outline" onClick={downloadPNG} className="w-full gap-2" disabled={!qrDataUrl}>
+                <Download className="h-4 w-4" aria-hidden="true" />
+                Descargar Material PNG
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {CTA_TEMPLATES.map((tmpl, i) => (
-                <DropdownMenuItem key={i} onClick={() => handleCTAPreset(i)}>
-                  {tmpl(businessName)}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+
+              <Button variant="outline" onClick={generateAndOpenPDF} className="w-full gap-2" disabled={!qrDataUrl || loading}>
+                {loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <FileText className="h-4 w-4" aria-hidden="true" />
+                )}
+                Abrir PDF
+              </Button>
+            </div>
+          </div>
+
+          <div>
+            <p className="mb-2 text-sm font-medium text-foreground">Vista previa</p>
+            <div className="flex min-h-44 items-center justify-center overflow-auto rounded-xl border border-border bg-muted/30 p-4">
+              {qrDataUrl ? (
+                <canvas ref={previewCanvasRef} className="shrink-0 rounded shadow-sm" />
+              ) : (
+                <span className="text-sm text-muted-foreground">Generando vista previa…</span>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
-
-      {/* Preview */}
-      <div>
-        <p className="text-sm text-muted-foreground mb-2">Vista previa</p>
-        <div className="bg-card rounded-2xl border border-border p-4 flex items-center justify-center min-h-[160px] overflow-auto">
-          {qrDataUrl ? (
-            <canvas ref={previewCanvasRef} className="rounded shadow-sm shrink-0" />
-          ) : (
-            <span className="text-sm text-muted-foreground">Generando vista previa…</span>
-          )}
-        </div>
-      </div>
-
-      {/* Action buttons */}
-      <div className="grid grid-cols-3 gap-3">
-        <Button variant="default" onClick={downloadPNG} className="w-full gap-2" disabled={!joinUrl}>
-          <Download className="h-4 w-4" />
-          PNG
-        </Button>
-
-        <Button variant="outline" onClick={generateAndOpenPDF} className="w-full gap-2" disabled={!qrDataUrl || loading}>
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-          PDF
-        </Button>
-
-        <Button variant="outline" onClick={copyUrl} className="w-full gap-2" disabled={!joinUrl}>
-          {copied ? (
-            <><Check className="h-4 w-4" />Copiado</>
-          ) : (
-            <><Copy className="h-4 w-4" />Copiar URL</>
-          )}
-        </Button>
-      </div>
-
-      {/* QR-only downloads + Preview link */}
-      <div className="flex items-center justify-center gap-4">
-        <span className="text-xs text-muted-foreground shrink-0">Solo QR:</span>
-        <Button variant="outline" size="sm" onClick={downloadQRPNG} disabled={!qrDataUrl} className="gap-1.5">
-          <Download className="h-4 w-4" />
-          PNG
-        </Button>
-        <Button variant="outline" size="sm" onClick={downloadQRSVG} disabled={!joinUrl} className="gap-1.5">
-          <QrCode className="h-4 w-4" />
-          SVG
-        </Button>
-        <div className="w-px h-6 bg-border" />
-        <Link href={`/dashboard/qr-codes/${card.id}/preview`}>
-          <Button variant="outline" size="sm" className="gap-1.5">
-            <ExternalLink className="h-4 w-4" />
-            Vista previa registro
-          </Button>
-        </Link>
-      </div>
-
-      <p className="text-xs text-muted-foreground text-center">
-        Coloca este código QR en tu negocio para que los clientes se unan al programa
-      </p>
+      </section>
     </div>
   )
 }
@@ -431,4 +604,26 @@ function wrapText(
     lines++
   }
   return lines
+}
+
+function roundedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+) {
+  const r = Math.min(radius, width / 2, height / 2)
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.lineTo(x + width - r, y)
+  ctx.quadraticCurveTo(x + width, y, x + width, y + r)
+  ctx.lineTo(x + width, y + height - r)
+  ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height)
+  ctx.lineTo(x + r, y + height)
+  ctx.quadraticCurveTo(x, y + height, x, y + height - r)
+  ctx.lineTo(x, y + r)
+  ctx.quadraticCurveTo(x, y, x + r, y)
+  ctx.closePath()
 }
