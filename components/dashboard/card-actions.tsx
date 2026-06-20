@@ -7,6 +7,13 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -16,11 +23,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Archive, QrCode, Pencil, Loader2, Check, Trash2, ChevronDown, ChevronUp, Plus, X } from "lucide-react"
+import { Archive, QrCode, Pencil, Loader2, Check, Trash2, Plus, X, Gift, Crown } from "lucide-react"
 import Link from "next/link"
 import { IconPicker } from "@/components/dashboard/icon-picker"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { getRarityColor, getRarityLabel, getRarityDescription } from "@/lib/card-utils"
+import { cn } from "@/lib/utils"
 
 const colorPresets = [
   "#f97316", "#3b82f6", "#10b981", "#8b5cf6", "#ec4899", "#f59e0b",
@@ -130,12 +138,6 @@ export function CardActions({
     setEditOpen(true)
   }
 
-  const closeEdit = () => {
-    setEditOpen(false)
-    setEditError(null)
-    setSaved(false)
-  }
-
   const availablePositions = Array.from({ length: maxStamps }, (_, i) => i + 1)
     .filter(pos => !milestones.some(m => m.stampNumber === pos))
 
@@ -183,7 +185,7 @@ export function CardActions({
     if (res.ok) {
       setSaved(true)
       setTimeout(() => {
-        closeEdit()
+        setEditOpen(false)
         router.refresh()
       }, 800)
     } else {
@@ -195,9 +197,9 @@ export function CardActions({
   return (
     <>
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="sm" onClick={editOpen ? closeEdit : openEdit}>
-          {editOpen ? <ChevronUp className="h-4 w-4 mr-2" /> : <Pencil className="h-4 w-4 mr-2" />}
-          {editOpen ? "Cerrar edición" : "Editar"}
+        <Button variant="outline" size="sm" onClick={openEdit}>
+          <Pencil className="h-4 w-4 mr-2" />
+          Editar
         </Button>
         <Link href={`/dashboard/qr-codes/${cardId}`}>
           <Button variant="outline" size="sm">
@@ -225,17 +227,14 @@ export function CardActions({
       {archiveError && <p className="text-sm text-destructive mt-2">{archiveError}</p>}
       {deleteError && <p className="text-sm text-destructive mt-2">{deleteError}</p>}
 
-      {/* ── Edit section (inline) ── */}
-      {editOpen && (
-        <div className="bg-card border border-border rounded-2xl p-6 mt-4 space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Editar Tarjeta</h3>
-            <Button variant="ghost" size="sm" onClick={closeEdit}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+      {/* ── Edit Dialog ── */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Tarjeta</DialogTitle>
+          </DialogHeader>
 
-          <div className="grid lg:grid-cols-2 gap-8">
+          <div className="grid lg:grid-cols-2 gap-8 py-2">
             {/* Preview */}
             <div className="lg:order-2 flex flex-col gap-2">
               <div className="flex items-center justify-between">
@@ -244,14 +243,24 @@ export function CardActions({
                   <button
                     type="button"
                     onClick={() => setPreviewMode("normal")}
-                    className={`px-2.5 py-1 transition-colors ${previewMode === "normal" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground"}`}
+                    className={cn(
+                      "px-2.5 py-1 transition-colors",
+                      previewMode === "normal"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-card text-muted-foreground hover:text-foreground",
+                    )}
                   >
                     Normal
                   </button>
                   <button
                     type="button"
                     onClick={() => setPreviewMode("sellada")}
-                    className={`px-2.5 py-1 transition-colors ${previewMode === "sellada" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground"}`}
+                    className={cn(
+                      "px-2.5 py-1 transition-colors",
+                      previewMode === "sellada"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-card text-muted-foreground hover:text-foreground",
+                    )}
                   >
                     Sellada
                   </button>
@@ -298,7 +307,10 @@ export function CardActions({
                       key={c}
                       type="button"
                       onClick={() => setColor(c)}
-                      className={`w-9 h-9 rounded-lg transition-all ${color === c ? "ring-2 ring-offset-2 ring-foreground scale-110" : "hover:scale-105"}`}
+                      className={cn(
+                        "w-9 h-9 rounded-lg transition-all",
+                        color === c ? "ring-2 ring-offset-2 ring-foreground scale-110" : "hover:scale-105",
+                      )}
                       style={{ backgroundColor: c }}
                     />
                   ))}
@@ -318,12 +330,83 @@ export function CardActions({
             </div>
           </div>
 
-          {/* ── Milestone Rewards ── */}
+          {/* ── Milestone Path ── */}
+          {milestones.length > 0 && (
+            <div className="border-t border-border pt-6">
+              <h4 className="font-semibold mb-4 flex items-center gap-2">
+                <Gift className="h-4 w-4 text-primary" />
+                Recompensas en el Camino
+              </h4>
+              <div className="flex items-center gap-1 overflow-x-auto pb-2">
+                {Array.from({ length: maxStamps }, (_, i) => {
+                  const pos = i + 1
+                  const ms = milestones.find(m => m.stampNumber === pos)
+                  const isLast = pos === maxStamps
+                  return (
+                    <div key={pos} className="flex items-center gap-1">
+                      <div className="flex flex-col items-center gap-1 min-w-[48px]">
+                        <span className="text-[10px] text-muted-foreground font-medium">#{pos}</span>
+                        <div
+                          className={cn(
+                            "w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors",
+                            ms
+                              ? "border-primary bg-primary/10 text-primary"
+                              : isLast
+                                ? "border-amber-400 bg-amber-400/10 text-amber-500"
+                                : "border-border bg-muted text-muted-foreground",
+                          )}
+                        >
+                          {ms ? (
+                            <Gift className="h-4 w-4" />
+                          ) : isLast ? (
+                            <Crown className="h-4 w-4" />
+                          ) : (
+                            <span className="text-xs font-bold">{pos}</span>
+                          )}
+                        </div>
+                        {ms && (
+                          <div className="group relative">
+                            <span className="text-[9px] text-primary font-medium truncate max-w-[48px] block cursor-default">
+                              {ms.label}
+                            </span>
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-10">
+                              <div className="bg-popover text-popover-foreground text-[10px] px-2 py-1 rounded-md shadow-md border border-border whitespace-nowrap">
+                                {ms.label}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        {ms && (
+                          <div className="flex items-center gap-0.5">
+                            <span
+                              className="inline-block w-1.5 h-1.5 rounded-full"
+                              style={{ backgroundColor: getRarityColor(ms.probability) }}
+                            />
+                            <span className="text-[9px] text-muted-foreground">{ms.probability}%</span>
+                          </div>
+                        )}
+                      </div>
+                      {pos < maxStamps && (
+                        <div className="w-3 h-px bg-border shrink-0" />
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── Milestone Editor ── */}
           <div className="border-t border-border pt-6 space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="font-semibold">Recompensas en el Camino</h4>
-                <p className="text-sm text-muted-foreground">Bonos sorpresa al alcanzar posiciones específicas de sellos</p>
+                <h4 className="font-semibold flex items-center gap-2">
+                  <Gift className="h-4 w-4 text-primary" />
+                  Recompensas Sorpresa
+                </h4>
+                <p className="text-sm text-muted-foreground">
+                  Bonos con probabilidad al alcanzar posiciones específicas
+                </p>
               </div>
             </div>
 
@@ -333,7 +416,7 @@ export function CardActions({
 
             <div className="space-y-3">
               {milestones.map((m, i) => (
-                <div key={i} className="flex flex-wrap items-end gap-3 p-4 bg-muted/30 rounded-xl border border-border">
+                <div key={i} className="flex flex-wrap items-end gap-3 p-4 bg-muted/30 dark:bg-muted/20 rounded-xl border border-border">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Sello #</Label>
                     <Input
@@ -346,7 +429,7 @@ export function CardActions({
                     />
                   </div>
                   <div className="flex-1 min-w-[120px] space-y-1.5">
-                    <Label className="text-xs">Label</Label>
+                    <Label className="text-xs">Recompensa</Label>
                     <Input
                       value={m.label}
                       onChange={(e) => updateMilestone(i, "label", e.target.value)}
@@ -357,7 +440,7 @@ export function CardActions({
                     <Label className="text-xs">Ícono</Label>
                     <IconPicker value={m.iconName} onChange={(v) => updateMilestone(i, "iconName", v)} businessLogoUrl={businessLogo} />
                   </div>
-                  <div className="space-y-1.5 min-w-[160px]">
+                  <div className="space-y-1.5 min-w-[180px]">
                     <Label className="text-xs">Probabilidad</Label>
                     <div className="flex items-center gap-2">
                       <input
@@ -405,8 +488,8 @@ export function CardActions({
 
           {editError && <p className="text-sm text-destructive">{editError}</p>}
 
-          <div className="flex justify-end gap-3 pt-2 border-t border-border">
-            <Button variant="outline" onClick={closeEdit} disabled={saving}>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)} disabled={saving}>
               Cancelar
             </Button>
             <Button onClick={handleSave} disabled={saving}>
@@ -417,9 +500,9 @@ export function CardActions({
               ) : null}
               {saved ? "¡Guardado!" : "Guardar"}
             </Button>
-          </div>
-        </div>
-      )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Archive confirmation */}
       <AlertDialog open={archiveOpen} onOpenChange={setArchiveOpen}>
