@@ -84,10 +84,7 @@ export async function POST(request: NextRequest) {
       where: { id: body.customerId },
       include: {
         card: {
-          select: { id: true, businessId: true, stampsRequired: true, reward: true, expiresAt: true },
-          include: {
-            milestoneRewards: { select: { id: true, stampNumber: true, label: true, iconName: true, probability: true } },
-          },
+          select: { id: true, businessId: true, stampsRequired: true, reward: true, expiresAt: true, milestoneRewards: { select: { id: true, stampNumber: true, label: true, iconName: true, probability: true } } },
         },
       },
     })
