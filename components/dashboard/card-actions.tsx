@@ -23,7 +23,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Archive, QrCode, Pencil, Loader2, Check, Trash2, Plus, X, Gift, Crown } from "lucide-react"
+import { Archive, QrCode, Pencil, Loader2, Check, Trash2, Plus, X, Gift, Crown, ChevronDown, ChevronRight } from "lucide-react"
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from "@/components/ui/collapsible"
 import Link from "next/link"
 import { IconPicker } from "@/components/dashboard/icon-picker"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
@@ -88,6 +93,7 @@ export function CardActions({
   const [milestones, setMilestones] = useState<MilestoneEdit[]>(
     initialMilestones.map(m => ({ id: m.id, stampNumber: m.stampNumber, label: m.label, iconName: m.iconName, probability: m.probability })),
   )
+  const [milestonesOpen, setMilestonesOpen] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
@@ -396,94 +402,103 @@ export function CardActions({
             </div>
           )}
 
-          {/* ── Milestone Editor ── */}
-          <div className="border-t border-border pt-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-semibold flex items-center gap-2">
-                  <Gift className="h-4 w-4 text-primary" />
-                  Recompensas Sorpresa
-                </h4>
-                <p className="text-sm text-muted-foreground">
-                  Bonos con probabilidad al alcanzar posiciones específicas
-                </p>
-              </div>
-            </div>
-
-            {milestones.length === 0 && (
-              <p className="text-sm text-muted-foreground py-2">No hay recompensas configuradas.</p>
-            )}
-
-            <div className="space-y-3">
-              {milestones.map((m, i) => (
-                <div key={i} className="flex flex-wrap items-end gap-3 p-4 bg-muted/30 dark:bg-muted/20 rounded-xl border border-border">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Sello #</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      max={maxStamps}
-                      value={m.stampNumber}
-                      onChange={(e) => updateMilestone(i, "stampNumber", Math.min(maxStamps, Math.max(1, Number(e.target.value))))}
-                      className="w-20"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-[120px] space-y-1.5">
-                    <Label className="text-xs">Recompensa</Label>
-                    <Input
-                      value={m.label}
-                      onChange={(e) => updateMilestone(i, "label", e.target.value)}
-                      placeholder="Ej: Café gratis"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Ícono</Label>
-                    <IconPicker value={m.iconName} onChange={(v) => updateMilestone(i, "iconName", v)} businessLogoUrl={businessLogo} />
-                  </div>
-                  <div className="space-y-1.5 min-w-[180px]">
-                    <Label className="text-xs">Probabilidad</Label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="range"
-                        min={0}
-                        max={100}
-                        value={m.probability}
-                        onChange={(e) => updateMilestone(i, "probability", Number(e.target.value))}
-                        className="flex-1 h-2 rounded-full appearance-none cursor-pointer"
-                        style={{ accentColor: getRarityColor(m.probability) }}
-                      />
-                      <span className="text-sm font-mono w-10 text-right">{m.probability}%</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs">
-                      <span
-                        className="inline-block w-3 h-3 rounded-full"
-                        style={{ backgroundColor: getRarityColor(m.probability) }}
-                      />
-                      <span className="font-medium">{getRarityLabel(m.probability)}</span>
-                      <span className="text-muted-foreground">— {getRarityDescription(m.probability)}</span>
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={() => removeMilestone(i)} className="text-destructive hover:text-destructive">
-                    <X className="h-4 w-4" />
-                  </Button>
+          {/* ── Milestone Editor (collapsible) ── */}
+          <div className="border-t border-border pt-6">
+            <Collapsible open={milestonesOpen} onOpenChange={setMilestonesOpen}>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <Gift className="h-4 w-4 text-primary" />
+                    Recompensas Sorpresa
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    Bonos con probabilidad al alcanzar posiciones específicas
+                  </p>
                 </div>
-              ))}
-            </div>
-
-            {availablePositions.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {availablePositions.map(pos => (
-                  <Button key={pos} variant="outline" size="sm" onClick={() => addMilestone(pos)}>
-                    <Plus className="h-3 w-3 mr-1" />
-                    Sello #{pos}
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    {milestonesOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                   </Button>
-                ))}
+                </CollapsibleTrigger>
               </div>
-            )}
 
-            {availablePositions.length === 0 && milestones.length > 0 && (
-              <p className="text-xs text-muted-foreground">Todas las posiciones tienen recompensa.</p>
-            )}
+              <CollapsibleContent className="space-y-4">
+                {milestones.length === 0 && (
+                  <p className="text-sm text-muted-foreground py-2">No hay recompensas configuradas.</p>
+                )}
+
+                <div className="space-y-3">
+                  {milestones.map((m, i) => (
+                    <div key={i} className="flex flex-wrap items-end gap-3 p-4 bg-muted/30 dark:bg-muted/20 rounded-xl border border-border">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Sello #</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={maxStamps}
+                          value={m.stampNumber}
+                          onChange={(e) => updateMilestone(i, "stampNumber", Math.min(maxStamps, Math.max(1, Number(e.target.value))))}
+                          className="w-20"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-[120px] space-y-1.5">
+                        <Label className="text-xs">Recompensa</Label>
+                        <Input
+                          value={m.label}
+                          onChange={(e) => updateMilestone(i, "label", e.target.value)}
+                          placeholder="Ej: Café gratis"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Ícono</Label>
+                        <IconPicker value={m.iconName} onChange={(v) => updateMilestone(i, "iconName", v)} businessLogoUrl={businessLogo} />
+                      </div>
+                      <div className="space-y-1.5 min-w-[180px]">
+                        <Label className="text-xs">Probabilidad</Label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="range"
+                            min={0}
+                            max={100}
+                            value={m.probability}
+                            onChange={(e) => updateMilestone(i, "probability", Number(e.target.value))}
+                            className="flex-1 h-2 rounded-full appearance-none cursor-pointer"
+                            style={{ accentColor: getRarityColor(m.probability) }}
+                          />
+                          <span className="text-sm font-mono w-10 text-right">{m.probability}%</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span
+                            className="inline-block w-3 h-3 rounded-full"
+                            style={{ backgroundColor: getRarityColor(m.probability) }}
+                          />
+                          <span className="font-medium">{getRarityLabel(m.probability)}</span>
+                          <span className="text-muted-foreground">— {getRarityDescription(m.probability)}</span>
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={() => removeMilestone(i)} className="text-destructive hover:text-destructive">
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                {availablePositions.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {availablePositions.map(pos => (
+                      <Button key={pos} variant="outline" size="sm" onClick={() => addMilestone(pos)}>
+                        <Plus className="h-3 w-3 mr-1" />
+                        Sello #{pos}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+
+                {availablePositions.length === 0 && milestones.length > 0 && (
+                  <p className="text-xs text-muted-foreground">Todas las posiciones tienen recompensa.</p>
+                )}
+              </CollapsibleContent>
+            </Collapsible>
           </div>
 
           {editError && <p className="text-sm text-destructive">{editError}</p>}
