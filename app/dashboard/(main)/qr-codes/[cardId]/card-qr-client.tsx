@@ -2,11 +2,19 @@
 
 import { useState, useCallback, useEffect } from "react"
 import Link from "next/link"
+import dynamic from "next/dynamic"
 import { QRCodeSVG } from "qrcode.react"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Download, Printer, Copy, ExternalLink, Check } from "lucide-react"
+import { ArrowLeft, Download, Printer, Copy, ExternalLink, Check, FileDown, Eye, Loader2 } from "lucide-react"
 import { getCardIcon } from "@/lib/card-icons"
 import { isLight } from "@/lib/color-utils"
+import { generateQRDataUrl, PDF_SIZES, type PdfSizeKey } from "@/lib/qr-pdf-utils"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+
+const PDFDocument = dynamic(
+  () => import("@/components/dashboard/qr-pdf-document").then((m) => m.QRPDFDocument),
+  { ssr: false },
+)
 
 interface CardData {
   id: string
@@ -17,15 +25,33 @@ interface CardData {
   iconName: string | null
 }
 
-export function CardQRClient({ card, businessLogo }: { card: CardData; businessLogo: string | null }) {
+export function CardQRClient({
+  card,
+  businessName,
+  businessLogo,
+}: {
+  card: CardData
+  businessName: string
+  businessLogo: string | null
+}) {
   const [baseUrl, setBaseUrl] = useState("")
   const [copied, setCopied] = useState(false)
+  const [qrDataUrl, setQrDataUrl] = useState("")
+  const [pdfSize, setPdfSize] = useState<PdfSizeKey>("carta")
+  const [showPreview, setShowPreview] = useState(false)
+  const [pdfLoading, setPdfLoading] = useState(false)
 
   useEffect(() => {
     setBaseUrl(window.location.origin)
   }, [])
 
   const joinUrl = baseUrl ? `${baseUrl}/join/${card.id}` : ""
+
+  useEffect(() => {
+    if (joinUrl) {
+      generateQRDataUrl(joinUrl).then(setQrDataUrl)
+    }
+  }, [joinUrl])
 
   const copyUrl = useCallback(async () => {
     if (!joinUrl) return
@@ -64,6 +90,42 @@ export function CardQRClient({ card, businessLogo }: { card: CardData; businessL
       img.src = `data:image/svg+xml;base64,${btoa(svgData)}`
     }
   }, [card])
+
+  const downloadPDF = useCallback(async () => {
+    if (!qrDataUrl) return
+    setPdfLoading(true)
+    try {
+      const { pdf } = await import("@react-pdf/renderer")
+      const doc = (
+        <PDFDocument card={card} businessName={businessName} businessLogo={businessLogo} qrDataUrl={qrDataUrl} size={pdfSize} />
+      )
+      const blob = await pdf(doc).toBlob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `koda-${card.id}-qr.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
+    } finally {
+      setPdfLoading(false)
+    }
+  }, [card, businessName, businessLogo, qrDataUrl, pdfSize])
+
+  const printPDF = useCallback(async () => {
+    if (!qrDataUrl) return
+    setPdfLoading(true)
+    try {
+      const { pdf } = await import("@react-pdf/renderer")
+      const doc = (
+        <PDFDocument card={card} businessName={businessName} businessLogo={businessLogo} qrDataUrl={qrDataUrl} size={pdfSize} />
+      )
+      const blob = await pdf(doc).toBlob()
+      const url = URL.createObjectURL(blob)
+      window.open(url, "_blank")
+    } finally {
+      setPdfLoading(false)
+    }
+  }, [card, businessName, businessLogo, qrDataUrl, pdfSize])
 
   const icon = getCardIcon(card.iconName)
   const IconComp = icon?.Icon
@@ -116,14 +178,41 @@ export function CardQRClient({ card, businessLogo }: { card: CardData; businessL
         <p className="text-sm font-mono text-foreground break-all">{joinUrl || "—"}</p>
       </div>
 
+      {/* PDF Size selector */}
+      <div>
+        <p className="text-sm text-muted-foreground mb-2">Tamaño de impresión</p>
+        <div className="flex gap-2">
+          {(Object.entries(PDF_SIZES) as [PdfSizeKey, typeof PDF_SIZES[PdfSizeKey]][]).map(([key, { label }]) => (
+            <Button
+              key={key}
+              variant={pdfSize === key ? "default" : "outline"}
+              size="sm"
+              onClick={() => setPdfSize(key)}
+              className="flex-1"
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* Action buttons */}
       <div className="grid grid-cols-2 gap-3">
         <Button variant="outline" onClick={downloadQR} className="w-full" disabled={!joinUrl}>
           <Download className="h-4 w-4 mr-2" />
           Descargar PNG
         </Button>
-        <Button variant="outline" onClick={() => window.print()} className="w-full">
-          <Printer className="h-4 w-4 mr-2" />
+        <Button variant="outline" onClick={downloadPDF} className="w-full" disabled={!qrDataUrl || pdfLoading}>
+          {pdfLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileDown className="h-4 w-4 mr-2" />}
+          Descargar PDF
+        </Button>
+        <Button variant="outline" onClick={printPDF} className="w-full" disabled={!qrDataUrl || pdfLoading}>
+          {pdfLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Printer className="h-4 w-4 mr-2" />}
           Imprimir
+        </Button>
+        <Button variant="outline" onClick={() => setShowPreview(true)} className="w-full" disabled={!qrDataUrl}>
+          <Eye className="h-4 w-4 mr-2" />
+          Vista Previa
         </Button>
         <Button variant="outline" onClick={copyUrl} className="w-full" disabled={!joinUrl}>
           {copied ? (
@@ -135,7 +224,7 @@ export function CardQRClient({ card, businessLogo }: { card: CardData; businessL
         <Link href={`/join/${card.id}`} className="w-full">
           <Button variant="outline" className="w-full">
             <ExternalLink className="h-4 w-4 mr-2" />
-            Vista Previa
+            Join Flow
           </Button>
         </Link>
       </div>
@@ -143,6 +232,68 @@ export function CardQRClient({ card, businessLogo }: { card: CardData; businessL
       <p className="text-xs text-muted-foreground text-center">
         Coloca este código QR en tu negocio para que los clientes se unan al programa
       </p>
+
+      {/* PDF Preview Dialog */}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Vista Previa — {PDF_SIZES[pdfSize].label}</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 min-h-0">
+            {qrDataUrl && (
+              <PDFPreviewInner
+                card={card}
+                businessName={businessName}
+                businessLogo={businessLogo}
+                qrDataUrl={qrDataUrl}
+                size={pdfSize}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
+  )
+}
+
+function PDFPreviewInner(props: {
+  card: CardData
+  businessName: string
+  businessLogo: string | null
+  qrDataUrl: string
+  size: PdfSizeKey
+}) {
+  const [url, setUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    async function generate() {
+      const { pdf } = await import("@react-pdf/renderer")
+      const doc = <PDFDocument {...props} />
+      const blob = await pdf(doc).toBlob()
+      if (!cancelled) {
+        setUrl(URL.createObjectURL(blob))
+      }
+    }
+    generate()
+    return () => { cancelled = true }
+  }, [props.card, props.businessName, props.businessLogo, props.qrDataUrl, props.size])
+
+  useEffect(() => {
+    return () => {
+      if (url) URL.revokeObjectURL(url)
+    }
+  }, [url])
+
+  if (!url) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  return (
+    <iframe src={url} className="w-full h-full rounded-lg border border-border" title="Vista previa PDF" />
   )
 }

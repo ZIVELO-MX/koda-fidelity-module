@@ -415,3 +415,18 @@
     animation: none;
   }
 }
+
+/* Print — hide sidebar, navbar, and chrome when printing the web page directly */
+@media print {
+  body > header,
+  body > nav,
+  [data-sidebar],
+  [data-mobile-nav],
+  .sidebar-wrapper,
+  .print-hidden {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+  }
+}

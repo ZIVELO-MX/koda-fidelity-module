@@ -2,7 +2,7 @@
 
 import { QRCodeSVG } from "qrcode.react"
 import { Button } from "@/components/ui/button"
-import { Download, Printer, Copy, ExternalLink, Check, Loader2 } from "lucide-react"
+import { Download, Copy, ExternalLink, Check, Loader2, FileDown } from "lucide-react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { getCardIcon } from "@/lib/card-icons"
@@ -150,12 +150,14 @@ export default function QRCodesPage() {
                   <div className="grid grid-cols-2 gap-2">
                     <Button variant="outline" className="w-full" onClick={() => downloadQR(card.id, card.name, url, card.brandColor)}>
                       <Download className="h-4 w-4 mr-2" />
-                      Descargar
+                      PNG
                     </Button>
-                    <Button variant="outline" className="w-full" onClick={() => window.print()}>
-                      <Printer className="h-4 w-4 mr-2" />
-                      Imprimir
-                    </Button>
+                    <Link href={`/dashboard/qr-codes/${card.id}`} className="w-full">
+                      <Button variant="outline" className="w-full">
+                        <FileDown className="h-4 w-4 mr-2" />
+                        PDF
+                      </Button>
+                    </Link>
                   </div>
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     <Button 
@@ -175,7 +177,7 @@ export default function QRCodesPage() {
                         </>
                       )}
                     </Button>
-                    <Link href={`/join/${card.id}`}>
+                    <Link href={`/dashboard/qr-codes/${card.id}`}>
                       <Button variant="ghost" className="w-full">
                         <ExternalLink className="h-4 w-4 mr-2" />
                         Vista Previa
