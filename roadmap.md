@@ -301,14 +301,9 @@ Custom Domain). Requiere plan Pro y dominio propio verificado.
 
 **Decisión:** Post-MVP. Se evaluará al escalar o cambiar de provider de auth.
 
-### Deuda Técnica — Recompensas Sorpresa en /dashboard/customers
+### Deuda Técnica — Recompensas Sorpresa en /dashboard/customers ✅ Resuelta
 
-La tabla `/dashboard/customers` usa `CustomersTable` compartido, pero el `_count` y la query no incluyen `milestoneClaims`. Los clientes no ven cuántos bonos sorpresa tienen.
-
-**Pendiente:**
-- [ ] Incluir `_count.milestoneClaims` en la query de `GET /dashboard/customers`
-- [ ] Mostrar columna "Bonos" en la tabla (similar a `/dashboard/cards/[id]`)
-- [ ] Si se desea el detalle de recompensas obtenidas, considerar modal o expand row
+La tabla `/dashboard/customers` ya incluye `_count.milestoneClaims` en la query y muestra la columna "Bonos".
 
 ### Issues conocidos
 
@@ -436,7 +431,7 @@ model StampLog {
 
 ### `1.1.0` — Próxima versión en `dev` 🟡 Casi completa
 
-> Incluye Fases 8–13 + QR print/share. El desarrollo funcional base está cerrado. "Recompensas sorpresa" está en planeación activa en rama separada y se integrará antes del release final.
+> Incluye Fases 8–13 + QR print/share + Recompensas sorpresa. El desarrollo funcional base está cerrado.
 
 **Pendiente para liberar `1.1.0`:**
 
@@ -462,7 +457,7 @@ model StampLog {
 
 **Features en planeación para `1.1.0`:**
 
-- [ ] **Recompensas sorpresa** — al canjear, en lugar de recompensa fija, el negocio configura una lista de recompensas posibles; al llegar a N sellos, el sistema elige 1 aleatoriamente y se la asigna al cliente. Inspirado en cofres/recompensas de Clash Royale. Incluye toggle activable por tarjeta, soporte multi-recompensa en schema, UI de configuración en creación/edición, lógica de selección aleatoria en `POST /api/stamps`, y UI de revelación en scan/dashboard.
+- [x] **Recompensas sorpresa** — al sellar en posiciones específicas, el sistema tira probabilidad configurable por milestone (0–100%) y asigna recompensa si acierta. Incluye modelo Prisma (`MilestoneReward`, `CustomerMilestoneClaim`), UI de configuración en creación/edición con slider de rareza (colores Clash Royale) e `IconPicker`, lógica de selección en `POST /api/stamps`, AlertDialog en scan al obtener recompensa, y visualización en stamp grid del dashboard.
 - [ ] **Sidebar unificada con shadcn Sidebar** — `pnpm dlx shadcn@latest add sidebar` y migrar la sidebar actual a la nueva implementación de shadcn/ui (`<SidebarProvider>`, `<Sidebar>`, `<SidebarInset>`), integrando navegación mobile/desktop, menú colapsable por grupo y responsividad.
 - [ ] **Toast con Sonner** — `pnpm dlx shadcn@latest add sonner` y migrar los mensajes de toast/notificación actuales a `<Toaster>` + `toast()` de Sonner, reemplazando los estados de éxito/error manuales
 - [ ] **Tooltip con shadcn Tooltip** — `pnpm dlx shadcn@latest add tooltip` y migrar los tooltips nativos (`title` attr / CSS `:hover`) a `<Tooltip>` de shadcn/ui en IconPicker y otros componentes

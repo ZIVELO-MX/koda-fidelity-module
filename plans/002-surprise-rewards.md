@@ -371,17 +371,17 @@ En `/dashboard/cards/[id]`:
 
 ## 6. Tests
 
-### 6.1 Unitarios — `lib/card-utils.test.ts`
+### 6.1 Unitarios — `lib/card-utils.test.ts` ✅ Completados (7 tests)
 
 | Test | Descripción |
 |---|---|
-| `pickMilestoneReward` selecciona reward cuando roll < probability | Mock Math.random para probar cada rarity |
-| `pickMilestoneReward` retorna null cuando roll >= probability | Probabilidad 30%, roll 0.5 → null |
-| `pickMilestoneReward` con probability 100 siempre gana | 10 iteraciones, todas ganan |
-| `pickMilestoneReward` con probability 0 nunca gana | 10 iteraciones, ninguna gana |
-| `rarityColor` retorna el color correcto para cada rango | 0, 5, 15, 35, 75, 100 |
-| `rarityLabel` retorna el nombre de rareza correcto | Campeón, Legendaria, Épica, Rara, Común |
-| `rarityDescription` retorna texto descriptivo según % | "Todos los clientes", "1 de cada 2", etc. |
+| `pickMilestoneReward` selecciona reward cuando roll < probability | Mock Math.random = 0.2, probabilidad 30% → reward |
+| `pickMilestoneReward` retorna null cuando roll >= probability | Mock Math.random = 0.5, probabilidad 30% → null |
+| `pickMilestoneReward` con probability 100 siempre gana | Mock Math.random = 0.99 → reward |
+| `pickMilestoneReward` con probability 0 nunca gana | Mock Math.random cualquier valor → null |
+| `pickMilestoneReward` solo matchea el stampNumber correcto | Múltiples milestones, mock roll bajo, verifica cada posición |
+| `pickMilestoneReward` retorna null sin milestones | Array vacío → null |
+| `pickMilestoneReward` retorna null sin match | stampNumber sin milestone → null |
 
 ### 6.2 API — `POST /api/stamps`
 
