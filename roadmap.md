@@ -29,7 +29,7 @@
 | Versión | Rama | Estado | Fases incluidas |
 | ------- | ---- | ------ | --------------- |
 | `1.0.0` | `main` | ✅ MVP estable | Fases 0–7. Tarjetas, clientes, QR, join flow, scan, portal cliente, Google OAuth/magic link, caducidad y guards. |
-| `1.1.0` | `dev` | 🟡 En cierre, no liberada | Fases 8–13 + QR print & share. Multiusuario, equipo, UX móvil, operación, archivado/restauración, CI/plans, tabla de clientes compartida, ícono de sello, polish, QR PDF personalizable con preview, descarga QR solo (PNG/SVG) y preview de página de registro. |
+| `1.1.0` | `dev` | 🟡 En cierre, no liberada | Fases 8–13 + QR print & share + UI/UX final polish. Multiusuario, equipo, UX móvil, operación, archivado/restauración, CI/plans, tabla de clientes compartida, ícono de sello, polish responsive, QR PDF personalizable con preview, descarga QR solo (PNG/SVG) y preview de página de registro. |
 | `1.2.0+` | futuras ramas desde `dev` | ⏳ Post-release | Wallets, landing comercial, permisos avanzados, auditoría y mejoras de auth. |
 
 > `main` debe reflejar siempre la última versión estable. `dev` contiene la próxima versión candidata. En este momento los cambios acumulados en `dev` corresponden a `1.1.0`; está casi completa, pero aún requiere cierre de release antes de mergear a `main`.
@@ -431,7 +431,7 @@ model StampLog {
 
 ### `1.1.0` — Próxima versión en `dev` 🟡 Casi completa
 
-> Incluye Fases 8–13 + QR print/share + Recompensas sorpresa. El desarrollo funcional base está cerrado.
+> Incluye Fases 8–13 + QR print/share + Recompensas sorpresa + polish final de UI/UX. El desarrollo funcional base está cerrado; faltan gates finales de release sobre `dev` después de mergear los PRs abiertos.
 
 **Pendiente para liberar `1.1.0`:**
 
@@ -440,6 +440,7 @@ model StampLog {
 - [ ] Ejecutar `pnpm lint`
 - [ ] Ejecutar `pnpm build`
 - [ ] Validar manualmente login admin, login sellador, invitación de equipo, sellado/canje, archivado/restauración y branding con logo/ícono de sello
+- [ ] Validar manualmente el polish responsive de PR #102: picker de íconos sin autofocus, creación/edición de tarjetas en mobile, branding, listados de tarjetas/clientes, QR codes y menú móvil
 - [ ] Confirmar que schema/migraciones de Supabase estén aplicadas en el entorno objetivo
 - [ ] Actualizar `docs/CHANGELOG.md` con resultado final de pruebas
 - [ ] Mergear `dev` a `main` y taggear `v1.1.0`
@@ -454,13 +455,14 @@ model StampLog {
 - [x] **Descarga de QR solo** — botones para descargar el código QR únicamente en PNG y SVG.
 - [x] **Preview de página de registro** — `/dashboard/qr-codes/{cardId}/preview` muestra la UI real de `/join/{cardId}` en modo no funcional, usando el mismo componente compartido `JoinCardLayout`.
 - [x] **UI de QR codes renovada** — página de detalle con layout de dos columnas, preview en vivo, y botones de acción primaria (copiar link, descargar QR solo, probar registro).
+- [x] **Polish responsive final de dashboard** — PR #102 (`feat/ui-ux-polish`) ajusta presentación mobile/desktop en creación/edición de tarjetas, Branding, listados de tarjetas/clientes, QR codes y menú móvil; además elimina el autofocus del buscador en `IconPicker`, mejora estados vacíos, foco visible, `aria-label`/`aria-pressed`, truncado y `break-words` para textos largos.
 
-**Features en planeación para `1.1.0`:**
+**Features en planeación para versiones posteriores:**
 
 - [x] **Recompensas sorpresa** — al sellar en posiciones específicas, el sistema tira probabilidad configurable por milestone (0–100%) y asigna recompensa si acierta. Incluye modelo Prisma (`MilestoneReward`, `CustomerMilestoneClaim`), UI de configuración en creación/edición con slider de rareza (colores Clash Royale) e `IconPicker`, lógica de selección en `POST /api/stamps`, AlertDialog en scan al obtener recompensa, y visualización en stamp grid del dashboard.
-- [ ] **Sidebar unificada con shadcn Sidebar** — `pnpm dlx shadcn@latest add sidebar` y migrar la sidebar actual a la nueva implementación de shadcn/ui (`<SidebarProvider>`, `<Sidebar>`, `<SidebarInset>`), integrando navegación mobile/desktop, menú colapsable por grupo y responsividad.
-- [ ] **Toast con Sonner** — `pnpm dlx shadcn@latest add sonner` y migrar los mensajes de toast/notificación actuales a `<Toaster>` + `toast()` de Sonner, reemplazando los estados de éxito/error manuales
-- [ ] **Tooltip con shadcn Tooltip** — `pnpm dlx shadcn@latest add tooltip` y migrar los tooltips nativos (`title` attr / CSS `:hover`) a `<Tooltip>` de shadcn/ui en IconPicker y otros componentes
+- [ ] **Sidebar unificada con shadcn Sidebar** — refactor post-release: migrar la sidebar actual a la implementación de shadcn/ui (`<SidebarProvider>`, `<Sidebar>`, `<SidebarInset>`), integrando navegación mobile/desktop, menú colapsable por grupo y responsividad. No bloquea `1.1.0` porque la navegación actual ya cubre el mapa mobile/desktop requerido.
+- [ ] **Toast con Sonner** — refactor post-release: migrar mensajes de toast/notificación actuales a `<Toaster>` + `toast()` de Sonner y retirar el toaster legacy.
+- [ ] **Tooltip con shadcn Tooltip** — refactor post-release: `IconPicker` ya usa `Tooltip`; quedan usos puntuales de `title` para información auxiliar (por ejemplo rareza/probabilidad) que pueden migrarse sin bloquear `1.1.0`.
 
 ## Historial del MVP `1.0.0`
 
@@ -572,7 +574,7 @@ model StampLog {
 
 ### Fase 12 — UI Polish + Ícono de Sello ✅ Completada
 
-> Ramas: `feat/ui-polish` (PR #90 → mergeado a `dev`), `hotfix/navbar-header-icons` (PR #93 → `dev`), `feat/branding-stamp-icon-picker` (PR #94 → `dev`)
+> Ramas: `feat/ui-polish` (PR #90 → mergeado a `dev`), `hotfix/navbar-header-icons` (PR #93 → `dev`), `feat/branding-stamp-icon-picker` (PR #94 → `dev`), `feat/ui-ux-polish` (PR #102 → draft contra `dev`)
 
 #### Ícono de Sello y Vista Previa Sellada
 - [x] Campo `stampIconName String?` en `LoyaltyCard` — permite un ícono distinto para las celdas selladas
@@ -580,6 +582,11 @@ model StampLog {
 - [x] Vista previa "sellada" en `/cards/new` y dialog de edición — toggle Normal/Sellada + `IconPicker` secundario para el sello
 - [x] Opción "Logo" en `IconPicker` — si el negocio tiene logo, aparece como opción de ícono de tarjeta/sello
 - [x] Vista previa en `/dashboard/branding` usa `LoyaltyCardPreview` en lugar de preview custom
+- [x] `IconPicker` sin autofocus en el buscador — abrir el picker ya no secuestra el foco ni selecciona visualmente el buscador por defecto
+- [x] `IconPicker` con estado vacío más claro — el trigger sin valor usa icono de agregar en lugar de lupa; opciones con `aria-label`, `aria-pressed`, foco visible y ancho seguro en mobile
+- [x] Polish responsive de formularios de tarjeta — grillas mobile-first para sellos, colores, recompensas sorpresa y preview; botones con `type="button"` donde aplica
+- [x] Polish responsive de listados — tarjetas, clientes y QR codes protegen textos largos con `truncate`, `line-clamp`, `break-words` y acciones apilables en mobile
+- [x] Menú mobile reforzado — panel fullscreen con `role="dialog"`, `aria-modal`, `overscroll-contain` y safe area superior
 
 #### Hotfix — Bugs de Navegación (PR #93)
 
