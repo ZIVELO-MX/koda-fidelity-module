@@ -66,7 +66,7 @@ function makeCustomer(overrides: Partial<{
     name: "Ana",
     stamps,
     isActive,
-    card: { businessId, stampsRequired, reward: "Café gratis", expiresAt },
+    card: { id: "card1", businessId, stampsRequired, reward: "Café gratis", expiresAt, milestoneRewards: [] },
   }
 }
 

@@ -24,7 +24,7 @@ function makeCustomer(overrides: Partial<TableCustomer> = {}): TableCustomer {
     name: "Ana García",
     stamps: 5,
     createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    card: { name: "Café Reward", stampsRequired: 10, reward: "Café gratis" },
+    card: { name: "Café Reward", stampsRequired: 10, reward: "Café gratis", brandColor: "#f97316" },
     _count: { stampsLog: 2 },
     ...overrides,
   }

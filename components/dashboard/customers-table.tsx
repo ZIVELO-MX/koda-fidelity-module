@@ -15,13 +15,15 @@ export interface TableCustomer {
     name: string
     stampsRequired: number
     reward: string
+    brandColor: string
   }
   _count: {
     stampsLog: number
+    milestoneClaims?: number
   }
 }
 
-interface CustomersTableProps {
+export interface CustomersTableProps {
   customers: TableCustomer[]
   sort: SortField
   order: SortOrder
@@ -112,6 +114,9 @@ export function CustomersTable({
               <th className="text-left text-sm font-medium text-muted-foreground px-6 py-4">
                 Canjes
               </th>
+              <th className="text-left text-sm font-medium text-muted-foreground px-6 py-4">
+                Bonos
+              </th>
               <th className="text-right text-sm font-medium text-muted-foreground px-6 py-4">
                 Acciones
               </th>
@@ -170,6 +175,15 @@ export function CustomersTable({
                     <span className="text-sm text-foreground">{customer._count.stampsLog}</span>
                   </div>
                 </td>
+                <td className="px-6 py-4">
+                  {customer._count.milestoneClaims ? (
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-purple-600 bg-purple-50 dark:bg-purple-950/30 px-2 py-0.5 rounded-full">
+                      {customer._count.milestoneClaims}
+                    </span>
+                  ) : (
+                    <span className="text-sm text-muted-foreground/50">—</span>
+                  )}
+                </td>
                 <td className="px-6 py-4 text-right">
                   <CustomerActionsMenu
                     customerId={customer.id}
@@ -177,6 +191,7 @@ export function CustomersTable({
                     currentStamps={customer.stamps}
                     maxStamps={customer.card.stampsRequired}
                     reward={customer.card.reward}
+                    brandColor={customer.card.brandColor}
                   />
                 </td>
               </tr>

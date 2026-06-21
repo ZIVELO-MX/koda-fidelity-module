@@ -9,13 +9,16 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { IconPicker } from "@/components/dashboard/icon-picker"
-import { ArrowLeft, ArrowRight, Check, Sparkles } from "lucide-react"
+import { ArrowLeft, ArrowRight, Check, Sparkles, Gift, Plus, X } from "lucide-react"
+import { getRarityColor, getRarityLabel, getRarityDescription, getRarityRange } from "@/lib/card-utils"
+import { cn } from "@/lib/utils"
 import { ExpirationPicker } from "@/components/dashboard/expiration-picker"
 
 const steps = [
   { id: 1, name: "Datos", description: "Nombre y recompensa" },
   { id: 2, name: "Diseño", description: "Colores y marca" },
-  { id: 3, name: "Revisión", description: "Vista previa y crear" },
+  { id: 3, name: "Sorpresas", description: "Bonos en el camino" },
+  { id: 4, name: "Revisión", description: "Vista previa y crear" },
 ]
 
 const colorPresets = [
@@ -43,6 +46,7 @@ export default function CreateCardPage() {
   const [stampIconName, setStampIconName] = useState<string | null>(null)
   const [businessLogo, setBusinessLogo] = useState<string | null>(null)
   const [previewMode, setPreviewMode] = useState<"normal" | "sellada">("normal")
+  const [milestones, setMilestones] = useState<{ stampNumber: number; label: string; iconName: string | null; probability: number }[]>([])
 
   useEffect(() => {
     fetch("/api/business")
@@ -80,7 +84,7 @@ export default function CreateCardPage() {
 
   const nextStep = () => {
     if (!validateStep(currentStep)) return
-    if (currentStep < 3) setCurrentStep(currentStep + 1)
+    if (currentStep < 4) setCurrentStep(currentStep + 1)
   }
 
   const prevStep = () => {
@@ -106,6 +110,12 @@ export default function CreateCardPage() {
           stampIconName: stampIconName || undefined,
           description: formData.description || undefined,
           expiresAt: formData.expirationDate || undefined,
+          milestoneRewards: milestones.map(m => ({
+            stampNumber: m.stampNumber,
+            label: m.label,
+            iconName: m.iconName,
+            probability: m.probability,
+          })),
         }),
       })
 
@@ -334,8 +344,97 @@ export default function CreateCardPage() {
             </div>
           )}
 
-          {/* Step 3: Review */}
+          {/* Step 3: Surprises */}
           {currentStep === 3 && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-lg font-semibold text-foreground mb-1">Recompensas Sorpresa</h2>
+                <p className="text-sm text-muted-foreground">
+                  Bonos con probabilidad al alcanzar posiciones específicas de sellos
+                </p>
+              </div>
+
+              {milestones.length === 0 && (
+                <p className="text-sm text-muted-foreground py-2">No hay recompensas configuradas.</p>
+              )}
+
+              <div className="space-y-3">
+                {milestones.map((m, i) => (
+                  <div key={i} className="flex flex-wrap items-end gap-3 p-4 bg-muted/30 dark:bg-muted/20 rounded-xl border border-border">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Sello #</Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={formData.maxStamps}
+                        value={m.stampNumber}
+                        onChange={(e) => setMilestones(ms => ms.map((x, j) => j === i ? { ...x, stampNumber: Math.min(formData.maxStamps, Math.max(1, Number(e.target.value))) } : x))}
+                        className="w-20"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-[120px] space-y-1.5">
+                      <Label className="text-xs">Recompensa</Label>
+                      <Input
+                        value={m.label}
+                        onChange={(e) => setMilestones(ms => ms.map((x, j) => j === i ? { ...x, label: e.target.value } : x))}
+                        placeholder="Ej: Café gratis"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Ícono</Label>
+                      <IconPicker value={m.iconName} onChange={(v) => setMilestones(ms => ms.map((x, j) => j === i ? { ...x, iconName: v } : x))} businessLogoUrl={businessLogo} />
+                    </div>
+                    <div className="space-y-1.5 min-w-[180px]">
+                      <Label className="text-xs">Probabilidad</Label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          value={m.probability}
+                          onChange={(e) => setMilestones(ms => ms.map((x, j) => j === i ? { ...x, probability: Number(e.target.value) } : x))}
+                          className="flex-1 h-2 rounded-full appearance-none cursor-pointer border-2"
+                          style={{
+                            accentColor: getRarityColor(m.probability),
+                            borderColor: getRarityColor(m.probability),
+                          }}
+                        />
+                        <span className="text-sm font-mono w-10 text-right">{m.probability}%</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="inline-block w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: getRarityColor(m.probability) }} />
+                        <span className="font-medium w-20 shrink-0">{getRarityLabel(m.probability)}</span>
+                        <span className="text-muted-foreground w-14 shrink-0 text-right" title={getRarityDescription(m.probability)}>{getRarityRange(m.probability)}</span>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => setMilestones(ms => ms.filter((_, j) => j !== i))} className="text-destructive hover:text-destructive">
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              {(() => {
+                const available = Array.from({ length: formData.maxStamps }, (_, i) => i + 1)
+                  .filter(pos => !milestones.some(m => m.stampNumber === pos))
+                return available.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {available.map(pos => (
+                      <Button key={pos} variant="outline" size="sm" onClick={() => setMilestones(ms => [...ms, { stampNumber: pos, label: "", iconName: null, probability: 100 }])}>
+                        <Plus className="h-3 w-3 mr-1" />
+                        Sello #{pos}
+                      </Button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Todas las posiciones tienen recompensa.</p>
+                )
+              })()}
+            </div>
+          )}
+
+          {/* Step 4: Review */}
+          {currentStep === 4 && (
             <div className="space-y-6">
               <div>
                 <h2 className="text-lg font-semibold text-foreground mb-1">Revisión y Creación</h2>
@@ -374,6 +473,14 @@ export default function CreateCardPage() {
                       </span>
                     </div>
                   )}
+                  {milestones.length > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Recompensas sorpresa</span>
+                      <span className="text-sm font-medium text-foreground">
+                        {milestones.length} configurada{milestones.length !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="bg-primary/10 rounded-xl p-4 flex items-start gap-3">
@@ -405,7 +512,7 @@ export default function CreateCardPage() {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Atrás
             </Button>
-            {currentStep < 3 ? (
+            {currentStep < 4 ? (
               <Button onClick={nextStep}>
                 Continuar
                 <ArrowRight className="h-4 w-4 ml-2" />

@@ -21,6 +21,7 @@ interface LoyaltyCardPreviewProps {
   showQR?: boolean
   qrValue?: string
   onMemberClick?: () => void
+  milestoneClaims?: { stampNumber: number; iconName: string | null }[]
 }
 
 export function LoyaltyCardPreview({
@@ -38,8 +39,10 @@ export function LoyaltyCardPreview({
   showQR = true,
   qrValue = "https://fidelity.zivelo.dev/card/demo",
   onMemberClick,
+  milestoneClaims = [],
 }: LoyaltyCardPreviewProps) {
   const stamps = Array.from({ length: maxStamps }, (_, i) => i < currentStamps)
+  const milestonePositions = new Map(milestoneClaims.map(c => [c.stampNumber, c]))
 
   const light = isLight(brandColor)
   const fg = light ? "#1a1a1a" : "#ffffff"
@@ -109,35 +112,50 @@ export function LoyaltyCardPreview({
           </p>
         </div>
         <div className="grid grid-cols-5 gap-2">
-          {stamps.map((filled, i) => (
-            <div
-              key={i}
-              className={cn(
-                "aspect-square rounded-xl flex items-center justify-center",
-                filled
-                  ? "stamp-filled shadow-sm"
-                  : "border-2 border-dashed",
-              )}
-              style={
-                filled
-                  ? {
-                      backgroundColor: stampBg,
-                      transitionDelay: `${i * 55}ms`,
-                    }
-                  : { borderColor: stampBorder }
-              }
-            >
-              {filled && (() => {
-                const effectiveStampIcon = stampIconName ?? iconName
-                if (effectiveStampIcon === "logo" && businessLogo) {
-                  return <img src={businessLogo} alt="" className="w-5 h-5 object-contain rounded" />
+          {stamps.map((filled, i) => {
+            const stampPosition = i + 1
+            const milestoneClaim = milestonePositions.get(stampPosition)
+            const isMilestone = !!milestoneClaim
+
+            return (
+              <div
+                key={i}
+                className={cn(
+                  "aspect-square rounded-xl flex items-center justify-center",
+                  isMilestone && filled
+                    ? "shadow-md"
+                    : filled
+                      ? "stamp-filled shadow-sm"
+                      : "border-2 border-dashed",
+                )}
+                style={
+                  isMilestone && filled
+                    ? { backgroundColor: brandColor, boxShadow: `0 0 0 2px ${light ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.4)"} inset` }
+                    : filled
+                      ? {
+                          backgroundColor: stampBg,
+                          transitionDelay: `${i * 55}ms`,
+                        }
+                      : { borderColor: stampBorder }
                 }
-                const cardIcon = getCardIcon(effectiveStampIcon)
-                const StampIcon = cardIcon?.Icon ?? Stamp
-                return <StampIcon className="w-5 h-5" style={{ color: light ? "#1a1a1a" : brandColor }} strokeWidth={2} />
-              })()}
-            </div>
-          ))}
+              >
+                {filled && (() => {
+                  if (isMilestone) {
+                    const milestoneIcon = getCardIcon(milestoneClaim.iconName)
+                    const MilestoneIconComp = milestoneIcon?.Icon ?? Stamp
+                    return <MilestoneIconComp className="w-5 h-5" style={{ color: light ? "rgba(0,0,0,0.7)" : "#ffffff" }} strokeWidth={2} />
+                  }
+                  const effectiveStampIcon = stampIconName ?? iconName
+                  if (effectiveStampIcon === "logo" && businessLogo) {
+                    return <img src={businessLogo} alt="" className="w-5 h-5 object-contain rounded" />
+                  }
+                  const cardIcon = getCardIcon(effectiveStampIcon)
+                  const StampIcon = cardIcon?.Icon ?? Stamp
+                  return <StampIcon className="w-5 h-5" style={{ color: light ? "#1a1a1a" : brandColor }} strokeWidth={2} />
+                })()}
+              </div>
+            )
+          })}
         </div>
       </div>
 

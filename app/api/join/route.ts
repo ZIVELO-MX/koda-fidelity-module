@@ -122,18 +122,31 @@ import { isExpired } from "@/lib/card-utils"
  *               $ref: '#/components/schemas/Error'
  */
 
-const cardInclude = {
+const customerInclude = {
   card: {
     select: {
+      id: true,
       name: true,
       stampsRequired: true,
       reward: true,
       brandColor: true,
       iconName: true,
+      stampIconName: true,
       isActive: true,
       expiresAt: true,
       business: { select: { name: true, brandColor: true, logoUrl: true, iconName: true } },
+      milestoneRewards: { select: { stampNumber: true, iconName: true, label: true } },
     },
+  },
+  milestoneClaims: {
+    select: {
+      id: true,
+      label: true,
+      iconName: true,
+      createdAt: true,
+      milestone: { select: { stampNumber: true, iconName: true } },
+    },
+    orderBy: { createdAt: "desc" },
   },
 } as const
 
@@ -198,7 +211,7 @@ export async function GET(request: NextRequest) {
 
       const customer = await prisma.customer.findUnique({
         where: { id },
-        include: cardInclude,
+        include: customerInclude,
       })
       if (!customer) throw new NotFoundError("Customer not found")
 
@@ -225,7 +238,7 @@ export async function GET(request: NextRequest) {
 
       const customers = await prisma.customer.findMany({
         where,
-        include: cardInclude,
+        include: customerInclude,
         orderBy: { createdAt: "desc" },
       })
 

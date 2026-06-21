@@ -28,13 +28,23 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
+interface MilestoneClaim {
+  id: string
+  label: string
+  iconName: string | null
+  createdAt: string
+  milestone: { stampNumber: number; iconName: string | null }
+}
+
 interface MyCard {
   id: string
   name: string
   stamps: number
   isActive: boolean
   createdAt: string
+  milestoneClaims: MilestoneClaim[]
   card: {
+    id: string
     name: string
     stampsRequired: number
     reward: string
@@ -485,6 +495,7 @@ export default function DashboardMyCardsPage() {
                                   brandColor={c.card.brandColor}
                                   showQR={true}
                                   qrValue={c.id}
+                                  milestoneClaims={c.milestoneClaims.map(cl => ({ stampNumber: cl.milestone.stampNumber, iconName: cl.iconName }))}
                                 />
                                 <p className="text-xs text-muted-foreground text-center">
                                   Muestra este código QR en el negocio para acumular sellos

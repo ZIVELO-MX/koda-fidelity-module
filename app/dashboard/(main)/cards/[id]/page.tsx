@@ -35,10 +35,16 @@ export default async function CardDetailPage({
     where: { id },
     include: {
       _count: { select: { customers: { where: { isActive: true } } } },
+      milestoneRewards: { orderBy: { stampNumber: "asc" } },
       customers: {
         where: { isActive: true },
         include: {
-          _count: { select: { stampsLog: { where: { type: "redeem" } } } },
+              _count: {
+                select: {
+                  stampsLog: { where: { type: "redeem" } },
+                  milestoneClaims: true,
+                },
+              },
         },
         orderBy: { [sort]: order },
       },
@@ -63,7 +69,7 @@ export default async function CardDetailPage({
 
   const tableCustomers = filteredCustomers.map((c) => ({
     ...c,
-    card: { name: card.name, stampsRequired: card.stampsRequired, reward: card.reward },
+    card: { name: card.name, stampsRequired: card.stampsRequired, reward: card.reward, brandColor: card.brandColor },
   }))
 
   const basePath = `/dashboard/cards/${id}`
@@ -126,6 +132,7 @@ export default async function CardDetailPage({
           initialIcon={card.iconName}
           initialStampIcon={card.stampIconName}
           initialDescription={card.description}
+          initialMilestones={card.milestoneRewards}
         />
       </div>
 

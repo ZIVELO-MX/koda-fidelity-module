@@ -21,6 +21,17 @@ import {
   AlertTriangle,
 } from "lucide-react"
 import { daysUntilExpiry } from "@/lib/card-utils"
+import { getCardIcon } from "@/lib/card-icons"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface SearchCustomer {
   id: string
@@ -45,6 +56,7 @@ function ScanPageInner() {
   const [searching, setSearching] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
+  const [milestoneClaim, setMilestoneClaim] = useState<{ id: string; label: string; iconName: string | null } | null>(null)
   const [useCamera, setUseCamera] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
 
@@ -121,6 +133,7 @@ function ScanPageInner() {
         setScanState("redeemed")
       } else {
         setSelectedCustomer({ ...selectedCustomer, stamps: selectedCustomer.stamps + 1 })
+        setMilestoneClaim(data.milestoneClaim ?? null)
         setScanState("stamped")
       }
     } catch (err) {
@@ -136,6 +149,7 @@ function ScanPageInner() {
     setSearchQuery("")
     setSearchResults([])
     setActionError(null)
+    setMilestoneClaim(null)
     setCameraError(null)
   }
 
@@ -410,6 +424,39 @@ function ScanPageInner() {
                   </div>
                 </div>
               )}
+
+              {milestoneClaim && (() => {
+                const milestoneIcon = getCardIcon(milestoneClaim.iconName)
+                const MilestoneIconComp = milestoneIcon?.Icon
+                return (
+                  <AlertDialog open={true} onOpenChange={(o) => { if (!o) setMilestoneClaim(null) }}>
+                    <AlertDialogContent className="max-w-sm">
+                      <AlertDialogHeader>
+                        <div className="mx-auto w-14 h-14 rounded-full flex items-center justify-center mb-2"
+                          style={{ backgroundColor: selectedCustomer?.cardBrandColor ?? "#f97316" }}>
+                          {MilestoneIconComp ? <MilestoneIconComp className="h-7 w-7 text-white" /> : <Gift className="h-7 w-7 text-white" />}
+                        </div>
+                        <AlertDialogTitle className="text-center text-xl">¡Bono Sorpresa!</AlertDialogTitle>
+                        <AlertDialogDescription className="text-center text-base">
+                          <strong className="text-foreground">{selectedCustomer?.name}</strong> obtuvo <strong className="text-foreground">{milestoneClaim.label}</strong>
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg px-4 py-3 text-sm text-amber-700 dark:text-amber-400 text-center">
+                        Notifica al cliente sobre su recompensa
+                      </div>
+                      <AlertDialogFooter className="sm:justify-center gap-2">
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          className="text-white"
+                          style={{ backgroundColor: selectedCustomer?.cardBrandColor ?? "#f97316" }}
+                        >
+                          Canjear recompensa
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )
+              })()}
 
               {scanState === "stamped" && (() => {
                 const days = daysUntilExpiry(selectedCustomer.cardExpiresAt)

@@ -301,6 +301,10 @@ Custom Domain). Requiere plan Pro y dominio propio verificado.
 
 **Decisión:** Post-MVP. Se evaluará al escalar o cambiar de provider de auth.
 
+### Deuda Técnica — Recompensas Sorpresa en /dashboard/customers ✅ Resuelta
+
+La tabla `/dashboard/customers` ya incluye `_count.milestoneClaims` en la query y muestra la columna "Bonos".
+
 ### Issues conocidos
 
 - ~~**📷 Cámara en escáner QR no funciona**~~ ✅ Resuelto — se reemplazó `html5-qrcode` por `@yudiel/react-qr-scanner` (usa Barcode Detection API con fallback ZXing). Ver PR `fix/qr-scanner-library`.
@@ -427,7 +431,7 @@ model StampLog {
 
 ### `1.1.0` — Próxima versión en `dev` 🟡 Casi completa
 
-> Incluye Fases 8–13 + QR print/share. El desarrollo funcional base está cerrado. "Recompensas sorpresa" está en planeación activa en rama separada y se integrará antes del release final.
+> Incluye Fases 8–13 + QR print/share + Recompensas sorpresa. El desarrollo funcional base está cerrado.
 
 **Pendiente para liberar `1.1.0`:**
 
@@ -453,7 +457,10 @@ model StampLog {
 
 **Features en planeación para `1.1.0`:**
 
-- [ ] **Recompensas sorpresa** — al canjear, en lugar de recompensa fija, el negocio configura una lista de recompensas posibles; al llegar a N sellos, el sistema elige 1 aleatoriamente y se la asigna al cliente. Inspirado en cofres/recompensas de Clash Royale. Incluye toggle activable por tarjeta, soporte multi-recompensa en schema, UI de configuración en creación/edición, lógica de selección aleatoria en `POST /api/stamps`, y UI de revelación en scan/dashboard.
+- [x] **Recompensas sorpresa** — al sellar en posiciones específicas, el sistema tira probabilidad configurable por milestone (0–100%) y asigna recompensa si acierta. Incluye modelo Prisma (`MilestoneReward`, `CustomerMilestoneClaim`), UI de configuración en creación/edición con slider de rareza (colores Clash Royale) e `IconPicker`, lógica de selección en `POST /api/stamps`, AlertDialog en scan al obtener recompensa, y visualización en stamp grid del dashboard.
+- [ ] **Sidebar unificada con shadcn Sidebar** — `pnpm dlx shadcn@latest add sidebar` y migrar la sidebar actual a la nueva implementación de shadcn/ui (`<SidebarProvider>`, `<Sidebar>`, `<SidebarInset>`), integrando navegación mobile/desktop, menú colapsable por grupo y responsividad.
+- [ ] **Toast con Sonner** — `pnpm dlx shadcn@latest add sonner` y migrar los mensajes de toast/notificación actuales a `<Toaster>` + `toast()` de Sonner, reemplazando los estados de éxito/error manuales
+- [ ] **Tooltip con shadcn Tooltip** — `pnpm dlx shadcn@latest add tooltip` y migrar los tooltips nativos (`title` attr / CSS `:hover`) a `<Tooltip>` de shadcn/ui en IconPicker y otros componentes
 
 ## Historial del MVP `1.0.0`
 
@@ -615,6 +622,16 @@ model StampLog {
 - [ ] Guardar `LoyaltyCard.cardTheme String @default("auto")` con valores `"auto"`, `"light"`, `"dark"`
 - [ ] `LoyaltyCardPreview` recibe prop `cardTheme?: "auto" | "light" | "dark"` y aplica la paleta correcta de foreground/background para texto y stamps
 
+#### Color de texto configurable para tarjetas (blanco / negro)
+
+> Cuando el `brandColor` es muy claro, el texto blanco de la tarjeta queda ilegible. Se necesita permitir elegir el color del texto.
+
+- [ ] Agregar campo `textColor String @default("white")` al modelo `LoyaltyCard` en Prisma
+- [ ] Crear migración para el nuevo campo
+- [ ] Agregar radio button o toggle en el dialog de edición y en el wizard de creación (`/cards/new`)
+- [ ] `LoyaltyCardPreview` acepta prop `textColor` y aplica `text-white` o `text-black` según corresponda
+- [ ] Propagar `textColor` en todas las vistas: detalle de tarjeta, join flow, my-cards, scan, etc.
+
 #### Avatar / foto de perfil
 
 - [ ] Subir/cambiar avatar del negocio con flujo similar al logo en Branding
@@ -623,6 +640,12 @@ model StampLog {
 - [ ] Evaluar `avatarUrl` para `Customer` en portal de cliente
 
 ---
+
+### Backlog
+
+> Ideas y tareas priorizadas para sprints futuros, sin fecha asignada.
+
+- [ ] **Estados vacíos con shadcn Empty** — agregar `pnpm dlx shadcn@latest add empty` y reemplazar las secciones sin datos (clientes, actividad reciente, etc.) con el componente `Empty` de shadcn/ui, eliminando los textos planos actuales
 
 ### Post-MVP — Landing Page
 
