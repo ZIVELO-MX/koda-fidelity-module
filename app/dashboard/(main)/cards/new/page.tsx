@@ -142,13 +142,13 @@ export default function CreateCardPage() {
           <ArrowLeft className="h-4 w-4" />
           Volver a tarjetas
         </Link>
-        <h1 className="text-2xl font-bold text-foreground">Crear Tarjeta de Lealtad</h1>
+        <h1 className="text-2xl font-bold text-foreground text-balance">Crear Tarjeta de Lealtad</h1>
         <p className="text-muted-foreground">Configura una nueva tarjeta de lealtad en pocos pasos</p>
       </div>
 
       {/* Progress Steps */}
       <div className="mb-8">
-        <div className="flex items-center justify-between max-w-md">
+        <div className="flex w-full max-w-md items-start justify-between overflow-x-auto pb-1">
           {steps.map((step, index) => (
             <div key={step.id} className="flex items-center">
               <div className="flex flex-col items-center">
@@ -171,12 +171,12 @@ export default function CreateCardPage() {
                   <p className={`text-sm font-medium ${currentStep >= step.id ? "text-foreground" : "text-muted-foreground"}`}>
                     {step.name}
                   </p>
-                  <p className="text-xs text-muted-foreground hidden sm:block">{step.description}</p>
+                    <p className="hidden text-xs text-muted-foreground sm:block">{step.description}</p>
                 </div>
               </div>
               {index < steps.length - 1 && (
                 <div
-                  className={`h-0.5 w-16 sm:w-24 mx-2 mt-[-24px] ${
+                  className={`mx-2 mt-5 h-0.5 w-10 shrink-0 sm:w-24 ${
                     currentStep > step.id ? "bg-primary" : "bg-muted"
                   }`}
                 />
@@ -186,7 +186,7 @@ export default function CreateCardPage() {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-8">
+      <div className="grid gap-8 lg:grid-cols-2">
         {/* Form */}
         <div className="bg-card rounded-2xl p-6 border border-border">
           {/* Step 1: Basics */}
@@ -204,6 +204,7 @@ export default function CreateCardPage() {
                   <Label htmlFor="cardName">Nombre de la Tarjeta</Label>
                   <Input
                     id="cardName"
+                    name="cardName"
                     placeholder="Ej.: Recompensas Café"
                     value={formData.cardName}
                     onChange={(e) => { updateFormData("cardName", e.target.value); setErrors((prev) => ({ ...prev, cardName: "" })) }}
@@ -219,7 +220,8 @@ export default function CreateCardPage() {
                   <Label htmlFor="reward">Recompensa</Label>
                   <Input
                     id="reward"
-                    placeholder="Ej: Café Gratis"
+                    name="reward"
+                    placeholder="Ej.: Café Gratis"
                     value={formData.reward}
                     onChange={(e) => { updateFormData("reward", e.target.value); setErrors((prev) => ({ ...prev, reward: "" })) }}
                     aria-invalid={!!errors.reward}
@@ -232,12 +234,14 @@ export default function CreateCardPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="maxStamps">Sellos Requeridos</Label>
-                  <div className="flex items-center gap-3">
+                  <div className="grid grid-cols-5 gap-2 sm:flex sm:items-center sm:gap-3">
                     {[5, 8, 10, 12, 15].map((num) => (
                       <button
                         key={num}
+                        type="button"
+                        aria-pressed={formData.maxStamps === num}
                         onClick={() => updateFormData("maxStamps", num)}
-                        className={`w-12 h-12 rounded-xl font-semibold transition-all ${
+                        className={`h-11 rounded-xl font-semibold transition-[background-color,color,box-shadow] focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:h-12 sm:w-12 ${
                           formData.maxStamps === num
                             ? "bg-primary text-primary-foreground"
                             : "bg-muted text-foreground hover:bg-muted/80"
@@ -264,7 +268,8 @@ export default function CreateCardPage() {
                   <Label htmlFor="description">Descripción (opcional)</Label>
                   <Textarea
                     id="description"
-                    placeholder="Agrega detalles sobre tu programa de lealtad..."
+                    name="description"
+                    placeholder="Agrega detalles sobre tu programa de lealtad…"
                     value={formData.description}
                     onChange={(e) => updateFormData("description", e.target.value)}
                     rows={3}
@@ -289,6 +294,7 @@ export default function CreateCardPage() {
                   <Label htmlFor="businessName">Nombre del Negocio</Label>
                   <Input
                     id="businessName"
+                    name="businessName"
                     placeholder="Nombre de tu Negocio"
                     value={formData.businessName}
                     onChange={(e) => updateFormData("businessName", e.target.value)}
@@ -301,8 +307,11 @@ export default function CreateCardPage() {
                     {colorPresets.map((color) => (
                       <button
                         key={color.value}
+                        type="button"
                         onClick={() => updateFormData("brandColor", color.value)}
-                        className={`w-full aspect-square rounded-xl transition-all ${
+                        aria-label={color.name}
+                        aria-pressed={formData.brandColor === color.value}
+                        className={`aspect-square w-full rounded-xl transition-transform focus-visible:ring-[3px] focus-visible:ring-ring/50 ${
                           formData.brandColor === color.value
                             ? "ring-2 ring-offset-2 ring-foreground scale-110"
                             : "hover:scale-105"
@@ -312,18 +321,20 @@ export default function CreateCardPage() {
                       />
                     ))}
                   </div>
-                  <div className="flex items-center gap-3 mt-4">
+                  <div className="mt-4 grid gap-3 sm:flex sm:items-center">
                     <Label htmlFor="customColor" className="text-sm text-muted-foreground">
                       Personalizado:
                     </Label>
                     <input
                       type="color"
                       id="customColor"
+                      name="customColor"
                       value={formData.brandColor}
                       onChange={(e) => updateFormData("brandColor", e.target.value)}
                       className="w-10 h-10 rounded-lg cursor-pointer border-0"
                     />
                     <Input
+                      name="brandColor"
                       value={formData.brandColor}
                       onChange={(e) => updateFormData("brandColor", e.target.value)}
                       className="w-28 font-mono text-sm"
@@ -360,11 +371,12 @@ export default function CreateCardPage() {
 
               <div className="space-y-3">
                 {milestones.map((m, i) => (
-                  <div key={i} className="flex flex-wrap items-end gap-3 p-4 bg-muted/30 dark:bg-muted/20 rounded-xl border border-border">
+                  <div key={i} className="grid gap-3 rounded-xl border border-border bg-muted/30 p-4 dark:bg-muted/20 sm:grid-cols-[5rem_minmax(0,1fr)_auto_minmax(11rem,1fr)_auto] sm:items-end">
                     <div className="space-y-1.5">
                       <Label className="text-xs">Sello #</Label>
                       <Input
                         type="number"
+                        name={`milestone-${i}-stamp`}
                         min={1}
                         max={formData.maxStamps}
                         value={m.stampNumber}
@@ -377,7 +389,8 @@ export default function CreateCardPage() {
                       <Input
                         value={m.label}
                         onChange={(e) => setMilestones(ms => ms.map((x, j) => j === i ? { ...x, label: e.target.value } : x))}
-                        placeholder="Ej: Café gratis"
+                        name={`milestone-${i}-label`}
+                        placeholder="Ej.: Café gratis"
                       />
                     </div>
                     <div className="space-y-1.5">
@@ -389,6 +402,7 @@ export default function CreateCardPage() {
                       <div className="flex items-center gap-2">
                         <input
                           type="range"
+                          name={`milestone-${i}-probability`}
                           min={0}
                           max={100}
                           value={m.probability}
@@ -407,8 +421,8 @@ export default function CreateCardPage() {
                         <span className="text-muted-foreground w-14 shrink-0 text-right" title={getRarityDescription(m.probability)}>{getRarityRange(m.probability)}</span>
                       </div>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => setMilestones(ms => ms.filter((_, j) => j !== i))} className="text-destructive hover:text-destructive">
-                      <X className="h-4 w-4" />
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setMilestones(ms => ms.filter((_, j) => j !== i))} className="text-destructive hover:text-destructive sm:self-center" aria-label="Eliminar recompensa sorpresa">
+                      <X className="h-4 w-4" aria-hidden="true" />
                     </Button>
                   </div>
                 ))}
@@ -420,8 +434,8 @@ export default function CreateCardPage() {
                 return available.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {available.map(pos => (
-                      <Button key={pos} variant="outline" size="sm" onClick={() => setMilestones(ms => [...ms, { stampNumber: pos, label: "", iconName: null, probability: 100 }])}>
-                        <Plus className="h-3 w-3 mr-1" />
+                      <Button key={pos} type="button" variant="outline" size="sm" onClick={() => setMilestones(ms => [...ms, { stampNumber: pos, label: "", iconName: null, probability: 100 }])}>
+                        <Plus className="h-3 w-3 mr-1" aria-hidden="true" />
                         Sello #{pos}
                       </Button>
                     ))}
@@ -445,25 +459,25 @@ export default function CreateCardPage() {
 
               <div className="space-y-4">
                 <div className="bg-muted/50 rounded-xl p-4 space-y-3">
-                  <div className="flex justify-between">
+                  <div className="flex justify-between gap-4">
                     <span className="text-sm text-muted-foreground">Nombre de Tarjeta</span>
-                    <span className="text-sm font-medium text-foreground">
+                    <span className="min-w-0 break-words text-right text-sm font-medium text-foreground">
                       {formData.cardName || "Not set"}
                     </span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between gap-4">
                     <span className="text-sm text-muted-foreground">Recompensa</span>
-                    <span className="text-sm font-medium text-foreground">
+                    <span className="min-w-0 break-words text-right text-sm font-medium text-foreground">
                       {formData.reward || "Not set"}
                     </span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between gap-4">
                     <span className="text-sm text-muted-foreground">Sellos Requeridos</span>
                     <span className="text-sm font-medium text-foreground">{formData.maxStamps}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between gap-4">
                     <span className="text-sm text-muted-foreground">Nombre del Negocio</span>
-                    <span className="text-sm font-medium text-foreground">{formData.businessName}</span>
+                    <span className="min-w-0 break-words text-right text-sm font-medium text-foreground">{formData.businessName}</span>
                   </div>
                   {formData.expirationDate && (
                     <div className="flex justify-between">
@@ -503,8 +517,9 @@ export default function CreateCardPage() {
           )}
 
           {/* Navigation */}
-          <div className="flex items-center justify-between mt-6 pt-6 border-t border-border">
+          <div className="mt-6 flex items-center justify-between gap-3 border-t border-border pt-6">
             <Button
+              type="button"
               variant="outline"
               onClick={prevStep}
               disabled={currentStep === 1}
@@ -513,14 +528,14 @@ export default function CreateCardPage() {
               Atrás
             </Button>
             {currentStep < 4 ? (
-              <Button onClick={nextStep}>
+              <Button type="button" onClick={nextStep}>
                 Continuar
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             ) : (
-              <Button onClick={handleCreate} disabled={saving}>
+              <Button type="button" onClick={handleCreate} disabled={saving}>
                 <Check className="h-4 w-4 mr-2" />
-                {saving ? "Creando..." : "Crear Tarjeta"}
+                {saving ? "Creando…" : "Crear Tarjeta"}
               </Button>
             )}
           </div>
@@ -529,20 +544,22 @@ export default function CreateCardPage() {
         {/* Preview */}
         <div className="lg:sticky lg:top-24 h-fit">
           <div className="bg-muted/30 rounded-2xl p-8 border border-border">
-            <div className="flex items-center justify-between mb-6">
+            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h3 className="text-sm font-medium text-muted-foreground">Vista Previa</h3>
-              <div className="flex rounded-lg overflow-hidden border border-border text-xs">
+              <div className="flex w-full overflow-hidden rounded-lg border border-border text-xs sm:w-auto">
                 <button
                   type="button"
+                  aria-pressed={previewMode === "normal"}
                   onClick={() => setPreviewMode("normal")}
-                  className={`px-3 py-1.5 transition-colors ${previewMode === "normal" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground"}`}
+                  className={`flex-1 px-3 py-1.5 transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:flex-none ${previewMode === "normal" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground"}`}
                 >
                   Normal
                 </button>
                 <button
                   type="button"
+                  aria-pressed={previewMode === "sellada"}
                   onClick={() => setPreviewMode("sellada")}
-                  className={`px-3 py-1.5 transition-colors ${previewMode === "sellada" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground"}`}
+                  className={`flex-1 px-3 py-1.5 transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:flex-none ${previewMode === "sellada" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground"}`}
                 >
                   Sellada
                 </button>

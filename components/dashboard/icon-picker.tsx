@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useId } from "react"
 import { CARD_ICONS, getCardIcon } from "@/lib/card-icons"
 import { cn } from "@/lib/utils"
-import { X, Search } from "lucide-react"
+import { X, Search, Plus } from "lucide-react"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 
@@ -16,6 +16,7 @@ interface IconPickerProps {
 export function IconPicker({ value, onChange, businessLogoUrl }: IconPickerProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
+  const searchId = useId()
 
   const filtered = useMemo(() => {
     if (!query.trim()) return CARD_ICONS
@@ -30,9 +31,10 @@ export function IconPicker({ value, onChange, businessLogoUrl }: IconPickerProps
       <PopoverTrigger asChild>
         <button
           type="button"
+          aria-label={selected?.label ? `Ícono seleccionado: ${selected.label}` : "Seleccionar ícono"}
           title={selected?.label ?? "Seleccionar ícono"}
           className={cn(
-            "flex items-center justify-center w-10 h-10 rounded-xl border-2 transition-all",
+            "flex h-10 w-10 items-center justify-center rounded-xl border-2 transition-[border-color,background-color,color,box-shadow] focus-visible:ring-[3px] focus-visible:ring-ring/50",
             value
               ? "border-primary bg-primary/10 text-primary"
               : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground",
@@ -41,22 +43,25 @@ export function IconPicker({ value, onChange, businessLogoUrl }: IconPickerProps
           {value === "logo" && businessLogoUrl ? (
             <img src={businessLogoUrl} alt="" className="h-5 w-5 object-contain rounded" />
           ) : selected ? (
-            <selected.Icon className="h-5 w-5" />
+            <selected.Icon className="h-5 w-5" aria-hidden="true" />
           ) : (
-            <Search className="h-4 w-4" />
+            <Plus className="h-4 w-4" aria-hidden="true" />
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" side="bottom" className="w-64 p-2">
+      <PopoverContent align="start" side="bottom" className="w-[min(18rem,calc(100vw-2rem))] p-2">
         <div className="relative mb-2">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <label htmlFor={searchId} className="sr-only">Buscar ícono</label>
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <input
+            id={searchId}
+            name="icon-search"
             type="text"
-            placeholder="Buscar ícono..."
+            placeholder="Buscar ícono…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full h-9 pl-9 pr-3 rounded-lg border border-border bg-background text-sm outline-none focus:border-primary transition-colors"
-            autoFocus
+            autoComplete="off"
+            className="h-9 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           />
         </div>
 
@@ -64,8 +69,9 @@ export function IconPicker({ value, onChange, businessLogoUrl }: IconPickerProps
           <button
             type="button"
             onClick={() => { onChange(value === "logo" ? null : "logo"); setOpen(false); setQuery("") }}
+            aria-pressed={value === "logo"}
             className={cn(
-              "flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm transition-colors",
+              "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50",
               value === "logo"
                 ? "bg-primary/10 text-primary"
                 : "hover:bg-muted text-foreground",
@@ -74,7 +80,7 @@ export function IconPicker({ value, onChange, businessLogoUrl }: IconPickerProps
             <div className="w-8 h-8 rounded-lg border border-border flex items-center justify-center bg-card shrink-0">
               <img src={businessLogoUrl} alt="" className="h-4 w-4 object-contain rounded" />
             </div>
-            <span>Logo del negocio</span>
+            <span className="min-w-0 truncate">Logo del negocio</span>
           </button>
         )}
 
@@ -88,14 +94,16 @@ export function IconPicker({ value, onChange, businessLogoUrl }: IconPickerProps
                   <button
                     type="button"
                     onClick={() => { onChange(value === name ? null : name); setOpen(false); setQuery("") }}
+                    aria-label={label}
+                    aria-pressed={value === name}
                     className={cn(
-                      "flex items-center justify-center w-9 h-9 rounded-lg border transition-all",
+                      "flex h-9 w-9 items-center justify-center rounded-lg border transition-[border-color,background-color,color,box-shadow] focus-visible:ring-[3px] focus-visible:ring-ring/50",
                       value === name
                         ? "border-primary bg-primary/10 text-primary"
                         : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="top">{label}</TooltipContent>
@@ -108,9 +116,9 @@ export function IconPicker({ value, onChange, businessLogoUrl }: IconPickerProps
           <button
             type="button"
             onClick={() => { onChange(null); setOpen(false); setQuery("") }}
-            className="flex items-center gap-2 w-full mt-2 px-3 py-2 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors"
+            className="mt-2 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10 focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4" aria-hidden="true" />
             Quitar ícono
           </button>
         )}

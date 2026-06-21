@@ -58,10 +58,10 @@ export function buildSortLink(
 }
 
 function SortIcon({ field, currentSort, currentOrder }: { field: SortField; currentSort: SortField; currentOrder: SortOrder }) {
-  if (field !== currentSort) return <ChevronsUpDown className="h-3.5 w-3.5 opacity-40 shrink-0" />
+  if (field !== currentSort) return <ChevronsUpDown className="h-3.5 w-3.5 opacity-40 shrink-0" aria-hidden="true" />
   return currentOrder === "asc"
-    ? <ChevronUp className="h-3.5 w-3.5 shrink-0" />
-    : <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+    ? <ChevronUp className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+    : <ChevronDown className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
 }
 
 export function CustomersTable({
@@ -76,13 +76,13 @@ export function CustomersTable({
   return (
     <div className="bg-card rounded-2xl border border-border overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full min-w-[760px]">
           <thead>
             <tr className="border-b border-border bg-muted/30">
               <th className="text-left text-sm font-medium text-muted-foreground px-6 py-4">
                 <Link
                   href={buildSortLink("name", sort, order, baseParams, basePath)}
-                  className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+                  className="inline-flex items-center gap-1 transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
                 >
                   Cliente
                   <SortIcon field="name" currentSort={sort} currentOrder={order} />
@@ -96,7 +96,7 @@ export function CustomersTable({
               <th className="text-left text-sm font-medium text-muted-foreground px-6 py-4">
                 <Link
                   href={buildSortLink("stamps", sort, order, baseParams, basePath)}
-                  className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+                  className="inline-flex items-center gap-1 transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
                 >
                   Progreso
                   <SortIcon field="stamps" currentSort={sort} currentOrder={order} />
@@ -105,7 +105,7 @@ export function CustomersTable({
               <th className="text-left text-sm font-medium text-muted-foreground px-6 py-4">
                 <Link
                   href={buildSortLink("createdAt", sort, order, baseParams, basePath)}
-                  className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+                  className="inline-flex items-center gap-1 transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
                 >
                   Registro
                   <SortIcon field="createdAt" currentSort={sort} currentOrder={order} />
@@ -126,19 +126,19 @@ export function CustomersTable({
             {customers.map((customer) => (
               <tr key={customer.id} className="hover:bg-muted/30 transition-colors">
                 <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
                     <Avatar className="h-10 w-10">
                       <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
-                        {customer.name.split(" ").map(n => n[0]).join("")}
+                        {customer.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
                       </AvatarFallback>
                     </Avatar>
-                    <p className="font-medium text-foreground">{customer.name}</p>
+                    <p className="min-w-0 max-w-[14rem] truncate font-medium text-foreground">{customer.name}</p>
                   </div>
                 </td>
                 {showCardColumn && (
                   <td className="px-6 py-4">
                     <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                      {customer.card.name}
+                      <span className="inline-block max-w-[10rem] truncate align-bottom">{customer.card.name}</span>
                     </span>
                   </td>
                 )}
@@ -147,7 +147,7 @@ export function CustomersTable({
                     <div className="flex-1 min-w-[80px] max-w-[120px]">
                       <div className="h-2 bg-muted rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-primary rounded-full transition-all"
+                          className="h-full bg-primary rounded-full transition-[width]"
                           style={{ width: `${Math.min((customer.stamps / customer.card.stampsRequired) * 100, 100)}%` }}
                         />
                       </div>
@@ -165,13 +165,13 @@ export function CustomersTable({
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
+                    <Calendar className="h-4 w-4" aria-hidden="true" />
                     {timeAgo(customer.createdAt)}
                   </div>
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
-                    <Stamp className="h-4 w-4 text-muted-foreground" />
+                    <Stamp className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                     <span className="text-sm text-foreground">{customer._count.stampsLog}</span>
                   </div>
                 </td>

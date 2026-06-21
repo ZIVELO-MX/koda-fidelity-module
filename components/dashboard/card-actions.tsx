@@ -202,30 +202,30 @@ export function CardActions({
 
   return (
     <>
-      <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="sm" onClick={openEdit}>
-          <Pencil className="h-4 w-4 mr-2" />
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+        <Button type="button" variant="outline" size="sm" onClick={openEdit} className="w-full sm:w-auto">
+          <Pencil className="h-4 w-4 mr-2" aria-hidden="true" />
           Editar
         </Button>
         <Link href={`/dashboard/qr-codes/${cardId}`}>
-          <Button variant="outline" size="sm">
-            <QrCode className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm" className="w-full sm:w-auto">
+            <QrCode className="h-4 w-4 mr-2" aria-hidden="true" />
             Código QR
           </Button>
         </Link>
-        <Button variant="outline" size="sm" onClick={() => setArchiveOpen(true)} disabled={archiving}>
+        <Button type="button" variant="outline" size="sm" onClick={() => setArchiveOpen(true)} disabled={archiving} className="w-full sm:w-auto">
           {archiving ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
           ) : (
-            <Archive className="h-4 w-4 mr-2" />
+            <Archive className="h-4 w-4 mr-2" aria-hidden="true" />
           )}
           Archivar
         </Button>
-        <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)} disabled={deleting} className="text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30">
+        <Button type="button" variant="outline" size="sm" onClick={() => setDeleteOpen(true)} disabled={deleting} className="w-full border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive sm:w-auto">
           {deleting ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
           ) : (
-            <Trash2 className="h-4 w-4 mr-2" />
+            <Trash2 className="h-4 w-4 mr-2" aria-hidden="true" />
           )}
           Eliminar
         </Button>
@@ -235,7 +235,7 @@ export function CardActions({
 
       {/* ── Edit Dialog ── */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-h-[90vh] w-[calc(100vw-2rem)] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>Editar Tarjeta</DialogTitle>
           </DialogHeader>
@@ -249,8 +249,9 @@ export function CardActions({
                   <button
                     type="button"
                     onClick={() => setPreviewMode("normal")}
+                    aria-pressed={previewMode === "normal"}
                     className={cn(
-                      "px-2.5 py-1 transition-colors",
+                      "px-2.5 py-1 transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50",
                       previewMode === "normal"
                         ? "bg-primary text-primary-foreground"
                         : "bg-card text-muted-foreground hover:text-foreground",
@@ -261,8 +262,9 @@ export function CardActions({
                   <button
                     type="button"
                     onClick={() => setPreviewMode("sellada")}
+                    aria-pressed={previewMode === "sellada"}
                     className={cn(
-                      "px-2.5 py-1 transition-colors",
+                      "px-2.5 py-1 transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50",
                       previewMode === "sellada"
                         ? "bg-primary text-primary-foreground"
                         : "bg-card text-muted-foreground hover:text-foreground",
@@ -290,19 +292,19 @@ export function CardActions({
             <div className="lg:order-1 space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="edit-name">Nombre</Label>
-                <Input id="edit-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre de la tarjeta" />
+                <Input id="edit-name" name="edit-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre de la tarjeta…" />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="edit-reward">Recompensa</Label>
-                <Input id="edit-reward" value={reward} onChange={(e) => setReward(e.target.value)} placeholder="Ej: Café gratis" />
+                <Input id="edit-reward" name="edit-reward" value={reward} onChange={(e) => setReward(e.target.value)} placeholder="Ej.: Café gratis" />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="edit-description">
                   Descripción <span className="text-muted-foreground font-normal text-xs">(opcional)</span>
                 </Label>
-                <Textarea id="edit-description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Ayuda a tus clientes a identificar esta tarjeta" className="resize-none" rows={2} maxLength={200} />
+                <Textarea id="edit-description" name="edit-description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Ayuda a tus clientes a identificar esta tarjeta…" className="resize-none" rows={2} maxLength={200} />
               </div>
 
               <div className="space-y-3">
@@ -313,14 +315,16 @@ export function CardActions({
                       key={c}
                       type="button"
                       onClick={() => setColor(c)}
+                      aria-label={`Usar color ${c}`}
+                      aria-pressed={color === c}
                       className={cn(
-                        "w-9 h-9 rounded-lg transition-all",
+                        "h-9 w-9 rounded-lg transition-transform focus-visible:ring-[3px] focus-visible:ring-ring/50",
                         color === c ? "ring-2 ring-offset-2 ring-foreground scale-110" : "hover:scale-105",
                       )}
                       style={{ backgroundColor: c }}
                     />
                   ))}
-                  <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="w-9 h-9 rounded-lg cursor-pointer border border-border" />
+                  <input type="color" name="edit-color" aria-label="Color personalizado" value={color} onChange={(e) => setColor(e.target.value)} className="h-9 w-9 cursor-pointer rounded-lg border border-border" />
                 </div>
               </div>
 
@@ -363,9 +367,9 @@ export function CardActions({
                           )}
                         >
                           {ms ? (
-                            <Gift className="h-4 w-4" />
+                            <Gift className="h-4 w-4" aria-hidden="true" />
                           ) : isLast ? (
-                            <Crown className="h-4 w-4" />
+                            <Crown className="h-4 w-4" aria-hidden="true" />
                           ) : (
                             <span className="text-xs font-bold">{pos}</span>
                           )}
@@ -408,7 +412,7 @@ export function CardActions({
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h4 className="font-semibold flex items-center gap-2">
-                    <Gift className="h-4 w-4 text-primary" />
+                    <Gift className="h-4 w-4 text-primary" aria-hidden="true" />
                     Recompensas Sorpresa
                   </h4>
                   <p className="text-sm text-muted-foreground">
@@ -416,8 +420,8 @@ export function CardActions({
                   </p>
                 </div>
                 <CollapsibleTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    {milestonesOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  <Button type="button" variant="ghost" size="sm" aria-label={milestonesOpen ? "Ocultar recompensas sorpresa" : "Mostrar recompensas sorpresa"}>
+                    {milestonesOpen ? <ChevronDown className="h-4 w-4" aria-hidden="true" /> : <ChevronRight className="h-4 w-4" aria-hidden="true" />}
                   </Button>
                 </CollapsibleTrigger>
               </div>
@@ -429,11 +433,12 @@ export function CardActions({
 
                 <div className="space-y-3">
                   {milestones.map((m, i) => (
-                    <div key={i} className="flex flex-wrap items-end gap-3 p-4 bg-muted/30 dark:bg-muted/20 rounded-xl border border-border">
+                    <div key={i} className="grid gap-3 rounded-xl border border-border bg-muted/30 p-4 dark:bg-muted/20 sm:grid-cols-[5rem_minmax(0,1fr)_auto_minmax(11rem,1fr)_auto] sm:items-end">
                       <div className="space-y-1.5">
                         <Label className="text-xs">Sello #</Label>
                         <Input
                           type="number"
+                          name={`edit-milestone-${i}-stamp`}
                           min={1}
                           max={maxStamps}
                           value={m.stampNumber}
@@ -446,7 +451,8 @@ export function CardActions({
                         <Input
                           value={m.label}
                           onChange={(e) => updateMilestone(i, "label", e.target.value)}
-                          placeholder="Ej: Café gratis"
+                          name={`edit-milestone-${i}-label`}
+                          placeholder="Ej.: Café gratis"
                         />
                       </div>
                       <div className="space-y-1.5">
@@ -458,6 +464,7 @@ export function CardActions({
                     <div className="flex items-center gap-2">
                       <input
                         type="range"
+                        name={`edit-milestone-${i}-probability`}
                         min={0}
                         max={100}
                         value={m.probability}
@@ -479,8 +486,8 @@ export function CardActions({
                       <span className="text-muted-foreground w-14 shrink-0 text-right" title={getRarityDescription(m.probability)}>{getRarityRange(m.probability)}</span>
                     </div>
                       </div>
-                      <Button variant="ghost" size="sm" onClick={() => removeMilestone(i)} className="text-destructive hover:text-destructive">
-                        <X className="h-4 w-4" />
+                      <Button type="button" variant="ghost" size="sm" onClick={() => removeMilestone(i)} className="text-destructive hover:text-destructive sm:self-center" aria-label="Eliminar recompensa sorpresa">
+                        <X className="h-4 w-4" aria-hidden="true" />
                       </Button>
                     </div>
                   ))}
@@ -489,8 +496,8 @@ export function CardActions({
                 {availablePositions.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {availablePositions.map(pos => (
-                      <Button key={pos} variant="outline" size="sm" onClick={() => addMilestone(pos)}>
-                        <Plus className="h-3 w-3 mr-1" />
+                      <Button key={pos} type="button" variant="outline" size="sm" onClick={() => addMilestone(pos)}>
+                        <Plus className="h-3 w-3 mr-1" aria-hidden="true" />
                         Sello #{pos}
                       </Button>
                     ))}
@@ -507,14 +514,14 @@ export function CardActions({
           {editError && <p className="text-sm text-destructive">{editError}</p>}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditOpen(false)} disabled={saving}>
+            <Button type="button" variant="outline" onClick={() => setEditOpen(false)} disabled={saving}>
               Cancelar
             </Button>
-            <Button onClick={handleSave} disabled={saving}>
+            <Button type="button" onClick={handleSave} disabled={saving}>
               {saving ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
               ) : saved ? (
-                <Check className="h-4 w-4 mr-2" />
+                <Check className="h-4 w-4 mr-2" aria-hidden="true" />
               ) : null}
               {saved ? "¡Guardado!" : "Guardar"}
             </Button>

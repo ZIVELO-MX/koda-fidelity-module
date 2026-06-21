@@ -108,9 +108,9 @@ export default function BrandingPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
+    <div className="mx-auto max-w-2xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Marca</h1>
+        <h1 className="text-2xl font-bold text-foreground text-balance">Marca</h1>
         <p className="text-muted-foreground">
           Personaliza cómo se ven tus tarjetas. Estos datos se usan como plantilla al crear nuevas tarjetas.
         </p>
@@ -122,9 +122,10 @@ export default function BrandingPage() {
         <Label htmlFor="businessName" className="sr-only">Nombre Visible</Label>
         <Input
           id="businessName"
+          name="businessName"
           value={businessName}
           onChange={(e) => setBusinessName(e.target.value)}
-          placeholder="Ingresa el nombre de tu negocio"
+          placeholder="Ingresa el nombre de tu negocio…"
         />
         <p className="text-xs text-muted-foreground">
           Aparece en las tarjetas de lealtad y comunicaciones con clientes.
@@ -134,7 +135,7 @@ export default function BrandingPage() {
       {/* Logo Upload */}
       <div className="bg-card rounded-2xl p-6 border border-border space-y-4">
         <h2 className="font-semibold text-foreground">Logo del Negocio <span className="text-muted-foreground font-normal text-sm">(opcional)</span></h2>
-        <div className="flex items-start gap-5">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
           <div
             className="w-20 h-20 rounded-2xl flex items-center justify-center text-white font-bold text-2xl shrink-0 overflow-hidden"
             style={{ backgroundColor: brandColor }}
@@ -151,12 +152,14 @@ export default function BrandingPage() {
             </p>
             <input
               ref={fileInputRef}
+              id="businessLogo"
+              name="businessLogo"
               type="file"
               accept="image/*"
               className="hidden"
               onChange={handleLogoUpload}
             />
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
                 <Upload className="h-4 w-4 mr-2" />
                 {logoUrl ? "Cambiar Logo" : "Subir Logo"}
@@ -207,7 +210,9 @@ export default function BrandingPage() {
                 key={color}
                 type="button"
                 onClick={() => setBrandColor(color)}
-                className={`w-10 h-10 rounded-xl transition-all ${
+                aria-label={`Usar color ${color}`}
+                aria-pressed={brandColor === color}
+                className={`h-10 w-10 rounded-xl transition-transform focus-visible:ring-[3px] focus-visible:ring-ring/50 ${
                   brandColor === color
                     ? "ring-2 ring-offset-2 ring-foreground scale-110"
                     : "hover:scale-105"
@@ -220,11 +225,14 @@ export default function BrandingPage() {
             <input
               type="color"
               id="customColor"
+              name="customColor"
+              aria-label="Color personalizado"
               value={brandColor}
               onChange={(e) => setBrandColor(e.target.value)}
               className="w-10 h-10 rounded-lg cursor-pointer border-0"
             />
             <Input
+              name="brandColor"
               value={brandColor}
               onChange={(e) => setBrandColor(e.target.value)}
               className="w-28 font-mono text-sm"
@@ -236,20 +244,22 @@ export default function BrandingPage() {
 
       {/* Preview */}
       <div className="bg-card rounded-2xl p-6 border border-border space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="font-semibold text-foreground">Vista Previa de Tarjeta</h2>
-          <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+          <div className="flex w-full items-center gap-1 rounded-lg bg-muted p-1 sm:w-auto">
             <button
               type="button"
+              aria-pressed={previewMode === "normal"}
               onClick={() => setPreviewMode("normal")}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${previewMode === "normal" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              className={`flex-1 rounded-md px-3 py-1 text-xs font-medium transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:flex-none ${previewMode === "normal" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}
             >
               Normal
             </button>
             <button
               type="button"
+              aria-pressed={previewMode === "sellada"}
               onClick={() => setPreviewMode("sellada")}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${previewMode === "sellada" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              className={`flex-1 rounded-md px-3 py-1 text-xs font-medium transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:flex-none ${previewMode === "sellada" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}
             >
               Sellada
             </button>

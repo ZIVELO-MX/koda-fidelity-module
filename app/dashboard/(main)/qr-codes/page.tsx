@@ -34,7 +34,7 @@ export default function QRCodesPage() {
     <div className="space-y-8">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Códigos QR</h1>
+        <h1 className="text-2xl font-bold text-foreground text-balance">Códigos QR</h1>
         <p className="text-muted-foreground">Imprime o comparte códigos QR para que los clientes se unan a tus programas de lealtad</p>
       </div>
 
@@ -78,12 +78,12 @@ export default function QRCodesPage() {
                           className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shrink-0"
                           style={{ backgroundColor: card.brandColor }}
                         >
-                          {IconComp ? <IconComp className="h-5 w-5" /> : card.name.charAt(0)}
+                        {IconComp ? <IconComp className="h-5 w-5" aria-hidden="true" /> : card.name.charAt(0)}
                         </div>
                       )
                     })()}
-                    <div>
-                      <h3 className="font-semibold text-foreground">{card.name}</h3>
+                    <div className="min-w-0">
+                      <h3 className="truncate font-semibold text-foreground">{card.name}</h3>
                     </div>
                   </div>
 
