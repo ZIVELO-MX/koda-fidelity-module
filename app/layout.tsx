@@ -85,7 +85,7 @@ export default function RootLayout({
   return (
     <html lang="es" className="bg-background" suppressHydrationWarning>
       <body className={`${geist.variable} font-sans antialiased`}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange>
           {children}
         </ThemeProvider>
         <Toaster richColors closeButton position="bottom-right" />

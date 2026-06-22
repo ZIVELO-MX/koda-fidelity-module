@@ -170,7 +170,7 @@ export function DashboardSidebar({
     icon: React.ComponentType<{ className?: string }>
     children: React.ReactNode
   }) {
-    const isActive = pathname.startsWith(href)
+    const isActive = pathname === href || (href !== "/dashboard" && pathname.startsWith(href + "/"))
     return (
       <Link
         href={href}
@@ -195,7 +195,7 @@ export function DashboardSidebar({
     icon: React.ComponentType<{ className?: string }>
     label: string
   }) {
-    const isActive = pathname.startsWith(href)
+    const isActive = pathname === href || (href !== "/dashboard" && pathname.startsWith(href + "/"))
     return (
       <Tooltip>
         <TooltipTrigger asChild>

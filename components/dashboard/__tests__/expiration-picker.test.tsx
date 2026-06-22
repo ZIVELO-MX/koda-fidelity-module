@@ -8,7 +8,7 @@ beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(NOW) })
 afterEach(() => { cleanup(); vi.useRealTimers() })
 
 describe("ExpirationPicker", () => {
-  it("renders all quick options and 'Sin caducidad'", () => {
+  it("renders quick options, 'Sin caducidad', and 'Elegir fecha…'", () => {
     render(<ExpirationPicker value="" onChange={() => {}} />)
     expect(screen.getByRole("button", { name: "1 semana" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "1 mes" })).toBeInTheDocument()
@@ -55,18 +55,17 @@ describe("ExpirationPicker", () => {
     expect(onChange.mock.calls.at(-1)?.[0]).toBe("2026-12-05")
   })
 
-  it("shows date input when 'Elegir fecha…' is clicked", () => {
-    render(<ExpirationPicker value="" onChange={() => {}} />)
-    expect(screen.queryByTestId("expiration-date-input")).toBeNull()
-    fireEvent.click(screen.getByRole("button", { name: "Elegir fecha…" }))
-    expect(screen.getByTestId("expiration-date-input")).toBeInTheDocument()
+  it("shows formatted date label when 'Elegir fecha…' is clicked and a date is selected", () => {
+    render(<ExpirationPicker value="2026-12-15" onChange={() => {}} />)
+    expect(screen.getByText(/vence el/i)).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /dic/i })).toBeInTheDocument()
   })
 
-  it("hides date input when a quick option is selected after custom", () => {
-    render(<ExpirationPicker value="" onChange={() => {}} />)
-    fireEvent.click(screen.getByRole("button", { name: "Elegir fecha…" }))
+  it("switches to quick option mode when clicked after custom date", () => {
+    const onChange = vi.fn()
+    render(<ExpirationPicker value="2026-12-15" onChange={onChange} />)
     fireEvent.click(screen.getByRole("button", { name: "3 meses" }))
-    expect(screen.queryByTestId("expiration-date-input")).toBeNull()
+    expect(onChange).toHaveBeenCalledWith("2026-09-05")
   })
 
   it("shows formatted expiry label when value is set", () => {

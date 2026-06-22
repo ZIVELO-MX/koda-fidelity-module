@@ -610,16 +610,6 @@ model StampLog {
 
 ### Pendientes UI para `1.1.0`
 
-#### Dark mode de la app
-
-> La app aún no implementa dark mode oficialmente (Tailwind CSS maneja colores con variables CSS light-only).
-> Los 5 templates de email ya responden a `@media (prefers-color-scheme: dark)` usando las clases `.em-*` con `!important`.
-
-- [ ] Extender la configuración de Tailwind con selector `.dark`
-- [ ] Definir tokens dark para la app sin romper colores de marca por negocio
-- [ ] Validar dashboard, login, join flow, my-cards, scan y componentes shadcn/ui en modo oscuro
-- [ ] Si cambian los colores base, actualizar el bloque `@media (prefers-color-scheme: dark)` en `docs/email-templates/*.html`
-
 #### Tema automático para tarjetas con colores claros
 
 > Cuando el negocio configura un color de marca muy claro, el texto blanco y elementos semitransparentes de `LoyaltyCardPreview` quedan ilegibles. Se necesita un tema de tarjeta independiente del dark mode global.
@@ -651,7 +641,9 @@ model StampLog {
 ### Backlog
 
 > Ideas y tareas priorizadas para sprints futuros, sin fecha asignada.
+> Incluye ítems degradados de pendientes de release por considerarse nice-to-have.
 
+- [ ] **Dark mode** — extender Tailwind con selector `.dark`, definir tokens dark sin romper colores de marca, validar en dashboard/login/join/my-cards/scan. Actualmente forzado a light mode. Los templates de email ya responden a `prefers-color-scheme: dark`.
 - [ ] **Estados vacíos con shadcn Empty** — agregar `pnpm dlx shadcn@latest add empty` y reemplazar las secciones sin datos (clientes, actividad reciente, etc.) con el componente `Empty` de shadcn/ui, eliminando los textos planos actuales
 
 ### Post-MVP — Landing Page
