@@ -11,6 +11,8 @@ import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { IconPicker } from "@/components/dashboard/icon-picker"
 import { ArrowLeft, ArrowRight, Check, Sparkles } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
+import { toast } from "sonner"
 import { getRarityColor, getRarityLabel, getRarityDescription, getRarityRange } from "@/lib/card-utils"
 import { cn } from "@/lib/utils"
 import { ExpirationPicker } from "@/components/dashboard/expiration-picker"
@@ -93,11 +95,9 @@ export default function CreateCardPage() {
   }
 
   const [saving, setSaving] = useState(false)
-  const [createError, setCreateError] = useState<string | null>(null)
 
   const handleCreate = async () => {
     setSaving(true)
-    setCreateError(null)
     try {
       const res = await fetch("/api/cards", {
         method: "POST",
@@ -126,7 +126,7 @@ export default function CreateCardPage() {
 
       router.push("/dashboard/cards")
     } catch (err) {
-      setCreateError(err instanceof Error ? err.message : "Error al crear la tarjeta")
+      toast.error(err instanceof Error ? err.message : "Error al crear la tarjeta")
     } finally {
       setSaving(false)
     }
@@ -309,20 +309,23 @@ export default function CreateCardPage() {
                   <Label>Color de Marca</Label>
                   <div className="grid grid-cols-6 gap-3">
                     {colorPresets.map((color) => (
-                      <button
-                        key={color.value}
-                        type="button"
-                        onClick={() => updateFormData("brandColor", color.value)}
-                        aria-label={color.name}
-                        aria-pressed={formData.brandColor === color.value}
-                        className={`aspect-square w-full rounded-xl transition-transform focus-visible:ring-[3px] focus-visible:ring-ring/50 ${
-                          formData.brandColor === color.value
-                            ? "ring-2 ring-offset-2 ring-foreground scale-110"
-                            : "hover:scale-105"
-                        }`}
-                        style={{ backgroundColor: color.value }}
-                        title={color.name}
-                      />
+                      <Tooltip key={color.value}>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => updateFormData("brandColor", color.value)}
+                            aria-label={color.name}
+                            aria-pressed={formData.brandColor === color.value}
+                            className={`aspect-square w-full rounded-xl transition-transform focus-visible:ring-[3px] focus-visible:ring-ring/50 ${
+                              formData.brandColor === color.value
+                                ? "ring-2 ring-offset-2 ring-foreground scale-110"
+                                : "hover:scale-105"
+                            }`}
+                            style={{ backgroundColor: color.value }}
+                          />
+                        </TooltipTrigger>
+                        <TooltipContent side="top">{color.name}</TooltipContent>
+                      </Tooltip>
                     ))}
                   </div>
                   <div className="mt-4 grid gap-3 sm:flex sm:items-center">
@@ -444,9 +447,14 @@ export default function CreateCardPage() {
                               <div className="flex items-center gap-2 text-xs">
                                 <span className="inline-block h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: getRarityColor(m.probability) }} />
                                 <span className="w-20 shrink-0 font-medium">{getRarityLabel(m.probability)}</span>
-                                <span className="w-14 shrink-0 text-right text-muted-foreground" title={getRarityDescription(m.probability)}>
-                                  {getRarityRange(m.probability)}
-                                </span>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="w-14 shrink-0 text-right text-muted-foreground">
+                                      {getRarityRange(m.probability)}
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top">{getRarityDescription(m.probability)}</TooltipContent>
+                                </Tooltip>
                               </div>
                             </div>
                           </div>
@@ -519,12 +527,6 @@ export default function CreateCardPage() {
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-
-          {createError && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-3 mt-6">
-              <p className="text-sm text-red-700">{createError}</p>
             </div>
           )}
 

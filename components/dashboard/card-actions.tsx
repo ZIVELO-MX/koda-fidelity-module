@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Archive, Loader2, Pencil, QrCode, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { toast } from "sonner"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,18 +26,15 @@ export function CardActions({ cardId, cardName }: CardActionsProps) {
   const router = useRouter()
   const [archiveOpen, setArchiveOpen] = useState(false)
   const [archiving, setArchiving] = useState(false)
-  const [archiveError, setArchiveError] = useState<string | null>(null)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   async function handleArchive() {
     setArchiving(true)
-    setArchiveError(null)
     const response = await fetch(`/api/cards/${cardId}`, { method: "DELETE" })
 
     if (!response.ok) {
-      setArchiveError("No fue posible archivar la tarjeta")
+      toast.error("No fue posible archivar la tarjeta")
       setArchiving(false)
       return
     }
@@ -47,11 +45,10 @@ export function CardActions({ cardId, cardName }: CardActionsProps) {
 
   async function handleDelete() {
     setDeleting(true)
-    setDeleteError(null)
     const response = await fetch(`/api/cards/${cardId}?permanent=true`, { method: "DELETE" })
 
     if (!response.ok) {
-      setDeleteError("No fue posible eliminar la tarjeta")
+      toast.error("No fue posible eliminar la tarjeta")
       setDeleting(false)
       return
     }
@@ -92,9 +89,6 @@ export function CardActions({ cardId, cardName }: CardActionsProps) {
           Eliminar
         </Button>
       </div>
-
-      {archiveError && <p className="mt-2 text-sm text-destructive">{archiveError}</p>}
-      {deleteError && <p className="mt-2 text-sm text-destructive">{deleteError}</p>}
 
       <AlertDialog open={archiveOpen} onOpenChange={setArchiveOpen}>
         <AlertDialogContent>

@@ -32,7 +32,6 @@ export function IconPicker({ value, onChange, businessLogoUrl }: IconPickerProps
         <button
           type="button"
           aria-label={selected?.label ? `Ícono seleccionado: ${selected.label}` : "Seleccionar ícono"}
-          title={selected?.label ?? "Seleccionar ícono"}
           className={cn(
             "flex h-10 w-10 items-center justify-center rounded-xl border-2 transition-[border-color,background-color,color,box-shadow] focus-visible:ring-[3px] focus-visible:ring-ring/50",
             value

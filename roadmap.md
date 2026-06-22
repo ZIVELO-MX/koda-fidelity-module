@@ -461,8 +461,8 @@ model StampLog {
 
 - [x] **Recompensas sorpresa** — al sellar en posiciones específicas, el sistema tira probabilidad configurable por milestone (0–100%) y asigna recompensa si acierta. Incluye modelo Prisma (`MilestoneReward`, `CustomerMilestoneClaim`), UI de configuración en creación/edición con slider de rareza (colores Clash Royale) e `IconPicker`, lógica de selección en `POST /api/stamps`, AlertDialog en scan al obtener recompensa, y visualización en stamp grid del dashboard.
 - [ ] **Sidebar unificada con shadcn Sidebar** — refactor post-release: migrar la sidebar actual a la implementación de shadcn/ui (`<SidebarProvider>`, `<Sidebar>`, `<SidebarInset>`), integrando navegación mobile/desktop, menú colapsable por grupo y responsividad. No bloquea `1.1.0` porque la navegación actual ya cubre el mapa mobile/desktop requerido.
-- [ ] **Toast con Sonner** — refactor post-release: migrar mensajes de toast/notificación actuales a `<Toaster>` + `toast()` de Sonner y retirar el toaster legacy.
-- [ ] **Tooltip con shadcn Tooltip** — refactor post-release: `IconPicker` ya usa `Tooltip`; quedan usos puntuales de `title` para información auxiliar (por ejemplo rareza/probabilidad) que pueden migrarse sin bloquear `1.1.0`.
+- [x] **Toast con Sonner** — migrar mensajes de toast/notificación actuales a `<Toaster>` + `toast()` de Sonner y retirar el toaster legacy. Implementado en `feat/ui-ux-polish`.
+- [x] **Tooltip con shadcn Tooltip** — `IconPicker` ya usa `Tooltip`; migrados usos puntuales de `title` para información auxiliar (rareza/probabilidad, colores, barra lateral). Implementado en `feat/ui-ux-polish`.
 
 ## Historial del MVP `1.0.0`
 

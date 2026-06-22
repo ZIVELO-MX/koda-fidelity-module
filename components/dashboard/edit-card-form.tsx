@@ -10,9 +10,11 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Switch } from "@/components/ui/switch"
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { IconPicker } from "@/components/dashboard/icon-picker"
 import { ExpirationPicker } from "@/components/dashboard/expiration-picker"
+import { toast } from "sonner"
 import { getRarityColor, getRarityDescription, getRarityLabel, getRarityRange } from "@/lib/card-utils"
 import { cn } from "@/lib/utils"
 
@@ -84,21 +86,19 @@ export function EditCardForm({
   )
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   async function handleSave() {
     if (!name.trim()) {
-      setError("El nombre es obligatorio")
+      toast.error("El nombre es obligatorio")
       return
     }
     if (!reward.trim()) {
-      setError("La recompensa es obligatoria")
+      toast.error("La recompensa es obligatoria")
       return
     }
 
     setSaving(true)
     setSaved(false)
-    setError(null)
 
     const response = await fetch(`/api/cards/${cardId}`, {
       method: "PUT",
@@ -126,7 +126,7 @@ export function EditCardForm({
 
     if (!response.ok) {
       const body = await response.json().catch(() => null)
-      setError(body?.error || "No fue posible guardar los cambios")
+      toast.error(body?.error || "No fue posible guardar los cambios")
       return
     }
 
@@ -338,9 +338,14 @@ export function EditCardForm({
                               <div className="flex items-center gap-2 text-xs">
                                 <span className="inline-block h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: getRarityColor(m.probability) }} />
                                 <span className="w-20 shrink-0 font-medium">{getRarityLabel(m.probability)}</span>
-                                <span className="w-14 shrink-0 text-right text-muted-foreground" title={getRarityDescription(m.probability)}>
-                                  {getRarityRange(m.probability)}
-                                </span>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="w-14 shrink-0 text-right text-muted-foreground">
+                                      {getRarityRange(m.probability)}
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top">{getRarityDescription(m.probability)}</TooltipContent>
+                                </Tooltip>
                               </div>
                             </div>
                           </div>
@@ -352,8 +357,6 @@ export function EditCardForm({
               </CollapsibleContent>
             </Collapsible>
           </div>
-
-          {error && <p className="text-sm text-destructive">{error}</p>}
 
           <div className="flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
             <Button asChild variant="outline">
