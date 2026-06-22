@@ -24,17 +24,15 @@ export function DashboardLayoutClient({
   nickname,
   role,
 }: DashboardLayoutClientProps) {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [ready, setReady] = useState(false)
-
-  useEffect(() => {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false
     const stored = window.localStorage.getItem(SIDEBAR_STATE_KEY)
     if (stored === "true") {
-      setSidebarCollapsed(true)
       document.documentElement.classList.add("sidebar-collapsed")
+      return true
     }
-    setReady(true)
-  }, [])
+    return false
+  })
 
   const toggleCollapse = useCallback(() => {
     setSidebarCollapsed((prev) => {
@@ -45,6 +43,10 @@ export function DashboardLayoutClient({
     })
   }, [])
 
+  const [ready, setReady] = useState(
+    typeof window !== "undefined" ? document.documentElement.classList.contains("sidebar-collapsed") : false
+  )
+  useEffect(() => { setReady(true) }, [])
   if (!ready) return null
 
   return (

@@ -46,7 +46,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { logout } from "@/lib/actions/auth"
 import { MobileSettingsPanel } from "./mobile-settings-panel"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import type { Role } from "@prisma/client"
 
 interface DashboardSidebarProps {
@@ -90,6 +90,65 @@ const BOTTOM_NAV_HREFS = new Set([
 
 const SIDEBAR_GROUPS_STORAGE_KEY = "dashboard-sidebar-groups"
 
+function NavLink({
+  href,
+  icon: Icon,
+  children,
+  pathname,
+  collapsed,
+}: {
+  href: string
+  icon: React.ComponentType<{ className?: string }>
+  children: React.ReactNode
+  pathname: string
+  collapsed: boolean
+}) {
+  const isActive = href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(href + "/") || pathname === href
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "flex items-center rounded-lg text-sm font-medium transition-colors",
+        collapsed ? "justify-center p-2" : "gap-3 px-3 py-2.5",
+        isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+      )}
+    >
+      <Icon className={cn("h-5 w-5 flex-shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
+      {!collapsed && children}
+    </Link>
+  )
+}
+
+function CollapsedNavLink({
+  href,
+  icon: Icon,
+  label,
+  pathname,
+}: {
+  href: string
+  icon: React.ComponentType<{ className?: string }>
+  label: string
+  pathname: string
+}) {
+  const isActive = href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(href + "/") || pathname === href
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Link
+          href={href}
+          className={cn(
+            "flex items-center justify-center p-2 rounded-lg transition-colors",
+            isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+          )}
+        >
+          <Icon className={cn("h-5 w-5 flex-shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
+        </Link>
+      </TooltipTrigger>
+      <TooltipContent side="right">{label}</TooltipContent>
+    </Tooltip>
+  )
+}
+
 export function DashboardSidebar({
   userEmail,
   businessName,
@@ -103,24 +162,19 @@ export function DashboardSidebar({
   const pathname = usePathname()
   const [moreOpen, setMoreOpen] = useState(false)
   const [logoutOpen, setLogoutOpen] = useState(false)
-  const [openGroups, setOpenGroups] = useState<string[]>(["Gestión", "Administración"])
-  const prefsLoaded = useRef(false)
-
-  useEffect(() => {
-    const rawGroups = window.localStorage.getItem(SIDEBAR_GROUPS_STORAGE_KEY)
-    if (rawGroups) {
-      try {
-        const parsedValue = JSON.parse(rawGroups) as string[]
-        setOpenGroups(Array.isArray(parsedValue) ? parsedValue : ["Gestión", "Administración"])
-      } catch {
-        window.localStorage.removeItem(SIDEBAR_GROUPS_STORAGE_KEY)
-      }
+  const [openGroups, setOpenGroups] = useState<string[]>(() => {
+    if (typeof window === "undefined") return ["Gestión", "Administración"]
+    try {
+      const raw = window.localStorage.getItem(SIDEBAR_GROUPS_STORAGE_KEY)
+      if (!raw) return ["Gestión", "Administración"]
+      const parsed = JSON.parse(raw) as string[]
+      return Array.isArray(parsed) ? parsed : ["Gestión", "Administración"]
+    } catch {
+      return ["Gestión", "Administración"]
     }
-    prefsLoaded.current = true
-  }, [])
+  })
 
   useEffect(() => {
-    if (!prefsLoaded.current) return
     window.localStorage.setItem(SIDEBAR_GROUPS_STORAGE_KEY, JSON.stringify(openGroups))
   }, [openGroups])
 
@@ -155,65 +209,6 @@ export function DashboardSidebar({
     { name: "Clientes", href: "/dashboard/customers", icon: Users },
   ]
 
-  function toggleGroup(value: string) {
-    setOpenGroups((prev) =>
-      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value],
-    )
-  }
-
-  function NavLink({
-    href,
-    icon: Icon,
-    children,
-  }: {
-    href: string
-    icon: React.ComponentType<{ className?: string }>
-    children: React.ReactNode
-  }) {
-    const isActive = pathname === href || (href !== "/dashboard" && pathname.startsWith(href + "/"))
-    return (
-      <Link
-        href={href}
-        className={cn(
-          "flex items-center rounded-lg text-sm font-medium transition-colors",
-          collapsed ? "justify-center p-2" : "gap-3 px-3 py-2.5",
-          isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
-        )}
-      >
-        <Icon className={cn("h-5 w-5 flex-shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
-        {!collapsed && children}
-      </Link>
-    )
-  }
-
-  function CollapsedNavLink({
-    href,
-    icon: Icon,
-    label,
-  }: {
-    href: string
-    icon: React.ComponentType<{ className?: string }>
-    label: string
-  }) {
-    const isActive = pathname === href || (href !== "/dashboard" && pathname.startsWith(href + "/"))
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Link
-            href={href}
-            className={cn(
-              "flex items-center justify-center p-2 rounded-lg transition-colors",
-              isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
-            )}
-          >
-            <Icon className={cn("h-5 w-5 flex-shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
-          </Link>
-        </TooltipTrigger>
-        <TooltipContent side="right">{label}</TooltipContent>
-      </Tooltip>
-    )
-  }
-
   return (
     <>
       {/* Desktop sidebar */}
@@ -241,10 +236,10 @@ export function DashboardSidebar({
         <nav className="flex-1 overflow-y-auto">
           {/* Panel */}
           {collapsed ? (
-            <CollapsedNavLink href="/dashboard" icon={LayoutDashboard} label="Panel" />
+            <CollapsedNavLink href="/dashboard" icon={LayoutDashboard} label="Panel" pathname={pathname} />
           ) : (
             <div className="mx-2 my-1">
-              <NavLink href="/dashboard" icon={LayoutDashboard}>
+              <NavLink href="/dashboard" icon={LayoutDashboard} pathname={pathname} collapsed={collapsed}>
                 Panel
               </NavLink>
             </div>
@@ -266,7 +261,7 @@ export function DashboardSidebar({
                   <AccordionContent>
                     <div className="space-y-0.5 pb-1">
                       {group.items.map((item) => (
-                        <NavLink key={item.name} href={item.href} icon={item.icon}>
+                        <NavLink key={item.name} href={item.href} icon={item.icon} pathname={pathname} collapsed={collapsed}>
                           {item.name}
                         </NavLink>
                       ))}
@@ -281,7 +276,7 @@ export function DashboardSidebar({
           {collapsed &&
             visibleGroups.map((group) =>
               group.items.map((item) => (
-                <CollapsedNavLink key={item.name} href={item.href} icon={item.icon} label={item.name} />
+                <CollapsedNavLink key={item.name} href={item.href} icon={item.icon} label={item.name} pathname={pathname} />
               )),
             )}
         </nav>
