@@ -70,11 +70,16 @@ export function MobileSettingsPanel({
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="fixed inset-0 z-50 flex flex-col bg-background animate-in slide-in-from-bottom">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menú de navegación"
+        className="fixed inset-0 z-50 flex flex-col overscroll-contain bg-background animate-in slide-in-from-bottom"
+      >
         {/* Header */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card shrink-0">
-          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Volver">
-            <ArrowLeft className="h-5 w-5" />
+        <div className="flex items-center gap-3 border-b border-border bg-card px-4 py-3 shrink-0" style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}>
+          <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Volver">
+            <ArrowLeft className="h-5 w-5" aria-hidden="true" />
           </Button>
           <span className="font-semibold text-foreground">Menú</span>
         </div>
@@ -111,8 +116,8 @@ export function MobileSettingsPanel({
                         onClick={onClose}
                         className="flex flex-col items-center gap-2 p-4 rounded-xl bg-muted hover:bg-muted/70 transition-colors"
                       >
-                        <item.icon className="h-5 w-5 text-muted-foreground" />
-                        <span className="text-xs font-medium text-foreground text-center leading-tight">
+                        <item.icon className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+                        <span className="text-center text-xs font-medium leading-tight text-foreground">
                           {item.name}
                         </span>
                       </Link>
@@ -129,7 +134,7 @@ export function MobileSettingsPanel({
                 onClick={onClose}
                 className="flex items-center justify-center gap-2 w-full py-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-colors"
               >
-                <Smartphone className="h-4 w-4" />
+                <Smartphone className="h-4 w-4" aria-hidden="true" />
                 Mis Tarjetas
               </Link>
               <Button
@@ -137,7 +142,7 @@ export function MobileSettingsPanel({
                 className="w-full gap-2 text-destructive border-destructive/30 hover:bg-destructive/10"
                 onClick={() => setConfirmOpen(true)}
               >
-                <LogOut className="h-4 w-4" />
+                <LogOut className="h-4 w-4" aria-hidden="true" />
                 Cerrar Sesión
               </Button>
             </div>

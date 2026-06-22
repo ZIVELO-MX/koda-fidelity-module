@@ -3,6 +3,7 @@ import { Geist } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ServiceWorkerRegister } from '@/components/service-worker-register'
 import { ThemeProvider } from '@/components/theme-provider'
+import { Toaster } from '@/components/ui/sonner'
 import { siteConfig } from '@/lib/site-config'
 import './globals.css'
 
@@ -84,9 +85,10 @@ export default function RootLayout({
   return (
     <html lang="es" className="bg-background" suppressHydrationWarning>
       <body className={`${geist.variable} font-sans antialiased`}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange>
           {children}
         </ThemeProvider>
+        <Toaster richColors closeButton position="bottom-right" />
         <ServiceWorkerRegister />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>

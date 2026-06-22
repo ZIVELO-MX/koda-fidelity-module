@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -6,7 +7,6 @@ import { Plus, QrCode, Users, Stamp, Search, Archive } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 import { getCardIcon } from "@/lib/card-icons"
-import { isExpired } from "@/lib/card-utils"
 import { DeleteExpiredCardButton } from "@/components/dashboard/delete-expired-card-button"
 
 const STATUS_OPTIONS = [
@@ -60,19 +60,19 @@ export default async function CardsPage({
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Tarjetas de Lealtad</h1>
+          <h1 className="text-2xl font-bold text-foreground text-balance">Tarjetas de Lealtad</h1>
           <p className="text-muted-foreground">Gestiona tus campañas de tarjetas de lealtad digitales</p>
         </div>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex">
           <Link href="/dashboard/cards/archived">
             <Button variant="outline">
-              <Archive className="h-4 w-4 mr-2" />
+              <Archive className="h-4 w-4 mr-2" aria-hidden="true" />
               Archivadas
             </Button>
           </Link>
           <Link href="/dashboard/cards/new">
             <Button>
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
               Crear Tarjeta
             </Button>
           </Link>
@@ -80,19 +80,19 @@ export default async function CardsPage({
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="relative w-full flex-1 sm:max-w-md">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <form method="GET">
-            <Input name="q" placeholder="Buscar tarjetas..." className="pl-10" defaultValue={q ?? ""} />
+            <Input name="q" placeholder="Buscar tarjetas…" className="pl-10" defaultValue={q ?? ""} autoComplete="off" />
             {statusParam && <input type="hidden" name="status" value={statusParam} />}
           </form>
         </div>
-        <div className="flex gap-1 bg-muted rounded-xl p-1 self-start">
+        <div className="flex max-w-full gap-1 overflow-x-auto rounded-xl bg-muted p-1 sm:self-start">
           {STATUS_OPTIONS.map((opt) => (
             <Link
               key={opt.value}
               href={`?${new URLSearchParams({ ...(q ? { q } : {}), status: opt.value }).toString()}`}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              className={`shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 ${
                 status === opt.value
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
@@ -146,7 +146,7 @@ export default async function CardsPage({
                           className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shrink-0"
                           style={{ backgroundColor: card.brandColor }}
                         >
-                          <img src={business.logoUrl} alt="" className="w-8 h-8 object-contain" />
+                          <Image src={business.logoUrl} alt="" width={32} height={32} className="object-contain" />
                         </div>
                       )
                     }
@@ -155,7 +155,7 @@ export default async function CardsPage({
                         className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shrink-0"
                         style={{ backgroundColor: card.brandColor }}
                       >
-                        {IconComp ? <IconComp className="h-6 w-6" /> : card.name.charAt(0)}
+                        {IconComp ? <IconComp className="h-6 w-6" aria-hidden="true" /> : card.name.charAt(0)}
                       </div>
                     )
                   })()}
@@ -172,15 +172,15 @@ export default async function CardsPage({
                   </div>
                 </div>
 
-                <h3 className="font-semibold text-lg text-foreground mb-1">{card.name}</h3>
-                {card.description && <p className="text-sm text-muted-foreground mb-4">{card.description}</p>}
+                <h3 className="mb-1 line-clamp-2 text-lg font-semibold text-foreground">{card.name}</h3>
+                {card.description && <p className="mb-4 line-clamp-2 text-sm text-muted-foreground">{card.description}</p>}
 
                 <div className="bg-muted/50 rounded-xl p-3 mb-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Recompensa</span>
-                    <span className="font-medium text-foreground">{card.reward}</span>
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <span className="shrink-0 text-muted-foreground">Recompensa</span>
+                    <span className="min-w-0 break-words text-right font-medium text-foreground">{card.reward}</span>
                   </div>
-                  <div className="flex items-center justify-between text-sm mt-1">
+                  <div className="mt-1 flex items-center justify-between gap-3 text-sm">
                     <span className="text-muted-foreground">Sellos requeridos</span>
                     <span className="font-medium text-foreground">{card.stampsRequired}</span>
                   </div>
@@ -204,30 +204,30 @@ export default async function CardsPage({
 
                 {!card.expired && (
                   <div className="grid grid-cols-3 gap-3 mb-4">
-                    <div className="text-center p-2 bg-muted/30 rounded-lg">
-                      <Users className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
+                    <div className="rounded-lg bg-muted/30 p-2 text-center">
+                      <Users className="mx-auto mb-1 h-4 w-4 text-muted-foreground" aria-hidden="true" />
                       <p className="text-sm font-semibold text-foreground">{card._count.customers}</p>
                       <p className="text-xs text-muted-foreground">Clientes</p>
                     </div>
                     <div className="text-center p-2 bg-muted/30 rounded-lg">
-                      <Stamp className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
+                      <Stamp className="mx-auto mb-1 h-4 w-4 text-muted-foreground" aria-hidden="true" />
                       <p className="text-sm font-semibold text-foreground">
                         {card.customers.reduce((s, c) => s + c.stamps, 0)}
                       </p>
                       <p className="text-xs text-muted-foreground">Sellos</p>
                     </div>
                     <div className="text-center p-2 bg-muted/30 rounded-lg">
-                      <QrCode className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
+                      <QrCode className="mx-auto mb-1 h-4 w-4 text-muted-foreground" aria-hidden="true" />
                       <p className="text-sm font-semibold text-foreground">1</p>
                       <p className="text-xs text-muted-foreground">Código QR</p>
                     </div>
                   </div>
                 )}
 
-                <div className="flex gap-2">
+                <div className="grid gap-2 sm:grid-cols-2">
                   {card.expired ? (
                     <>
-                      <Link href={`/dashboard/cards/${card.id}`} className="flex-1">
+                      <Link href={`/dashboard/cards/${card.id}`}>
                         <Button variant="outline" className="w-full">Ver Detalles</Button>
                       </Link>
                       <DeleteExpiredCardButton
@@ -238,16 +238,16 @@ export default async function CardsPage({
                     </>
                   ) : (
                     <>
-                      <Link href={`/dashboard/cards/${card.id}`} className="flex-1">
+                      <Link href={`/dashboard/cards/${card.id}`}>
                         <Button variant="outline" className="w-full">Ver Detalles</Button>
                       </Link>
                       <Link href={`/dashboard/scan?cardId=${card.id}`}>
                         <Button
                           variant="default"
-                          className="flex-1 text-white"
+                          className="w-full text-white"
                           style={{ backgroundColor: card.brandColor }}
                         >
-                          <Stamp className="h-4 w-4 mr-2" />
+                          <Stamp className="h-4 w-4 mr-2" aria-hidden="true" />
                           Sellar
                         </Button>
                       </Link>
@@ -261,7 +261,7 @@ export default async function CardsPage({
           {status !== "expired" && (
             <Link
               href="/dashboard/cards/new"
-              className="bg-muted/30 rounded-2xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-muted/50 transition-all flex flex-col items-center justify-center text-center p-8 min-h-[200px] sm:min-h-[400px]"
+              className="flex min-h-[200px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-muted/30 p-8 text-center transition-[border-color,background-color] hover:border-primary/50 hover:bg-muted/50 focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:min-h-[400px]"
             >
               <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
                 <Plus className="h-8 w-8 text-primary" />

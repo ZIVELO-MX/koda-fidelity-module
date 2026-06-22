@@ -57,7 +57,7 @@ export default async function CustomersPage({
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Clientes</h1>
+          <h1 className="text-2xl font-bold text-foreground text-balance">Clientes</h1>
           <p className="text-muted-foreground">Consulta y gestiona los miembros de tu programa de lealtad</p>
         </div>
         <Button asChild variant="outline" className="w-full sm:w-auto">
@@ -67,14 +67,15 @@ export default async function CustomersPage({
 
       <div className="space-y-3">
         <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <div className="relative w-full flex-1 sm:max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" aria-hidden="true" />
             <form method="GET">
               <Input
                 name="q"
-                placeholder="Buscar clientes..."
+                placeholder="Buscar clientes…"
                 className="pl-10"
                 defaultValue={q ?? ""}
+                autoComplete="off"
               />
               {cardFilter && <input type="hidden" name="card" value={cardFilter} />}
               {sortParam && <input type="hidden" name="sort" value={sortParam} />}
@@ -92,7 +93,7 @@ export default async function CustomersPage({
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
             <Link
               href={`/dashboard/customers?${new URLSearchParams({ ...(q ? { q } : {}), ...(sortParam ? { sort: sortParam } : {}), ...(orderParam ? { order: orderParam } : {}) }).toString()}`}
-              className={`shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+              className={`shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 ${
                 !cardFilter
                   ? "bg-primary/10 text-primary"
                   : "bg-muted text-muted-foreground hover:text-foreground"
@@ -111,7 +112,7 @@ export default async function CustomersPage({
                 <Link
                   key={card.id}
                   href={`/dashboard/customers?${p.toString()}`}
-                  className={`shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                  className={`shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 ${
                     cardFilter === card.id
                       ? "bg-primary/10 text-primary"
                       : "bg-muted text-muted-foreground hover:text-foreground"

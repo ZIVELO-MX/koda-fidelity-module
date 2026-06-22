@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
@@ -81,12 +82,12 @@ export default async function CardDetailPage({
         href="/dashboard/cards"
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
-        <ArrowLeft className="h-4 w-4" />
+        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
         Volver a tarjetas
       </Link>
 
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="flex items-center gap-4">
+        <div className="flex min-w-0 items-center gap-4">
           {(() => {
             const icon = getCardIcon(card.iconName)
             const IconComp = icon?.Icon
@@ -96,7 +97,7 @@ export default async function CardDetailPage({
                   className="w-14 h-14 rounded-xl flex items-center justify-center text-white font-bold text-xl shrink-0"
                   style={{ backgroundColor: card.brandColor }}
                 >
-                  <img src={business.logoUrl} alt="" className="w-9 h-9 object-contain" />
+                  <Image src={business.logoUrl} alt="" width={36} height={36} className="object-contain" />
                 </div>
               )
             }
@@ -105,59 +106,50 @@ export default async function CardDetailPage({
                 className="w-14 h-14 rounded-xl flex items-center justify-center text-white font-bold text-xl shrink-0"
                 style={{ backgroundColor: card.brandColor }}
               >
-                {IconComp ? <IconComp className="h-7 w-7" /> : card.name.charAt(0)}
+                {IconComp ? <IconComp className="h-7 w-7" aria-hidden="true" /> : card.name.charAt(0)}
               </div>
             )
           })()}
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-bold text-foreground">{card.name}</h1>
+              <h1 className="min-w-0 break-words text-2xl font-bold text-foreground text-balance">{card.name}</h1>
               {cardExpired && (
                 <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-destructive/10 text-destructive">
                   Vencida
                 </span>
               )}
             </div>
-            <p className="text-muted-foreground">{card.stampsRequired} sellos para {card.reward}</p>
+            <p className="break-words text-muted-foreground">{card.stampsRequired} sellos para {card.reward}</p>
           </div>
         </div>
         <CardActions
           cardId={card.id}
-          businessName={business.name}
-          businessLogo={business.logoUrl}
-          maxStamps={card.stampsRequired}
-          initialName={card.name}
-          initialReward={card.reward}
-          initialColor={card.brandColor}
-          initialIcon={card.iconName}
-          initialStampIcon={card.stampIconName}
-          initialDescription={card.description}
-          initialMilestones={card.milestoneRewards}
+          cardName={card.name}
         />
       </div>
 
       {card.description && (
-        <p className="text-muted-foreground">{card.description}</p>
+        <p className="break-words text-muted-foreground">{card.description}</p>
       )}
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-card rounded-xl p-4 border border-border">
-          <Users className="h-5 w-5 text-muted-foreground mb-2" />
+          <Users className="h-5 w-5 text-muted-foreground mb-2" aria-hidden="true" />
           <p className="text-2xl font-bold text-foreground">{card._count.customers}</p>
           <p className="text-sm text-muted-foreground">Clientes</p>
         </div>
         <div className="bg-card rounded-xl p-4 border border-border">
-          <Stamp className="h-5 w-5 text-muted-foreground mb-2" />
+          <Stamp className="h-5 w-5 text-muted-foreground mb-2" aria-hidden="true" />
           <p className="text-2xl font-bold text-foreground">{totalStamps}</p>
           <p className="text-sm text-muted-foreground">Sellos totales</p>
         </div>
         <div className="bg-card rounded-xl p-4 border border-border">
-          <Gift className="h-5 w-5 text-muted-foreground mb-2" />
+          <Gift className="h-5 w-5 text-muted-foreground mb-2" aria-hidden="true" />
           <p className="text-2xl font-bold text-foreground">{readyToRedeem}</p>
           <p className="text-sm text-muted-foreground">Listos para canjear</p>
         </div>
         <div className="bg-card rounded-xl p-4 border border-border">
-          <Calendar className="h-5 w-5 text-muted-foreground mb-2" />
+          <Calendar className="h-5 w-5 text-muted-foreground mb-2" aria-hidden="true" />
           <p className="text-sm font-medium text-foreground">
             {card.expiresAt ? card.expiresAt.toLocaleDateString("es-MX") : "Sin vencimiento"}
           </p>
@@ -169,7 +161,7 @@ export default async function CardDetailPage({
 
       {cardExpired && incompleteCustomers > 0 && (
         <div className="flex items-start gap-3 bg-destructive/5 border border-destructive/20 rounded-xl p-4">
-          <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+          <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" aria-hidden="true" />
           <div>
             <p className="text-sm font-medium text-destructive">Esta tarjeta ya venció</p>
             <p className="text-sm text-muted-foreground mt-0.5">
@@ -180,15 +172,16 @@ export default async function CardDetailPage({
       )}
 
       <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative w-full flex-1 sm:max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" aria-hidden="true" />
             <form method="GET">
               <Input
                 name="q"
-                placeholder="Buscar clientes..."
+                placeholder="Buscar clientes…"
                 defaultValue={q || ""}
                 className="pl-10"
+                autoComplete="off"
               />
               {sortParam && <input type="hidden" name="sort" value={sortParam} />}
               {orderParam && <input type="hidden" name="order" value={orderParam} />}

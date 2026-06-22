@@ -1,8 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Input } from "@/components/ui/input"
+import { es } from "date-fns/locale"
+import { CalendarIcon, Trash2, ChevronDown } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { addDays, addMonths, addYears, toDateInputValue } from "@/lib/card-utils"
+import { cn } from "@/lib/utils"
 
 type OptionKey = "1w" | "1m" | "3m" | "6m" | "1y"
 type Mode = "none" | "custom" | OptionKey
@@ -22,6 +28,7 @@ interface ExpirationPickerProps {
 
 export function ExpirationPicker({ value, onChange }: ExpirationPickerProps) {
   const [mode, setMode] = useState<Mode>(() => (!value ? "none" : "custom"))
+  const [calendarOpen, setCalendarOpen] = useState(false)
 
   useEffect(() => {
     if (mode === "none") { onChange(""); return }
@@ -29,59 +36,100 @@ export function ExpirationPicker({ value, onChange }: ExpirationPickerProps) {
     if (opt) onChange(toDateInputValue(opt.compute()))
   }, [mode]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const today = toDateInputValue(new Date())
+  const today = new Date()
+  const selectedDate = value ? new Date(value + "T12:00:00") : undefined
+
+  function handleQuickOption(key: OptionKey | "none") {
+    setMode(key)
+    setCalendarOpen(false)
+  }
+
+  function handleSelectChange(val: string) {
+    if (val === "none") {
+      handleQuickOption("none")
+    } else {
+      handleQuickOption(val as OptionKey)
+    }
+  }
+
+  function handleDateSelect(date: Date | undefined) {
+    if (date) {
+      onChange(toDateInputValue(date))
+      setMode("custom")
+      setCalendarOpen(false)
+    }
+  }
+
+  function handleClearDate() {
+    onChange("")
+    setMode("none")
+    setCalendarOpen(false)
+  }
+
+  const selectValue = mode === "none" ? "none" : mode === "custom" ? "custom" : mode
+  const selectPlaceholder = value
+    ? new Date(value + "T12:00:00").toLocaleDateString("es-MX", {
+        day: "numeric",
+        month: "short",
+      })
+    : "Elegir fecha…"
 
   return (
     <div className="space-y-3" data-testid="expiration-picker">
-      <div className="flex flex-wrap gap-2">
-        {QUICK_OPTIONS.map(({ key, label }) => (
+      <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+        <PopoverTrigger asChild>
           <button
-            key={key}
             type="button"
-            onClick={() => setMode(key)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-              mode === key
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-foreground hover:bg-muted/80"
-            }`}
+            className={cn(
+              "inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all border border-input bg-background hover:bg-muted w-full sm:w-auto",
+              value && "border-primary/50",
+            )}
           >
-            {label}
+            <CalendarIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="flex-1 text-left">{selectPlaceholder}</span>
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
           </button>
-        ))}
-        <button
-          type="button"
-          onClick={() => setMode("none")}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-            mode === "none"
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-foreground hover:bg-muted/80"
-          }`}
-        >
-          Sin caducidad
-        </button>
-        <button
-          type="button"
-          onClick={() => setMode("custom")}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-            mode === "custom"
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-foreground hover:bg-muted/80"
-          }`}
-        >
-          Elegir fecha…
-        </button>
-      </div>
+        </PopoverTrigger>
+        <PopoverContent className="w-72 p-0" align="start">
+          <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
+            <span className="text-sm font-medium">Fecha de vencimiento</span>
+            {value && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearDate}
+                className="text-destructive h-auto px-2 py-1 text-xs gap-1 font-medium"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Eliminar fecha
+              </Button>
+            )}
+          </div>
 
-      {mode === "custom" && (
-        <Input
-          type="date"
-          min={today}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="max-w-[200px]"
-          data-testid="expiration-date-input"
-        />
-      )}
+          <div className="border-b border-border px-3 py-3">
+            <Select value={selectValue} onValueChange={handleSelectChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Seleccionar plazo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sin fecha de vencimiento</SelectItem>
+                {QUICK_OPTIONS.map(({ key, label }) => (
+                  <SelectItem key={key} value={key}>{label}</SelectItem>
+                ))}
+                <SelectItem value="custom">Elegir fecha en calendario</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Calendar
+            mode="single"
+            selected={selectedDate}
+            onSelect={handleDateSelect}
+            disabled={(date) => date < new Date(today.getFullYear(), today.getMonth(), today.getDate())}
+            locale={es}
+          />
+        </PopoverContent>
+      </Popover>
 
       {mode !== "none" && value && (
         <p className="text-xs text-muted-foreground">
