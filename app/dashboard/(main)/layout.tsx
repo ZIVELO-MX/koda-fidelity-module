@@ -1,5 +1,4 @@
-import { DashboardSidebar } from "@/components/dashboard/sidebar"
-import { DashboardHeader } from "@/components/dashboard/header"
+import { DashboardLayoutClient } from "@/components/dashboard/dashboard-layout-client"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 import { redirect } from "next/navigation"
@@ -39,23 +38,15 @@ export default async function DashboardLayout({
         '--chart-1': business.brandColor,
       } as React.CSSProperties}
     >
-      <DashboardSidebar
+      <DashboardLayoutClient
         userEmail={user.email}
         businessName={business.name}
         brandColor={business.brandColor}
         nickname={business.nickname ?? undefined}
         role={role}
-      />
-      <div className="lg:pl-64 sidebar-collapsed:lg:pl-16 transition-all duration-300">
-        <DashboardHeader
-          userEmail={user.email}
-          businessName={business.name}
-          brandColor={business.brandColor}
-          nickname={business.nickname ?? undefined}
-          role={role}
-        />
-        <main className="p-4 sm:p-6 pt-4 lg:pt-6 pb-20 lg:pb-6">{children}</main>
-      </div>
+      >
+        {children}
+      </DashboardLayoutClient>
     </div>
   )
 }

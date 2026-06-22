@@ -2,7 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { render, screen, cleanup, fireEvent } from "@testing-library/react"
 import { DashboardSidebar } from "../sidebar"
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/dashboard" }))
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/dashboard",
+  useRouter: () => ({ refresh: vi.fn() }),
+}))
 vi.mock("next/image", () => ({
   default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => <img {...props} />,
 }))
@@ -21,6 +24,8 @@ const BASE_PROPS = {
   userEmail: "test@test.com",
   businessName: "Mi Negocio",
   brandColor: "#f97316",
+  collapsed: false,
+  onToggleCollapse: vi.fn(),
 }
 
 // sidebar renders desktop + mobile — items may appear more than once
@@ -49,8 +54,6 @@ describe("DashboardSidebar — role-based navigation", () => {
     it("shows Configuración", () => expect(hasText("Configuración")).toBe(true))
     it("shows Equipo", () => expect(hasText("Equipo")).toBe(true))
     it("shows Documentación", () => expect(hasText("Documentación")).toBe(true))
-    it("does not show Sellador badge", () => expect(lacksText("Sellador")).toBe(true))
-
     describe("mobile menu panel (admin)", () => {
       beforeEach(() => openMobileMenu())
 
@@ -100,8 +103,6 @@ describe("DashboardSidebar — role-based navigation", () => {
     it("does NOT show Marca", () => expect(lacksText("Marca")).toBe(true))
     it("does NOT show Equipo", () => expect(lacksText("Equipo")).toBe(true))
     it("does NOT show Documentación", () => expect(lacksText("Documentación")).toBe(true))
-    it("shows Sellador badge", () => expect(hasText("Sellador")).toBe(true))
-
     describe("mobile menu panel (sellador)", () => {
       beforeEach(() => openMobileMenu())
 

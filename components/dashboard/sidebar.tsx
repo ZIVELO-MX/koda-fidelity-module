@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import {
   LayoutDashboard,
@@ -17,9 +17,6 @@ import {
   UserCog,
   Camera,
   Menu,
-  ChevronDown,
-  PanelLeftClose,
-  PanelLeft,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -38,6 +35,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { logout } from "@/lib/actions/auth"
 import { MobileSettingsPanel } from "./mobile-settings-panel"
 import { useEffect, useRef, useState } from "react"
@@ -49,6 +55,8 @@ interface DashboardSidebarProps {
   brandColor: string
   nickname?: string
   role: Role
+  collapsed: boolean
+  onToggleCollapse: () => void
 }
 
 const navGroups = [
@@ -73,7 +81,6 @@ const navGroups = [
   },
 ]
 
-// hrefs already covered by the 4 fixed bottom-nav tabs (Panel, Tarjetas, Escáner, Clientes)
 const BOTTOM_NAV_HREFS = new Set([
   "/dashboard",
   "/dashboard/cards",
@@ -81,28 +88,25 @@ const BOTTOM_NAV_HREFS = new Set([
   "/dashboard/customers",
 ])
 
-const SIDEBAR_STATE_KEY = "dashboard-sidebar-state"
 const SIDEBAR_GROUPS_STORAGE_KEY = "dashboard-sidebar-groups"
-const DEFAULT_OPEN_GROUPS: Record<string, boolean> = {
-  Gestión: true,
-  Administración: true,
-}
 
-export function DashboardSidebar({ userEmail, businessName, brandColor, nickname, role }: DashboardSidebarProps) {
+export function DashboardSidebar({
+  userEmail,
+  businessName,
+  brandColor,
+  nickname,
+  role,
+  collapsed,
+  onToggleCollapse,
+}: DashboardSidebarProps) {
+  const router = useRouter()
   const pathname = usePathname()
   const [moreOpen, setMoreOpen] = useState(false)
   const [logoutOpen, setLogoutOpen] = useState(false)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [openGroups, setOpenGroups] = useState<string[]>(["Gestión", "Administración"])
   const prefsLoaded = useRef(false)
 
   useEffect(() => {
-    const rawCollapsed = window.localStorage.getItem(SIDEBAR_STATE_KEY)
-    if (rawCollapsed === "true") {
-      setSidebarCollapsed(true)
-      document.documentElement.classList.add("sidebar-collapsed")
-    }
-
     const rawGroups = window.localStorage.getItem(SIDEBAR_GROUPS_STORAGE_KEY)
     if (rawGroups) {
       try {
@@ -117,19 +121,11 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
 
   useEffect(() => {
     if (!prefsLoaded.current) return
-    window.localStorage.setItem(SIDEBAR_STATE_KEY, JSON.stringify(sidebarCollapsed))
-    document.documentElement.classList.toggle("sidebar-collapsed", sidebarCollapsed)
-  }, [sidebarCollapsed])
-
-  useEffect(() => {
-    if (!prefsLoaded.current) return
     window.localStorage.setItem(SIDEBAR_GROUPS_STORAGE_KEY, JSON.stringify(openGroups))
   }, [openGroups])
 
   const visibleGroups = navGroups.filter((g) => g.roles.includes(role))
 
-  // Mobile "Menú" panel: complete navigation map with all destinations visible.
-  // BOTTOM_NAV_HREFS is kept only to avoid lighting up "Menú" while a bottom-tab is active.
   const moreNavGroups = [
     {
       label: "General",
@@ -165,21 +161,76 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
     )
   }
 
+  function NavLink({
+    href,
+    icon: Icon,
+    children,
+  }: {
+    href: string
+    icon: React.ComponentType<{ className?: string }>
+    children: React.ReactNode
+  }) {
+    const isActive = pathname.startsWith(href)
+    return (
+      <Link
+        href={href}
+        className={cn(
+          "flex items-center rounded-lg text-sm font-medium transition-colors",
+          collapsed ? "justify-center p-2" : "gap-3 px-3 py-2.5",
+          isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+        )}
+      >
+        <Icon className={cn("h-5 w-5 flex-shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
+        {!collapsed && children}
+      </Link>
+    )
+  }
+
+  function CollapsedNavLink({
+    href,
+    icon: Icon,
+    label,
+  }: {
+    href: string
+    icon: React.ComponentType<{ className?: string }>
+    label: string
+  }) {
+    const isActive = pathname.startsWith(href)
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Link
+            href={href}
+            className={cn(
+              "flex items-center justify-center p-2 rounded-lg transition-colors",
+              isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
+          >
+            <Icon className={cn("h-5 w-5 flex-shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
+          </Link>
+        </TooltipTrigger>
+        <TooltipContent side="right">{label}</TooltipContent>
+      </Tooltip>
+    )
+  }
+
   return (
     <>
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          "hidden lg:flex fixed top-0 left-0 z-40 h-full bg-card border-r border-border flex-col transition-all duration-300",
-          sidebarCollapsed ? "w-16" : "w-64 max-w-[calc(100vw-2rem)]",
+          "hidden lg:flex sticky top-0 self-start z-40 h-screen bg-card border-r border-border flex-col transition-all duration-300",
+          collapsed ? "w-16" : "w-64 max-w-[calc(100vw-2rem)]",
         )}
       >
-        <div className={cn(
-          "flex items-center border-b border-border shrink-0",
-          sidebarCollapsed ? "justify-center px-0 py-5" : "gap-2 px-6 py-5",
-        )}>
+        <div
+          className={cn(
+            "flex items-center border-b border-border shrink-0",
+            collapsed ? "justify-center px-0 py-5" : "gap-2 px-6 py-5",
+          )}
+        >
           <Image src="/short-logo.svg" alt="Koda" width={36} height={36} className="size-9 shrink-0" />
-          {!sidebarCollapsed && (
+          {!collapsed && (
             <div className="flex flex-col">
               <span className="font-semibold text-foreground">Koda Fidelity</span>
               <span className="text-xs text-muted-foreground">Plataforma de Lealtad</span>
@@ -188,27 +239,19 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
         </div>
 
         <nav className="flex-1 overflow-y-auto">
-          {/* Panel — standalone */}
-          {(() => {
-            const isActive = pathname === "/dashboard"
-            return (
-              <Link
-                href="/dashboard"
-                className={cn(
-                  "flex items-center rounded-lg text-sm font-medium transition-colors mx-2 my-1",
-                  sidebarCollapsed ? "justify-center p-2" : "gap-3 px-3 py-2.5",
-                  isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-                title={sidebarCollapsed ? "Panel" : undefined}
-              >
-                <LayoutDashboard className={cn("h-5 w-5 flex-shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
-                {!sidebarCollapsed && <>Panel</>}
-              </Link>
-            )
-          })()}
+          {/* Panel */}
+          {collapsed ? (
+            <CollapsedNavLink href="/dashboard" icon={LayoutDashboard} label="Panel" />
+          ) : (
+            <div className="mx-2 my-1">
+              <NavLink href="/dashboard" icon={LayoutDashboard}>
+                Panel
+              </NavLink>
+            </div>
+          )}
 
           {/* Grouped sections with Accordion */}
-          {!sidebarCollapsed && (
+          {!collapsed && (
             <Accordion
               type="multiple"
               value={openGroups}
@@ -222,24 +265,11 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-0.5 pb-1">
-                      {group.items.map((item) => {
-                        const isActive = pathname.startsWith(item.href)
-                        return (
-                          <Link
-                            key={item.name}
-                            href={item.href}
-                            className={cn(
-                              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                              isActive
-                                ? "bg-primary/10 text-primary"
-                                : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                            )}
-                          >
-                            <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
-                            {item.name}
-                          </Link>
-                        )
-                      })}
+                      {group.items.map((item) => (
+                        <NavLink key={item.name} href={item.href} icon={item.icon}>
+                          {item.name}
+                        </NavLink>
+                      ))}
                     </div>
                   </AccordionContent>
                 </AccordionItem>
@@ -247,111 +277,108 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
             </Accordion>
           )}
 
-          {/* Collapsed: show icons only */}
-          {sidebarCollapsed && (
-            <div className="flex flex-col items-center gap-1 px-2 pt-2">
-              {visibleGroups.map((group) =>
-                group.items.map((item) => {
-                  const isActive = pathname.startsWith(item.href)
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      className={cn(
-                        "flex items-center justify-center p-2 rounded-lg transition-colors",
-                        isActive
-                          ? "bg-primary/10 text-primary"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                      )}
-                      title={item.name}
-                    >
-                      <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
-                    </Link>
-                  )
-                }),
-              )}
-            </div>
-          )}
+          {/* Collapsed: iconos con Tooltip */}
+          {collapsed &&
+            visibleGroups.map((group) =>
+              group.items.map((item) => (
+                <CollapsedNavLink key={item.name} href={item.href} icon={item.icon} label={item.name} />
+              )),
+            )}
         </nav>
 
-        <div className={cn(
-          "border-t border-border space-y-1",
-          sidebarCollapsed ? "flex flex-col items-center p-2" : "p-4",
-        )}>
-          {role === "sellador" && (
-            <div className={sidebarCollapsed ? "" : "px-3 py-1.5 mb-1"}>
-              <span className={cn(
-                "inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-muted rounded-full",
-                sidebarCollapsed ? "px-1.5 py-0.5" : "px-2 py-0.5",
-              )}>
-                <UserCog className="h-3 w-3" />
-                {!sidebarCollapsed && <>Sellador</>}
-              </span>
-            </div>
-          )}
-          <Link
-            href="/dashboard/my-cards"
-            className={cn(
-              "flex items-center rounded-lg transition-colors text-muted-foreground hover:bg-muted hover:text-foreground",
-              sidebarCollapsed ? "justify-center p-2" : "gap-3 px-3 py-2 text-sm font-medium",
-            )}
-            title={sidebarCollapsed ? "Mis Tarjetas" : undefined}
-          >
-            <Smartphone className="h-5 w-5 shrink-0" />
-            {!sidebarCollapsed && <>Mis Tarjetas</>}
-          </Link>
-          <Button
-            size="sm"
-            variant="ghost"
-            className={cn(
-              "text-muted-foreground hover:text-destructive",
-              sidebarCollapsed ? "justify-center p-2 w-auto" : "w-full justify-start gap-3 text-xs",
-            )}
-            onClick={() => setLogoutOpen(true)}
-            title={sidebarCollapsed ? "Cerrar Sesión" : undefined}
-          >
-            <LogOut className="h-5 w-5 shrink-0" />
-            {!sidebarCollapsed && <>Cerrar Sesión</>}
-          </Button>
-
-          {/* Sidebar collapse toggle */}
-          <button
-            type="button"
-            onClick={() => setSidebarCollapsed((prev) => !prev)}
-            className={cn(
-              "flex items-center justify-center rounded-lg transition-colors text-muted-foreground hover:bg-muted hover:text-foreground",
-              sidebarCollapsed ? "p-2 w-full" : "w-full gap-3 px-3 py-2 text-xs font-medium",
-            )}
-            title={sidebarCollapsed ? "Expandir barra lateral" : "Colapsar barra lateral"}
-          >
-            {sidebarCollapsed ? (
-              <PanelLeft className="h-5 w-5 shrink-0" />
-            ) : (
-              <>
-                <PanelLeftClose className="h-5 w-5 shrink-0" />
-                Colapsar
-              </>
-            )}
-          </button>
-
-          <AlertDialog open={logoutOpen} onOpenChange={setLogoutOpen}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Cerrar sesión</AlertDialogTitle>
-                <AlertDialogDescription>¿Estás seguro de que deseas cerrar sesión?</AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={async () => await logout()}
-                  className="bg-destructive hover:bg-destructive/90"
-                >
-                  Cerrar sesión
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+        {/* Perfil fijado abajo */}
+        <div className="border-t border-border p-2 shrink-0">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className={cn(
+                  "flex w-full items-center rounded-lg transition-colors hover:bg-muted",
+                  collapsed ? "justify-center p-2" : "gap-3 px-3 py-2",
+                )}
+              >
+                <Avatar className={cn("shrink-0", collapsed ? "h-8 w-8" : "h-9 w-9")}>
+                  <AvatarFallback
+                    className="text-sm font-medium text-white"
+                    style={{ backgroundColor: brandColor }}
+                  >
+                    {businessName.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                {!collapsed && (
+                  <div className="flex flex-col items-start text-sm min-w-0">
+                    <span className="font-medium text-foreground truncate w-full text-left">
+                      {nickname || businessName}
+                    </span>
+                    <span className="text-xs text-muted-foreground truncate w-full text-left">
+                      {userEmail}
+                    </span>
+                  </div>
+                )}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="right" align="end" className="w-56">
+              <div className="flex items-center gap-3 px-2 py-2">
+                <Avatar className="h-10 w-10">
+                  <AvatarFallback
+                    className="text-sm font-medium text-white"
+                    style={{ backgroundColor: brandColor }}
+                  >
+                    {businessName.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-sm font-medium text-foreground truncate">
+                    {nickname || businessName}
+                  </span>
+                  <span className="text-xs text-muted-foreground truncate">{userEmail}</span>
+                </div>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/my-cards" className="cursor-pointer">
+                  <Smartphone className="mr-2 h-4 w-4" />
+                  Mis Tarjetas
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/settings" className="cursor-pointer">
+                  <Settings className="mr-2 h-4 w-4" />
+                  Configuración
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => setLogoutOpen(true)}
+                className="text-destructive cursor-pointer"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Cerrar Sesión
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
+
+        <AlertDialog open={logoutOpen} onOpenChange={setLogoutOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Cerrar sesión</AlertDialogTitle>
+              <AlertDialogDescription>¿Estás seguro de que deseas cerrar sesión?</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={async () => {
+                  await logout()
+                  router.refresh()
+                }}
+                className="bg-destructive hover:bg-destructive/90"
+              >
+                Cerrar sesión
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </aside>
 
       {/* Mobile bottom navbar */}
@@ -360,7 +387,6 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="flex items-end justify-around h-16 px-2">
-          {/* Panel, Tarjetas */}
           {mobileMainItems.slice(0, 2).map((item) => {
             const isActive =
               pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
@@ -371,7 +397,12 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
                 className="flex flex-col items-center justify-center gap-0.5 min-w-0 px-2 py-1 rounded-lg transition-colors"
               >
                 <item.icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted-foreground")} />
-                <span className={cn("text-[10px] font-medium leading-tight truncate w-full text-center", isActive ? "text-primary" : "text-muted-foreground")}>
+                <span
+                  className={cn(
+                    "text-[10px] font-medium leading-tight truncate w-full text-center",
+                    isActive ? "text-primary" : "text-muted-foreground",
+                  )}
+                >
                   {item.name}
                 </span>
               </Link>
@@ -389,7 +420,7 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
                 "h-14 w-14 rounded-full flex items-center justify-center shadow-lg transition-all",
                 isScanActive
                   ? "bg-primary scale-105 shadow-primary/40"
-                  : "bg-primary/90 hover:bg-primary shadow-primary/20"
+                  : "bg-primary/90 hover:bg-primary shadow-primary/20",
               )}
             >
               <Camera className="h-6 w-6 text-primary-foreground" />
@@ -397,7 +428,7 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
             <span
               className={cn(
                 "text-[10px] font-medium leading-tight",
-                isScanActive ? "text-primary" : "text-muted-foreground"
+                isScanActive ? "text-primary" : "text-muted-foreground",
               )}
             >
               Escáner
@@ -414,7 +445,12 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
                 className="flex flex-col items-center justify-center gap-0.5 min-w-0 px-2 py-1 rounded-lg transition-colors"
               >
                 <item.icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted-foreground")} />
-                <span className={cn("text-[10px] font-medium leading-tight truncate w-full text-center", isActive ? "text-primary" : "text-muted-foreground")}>
+                <span
+                  className={cn(
+                    "text-[10px] font-medium leading-tight truncate w-full text-center",
+                    isActive ? "text-primary" : "text-muted-foreground",
+                  )}
+                >
                   {item.name}
                 </span>
               </Link>
@@ -428,7 +464,14 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
             aria-label="Abrir menú"
           >
             <Menu className={cn("h-5 w-5", isMenuActive ? "text-primary" : "text-muted-foreground")} />
-            <span className={cn("text-[10px] font-medium leading-tight truncate w-full text-center", isMenuActive ? "text-primary" : "text-muted-foreground")}>Menú</span>
+            <span
+              className={cn(
+                "text-[10px] font-medium leading-tight truncate w-full text-center",
+                isMenuActive ? "text-primary" : "text-muted-foreground",
+              )}
+            >
+              Menú
+            </span>
           </button>
         </div>
       </nav>
