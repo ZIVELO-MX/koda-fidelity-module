@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -137,11 +138,11 @@ export default function BrandingPage() {
         <h2 className="font-semibold text-foreground">Logo del Negocio <span className="text-muted-foreground font-normal text-sm">(opcional)</span></h2>
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
           <div
-            className="w-20 h-20 rounded-2xl flex items-center justify-center text-white font-bold text-2xl shrink-0 overflow-hidden"
+            className="w-20 h-20 rounded-2xl flex items-center justify-center text-white font-bold text-2xl shrink-0 overflow-hidden relative"
             style={{ backgroundColor: brandColor }}
           >
             {logoUrl ? (
-              <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-1" />
+              <Image src={logoUrl} alt="Logo" fill className="object-contain p-1" />
             ) : (
               businessName.charAt(0)
             )}

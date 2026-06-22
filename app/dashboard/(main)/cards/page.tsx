@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -145,7 +146,7 @@ export default async function CardsPage({
                           className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shrink-0"
                           style={{ backgroundColor: card.brandColor }}
                         >
-                          <img src={business.logoUrl} alt="" className="w-8 h-8 object-contain" />
+                          <Image src={business.logoUrl} alt="" width={32} height={32} className="object-contain" />
                         </div>
                       )
                     }

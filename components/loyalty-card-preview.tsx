@@ -4,7 +4,7 @@ import { QRCodeSVG } from "qrcode.react"
 import { Stamp } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getCardIcon } from "@/lib/card-icons"
-import { isLight, cardTextColor } from "@/lib/color-utils"
+
 
 interface LoyaltyCardPreviewProps {
   businessName: string
@@ -44,15 +44,14 @@ export function LoyaltyCardPreview({
   const stamps = Array.from({ length: maxStamps }, (_, i) => i < currentStamps)
   const milestonePositions = new Map(milestoneClaims.map(c => [c.stampNumber, c]))
 
-  const light = isLight(brandColor)
-  const fg = light ? "#1a1a1a" : "#ffffff"
-  const fgMuted = light ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.6)"
-  const fgMuted2 = light ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.7)"
-  const overlay = light ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.12)"
-  const overlayIcon = light ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.2)"
-  const stampBg = light ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.95)"
-  const stampBorder = light ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.3)"
-  const footerBg = light ? "rgba(0,0,0,0.03)" : "rgba(0,0,0,0.1)"
+  const fg = "#ffffff"
+  const fgMuted = "rgba(255,255,255,0.6)"
+  const fgMuted2 = "rgba(255,255,255,0.7)"
+  const overlay = "rgba(255,255,255,0.12)"
+  const overlayIcon = "rgba(255,255,255,0.2)"
+  const stampBg = "rgba(255,255,255,0.95)"
+  const stampBorder = "rgba(255,255,255,0.3)"
+  const footerBg = "rgba(0,0,0,0.1)"
 
   return (
     <div
@@ -106,7 +105,7 @@ export function LoyaltyCardPreview({
       {/* Stamps section */}
       <div className="px-6 pb-4">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-medium" style={{ color: light ? "rgba(0,0,0,0.8)" : fg }}>Tu Progreso</p>
+          <p className="text-sm font-medium" style={{ color: fg }}>Tu Progreso</p>
           <p className="text-sm" style={{ color: fgMuted2 }}>
             {currentStamps}/{maxStamps}
           </p>
@@ -130,7 +129,7 @@ export function LoyaltyCardPreview({
                 )}
                 style={
                   isMilestone && filled
-                    ? { backgroundColor: brandColor, boxShadow: `0 0 0 2px ${light ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.4)"} inset` }
+                    ? { backgroundColor: brandColor, boxShadow: "0 0 0 2px rgba(255,255,255,0.4) inset" }
                     : filled
                       ? {
                           backgroundColor: stampBg,
@@ -143,7 +142,7 @@ export function LoyaltyCardPreview({
                   if (isMilestone) {
                     const milestoneIcon = getCardIcon(milestoneClaim.iconName)
                     const MilestoneIconComp = milestoneIcon?.Icon ?? Stamp
-                    return <MilestoneIconComp className="w-5 h-5" style={{ color: light ? "rgba(0,0,0,0.7)" : "#ffffff" }} strokeWidth={2} />
+                    return <MilestoneIconComp className="w-5 h-5" style={{ color: "#ffffff" }} strokeWidth={2} />
                   }
                   const effectiveStampIcon = stampIconName ?? iconName
                   if (effectiveStampIcon === "logo" && businessLogo) {
@@ -151,7 +150,7 @@ export function LoyaltyCardPreview({
                   }
                   const cardIcon = getCardIcon(effectiveStampIcon)
                   const StampIcon = cardIcon?.Icon ?? Stamp
-                  return <StampIcon className="w-5 h-5" style={{ color: light ? "#1a1a1a" : brandColor }} strokeWidth={2} />
+                  return <StampIcon className="w-5 h-5" style={{ color: brandColor }} strokeWidth={2} />
                 })()}
               </div>
             )
@@ -181,7 +180,7 @@ export function LoyaltyCardPreview({
               value={qrValue}
               size={80}
               level="M"
-              fgColor={light ? "#1a1a1a" : brandColor}
+              fgColor={brandColor}
             />
           </div>
         </div>

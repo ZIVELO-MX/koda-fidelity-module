@@ -22,6 +22,11 @@ function timeAgo(date: Date): string {
 }
 
 export default async function DashboardPage() {
+  let loadingError = false
+  let business: Record<string, any> | null = null
+  let cards: any[] = []
+  let allLogs: any[] = []
+
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -39,7 +44,7 @@ export default async function DashboardPage() {
       redirect("/login")
     }
 
-    const business = await prisma.business.findUnique({
+    business = await prisma.business.findUnique({
       where: { id: userRecord.businessId },
       select: { id: true, name: true, nickname: true, brandColor: true, logoUrl: true, iconName: true },
     })
@@ -48,34 +53,55 @@ export default async function DashboardPage() {
       redirect("/login")
     }
 
-    const cards = await prisma.loyaltyCard.findMany({
-      where: { businessId: business.id, isActive: true },
-      include: {
-        _count: { select: { customers: { where: { isActive: true } } } },
-        customers: { where: { isActive: true }, select: { stamps: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    })
+    const [fetchedCards, fetchedLogs] = await Promise.all([
+      prisma.loyaltyCard.findMany({
+        where: { businessId: business.id, isActive: true },
+        include: {
+          _count: { select: { customers: { where: { isActive: true } } } },
+          customers: { where: { isActive: true }, select: { stamps: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.stampLog.findMany({
+        where: { customer: { card: { businessId: business.id } } },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+        include: {
+          customer: { select: { name: true, card: { select: { name: true } } } },
+        },
+      }),
+    ])
 
-    const allLogs = await prisma.stampLog.findMany({
-      where: {
-        customer: { card: { businessId: business.id } },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 10,
-      include: {
-        customer: { select: { name: true, card: { select: { name: true } } } },
-      },
-    })
+    cards = fetchedCards
+    allLogs = fetchedLogs
+  } catch {
+    loadingError = true
+  }
 
-    const activeCards = cards.length
-    const totalCustomers = cards.reduce((sum, c) => sum + c._count.customers, 0)
-    const stampsGiven = cards.reduce((sum, c) => sum + c.customers.reduce((s, cust) => s + cust.stamps, 0), 0)
-    const redemptions = allLogs.filter((l) => l.type === "redeem").length
+  if (loadingError || !business) {
+    return (
+      <div className="text-center py-20 space-y-4">
+        <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto">
+          <AlertCircle className="h-8 w-8 text-red-600" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-foreground mb-2">Error al cargar el panel</h2>
+          <p className="text-muted-foreground">Ocurrió un error inesperado. Intenta de nuevo.</p>
+        </div>
+        <Link href="/dashboard">
+          <Button>Reintentar</Button>
+        </Link>
+      </div>
+    )
+  }
+  const activeCards = cards.length
+  const totalCustomers = (cards as any[]).reduce((sum: number, c: any) => sum + c._count.customers, 0)
+  const stampsGiven = (cards as any[]).reduce((sum: number, c: any) => sum + (c.customers as any[]).reduce((s: number, cust: any) => s + cust.stamps, 0), 0)
+  const redemptions = allLogs.filter((l) => l.type === "redeem").length
 
-    const soonExpiring = cards
-      .map((c) => ({ ...c, daysLeft: daysUntilExpiry(c.expiresAt) }))
-      .filter((c) => c.daysLeft !== null && c.daysLeft >= 0 && c.daysLeft <= 7)
+  const soonExpiring = cards
+    .map((c) => ({ ...c, daysLeft: daysUntilExpiry(c.expiresAt) }))
+    .filter((c) => c.daysLeft !== null && c.daysLeft >= 0 && c.daysLeft <= 7)
 
   return (
     <div className="space-y-8">
@@ -178,7 +204,7 @@ export default async function DashboardPage() {
                       <span className="font-medium text-foreground">{card._count.customers}</span> clientes
                     </span>
                     <span className="text-muted-foreground">
-                      <span className="font-medium text-foreground">{card.customers.reduce((s, c) => s + c.stamps, 0)}</span> sellos
+                      <span className="font-medium text-foreground">{(card.customers as any[]).reduce((s: number, c: any) => s + c.stamps, 0)}</span> sellos
                     </span>
                   </div>
                 </div>
@@ -290,7 +316,7 @@ export default async function DashboardPage() {
                   businessLogo={business.logoUrl ?? undefined}
                   iconName={card.iconName ?? business.iconName}
                   customerName="Tus Clientes"
-                  currentStamps={card.customers.length > 0 ? Math.max(...card.customers.map(c => c.stamps)) : 0}
+                  currentStamps={card.customers.length > 0 ? Math.max(...(card.customers as any[]).map((c: any) => c.stamps)) : 0}
                   maxStamps={card.stampsRequired}
                   reward={card.reward}
                   expirationDate={card.expiresAt ? card.expiresAt.toLocaleDateString("es-MX") : undefined}
@@ -317,20 +343,4 @@ export default async function DashboardPage() {
       </div>
     </div>
   )
-  } catch {
-    return (
-      <div className="text-center py-20 space-y-4">
-        <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto">
-          <AlertCircle className="h-8 w-8 text-red-600" />
-        </div>
-        <div>
-          <h2 className="text-xl font-bold text-foreground mb-2">Error al cargar el panel</h2>
-          <p className="text-muted-foreground">Ocurrió un error inesperado. Intenta de nuevo.</p>
-        </div>
-        <Link href="/dashboard">
-          <Button>Reintentar</Button>
-        </Link>
-      </div>
-    )
-  }
 }

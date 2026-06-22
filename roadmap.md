@@ -204,7 +204,8 @@
 
 - [x] Reemplazar el input de fecha por `ExpirationPicker` con opciones rápidas: 1 semana, 1 mes, 3 meses, 6 meses, 1 año, Sin caducidad, Elegir fecha (muestra input de calendario nativo)
 - [x] La opción activa se resalta visualmente
-- [x] Tests de componente: 7 tests en `expiration-picker.test.tsx`
+- [x] Migrado a Popover + Calendar (shadcn/ui) con Select dropdown para opciones rápidas y botón "Eliminar fecha" en el header
+- [x] Tests de componente en `expiration-picker.test.tsx`
 
 #### 7.2 — Lógica de caducidad (helpers)
 
@@ -463,6 +464,11 @@ model StampLog {
 - [ ] **Sidebar unificada con shadcn Sidebar** — refactor post-release: migrar la sidebar actual a la implementación de shadcn/ui (`<SidebarProvider>`, `<Sidebar>`, `<SidebarInset>`), integrando navegación mobile/desktop, menú colapsable por grupo y responsividad. No bloquea `1.1.0` porque la navegación actual ya cubre el mapa mobile/desktop requerido.
 - [x] **Toast con Sonner** — migrar mensajes de toast/notificación actuales a `<Toaster>` + `toast()` de Sonner y retirar el toaster legacy. Implementado en `feat/ui-ux-polish`.
 - [x] **Tooltip con shadcn Tooltip** — `IconPicker` ya usa `Tooltip`; migrados usos puntuales de `title` para información auxiliar (rareza/probabilidad, colores, barra lateral). Implementado en `feat/ui-ux-polish`.
+- [x] **Sidebar colapsable con flex layout** — sidebar cambia de `fixed` a `sticky` + flex container; el contenido principal crece al colapsar. Botón de colapso movido al header con Tooltip. Implementado en `feat/ui-ux-polish`.
+- [x] **Perfil en sidebar con DropdownMenu** — avatar con inicial fijado al fondo del sidebar; DropdownMenu con nickname, email, Mis Tarjetas, Configuración, Cerrar Sesión con confirmación.
+- [x] **ExpirationPicker con Popover+Calendar** — reemplaza el input nativo por shadcn Popover + Calendar con Select dropdown de opciones rápidas y botón "Eliminar fecha" en el header.
+- [x] **Dark mode desactivado** — forzado a light mode (`defaultTheme="light"`), movido a backlog como nice to have.
+- [x] **Lint fixes** — `<img>` migrado a `<Image />` de Next.js en branding, cards; try/catch refactor en dashboard home; tipos corregidos.
 
 ## Historial del MVP `1.0.0`
 

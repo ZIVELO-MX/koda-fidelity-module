@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
@@ -96,7 +97,7 @@ export default async function CardDetailPage({
                   className="w-14 h-14 rounded-xl flex items-center justify-center text-white font-bold text-xl shrink-0"
                   style={{ backgroundColor: card.brandColor }}
                 >
-                  <img src={business.logoUrl} alt="" className="w-9 h-9 object-contain" />
+                  <Image src={business.logoUrl} alt="" width={36} height={36} className="object-contain" />
                 </div>
               )
             }
