@@ -375,13 +375,28 @@ export default function CreateCardPage() {
               <div className="space-y-2">
                 {Array.from({ length: formData.maxStamps }, (_, i) => i + 1).map((pos) => {
                   const mi = milestones.findIndex((ms) => ms.stampNumber === pos)
-                  const m = mi !== -1 ? milestones[mi] : null
+                  const isActive = mi !== -1
+                  const m = isActive ? milestones[mi] : null
                   return (
                     <div key={pos} className="overflow-hidden rounded-xl border border-border">
-                      <div className="flex w-full items-center justify-between px-4 py-3 text-sm">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isActive) {
+                            setMilestones((prev) => prev.filter((x) => x.stampNumber !== pos))
+                          } else {
+                            setMilestones((prev) => {
+                              if (prev.some((x) => x.stampNumber === pos)) return prev
+                              return [...prev, { stampNumber: pos, label: "", iconName: null, probability: 100 }]
+                            })
+                          }
+                        }}
+                        className="flex w-full cursor-pointer items-center justify-between px-4 py-3 text-sm transition-colors hover:bg-muted/50"
+                      >
                         <span className="font-medium">Sello #{pos}</span>
                         <Switch
-                          checked={mi !== -1}
+                          checked={isActive}
+                          onClick={(e) => e.stopPropagation()}
                           onCheckedChange={(checked) => {
                             if (checked) {
                               setMilestones((prev) => {
@@ -393,73 +408,79 @@ export default function CreateCardPage() {
                             }
                           }}
                         />
-                      </div>
-                      {m && (
-                        <div className="space-y-3 border-t border-border px-4 pb-4 pt-3">
-                          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_minmax(11rem,1fr)] sm:items-end">
-                            <div className="min-w-[120px] flex-1 space-y-1.5">
-                              <Label className="text-xs">Recompensa</Label>
-                              <Input
-                                value={m.label}
-                                onChange={(e) =>
-                                  setMilestones((prev) =>
-                                    prev.map((x, j) => (j === mi ? { ...x, label: e.target.value } : x)),
-                                  )
-                                }
-                                placeholder="Ej.: Café gratis"
-                              />
-                            </div>
-                            <div className="space-y-1.5">
-                              <Label className="text-xs">Ícono</Label>
-                              <IconPicker
-                                value={m.iconName}
-                                onChange={(v) =>
-                                  setMilestones((prev) =>
-                                    prev.map((x, j) => (j === mi ? { ...x, iconName: v } : x)),
-                                  )
-                                }
-                                businessLogoUrl={businessLogo}
-                              />
-                            </div>
-                            <div className="min-w-[180px] space-y-1.5">
-                              <Label className="text-xs">Probabilidad</Label>
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="range"
-                                  min={0}
-                                  max={100}
-                                  value={m.probability}
+                      </button>
+                      <div
+                        className={`grid transition-all duration-300 ${
+                          isActive ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                        }`}
+                      >
+                        <div className="overflow-hidden">
+                          <div className="space-y-3 border-t border-border px-4 pb-4 pt-3">
+                            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_minmax(11rem,1fr)] sm:items-end">
+                              <div className="min-w-[120px] flex-1 space-y-1.5">
+                                <Label className="text-xs">Recompensa</Label>
+                                <Input
+                                  value={m?.label ?? ""}
                                   onChange={(e) =>
                                     setMilestones((prev) =>
-                                      prev.map((x, j) =>
-                                        j === mi ? { ...x, probability: Number(e.target.value) } : x,
-                                      ),
+                                      prev.map((x, j) => (j === mi ? { ...x, label: e.target.value } : x)),
                                     )
                                   }
-                                  className="h-2 flex-1 cursor-pointer appearance-none rounded-full border-2"
-                                  style={{
-                                    accentColor: getRarityColor(m.probability),
-                                    borderColor: getRarityColor(m.probability),
-                                  }}
+                                  placeholder="Ej.: Café gratis"
                                 />
-                                <span className="w-10 text-right font-mono text-sm">{m.probability}%</span>
                               </div>
-                              <div className="flex items-center gap-2 text-xs">
-                                <span className="inline-block h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: getRarityColor(m.probability) }} />
-                                <span className="w-20 shrink-0 font-medium">{getRarityLabel(m.probability)}</span>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <span className="w-14 shrink-0 text-right text-muted-foreground">
-                                      {getRarityRange(m.probability)}
-                                    </span>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top">{getRarityDescription(m.probability)}</TooltipContent>
-                                </Tooltip>
+                              <div className="space-y-1.5">
+                                <Label className="text-xs">Ícono</Label>
+                                <IconPicker
+                                  value={m?.iconName ?? null}
+                                  onChange={(v) =>
+                                    setMilestones((prev) =>
+                                      prev.map((x, j) => (j === mi ? { ...x, iconName: v } : x)),
+                                    )
+                                  }
+                                  businessLogoUrl={businessLogo}
+                                />
+                              </div>
+                              <div className="min-w-[180px] space-y-1.5">
+                                <Label className="text-xs">Probabilidad</Label>
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="range"
+                                    min={0}
+                                    max={100}
+                                    value={m?.probability ?? 100}
+                                    onChange={(e) =>
+                                      setMilestones((prev) =>
+                                        prev.map((x, j) =>
+                                          j === mi ? { ...x, probability: Number(e.target.value) } : x,
+                                        ),
+                                      )
+                                    }
+                                    className="h-2 flex-1 cursor-pointer appearance-none rounded-full border-2"
+                                    style={{
+                                      accentColor: getRarityColor(m?.probability ?? 100),
+                                      borderColor: getRarityColor(m?.probability ?? 100),
+                                    }}
+                                  />
+                                  <span className="w-10 text-right font-mono text-sm">{m?.probability ?? 100}%</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs">
+                                  <span className="inline-block h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: getRarityColor(m?.probability ?? 100) }} />
+                                  <span className="w-20 shrink-0 font-medium">{getRarityLabel(m?.probability ?? 100)}</span>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className="w-14 shrink-0 text-right text-muted-foreground">
+                                        {getRarityRange(m?.probability ?? 100)}
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">{getRarityDescription(m?.probability ?? 100)}</TooltipContent>
+                                  </Tooltip>
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
-                      )}
+                      </div>
                     </div>
                   )
                 })}

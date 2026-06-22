@@ -18,13 +18,16 @@ import {
   Camera,
   Menu,
   ChevronDown,
+  PanelLeftClose,
+  PanelLeft,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -78,6 +81,7 @@ const BOTTOM_NAV_HREFS = new Set([
   "/dashboard/customers",
 ])
 
+const SIDEBAR_STATE_KEY = "dashboard-sidebar-state"
 const SIDEBAR_GROUPS_STORAGE_KEY = "dashboard-sidebar-groups"
 const DEFAULT_OPEN_GROUPS: Record<string, boolean> = {
   Gestión: true,
@@ -88,31 +92,37 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
   const pathname = usePathname()
   const [moreOpen, setMoreOpen] = useState(false)
   const [logoutOpen, setLogoutOpen] = useState(false)
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(DEFAULT_OPEN_GROUPS)
-  const sidebarPrefsLoaded = useRef(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [openGroups, setOpenGroups] = useState<string[]>(["Gestión", "Administración"])
+  const prefsLoaded = useRef(false)
 
   useEffect(() => {
-    const rawValue = window.localStorage.getItem(SIDEBAR_GROUPS_STORAGE_KEY)
-    if (!rawValue) {
-      sidebarPrefsLoaded.current = true
-      return
+    const rawCollapsed = window.localStorage.getItem(SIDEBAR_STATE_KEY)
+    if (rawCollapsed === "true") {
+      setSidebarCollapsed(true)
+      document.documentElement.classList.add("sidebar-collapsed")
     }
 
-    try {
-      const parsedValue = JSON.parse(rawValue) as Record<string, unknown>
-      setOpenGroups({
-        Gestión: parsedValue.Gestión === false ? false : true,
-        Administración: parsedValue.Administración === false ? false : true,
-      })
-    } catch {
-      window.localStorage.removeItem(SIDEBAR_GROUPS_STORAGE_KEY)
-    } finally {
-      sidebarPrefsLoaded.current = true
+    const rawGroups = window.localStorage.getItem(SIDEBAR_GROUPS_STORAGE_KEY)
+    if (rawGroups) {
+      try {
+        const parsedValue = JSON.parse(rawGroups) as string[]
+        setOpenGroups(Array.isArray(parsedValue) ? parsedValue : ["Gestión", "Administración"])
+      } catch {
+        window.localStorage.removeItem(SIDEBAR_GROUPS_STORAGE_KEY)
+      }
     }
+    prefsLoaded.current = true
   }, [])
 
   useEffect(() => {
-    if (!sidebarPrefsLoaded.current) return
+    if (!prefsLoaded.current) return
+    window.localStorage.setItem(SIDEBAR_STATE_KEY, JSON.stringify(sidebarCollapsed))
+    document.documentElement.classList.toggle("sidebar-collapsed", sidebarCollapsed)
+  }, [sidebarCollapsed])
+
+  useEffect(() => {
+    if (!prefsLoaded.current) return
     window.localStorage.setItem(SIDEBAR_GROUPS_STORAGE_KEY, JSON.stringify(openGroups))
   }, [openGroups])
 
@@ -149,23 +159,35 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
     { name: "Clientes", href: "/dashboard/customers", icon: Users },
   ]
 
-  function toggleGroup(label: string) {
-    setOpenGroups((prev) => ({ ...prev, [label]: !prev[label] }))
+  function toggleGroup(value: string) {
+    setOpenGroups((prev) =>
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value],
+    )
   }
 
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex fixed top-0 left-0 z-40 h-full w-64 max-w-[calc(100vw-2rem)] bg-card border-r border-border flex-col">
-        <div className="flex items-center gap-2 px-6 py-5 border-b border-border">
+      <aside
+        className={cn(
+          "hidden lg:flex fixed top-0 left-0 z-40 h-full bg-card border-r border-border flex-col transition-all duration-300",
+          sidebarCollapsed ? "w-16" : "w-64 max-w-[calc(100vw-2rem)]",
+        )}
+      >
+        <div className={cn(
+          "flex items-center border-b border-border shrink-0",
+          sidebarCollapsed ? "justify-center px-0 py-5" : "gap-2 px-6 py-5",
+        )}>
           <Image src="/short-logo.svg" alt="Koda" width={36} height={36} className="size-9 shrink-0" />
-          <div className="flex flex-col">
-            <span className="font-semibold text-foreground">Koda Fidelity</span>
-            <span className="text-xs text-muted-foreground">Plataforma de Lealtad</span>
-          </div>
+          {!sidebarCollapsed && (
+            <div className="flex flex-col">
+              <span className="font-semibold text-foreground">Koda Fidelity</span>
+              <span className="text-xs text-muted-foreground">Plataforma de Lealtad</span>
+            </div>
+          )}
         </div>
 
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 overflow-y-auto">
           {/* Panel — standalone */}
           {(() => {
             const isActive = pathname === "/dashboard"
@@ -173,82 +195,144 @@ export function DashboardSidebar({ userEmail, businessName, brandColor, nickname
               <Link
                 href="/dashboard"
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                  isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  "flex items-center rounded-lg text-sm font-medium transition-colors mx-2 my-1",
+                  sidebarCollapsed ? "justify-center p-2" : "gap-3 px-3 py-2.5",
+                  isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
+                title={sidebarCollapsed ? "Panel" : undefined}
               >
                 <LayoutDashboard className={cn("h-5 w-5 flex-shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
-                Panel
+                {!sidebarCollapsed && <>Panel</>}
               </Link>
             )
           })()}
 
-          {/* Grouped sections */}
-          {visibleGroups.map((group) => (
-            <Collapsible
-              key={group.label}
-              open={openGroups[group.label]}
-              onOpenChange={() => toggleGroup(group.label)}
-              className="mt-2"
+          {/* Grouped sections with Accordion */}
+          {!sidebarCollapsed && (
+            <Accordion
+              type="multiple"
+              value={openGroups}
+              onValueChange={(value) => setOpenGroups(value)}
+              className="px-2"
             >
-              <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">
-                {group.label}
-                <ChevronDown
-                  className={cn(
-                    "h-3.5 w-3.5 transition-transform duration-200",
-                    openGroups[group.label] ? "rotate-0" : "-rotate-90"
-                  )}
-                />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-0.5 mt-0.5">
-                {group.items.map((item) => {
+              {visibleGroups.map((group) => (
+                <AccordionItem key={group.label} value={group.label} className="border-b-0">
+                  <AccordionTrigger className="px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:no-underline">
+                    {group.label}
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-0.5 pb-1">
+                      {group.items.map((item) => {
+                        const isActive = pathname.startsWith(item.href)
+                        return (
+                          <Link
+                            key={item.name}
+                            href={item.href}
+                            className={cn(
+                              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                              isActive
+                                ? "bg-primary/10 text-primary"
+                                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                            )}
+                          >
+                            <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
+                            {item.name}
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          )}
+
+          {/* Collapsed: show icons only */}
+          {sidebarCollapsed && (
+            <div className="flex flex-col items-center gap-1 px-2 pt-2">
+              {visibleGroups.map((group) =>
+                group.items.map((item) => {
                   const isActive = pathname.startsWith(item.href)
                   return (
                     <Link
                       key={item.name}
                       href={item.href}
                       className={cn(
-                        "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                        "flex items-center justify-center p-2 rounded-lg transition-colors",
                         isActive
                           ? "bg-primary/10 text-primary"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
                       )}
+                      title={item.name}
                     >
                       <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
-                      {item.name}
                     </Link>
                   )
-                })}
-              </CollapsibleContent>
-            </Collapsible>
-          ))}
+                }),
+              )}
+            </div>
+          )}
         </nav>
 
-        <div className="p-4 border-t border-border space-y-1">
+        <div className={cn(
+          "border-t border-border space-y-1",
+          sidebarCollapsed ? "flex flex-col items-center p-2" : "p-4",
+        )}>
           {role === "sellador" && (
-            <div className="px-3 py-1.5 mb-1">
-              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">
+            <div className={sidebarCollapsed ? "" : "px-3 py-1.5 mb-1"}>
+              <span className={cn(
+                "inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-muted rounded-full",
+                sidebarCollapsed ? "px-1.5 py-0.5" : "px-2 py-0.5",
+              )}>
                 <UserCog className="h-3 w-3" />
-                Sellador
+                {!sidebarCollapsed && <>Sellador</>}
               </span>
             </div>
           )}
           <Link
             href="/dashboard/my-cards"
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            className={cn(
+              "flex items-center rounded-lg transition-colors text-muted-foreground hover:bg-muted hover:text-foreground",
+              sidebarCollapsed ? "justify-center p-2" : "gap-3 px-3 py-2 text-sm font-medium",
+            )}
+            title={sidebarCollapsed ? "Mis Tarjetas" : undefined}
           >
-            <Smartphone className="h-5 w-5" />
-            Mis Tarjetas
+            <Smartphone className="h-5 w-5 shrink-0" />
+            {!sidebarCollapsed && <>Mis Tarjetas</>}
           </Link>
           <Button
             size="sm"
             variant="ghost"
-            className="w-full justify-start gap-3 text-xs text-muted-foreground hover:text-destructive"
+            className={cn(
+              "text-muted-foreground hover:text-destructive",
+              sidebarCollapsed ? "justify-center p-2 w-auto" : "w-full justify-start gap-3 text-xs",
+            )}
             onClick={() => setLogoutOpen(true)}
+            title={sidebarCollapsed ? "Cerrar Sesión" : undefined}
           >
-            <LogOut className="h-5 w-5" />
-            Cerrar Sesión
+            <LogOut className="h-5 w-5 shrink-0" />
+            {!sidebarCollapsed && <>Cerrar Sesión</>}
           </Button>
+
+          {/* Sidebar collapse toggle */}
+          <button
+            type="button"
+            onClick={() => setSidebarCollapsed((prev) => !prev)}
+            className={cn(
+              "flex items-center justify-center rounded-lg transition-colors text-muted-foreground hover:bg-muted hover:text-foreground",
+              sidebarCollapsed ? "p-2 w-full" : "w-full gap-3 px-3 py-2 text-xs font-medium",
+            )}
+            title={sidebarCollapsed ? "Expandir barra lateral" : "Colapsar barra lateral"}
+          >
+            {sidebarCollapsed ? (
+              <PanelLeft className="h-5 w-5 shrink-0" />
+            ) : (
+              <>
+                <PanelLeftClose className="h-5 w-5 shrink-0" />
+                Colapsar
+              </>
+            )}
+          </button>
 
           <AlertDialog open={logoutOpen} onOpenChange={setLogoutOpen}>
             <AlertDialogContent>

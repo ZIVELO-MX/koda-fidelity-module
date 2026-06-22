@@ -46,7 +46,7 @@ export default async function DashboardLayout({
         nickname={business.nickname ?? undefined}
         role={role}
       />
-      <div className="lg:pl-64">
+      <div className="lg:pl-64 sidebar-collapsed:lg:pl-16 transition-all duration-300">
         <DashboardHeader
           userEmail={user.email}
           businessName={business.name}
