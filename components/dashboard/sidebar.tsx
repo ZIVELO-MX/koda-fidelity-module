@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { logout } from "@/lib/actions/auth"
 import { MobileSettingsPanel } from "./mobile-settings-panel"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import type { Role } from "@prisma/client"
 
 interface DashboardSidebarProps {
@@ -78,14 +78,43 @@ const BOTTOM_NAV_HREFS = new Set([
   "/dashboard/customers",
 ])
 
+const SIDEBAR_GROUPS_STORAGE_KEY = "dashboard-sidebar-groups"
+const DEFAULT_OPEN_GROUPS: Record<string, boolean> = {
+  Gestión: true,
+  Administración: true,
+}
+
 export function DashboardSidebar({ userEmail, businessName, brandColor, nickname, role }: DashboardSidebarProps) {
   const pathname = usePathname()
   const [moreOpen, setMoreOpen] = useState(false)
   const [logoutOpen, setLogoutOpen] = useState(false)
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
-    Gestión: true,
-    Administración: true,
-  })
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(DEFAULT_OPEN_GROUPS)
+  const sidebarPrefsLoaded = useRef(false)
+
+  useEffect(() => {
+    const rawValue = window.localStorage.getItem(SIDEBAR_GROUPS_STORAGE_KEY)
+    if (!rawValue) {
+      sidebarPrefsLoaded.current = true
+      return
+    }
+
+    try {
+      const parsedValue = JSON.parse(rawValue) as Record<string, unknown>
+      setOpenGroups({
+        Gestión: parsedValue.Gestión === false ? false : true,
+        Administración: parsedValue.Administración === false ? false : true,
+      })
+    } catch {
+      window.localStorage.removeItem(SIDEBAR_GROUPS_STORAGE_KEY)
+    } finally {
+      sidebarPrefsLoaded.current = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!sidebarPrefsLoaded.current) return
+    window.localStorage.setItem(SIDEBAR_GROUPS_STORAGE_KEY, JSON.stringify(openGroups))
+  }, [openGroups])
 
   const visibleGroups = navGroups.filter((g) => g.roles.includes(role))
 

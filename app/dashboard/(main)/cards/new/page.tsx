@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { IconPicker } from "@/components/dashboard/icon-picker"
-import { ArrowLeft, ArrowRight, Check, Sparkles, Gift, Plus, X } from "lucide-react"
+import { ArrowLeft, ArrowRight, Check, Sparkles } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
 import { getRarityColor, getRarityLabel, getRarityDescription, getRarityRange } from "@/lib/card-utils"
 import { cn } from "@/lib/utils"
 import { ExpirationPicker } from "@/components/dashboard/expiration-picker"
@@ -148,35 +149,38 @@ export default function CreateCardPage() {
 
       {/* Progress Steps */}
       <div className="mb-8">
-        <div className="flex w-full max-w-md items-start justify-between overflow-x-auto pb-1">
+        <div className="flex w-full items-center justify-center sm:justify-between sm:max-w-md">
           {steps.map((step, index) => (
-            <div key={step.id} className="flex items-center">
+            <div
+              key={step.id}
+              className={`flex items-center ${currentStep === step.id ? "scale-110 sm:scale-100" : ""} transition-transform`}
+            >
               <div className="flex flex-col items-center">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-colors ${
+                  className={`flex w-8 h-8 sm:w-10 sm:h-10 items-center justify-center rounded-full font-semibold transition-all text-xs sm:text-base shrink-0 ${
                     currentStep > step.id
                       ? "bg-primary text-primary-foreground"
                       : currentStep === step.id
-                      ? "bg-primary text-primary-foreground"
+                      ? "bg-primary text-primary-foreground ring-2 ring-offset-2 ring-primary"
                       : "bg-muted text-muted-foreground"
                   }`}
                 >
                   {currentStep > step.id ? (
-                    <Check className="h-5 w-5" />
+                    <Check className="h-4 w-4 sm:h-5 sm:w-5" />
                   ) : (
                     step.id
                   )}
                 </div>
-                <div className="mt-2 text-center">
-                  <p className={`text-sm font-medium ${currentStep >= step.id ? "text-foreground" : "text-muted-foreground"}`}>
+                <div className="mt-1 sm:mt-2 text-center">
+                  <p className={`text-[11px] sm:text-sm font-medium whitespace-nowrap ${currentStep >= step.id ? "text-foreground" : "text-muted-foreground"}`}>
                     {step.name}
                   </p>
-                    <p className="hidden text-xs text-muted-foreground sm:block">{step.description}</p>
+                  <p className="hidden text-xs text-muted-foreground sm:block">{step.description}</p>
                 </div>
               </div>
               {index < steps.length - 1 && (
                 <div
-                  className={`mx-2 mt-5 h-0.5 w-10 shrink-0 sm:w-24 ${
+                  className={`mx-1 sm:mx-2 mt-3 sm:mt-5 h-0.5 w-4 sm:w-10 shrink-0 rounded-full ${
                     currentStep > step.id ? "bg-primary" : "bg-muted"
                   }`}
                 />
@@ -365,85 +369,93 @@ export default function CreateCardPage() {
                 </p>
               </div>
 
-              {milestones.length === 0 && (
-                <p className="text-sm text-muted-foreground py-2">No hay recompensas configuradas.</p>
-              )}
-
-              <div className="space-y-3">
-                {milestones.map((m, i) => (
-                  <div key={i} className="grid gap-3 rounded-xl border border-border bg-muted/30 p-4 dark:bg-muted/20 sm:grid-cols-[5rem_minmax(0,1fr)_auto_minmax(11rem,1fr)_auto] sm:items-end">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">Sello #</Label>
-                      <Input
-                        type="number"
-                        name={`milestone-${i}-stamp`}
-                        min={1}
-                        max={formData.maxStamps}
-                        value={m.stampNumber}
-                        onChange={(e) => setMilestones(ms => ms.map((x, j) => j === i ? { ...x, stampNumber: Math.min(formData.maxStamps, Math.max(1, Number(e.target.value))) } : x))}
-                        className="w-20"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-[120px] space-y-1.5">
-                      <Label className="text-xs">Recompensa</Label>
-                      <Input
-                        value={m.label}
-                        onChange={(e) => setMilestones(ms => ms.map((x, j) => j === i ? { ...x, label: e.target.value } : x))}
-                        name={`milestone-${i}-label`}
-                        placeholder="Ej.: Café gratis"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">Ícono</Label>
-                      <IconPicker value={m.iconName} onChange={(v) => setMilestones(ms => ms.map((x, j) => j === i ? { ...x, iconName: v } : x))} businessLogoUrl={businessLogo} />
-                    </div>
-                    <div className="space-y-1.5 min-w-[180px]">
-                      <Label className="text-xs">Probabilidad</Label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="range"
-                          name={`milestone-${i}-probability`}
-                          min={0}
-                          max={100}
-                          value={m.probability}
-                          onChange={(e) => setMilestones(ms => ms.map((x, j) => j === i ? { ...x, probability: Number(e.target.value) } : x))}
-                          className="flex-1 h-2 rounded-full appearance-none cursor-pointer border-2"
-                          style={{
-                            accentColor: getRarityColor(m.probability),
-                            borderColor: getRarityColor(m.probability),
+              <div className="space-y-2">
+                {Array.from({ length: formData.maxStamps }, (_, i) => i + 1).map((pos) => {
+                  const mi = milestones.findIndex((ms) => ms.stampNumber === pos)
+                  const m = mi !== -1 ? milestones[mi] : null
+                  return (
+                    <div key={pos} className="overflow-hidden rounded-xl border border-border">
+                      <div className="flex w-full items-center justify-between px-4 py-3 text-sm">
+                        <span className="font-medium">Sello #{pos}</span>
+                        <Switch
+                          checked={mi !== -1}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setMilestones((prev) => {
+                                if (prev.some((x) => x.stampNumber === pos)) return prev
+                                return [...prev, { stampNumber: pos, label: "", iconName: null, probability: 100 }]
+                              })
+                            } else {
+                              setMilestones((prev) => prev.filter((x) => x.stampNumber !== pos))
+                            }
                           }}
                         />
-                        <span className="text-sm font-mono w-10 text-right">{m.probability}%</span>
                       </div>
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className="inline-block w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: getRarityColor(m.probability) }} />
-                        <span className="font-medium w-20 shrink-0">{getRarityLabel(m.probability)}</span>
-                        <span className="text-muted-foreground w-14 shrink-0 text-right" title={getRarityDescription(m.probability)}>{getRarityRange(m.probability)}</span>
-                      </div>
+                      {m && (
+                        <div className="space-y-3 border-t border-border px-4 pb-4 pt-3">
+                          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_minmax(11rem,1fr)] sm:items-end">
+                            <div className="min-w-[120px] flex-1 space-y-1.5">
+                              <Label className="text-xs">Recompensa</Label>
+                              <Input
+                                value={m.label}
+                                onChange={(e) =>
+                                  setMilestones((prev) =>
+                                    prev.map((x, j) => (j === mi ? { ...x, label: e.target.value } : x)),
+                                  )
+                                }
+                                placeholder="Ej.: Café gratis"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs">Ícono</Label>
+                              <IconPicker
+                                value={m.iconName}
+                                onChange={(v) =>
+                                  setMilestones((prev) =>
+                                    prev.map((x, j) => (j === mi ? { ...x, iconName: v } : x)),
+                                  )
+                                }
+                                businessLogoUrl={businessLogo}
+                              />
+                            </div>
+                            <div className="min-w-[180px] space-y-1.5">
+                              <Label className="text-xs">Probabilidad</Label>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="range"
+                                  min={0}
+                                  max={100}
+                                  value={m.probability}
+                                  onChange={(e) =>
+                                    setMilestones((prev) =>
+                                      prev.map((x, j) =>
+                                        j === mi ? { ...x, probability: Number(e.target.value) } : x,
+                                      ),
+                                    )
+                                  }
+                                  className="h-2 flex-1 cursor-pointer appearance-none rounded-full border-2"
+                                  style={{
+                                    accentColor: getRarityColor(m.probability),
+                                    borderColor: getRarityColor(m.probability),
+                                  }}
+                                />
+                                <span className="w-10 text-right font-mono text-sm">{m.probability}%</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-xs">
+                                <span className="inline-block h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: getRarityColor(m.probability) }} />
+                                <span className="w-20 shrink-0 font-medium">{getRarityLabel(m.probability)}</span>
+                                <span className="w-14 shrink-0 text-right text-muted-foreground" title={getRarityDescription(m.probability)}>
+                                  {getRarityRange(m.probability)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <Button type="button" variant="ghost" size="sm" onClick={() => setMilestones(ms => ms.filter((_, j) => j !== i))} className="text-destructive hover:text-destructive sm:self-center" aria-label="Eliminar recompensa sorpresa">
-                      <X className="h-4 w-4" aria-hidden="true" />
-                    </Button>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
-
-              {(() => {
-                const available = Array.from({ length: formData.maxStamps }, (_, i) => i + 1)
-                  .filter(pos => !milestones.some(m => m.stampNumber === pos))
-                return available.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {available.map(pos => (
-                      <Button key={pos} type="button" variant="outline" size="sm" onClick={() => setMilestones(ms => [...ms, { stampNumber: pos, label: "", iconName: null, probability: 100 }])}>
-                        <Plus className="h-3 w-3 mr-1" aria-hidden="true" />
-                        Sello #{pos}
-                      </Button>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">Todas las posiciones tienen recompensa.</p>
-                )
-              })()}
             </div>
           )}
 
