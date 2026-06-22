@@ -23,8 +23,7 @@ function getWebServiceURL(): string {
   return process.env.APPLE_PASS_WEBSERVICE_URL || ""
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function svgToPng(svgPath: string, width: number, height: number): Promise<any> {
+async function svgToPng(svgPath: string, width: number, height: number): Promise<Buffer | null> {
   try {
     const svg = await fs.readFile(svgPath)
     return await sharp(svg).resize(width, height).png().toBuffer()

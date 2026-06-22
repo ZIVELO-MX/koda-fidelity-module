@@ -1,6 +1,5 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { QRCodeSVG } from "qrcode.react"
 import Link from "next/link"
 import { ExternalLink } from "lucide-react"
@@ -12,11 +11,7 @@ interface CardQRInlineProps {
 }
 
 export function CardQRInline({ cardId, brandColor }: CardQRInlineProps) {
-  const [joinUrl, setJoinUrl] = useState("")
-
-  useEffect(() => {
-    setJoinUrl(`${window.location.origin}/join/${cardId}`)
-  }, [cardId])
+  const joinUrl = `${window.location.origin}/join/${cardId}`
 
   return (
     <div className="bg-card rounded-xl border border-border p-4 flex items-center gap-4">
