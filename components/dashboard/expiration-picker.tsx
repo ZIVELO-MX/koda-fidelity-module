@@ -66,7 +66,7 @@ export function ExpirationPicker({ value, onChange }: ExpirationPickerProps) {
     setCalendarOpen(false)
   }
 
-  const selectValue = mode === "none" ? "none" : mode === "custom" ? "custom" : mode
+  const selectValue = mode === "none" || mode === "custom" ? undefined : mode
   const selectPlaceholder = value
     ? new Date(value + "T12:00:00").toLocaleDateString("es-MX", {
         day: "numeric",
@@ -112,11 +112,9 @@ export function ExpirationPicker({ value, onChange }: ExpirationPickerProps) {
                 <SelectValue placeholder="Seleccionar plazo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Sin fecha de vencimiento</SelectItem>
                 {QUICK_OPTIONS.map(({ key, label }) => (
                   <SelectItem key={key} value={key}>{label}</SelectItem>
                 ))}
-                <SelectItem value="custom">Elegir fecha en calendario</SelectItem>
               </SelectContent>
             </Select>
           </div>
