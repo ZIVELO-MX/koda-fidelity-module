@@ -4,7 +4,7 @@
 
 <h1 align="center">Koda Fidelity</h1>
 
-<p align="center">Digital loyalty cards for modern businesses.</p>
+<p align="center">Tarjetas de fidelidad digitales para pequeños negocios.</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/release-v1.1.0-orange" alt="Release">
