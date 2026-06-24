@@ -1,8 +1,22 @@
+[Logo]
+
 # Koda Fidelity
 
-Módulo SaaS de tarjetas de fidelidad digitales con **QR y magic link** para pequeños negocios.
+Digital loyalty cards for modern businesses.
 
-Parte del ecosistema **Koda POS**. Ayuda a pequeños negocios a retener clientes sin tarjetas físicas.
+![Release](https://img.shields.io/badge/release-v1.1.0-orange)
+![Branch](https://img.shields.io/badge/patch-1.1.x--patch-blue)
+![Made by](https://img.shields.io/badge/made%20by-Zivelo-ff6b35)
+
+---
+
+## Releases
+
+| Versión | Rama | Estado |
+| ------- | ---- | ------ |
+| `v1.1.0` | `main` | 🟢 Estable — Multi-usuario, UX móvil, sellos y más |
+| `v1.1.x` | `1.1.x-patch` | 🟢 Parches activos para la release actual |
+| `v1.2.0` | `dev` | 🟡 En desarrollo |
 
 ## Stack
 
@@ -47,3 +61,7 @@ Los docs están en `docs/` en español.
 ## Roadmap
 
 Ver [`roadmap.md`](roadmap.md).
+
+---
+
+[Made by Zivelo](https://zivelo.dev)
