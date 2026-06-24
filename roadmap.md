@@ -7,6 +7,7 @@
 - **Solo PRs a `dev`** — nunca push directo a `main`
 - Toda feature o fix va en una rama separada desde `dev` y pasa por code review antes de mergear
 - `main` solo recibe merges desde `dev` para releases estables
+- `1.1.x-patch` recibe hotfixes para la versión estable actual; se mergean a `main` y se sincronizan con `dev`
 
 ---
 
@@ -29,10 +30,10 @@
 | Versión | Rama | Estado | Fases incluidas |
 | ------- | ---- | ------ | --------------- |
 | `1.0.0` | `main` | ✅ MVP estable | Fases 0–7. Tarjetas, clientes, QR, join flow, scan, portal cliente, Google OAuth/magic link, caducidad y guards. |
-| `1.1.0` | `dev` | 🟡 En cierre, no liberada | Fases 8–13 + QR print & share + UI/UX final polish. Multiusuario, equipo, UX móvil, operación, archivado/restauración, CI/plans, tabla de clientes compartida, ícono de sello, polish responsive, QR PDF personalizable con preview, descarga QR solo (PNG/SVG) y preview de página de registro. |
-| `1.2.0+` | futuras ramas desde `dev` | ⏳ Post-release | Wallets, landing comercial, permisos avanzados, auditoría y mejoras de auth. |
+| `1.1.0` | `main` | 🟢 En release (PR #104) | Fases 8–13 + QR print & share + UI/UX final polish. Multiusuario, equipo, UX móvil, operación, archivado/restauración, CI/plans, tabla de clientes compartida, ícono de sello, polish responsive, QR PDF personalizable con preview, descarga QR solo (PNG/SVG) y preview de página de registro. |
+| `1.2.0` | `dev` | 🟡 En desarrollo | Post-release: Wallets, landing comercial, permisos avanzados, auditoría y mejoras de auth. |
 
-> `main` debe reflejar siempre la última versión estable. `dev` contiene la próxima versión candidata. En este momento los cambios acumulados en `dev` corresponden a `1.1.0`; está casi completa, pero aún requiere cierre de release antes de mergear a `main`.
+> `main` debe reflejar siempre la última versión estable. `dev` contiene la próxima versión candidata. En este momento `1.1.0` está en proceso de release vía PR #104; una vez mergeado, `dev` continuará con `1.2.0`.
 
 ---
 
@@ -430,21 +431,11 @@ model StampLog {
 > **MVP completo** — Fases 0–7 completadas y desplegadas en `fidelity.zivelo.dev`.
 > Lanzamiento controlado activo (`INVITE_ONLY=true`). Las secciones Post-MVP agrupan trabajo futuro, no bloqueos del MVP.
 
-### `1.1.0` — Próxima versión en `dev` 🟡 Casi completa
+### `1.1.0` — Versión en release (PR #104) 🟡 En proceso
 
 > Incluye Fases 8–13 + QR print/share + Recompensas sorpresa + polish final de UI/UX. El desarrollo funcional base está cerrado; faltan gates finales de release sobre `dev` después de mergear los PRs abiertos.
 
-**Pendiente para liberar `1.1.0`:**
-
-- [ ] Ejecutar `pnpm typecheck`
-- [ ] Ejecutar `pnpm test`
-- [ ] Ejecutar `pnpm lint`
-- [ ] Ejecutar `pnpm build`
-- [ ] Validar manualmente login admin, login sellador, invitación de equipo, sellado/canje, archivado/restauración y branding con logo/ícono de sello
-- [ ] Validar manualmente el polish responsive de PR #102: picker de íconos sin autofocus, creación/edición de tarjetas en mobile, branding, listados de tarjetas/clientes, QR codes y menú móvil
-- [ ] Confirmar que schema/migraciones de Supabase estén aplicadas en el entorno objetivo
-- [ ] Actualizar `docs/CHANGELOG.md` con resultado final de pruebas
-- [ ] Mergear `dev` a `main` y taggear `v1.1.0`
+**Pendiente para liberar `1.1.0`:** — Migrado a checklist en PR #104
 
 **Features incluidas en `1.1.0` (completadas listas para deploy estable):**
 
