@@ -28,7 +28,7 @@ import { getBusinessFromSession, handleApiError } from "@/lib/api-utils"
  */
 export async function GET() {
   try {
-    const business = await getBusinessFromSession()
+    const { business } = await getBusinessFromSession()
 
     const cards = await prisma.loyaltyCard.findMany({
       where: { businessId: business.id },
@@ -51,27 +51,26 @@ export async function GET() {
       0,
     )
 
-    const allLogs = await prisma.stampLog.findMany({
-      where: {
-        customer: {
-          card: { businessId: business.id },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 50,
-      include: {
-        customer: {
-          select: {
-            name: true,
-            card: { select: { name: true } },
+    const [redemptions, allLogs] = await Promise.all([
+      prisma.stampLog.count({
+        where: { customer: { card: { businessId: business.id } }, type: "redeem" },
+      }),
+      prisma.stampLog.findMany({
+        where: { customer: { card: { businessId: business.id } } },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+        include: {
+          customer: {
+            select: {
+              name: true,
+              card: { select: { name: true } },
+            },
           },
         },
-      },
-    })
+      }),
+    ])
 
-    const redemptions = allLogs.filter((l) => l.type === "redeem").length
-
-    const recentActivity = allLogs.slice(0, 10).map((log) => ({
+    const recentActivity = allLogs.map((log) => ({
       type: log.type,
       customerName: log.customer.name,
       cardName: log.customer.card.name,

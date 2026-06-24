@@ -65,7 +65,7 @@ import { getBusinessFromSession, handleApiError } from "@/lib/api-utils"
  */
 export async function GET(request: NextRequest) {
   try {
-    const business = await getBusinessFromSession()
+    const { business } = await getBusinessFromSession()
 
     const { searchParams } = new URL(request.url)
     const q = searchParams.get("q")?.trim()
@@ -73,6 +73,7 @@ export async function GET(request: NextRequest) {
 
     const where: Record<string, unknown> = {
       card: { businessId: business.id },
+      isActive: true,
     }
 
     if (q) {

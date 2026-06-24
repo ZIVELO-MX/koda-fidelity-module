@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
+import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { getBusinessFromSession, handleApiError, ValidationError, NotFoundError } from "@/lib/api-utils"
-import { isExpired } from "@/lib/card-utils"
+import { isExpired, pickMilestoneReward } from "@/lib/card-utils"
 
 /**
  * @openapi
@@ -69,7 +70,7 @@ import { isExpired } from "@/lib/card-utils"
  */
 export async function POST(request: NextRequest) {
   try {
-    const business = await getBusinessFromSession()
+    const { business } = await getBusinessFromSession()
 
     const body = await request.json()
 
@@ -82,7 +83,9 @@ export async function POST(request: NextRequest) {
     const customer = await prisma.customer.findUnique({
       where: { id: body.customerId },
       include: {
-        card: { select: { businessId: true, stampsRequired: true, reward: true, expiresAt: true } },
+        card: {
+          select: { id: true, businessId: true, stampsRequired: true, reward: true, expiresAt: true, milestoneRewards: { select: { id: true, stampNumber: true, label: true, iconName: true, probability: true } } },
+        },
       },
     })
 
@@ -91,6 +94,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (customer.card.businessId !== business.id) {
+      throw new NotFoundError("Customer not found")
+    }
+
+    if (!customer.isActive) {
       throw new NotFoundError("Customer not found")
     }
 
@@ -104,7 +111,7 @@ export async function POST(request: NextRequest) {
       }
 
       const updated = await prisma.customer.update({
-        where: { id: customer.id },
+        where: { id: customer.id, stamps: { lt: customer.card.stampsRequired } },
         data: {
           stamps: { increment: 1 },
           stampsLog: {
@@ -114,12 +121,57 @@ export async function POST(request: NextRequest) {
         include: {
           card: { select: { name: true, stampsRequired: true, reward: true } },
         },
+      }).catch((e: unknown) => {
+        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025")
+          throw new ValidationError("Customer has completed the card and must redeem first.")
+        throw e
       })
+
+      // Check for milestone rewards at the new stamp position
+      let milestoneClaim: { id: string; label: string; iconName: string | null } | null = null
+      const milestones = customer.card.milestoneRewards
+
+      if (milestones.length > 0) {
+        const picked = pickMilestoneReward(updated.stamps, milestones)
+        if (picked) {
+          const dbMilestone = milestones.find(m => m.stampNumber === picked.stampNumber)!
+
+          const [claim] = await prisma.$transaction([
+            prisma.customerMilestoneClaim.create({
+              data: {
+                customerId: updated.id,
+                milestoneId: dbMilestone.id,
+                cardId: customer.card.id,
+                label: picked.label,
+                iconName: picked.iconName,
+              },
+            }),
+            prisma.stampLog.create({
+              data: {
+                customerId: updated.id,
+                type: "milestone",
+                metadata: {
+                  milestoneClaimId: dbMilestone.id,
+                  milestoneLabel: picked.label,
+                  milestoneIconName: picked.iconName,
+                },
+              },
+            }),
+          ])
+
+          milestoneClaim = {
+            id: claim.id,
+            label: picked.label,
+            iconName: picked.iconName,
+          }
+        }
+      }
 
       return NextResponse.json({
         customer: updated,
         event: "stamp",
         message: `${customer.name} now has ${updated.stamps} stamps`,
+        milestoneClaim,
       })
     }
 
@@ -131,7 +183,7 @@ export async function POST(request: NextRequest) {
       }
 
       const updated = await prisma.customer.update({
-        where: { id: customer.id },
+        where: { id: customer.id, stamps: { gte: customer.card.stampsRequired } },
         data: {
           stamps: 0,
           stampsLog: {
@@ -141,6 +193,10 @@ export async function POST(request: NextRequest) {
         include: {
           card: { select: { name: true, stampsRequired: true, reward: true } },
         },
+      }).catch((e: unknown) => {
+        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025")
+          throw new ValidationError("Customer needs more stamps to redeem")
+        throw e
       })
 
       return NextResponse.json({

@@ -1,5 +1,4 @@
-import { DashboardSidebar } from "@/components/dashboard/sidebar"
-import { DashboardHeader } from "@/components/dashboard/header"
+import { DashboardLayoutClient } from "@/components/dashboard/dashboard-layout-client"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 import { redirect } from "next/navigation"
@@ -17,46 +16,37 @@ export default async function DashboardLayout({
     redirect("/dashboard/update-password")
   }
 
-  const business = await prisma.business.findUnique({
+  const userRecord = await prisma.user.findUnique({
     where: { email: user.email },
-    select: { name: true, brandColor: true, nickname: true },
+    include: { business: { select: { name: true, brandColor: true, nickname: true } } },
   })
 
-  if (!business) {
+  if (!userRecord) {
     redirect("/dashboard/forbidden")
   }
 
-  const userEmail = user.email
-  const businessName = business.name
-  const brandColor = business.brandColor
-  const nickname = business.nickname ?? undefined
+  const { business, role } = { business: userRecord.business, role: userRecord.role }
 
   return (
     <div
       className="min-h-screen bg-background"
       style={{
-        '--primary': brandColor,
-        '--ring': brandColor,
-        '--sidebar-primary': brandColor,
-        '--sidebar-ring': brandColor,
-        '--chart-1': brandColor,
+        '--primary': business.brandColor,
+        '--ring': business.brandColor,
+        '--sidebar-primary': business.brandColor,
+        '--sidebar-ring': business.brandColor,
+        '--chart-1': business.brandColor,
       } as React.CSSProperties}
     >
-      <DashboardSidebar
-        userEmail={userEmail}
-        businessName={businessName}
-        brandColor={brandColor}
-        nickname={nickname}
-      />
-      <div className="lg:pl-64">
-        <DashboardHeader
-          userEmail={userEmail}
-          businessName={businessName}
-          brandColor={brandColor}
-          nickname={nickname}
-        />
-        <main className="p-4 sm:p-6 pt-4 lg:pt-6 pb-20 lg:pb-6">{children}</main>
-      </div>
+      <DashboardLayoutClient
+        userEmail={user.email}
+        businessName={business.name}
+        brandColor={business.brandColor}
+        nickname={business.nickname ?? undefined}
+        role={role}
+      >
+        {children}
+      </DashboardLayoutClient>
     </div>
   )
 }

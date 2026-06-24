@@ -17,11 +17,11 @@ export type AuthResult = { error?: string; success?: true; isBusiness?: boolean 
 export async function checkBusinessEmail(
   email: string
 ): Promise<{ isBusiness: boolean; nickname: string | null }> {
-  const business = await prisma.business.findUnique({
+  const userRecord = await prisma.user.findUnique({
     where: { email },
-    select: { id: true, nickname: true },
+    select: { id: true, business: { select: { nickname: true } } },
   })
-  return { isBusiness: business !== null, nickname: business?.nickname ?? null }
+  return { isBusiness: userRecord !== null, nickname: userRecord?.business?.nickname ?? null }
 }
 
 export async function login(_prev: AuthResult, formData: FormData): Promise<AuthResult> {
@@ -68,10 +68,16 @@ export async function updatePassword(_prev: AuthResult, formData: FormData): Pro
   }
 
   if (nickname && user?.email) {
-    await prisma.business.updateMany({
+    const userRecord = await prisma.user.findUnique({
       where: { email: user.email },
-      data: { nickname },
+      select: { businessId: true },
     })
+    if (userRecord) {
+      await prisma.business.update({
+        where: { id: userRecord.businessId },
+        data: { nickname },
+      })
+    }
   }
 
   revalidatePath("/dashboard")
@@ -105,8 +111,19 @@ export async function signup(_prev: AuthResult, formData: FormData): Promise<Aut
     const existing = await prisma.business.findUnique({ where: { email } })
     if (!existing) {
       await prisma.business.create({
-        data: { email, name },
+        data: {
+          email,
+          name,
+          users: {
+            create: { email, name, role: "admin" },
+          },
+        },
       })
+    } else {
+      const existingUser = await prisma.user.findUnique({ where: { email } })
+      if (!existingUser) {
+        await prisma.user.create({ data: { email, name, role: "admin", businessId: existing.id } })
+      }
     }
     revalidatePath("/dashboard")
     redirect("/dashboard")

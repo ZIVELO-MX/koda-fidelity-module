@@ -1,51 +1,32 @@
 "use client"
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { ProfilePanel } from "./profile-panel"
-import { useState } from "react"
+import { PanelLeftClose, PanelLeft } from "lucide-react"
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 
 interface DashboardHeaderProps {
-  userEmail: string
-  businessName: string
-  brandColor: string
-  nickname?: string
+  collapsed: boolean
+  onToggleCollapse: () => void
 }
 
-export function DashboardHeader({ userEmail, businessName, brandColor, nickname }: DashboardHeaderProps) {
-  const [open, setOpen] = useState(false)
-
+export function DashboardHeader({ collapsed, onToggleCollapse }: DashboardHeaderProps) {
   return (
-    <header className="hidden lg:block sticky top-0 z-30 bg-background/80 backdrop-blur-sm border-b border-border">
-      <div className="flex items-center justify-end px-6 py-4">
-        <div
-          onClick={() => setOpen(!open)}
-          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(!open) } }}
-          role="button"
-          tabIndex={0}
-          aria-label="Abrir perfil"
-          className="relative cursor-pointer"
-        >
-          <Avatar className="h-9 w-9 border-2 border-border hover:opacity-80 transition-opacity">
-            <AvatarFallback
-              className="text-sm font-medium text-white"
-              style={{ backgroundColor: brandColor }}
+    <header className="hidden lg:block sticky top-0 z-30 bg-background/80 backdrop-blur-sm">
+      <div className="flex items-center px-6 py-4">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              aria-label={collapsed ? "Expandir barra lateral" : "Colapsar barra lateral"}
+              className="flex items-center justify-center rounded-lg transition-colors text-muted-foreground hover:bg-muted hover:text-foreground p-2"
             >
-              {businessName.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-
-          {open && (
-            <ProfilePanel
-              userEmail={userEmail}
-              businessName={businessName}
-              brandColor={brandColor}
-              nickname={nickname}
-              onClose={() => setOpen(false)}
-              fullScreen={false}
-              showMyCards={true}
-            />
-          )}
-        </div>
+              {collapsed ? <PanelLeft className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {collapsed ? "Expandir barra lateral" : "Colapsar barra lateral"}
+          </TooltipContent>
+        </Tooltip>
       </div>
     </header>
   )

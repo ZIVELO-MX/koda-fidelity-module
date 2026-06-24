@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Mail, LogOut, X, ArrowLeft, Smartphone, Settings } from "lucide-react"
+import type { Role } from "@prisma/client"
 import { Button } from "@/components/ui/button"
 import {
   AlertDialog,
@@ -21,6 +22,7 @@ interface ProfilePanelProps {
   businessName: string
   brandColor: string
   nickname?: string
+  role: Role
   onClose: () => void
   fullScreen?: boolean
   showMyCards?: boolean
@@ -31,6 +33,7 @@ export function ProfilePanel({
   businessName,
   brandColor,
   nickname,
+  role,
   onClose,
   fullScreen = false,
   showMyCards = false,
@@ -40,7 +43,7 @@ export function ProfilePanel({
 
   const avatar = (
     <div
-      className="rounded-full flex items-center justify-center font-bold text-white shadow-lg"
+      className="rounded-full flex items-center justify-center font-bold text-white shadow-lg overflow-hidden"
       style={{ backgroundColor: brandColor }}
     >
       {initial}
@@ -73,14 +76,16 @@ export function ProfilePanel({
         </Link>
       )}
 
-      <Link
-        href="/dashboard/settings"
-        onClick={onClose}
-        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <Settings className="h-4 w-4" />
-        Configuración
-      </Link>
+      {role === "admin" && (
+        <Link
+          href="/dashboard/settings"
+          onClick={onClose}
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Settings className="h-4 w-4" />
+          Configuración
+        </Link>
+      )}
 
       <Button
         variant="outline"
@@ -138,7 +143,7 @@ export function ProfilePanel({
           </div>
           <div className="p-4 flex flex-col items-center gap-4">
             <div
-              className="h-16 w-16 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-lg"
+              className="h-16 w-16 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-lg overflow-hidden"
               style={{ backgroundColor: brandColor }}
             >
               {businessName.charAt(0).toUpperCase()}
@@ -157,14 +162,16 @@ export function ProfilePanel({
                 Mis Tarjetas
               </Link>
             )}
-            <Link
-              href="/dashboard/settings"
-              onClick={onClose}
-              className="flex items-center justify-center gap-2 w-full py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-muted"
-            >
-              <Settings className="h-4 w-4" />
-              Configuración
-            </Link>
+            {role === "admin" && (
+              <Link
+                href="/dashboard/settings"
+                onClick={onClose}
+                className="flex items-center justify-center gap-2 w-full py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-muted"
+              >
+                <Settings className="h-4 w-4" />
+                Configuración
+              </Link>
+            )}
             <Button
               variant="outline"
               size="sm"

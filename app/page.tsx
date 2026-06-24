@@ -68,7 +68,7 @@ export default async function LandingPage({
     redirect(`/auth/error?${qs.toString()}`)
   }
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background forced-light">
       <a href="#main-content" className="skip-link">
         Saltar al contenido principal
       </a>

@@ -2,16 +2,10 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { Archive, Loader2, Pencil, QrCode, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog"
+import { toast } from "sonner"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,211 +16,117 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Archive, QrCode, Pencil, Loader2, Check } from "lucide-react"
-import Link from "next/link"
-import { IconPicker } from "@/components/dashboard/icon-picker"
-
-const colorPresets = [
-  "#f97316", "#3b82f6", "#10b981", "#8b5cf6", "#ec4899", "#f59e0b",
-]
 
 interface CardActionsProps {
   cardId: string
-  initialName?: string
-  initialReward?: string
-  initialColor?: string
-  initialIcon?: string | null
+  cardName: string
 }
 
-export function CardActions({
-  cardId,
-  initialName = "",
-  initialReward = "",
-  initialColor = "#f97316",
-  initialIcon = null,
-}: CardActionsProps) {
+export function CardActions({ cardId, cardName }: CardActionsProps) {
   const router = useRouter()
-
-  // archive state
   const [archiveOpen, setArchiveOpen] = useState(false)
   const [archiving, setArchiving] = useState(false)
-  const [archiveError, setArchiveError] = useState<string | null>(null)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
-  // edit state
-  const [editOpen, setEditOpen] = useState(false)
-  const [name, setName] = useState(initialName)
-  const [reward, setReward] = useState(initialReward)
-  const [color, setColor] = useState(initialColor)
-  const [iconName, setIconName] = useState<string | null>(initialIcon)
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [editError, setEditError] = useState<string | null>(null)
-
-  const handleArchive = async () => {
+  async function handleArchive() {
     setArchiving(true)
-    setArchiveError(null)
-    const res = await fetch(`/api/cards/${cardId}`, { method: "DELETE" })
-    if (res.ok) {
-      router.push("/dashboard/cards")
-    } else {
-      setArchiveError("No fue posible archivar la tarjeta")
+    const response = await fetch(`/api/cards/${cardId}`, { method: "DELETE" })
+
+    if (!response.ok) {
+      toast.error("No fue posible archivar la tarjeta")
       setArchiving(false)
+      return
     }
+
+    router.push("/dashboard/cards")
+    router.refresh()
   }
 
-  const openEdit = () => {
-    setName(initialName)
-    setReward(initialReward)
-    setColor(initialColor)
-    setIconName(initialIcon)
-    setEditError(null)
-    setSaved(false)
-    setEditOpen(true)
-  }
+  async function handleDelete() {
+    setDeleting(true)
+    const response = await fetch(`/api/cards/${cardId}?permanent=true`, { method: "DELETE" })
 
-  const handleSave = async () => {
-    if (!name.trim()) { setEditError("El nombre es obligatorio"); return }
-    if (!reward.trim()) { setEditError("La recompensa es obligatoria"); return }
-
-    setSaving(true)
-    setEditError(null)
-
-    const res = await fetch(`/api/cards/${cardId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: name.trim(), reward: reward.trim(), brandColor: color, iconName }),
-    })
-
-    if (res.ok) {
-      setSaved(true)
-      setTimeout(() => {
-        setEditOpen(false)
-        router.refresh()
-      }, 800)
-    } else {
-      setEditError("No fue posible guardar los cambios")
+    if (!response.ok) {
+      toast.error("No fue posible eliminar la tarjeta")
+      setDeleting(false)
+      return
     }
-    setSaving(false)
+
+    router.push("/dashboard/cards")
+    router.refresh()
   }
 
   return (
     <>
-      <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="sm" onClick={openEdit}>
-          <Pencil className="h-4 w-4 mr-2" />
-          Editar
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+        <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
+          <Link href={`/dashboard/cards/${cardId}/edit`}>
+            <Pencil className="mr-2 h-4 w-4" aria-hidden="true" />
+            Editar
+          </Link>
         </Button>
-        <Link href={`/dashboard/qr-codes/${cardId}`}>
-          <Button variant="outline" size="sm">
-            <QrCode className="h-4 w-4 mr-2" />
+        <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
+          <Link href={`/dashboard/qr-codes/${cardId}`}>
+            <QrCode className="mr-2 h-4 w-4" aria-hidden="true" />
             Código QR
-          </Button>
-        </Link>
-        <Button variant="outline" size="sm" onClick={() => setArchiveOpen(true)} disabled={archiving}>
+          </Link>
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => setArchiveOpen(true)} disabled={archiving} className="w-full sm:w-auto">
           {archiving ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
           ) : (
-            <Archive className="h-4 w-4 mr-2" />
+            <Archive className="mr-2 h-4 w-4" aria-hidden="true" />
           )}
           Archivar
         </Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => setDeleteOpen(true)} disabled={deleting} className="w-full border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive sm:w-auto">
+          {deleting ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+          ) : (
+            <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
+          )}
+          Eliminar
+        </Button>
       </div>
-      {archiveError && <p className="text-sm text-destructive mt-2">{archiveError}</p>}
 
-      {/* Archive confirmation */}
       <AlertDialog open={archiveOpen} onOpenChange={setArchiveOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Archivar tarjeta?</AlertDialogTitle>
             <AlertDialogDescription>
-              La tarjeta <strong>{initialName}</strong> será archivada y dejará de aparecer en el dashboard. Los datos de los clientes se conservarán.
+              La tarjeta <strong>{cardName}</strong> será archivada y dejará de aparecer en el dashboard. Los datos de los clientes se conservarán.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={archiving}>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleArchive} disabled={archiving} className="gap-2">
-              {archiving && <Loader2 className="h-4 w-4 animate-spin" />}
-              <Archive className="h-4 w-4" />
+              {archiving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+              <Archive className="h-4 w-4" aria-hidden="true" />
               Archivar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Edit dialog */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Editar Tarjeta</DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-5 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="edit-name">Nombre</Label>
-              <Input
-                id="edit-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Nombre de la tarjeta"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-reward">Recompensa</Label>
-              <Input
-                id="edit-reward"
-                value={reward}
-                onChange={(e) => setReward(e.target.value)}
-                placeholder="Ej: Café gratis"
-              />
-            </div>
-
-            <div className="space-y-3">
-              <Label>Color</Label>
-              <div className="flex flex-wrap gap-2">
-                {colorPresets.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setColor(c)}
-                    className={`w-9 h-9 rounded-lg transition-all ${
-                      color === c ? "ring-2 ring-offset-2 ring-foreground scale-110" : "hover:scale-105"
-                    }`}
-                    style={{ backgroundColor: c }}
-                  />
-                ))}
-                <input
-                  type="color"
-                  value={color}
-                  onChange={(e) => setColor(e.target.value)}
-                  className="w-9 h-9 rounded-lg cursor-pointer border border-border"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <Label>Ícono <span className="text-muted-foreground font-normal text-xs">(opcional)</span></Label>
-              <IconPicker value={iconName} onChange={setIconName} />
-            </div>
-
-            {editError && <p className="text-sm text-destructive">{editError}</p>}
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditOpen(false)} disabled={saving}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : saved ? (
-                <Check className="h-4 w-4 mr-2" />
-              ) : null}
-              {saved ? "¡Guardado!" : "Guardar"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar tarjeta permanentemente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción <strong>no se puede deshacer</strong>. La tarjeta <strong>{cardName}</strong> y todos los datos de sus clientes serán eliminados para siempre.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deleting} className="gap-2 bg-destructive hover:bg-destructive/90">
+              {deleting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
+              Eliminar permanentemente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

@@ -4,8 +4,10 @@
 
 ## Workflow
 
-- **Solo PRs a `main`** — nunca push directo
-- Toda feature o fix va en una rama separada y pasa por code review antes de mergear
+- **Solo PRs a `dev`** — nunca push directo a `main`
+- Toda feature o fix va en una rama separada desde `dev` y pasa por code review antes de mergear
+- `main` solo recibe merges desde `dev` para releases estables
+- `1.1.x-patch` recibe hotfixes para la versión estable actual; se mergean a `main` y se sincronizan con `dev`
 
 ---
 
@@ -20,6 +22,18 @@
 | ORM         | Prisma                         |
 | Auth        | Supabase Auth (Google OAuth + magic link) |
 | Wallet      | Deshabilitado — "Próximamente" |
+
+---
+
+## Versiones
+
+| Versión | Rama | Estado | Fases incluidas |
+| ------- | ---- | ------ | --------------- |
+| `1.0.0` | `main` | ✅ MVP estable | Fases 0–7. Tarjetas, clientes, QR, join flow, scan, portal cliente, Google OAuth/magic link, caducidad y guards. |
+| `1.1.0` | `main` | 🟢 En release (PR #104) | Fases 8–13 + QR print & share + UI/UX final polish. Multiusuario, equipo, UX móvil, operación, archivado/restauración, CI/plans, tabla de clientes compartida, ícono de sello, polish responsive, QR PDF personalizable con preview, descarga QR solo (PNG/SVG) y preview de página de registro. |
+| `1.2.0` | `dev` | 🟡 En desarrollo | Post-release: Wallets, landing comercial, permisos avanzados, auditoría y mejoras de auth. |
+
+> `main` debe reflejar siempre la última versión estable. `dev` contiene la próxima versión candidata. En este momento `1.1.0` está en proceso de release vía PR #104; una vez mergeado, `dev` continuará con `1.2.0`.
 
 ---
 
@@ -183,7 +197,7 @@
 - [x] Mejorar OG image de `/join/[cardId]` — fondo blanco, barra de color de marca, nombre del negocio en grande, titular "Obtén tu Fidelity Card", reward pill, puntos de sellos, badge "⚡ Por tiempo limitado" cuando hay caducidad; corregidos bugs de Satori (z-index, text nodes, backgroundImage) y tabla Prisma incorrecta
 - [x] `/dashboard/my-cards`: botón de recargar — icono giratorio que recarga los datos del customer sin recargar la página
 
-### Fase 7 — Caducidad de Tarjetas
+### Fase 7 — Caducidad de Tarjetas ✅ Completada
 
 > El schema ya tiene `expiresAt` en `LoyaltyCard`. Esta fase lo hace funcional de extremo a extremo.
 
@@ -191,7 +205,8 @@
 
 - [x] Reemplazar el input de fecha por `ExpirationPicker` con opciones rápidas: 1 semana, 1 mes, 3 meses, 6 meses, 1 año, Sin caducidad, Elegir fecha (muestra input de calendario nativo)
 - [x] La opción activa se resalta visualmente
-- [x] Tests de componente: 7 tests en `expiration-picker.test.tsx`
+- [x] Migrado a Popover + Calendar (shadcn/ui) con Select dropdown para opciones rápidas y botón "Eliminar fecha" en el header
+- [x] Tests de componente en `expiration-picker.test.tsx`
 
 #### 7.2 — Lógica de caducidad (helpers)
 
@@ -224,6 +239,27 @@
 
 - [x] En el dashboard home (`/dashboard`): alerta si hay tarjetas próximas a vencer en ≤ 7 días
 - [x] En `/dashboard/scan`: aviso al sellar si la tarjeta del cliente vence en ≤ 3 días
+
+---
+
+### Deuda Técnica — Contraseña Temporal Hardcodeada
+
+La constante `DEFAULT_PASSWORD = "Koda1234!"` existe en `app/api/users/route.ts:6` y en los scripts
+`create-user`, `create-client`, `reset-password`, `send-invite`. Es la contraseña temporal asignada
+a todo colaborador invitado, sin importar el negocio.
+
+**Riesgo:** Quien conozca el email de un invitado puede acceder a su cuenta antes de que él lo haga,
+hasta que complete el cambio de contraseña forzado (`must_change_password`). El valor ya está quemado
+en el historial de git.
+
+**Mitigación actual:** El login forzado a `/dashboard/update-password` reduce la ventana de riesgo si
+el admin comparte las credenciales por WhatsApp de inmediato. El sistema está en lanzamiento controlado
+(`INVITE_ONLY=true`), lo que limita el volumen de cuentas expuestas.
+
+**Solución pendiente (`plans/002-random-temp-passwords.md`):**
+- Crear `lib/temp-password.ts` con `generateTempPassword()` usando `crypto.randomBytes(12).toString("base64url")`
+- Reemplazar la constante en la ruta API y los 4 scripts CLI
+- Tras el deploy: rotar manualmente las cuentas existentes (la contraseña vieja está en git history)
 
 ---
 
@@ -266,6 +302,10 @@ en producción (`fidelity.zivelo.dev`), pero el usuario ve momentáneamente un d
 Custom Domain). Requiere plan Pro y dominio propio verificado.
 
 **Decisión:** Post-MVP. Se evaluará al escalar o cambiar de provider de auth.
+
+### Deuda Técnica — Recompensas Sorpresa en /dashboard/customers ✅ Resuelta
+
+La tabla `/dashboard/customers` ya incluye `_count.milestoneClaims` en la query y muestra la columna "Bonos".
 
 ### Issues conocidos
 
@@ -384,14 +424,44 @@ model StampLog {
 
 ---
 
-## Estado del MVP
+## Estado por Versión
 
-> **✅ MVP completo** — Fases 0–6 + guards de caducidad (Fase 7.5) completados y desplegados en `fidelity.zivelo.dev`.
-> Lanzamiento controlado activo (`INVITE_ONLY=true`). Las secciones Post-MVP agrupan el trabajo futuro.
+### `1.0.0` — MVP en `main` ✅ Estable
 
-## Prioridades inmediatas
+> **MVP completo** — Fases 0–7 completadas y desplegadas en `fidelity.zivelo.dev`.
+> Lanzamiento controlado activo (`INVITE_ONLY=true`). Las secciones Post-MVP agrupan trabajo futuro, no bloqueos del MVP.
 
-> MVP completo. Fases 0–6 y guards de caducidad (7.1–7.5) en producción.
+### `1.1.0` — Versión en release (PR #104) 🟡 En proceso
+
+> Incluye Fases 8–13 + QR print/share + Recompensas sorpresa + polish final de UI/UX. El desarrollo funcional base está cerrado; faltan gates finales de release sobre `dev` después de mergear los PRs abiertos.
+
+**Pendiente para liberar `1.1.0`:** — Migrado a checklist en PR #104
+
+**Features incluidas en `1.1.0` (completadas listas para deploy estable):**
+
+- [x] **QR PDF profesional** — PDF descargable con QR, nombre del negocio, logo, tarjeta de fidelidad, instrucciones y diseño profesional para imprimir. Implementado con `@react-pdf/renderer`.
+- [x] **Vista previa del PDF en canvas** — preview en vivo del layout de impresión usando canvas PNG, se actualiza al cambiar tamaño o CTA.
+- [x] **Múltiples tamaños** — tarjeta de crédito, media carta y carta completa.
+- [x] **Personalización** — nombre del negocio, logo, color de marca, nombre de tarjeta, recompensa e instrucciones de uso.
+- [x] **CTA promocional** — mensaje configurable con presets recomendados; aparece tanto en PNG como en PDF.
+- [x] **Descarga de QR solo** — botones para descargar el código QR únicamente en PNG y SVG.
+- [x] **Preview de página de registro** — `/dashboard/qr-codes/{cardId}/preview` muestra la UI real de `/join/{cardId}` en modo no funcional, usando el mismo componente compartido `JoinCardLayout`.
+- [x] **UI de QR codes renovada** — página de detalle con layout de dos columnas, preview en vivo, y botones de acción primaria (copiar link, descargar QR solo, probar registro).
+- [x] **Polish responsive final de dashboard** — PR #102 (`feat/ui-ux-polish`) ajusta presentación mobile/desktop en creación/edición de tarjetas, Branding, listados de tarjetas/clientes, QR codes y menú móvil; además elimina el autofocus del buscador en `IconPicker`, mejora estados vacíos, foco visible, `aria-label`/`aria-pressed`, truncado y `break-words` para textos largos.
+
+**Features en planeación para versiones posteriores:**
+
+- [x] **Recompensas sorpresa** — al sellar en posiciones específicas, el sistema tira probabilidad configurable por milestone (0–100%) y asigna recompensa si acierta. Incluye modelo Prisma (`MilestoneReward`, `CustomerMilestoneClaim`), UI de configuración en creación/edición con slider de rareza (colores Clash Royale) e `IconPicker`, lógica de selección en `POST /api/stamps`, AlertDialog en scan al obtener recompensa, y visualización en stamp grid del dashboard.
+- [ ] **Sidebar unificada con shadcn Sidebar** — refactor post-release: migrar la sidebar actual a la implementación de shadcn/ui (`<SidebarProvider>`, `<Sidebar>`, `<SidebarInset>`), integrando navegación mobile/desktop, menú colapsable por grupo y responsividad. No bloquea `1.1.0` porque la navegación actual ya cubre el mapa mobile/desktop requerido.
+- [x] **Toast con Sonner** — migrar mensajes de toast/notificación actuales a `<Toaster>` + `toast()` de Sonner y retirar el toaster legacy. Implementado en `feat/ui-ux-polish`.
+- [x] **Tooltip con shadcn Tooltip** — `IconPicker` ya usa `Tooltip`; migrados usos puntuales de `title` para información auxiliar (rareza/probabilidad, colores, barra lateral). Implementado en `feat/ui-ux-polish`.
+- [x] **Sidebar colapsable con flex layout** — sidebar cambia de `fixed` a `sticky` + flex container; el contenido principal crece al colapsar. Botón de colapso movido al header con Tooltip. Implementado en `feat/ui-ux-polish`.
+- [x] **Perfil en sidebar con DropdownMenu** — avatar con inicial fijado al fondo del sidebar; DropdownMenu con nickname, email, Mis Tarjetas, Configuración, Cerrar Sesión con confirmación.
+- [x] **ExpirationPicker con Popover+Calendar** — reemplaza el input nativo por shadcn Popover + Calendar con Select dropdown de opciones rápidas y botón "Eliminar fecha" en el header.
+- [x] **Dark mode desactivado** — forzado a light mode (`defaultTheme="light"`), movido a backlog como nice to have.
+- [x] **Lint fixes** — `<img>` migrado a `<Image />` de Next.js en branding, cards; try/catch refactor en dashboard home; tipos corregidos.
+
+## Historial del MVP `1.0.0`
 
 ### Pre-lanzamiento ✅ Completado
 
@@ -406,7 +476,7 @@ model StampLog {
 ### Verificaciones actuales
 
 - [x] `pnpm exec tsc --noEmit` pasa sin errores.
-- [x] `pnpm test` — 167 tests, 0 errores.
+- [x] `pnpm test` — 238 tests, 0 errores (Fases 0–10).
 - [x] `pnpm lint` funcional (ESLint v9.39.4, solo warnings).
 - [x] `ignoreBuildErrors` removido de `next.config.mjs`.
 - [x] Vercel Analytics integrado en `app/layout.tsx`.
@@ -421,43 +491,179 @@ model StampLog {
 - [x] QR scanner estabilizado (reemplazo de librería).
 - [x] Cooldown de magic links desactivado (beta). Se re-activarán límites de tasa post-MVP.
 
+> **A partir de ahora todo el desarrollo se hace en `dev`.** Las ramas de feature se crean desde `dev`, los PRs se mergean a `dev`, y `main` solo recibe merges desde `dev` para releases estables.
+
+## Alcance de `1.1.0`
+
+### Fase 8 — Sistema Multi-Usuario ✅ Completada
+
+> Mergeada a `dev` vía PR #79. Tests en `test/multi-user-roles` (PR pendiente).
+
+- [x] **Modelo `User`** vinculado a `Business` con roles `admin` y `sellador`
+- [x] `getBusinessFromSession()` resuelve vía `User` — soporta múltiples colaboradores por negocio
+- [x] Guards de rol en todas las API routes (`requireRole`, `ForbiddenError`, 403)
+- [x] `/api/users` — CRUD de colaboradores: listar, invitar, cambiar rol, eliminar
+- [x] Invitación crea cuenta en Supabase Auth con contraseña temporal (`must_change_password`)
+- [x] UI role-aware: sidebar, header, profile panel y mobile settings filtran según rol
+- [x] `/dashboard/team` — gestión de equipo: tabla, modal invitar, cambio de rol, eliminar con confirmación
+- [x] `prisma db push` aplicado + 9 negocios existentes migrados con usuario admin
+- [x] `scripts/create-client.ts` actualizado — crea `User{admin}` junto con el `Business`
+- [x] 191 tests, 0 errores de tipo
+
+### Fase 9 — UX de Equipo ✅ Completada
+
+> `feat/team-ux` mergeada a `dev`. Rama de tests separada si aplica.
+
+- [x] **Tabla de equipo enriquecida** — avatar inicial, badge "tú" para el usuario actual, selector de rol con ícono
+- [x] **Estado vacío con propuesta de valor** — comunica el beneficio de agregar colaboradores en lugar de mostrar solo un ícono vacío
+- [x] **Explicador de permisos por rol** — sección permanente al fondo de la página con permisos y restricciones de cada rol
+- [x] **Modal de invitación en 2 pasos**
+  - Paso 1: nombre, email, selector de rol con tarjetas interactivas que muestran permisos
+  - Paso 2: credenciales (correo + contraseña + link) con botones de copiar individual
+- [x] **Entrega por WhatsApp** — campo de teléfono en paso 2 que genera `wa.me` URL con mensaje pre-redactado; número nunca se envía al servidor
+- [x] **`/invite` — landing de bienvenida** — página intermedia (`app/invite/page.tsx`) que muestra el negocio y CTA de acceso, permite renderizado de OG antes del login
+- [x] **`/invite/opengraph-image.tsx`** — OG 1200×630 con nombre del colaborador (si aplica), nombre del negocio y CTA; se muestra en preview de WhatsApp al compartir el link
+- [x] 191 tests, 0 errores de tipo
+
+### Fase 10 — UX del Dashboard y Herramientas de Operación ✅ Completada
+
+> Ramas: `feat/mobile-navbar-redesign` (PR #82), `feat/reset-password-script` (PR #83), `feat/customers-sort-filter` (PR pendiente)
+
+#### Mobile Navbar Redesign
+- [x] **Bottom navbar mobile** — 5 tabs fijos: Panel, Tarjetas, [Escáner FAB central], Clientes, Menú
+- [x] **Escáner FAB** — botón circular elevado en el centro, prominente, link a `/dashboard/scan`
+- [x] **Desktop sidebar** — grupos colapsables "Gestión" y "Administración" con `Collapsible` de shadcn/ui
+- [x] **Panel "Menú" mobile (v1)** — mostraba solo items NO disponibles en el bottom bar (QR + Administración para admin); ampliado a mapa completo en Fase 11
+- [x] **Role-aware mobile** — sellador ve Gestión; admin ve Gestión + Administración
+
+#### Scripts de Operación
+- [x] **`pnpm reset:password`** — script CLI para resetear contraseña por email: genera nueva pass, marca `must_change_password`, cierra todas las sesiones, opcionalmente envía correo
+- [x] **`--business`** en `create-client` — renombrado de `--name` a `--business` para mayor claridad
+- [x] **Email modular** — `sendPasswordResetEmail()` como función exportable, reutiliza template `invite.html`
+
+#### Dashboard UX
+- [x] **Tabla Clientes sorteable** — columnas Cliente, Progreso, Registro ordenables via URL (`?sort=&order=`)
+- [x] **Filtro por tarjeta** — pills de filtro en `/dashboard/customers` cuando hay más de una tarjeta activa
+- [x] **Layout home** — Actividad Reciente movida debajo de Tarjetas (era sidebar igual nivel)
+- [x] **Campo descripción** en dialog "Editar Tarjeta" — textarea con `resize-none`, max 200 chars; solo visible en dashboard
+- [x] **"Ver tarjetas"** — botón en `/dashboard/customers` corregido a `/dashboard/cards`
+- [x] **QR inline en detalle de tarjeta** — `CardQRInline` en `/dashboard/cards/[id]` antes de la tabla; preview 80px + link a QR codes
+- [x] **Tabla sorteable en detalle de tarjeta** — `/dashboard/cards/[id]` reutiliza `CustomersTable` compartido, `showCardColumn={false}`
+- [x] **Componente `CustomersTable` compartido** — extrae lógica de tabla, `SortField`, `SortOrder`, `buildSortLink`, `timeAgo` a `components/dashboard/customers-table.tsx`
+- [x] 238 tests, 0 errores de tipo
+
+### Fase 11 — UI Mobile: Menú Completo y Equipo Responsive ✅ Completada
+
+> Rama: `feat/mobile-ui-team-and-menu` (PR pendiente)
+
+#### Panel "Menú" mobile — mapa completo de navegación
+- [x] **Panel "Menú" muestra todos los destinos** — grupo "General" (Panel), grupo "Gestión" (Tarjetas de Lealtad, Clientes, Códigos QR, Escáner), grupo "Administración" (admin: Marca, Configuración, Equipo, Documentación)
+- [x] **"Escáner" agregado al panel** — visible en el panel de menú para acceso rápido, además del FAB central del bottom bar
+- [x] **`isMenuActive` corregido** — el botón "Menú" no se ilumina cuando una pestaña inferior (Panel, Tarjetas, Clientes, Escáner) ya está activa; solo se resalta en rutas exclusivas del panel
+- [x] **Role-aware** — sellador ve General + Gestión; admin ve los tres grupos
+
+#### `/dashboard/team` — responsividad mobile
+- [x] **Filas de miembro en mobile** — tarjeta de dos líneas: avatar + nombre/badges + botón eliminar (fila 1), selector de rol a ancho completo (fila 2)
+- [x] **Formulario de invitación** — Nombre y Correo se apilan en una columna en mobile (`sm:` vuelve a 2 columnas)
+- [x] **Scroll del diálogo** — el paso de formulario tiene `overflow-y-auto` propio dentro del `max-h-[90svh]`; los RoleCards altos no empujan los botones fuera de la pantalla
+- [x] Tests de sidebar actualizados — reflejan el nuevo contrato del panel (mapa completo por rol)
+- [x] 238 tests, 0 errores de tipo
+
+### Fase 12 — UI Polish + Ícono de Sello ✅ Completada
+
+> Ramas: `feat/ui-polish` (PR #90 → mergeado a `dev`), `hotfix/navbar-header-icons` (PR #93 → `dev`), `feat/branding-stamp-icon-picker` (PR #94 → `dev`), `feat/ui-ux-polish` (PR #102 → draft contra `dev`)
+
+#### Ícono de Sello y Vista Previa Sellada
+- [x] Campo `stampIconName String?` en `LoyaltyCard` — permite un ícono distinto para las celdas selladas
+- [x] `LoyaltyCardPreview` acepta prop `stampIconName` — renderiza ícono de sello o fallback al ícono de tarjeta
+- [x] Vista previa "sellada" en `/cards/new` y dialog de edición — toggle Normal/Sellada + `IconPicker` secundario para el sello
+- [x] Opción "Logo" en `IconPicker` — si el negocio tiene logo, aparece como opción de ícono de tarjeta/sello
+- [x] Vista previa en `/dashboard/branding` usa `LoyaltyCardPreview` en lugar de preview custom
+- [x] `IconPicker` sin autofocus en el buscador — abrir el picker ya no secuestra el foco ni selecciona visualmente el buscador por defecto
+- [x] `IconPicker` con estado vacío más claro — el trigger sin valor usa icono de agregar en lugar de lupa; opciones con `aria-label`, `aria-pressed`, foco visible y ancho seguro en mobile
+- [x] Polish responsive de formularios de tarjeta — grillas mobile-first para sellos, colores, recompensas sorpresa y preview; botones con `type="button"` donde aplica
+- [x] Polish responsive de listados — tarjetas, clientes y QR codes protegen textos largos con `truncate`, `line-clamp`, `break-words` y acciones apilables en mobile
+- [x] Menú mobile reforzado — panel fullscreen con `role="dialog"`, `aria-modal`, `overscroll-contain` y safe area superior
+
+#### Hotfix — Bugs de Navegación (PR #93)
+
+> **Causa raíz de los 3 bugs:**
+>
+> 1. **Iconos invisibles en el picker** — `next/image` en `icon-picker.tsx` inyecta `style="color: transparent"` en el `<img>` renderizado; ese valor se propagaba por `currentColor` a los `<svg>` Lucide cercanos, volviéndolos invisibles. Fix: revertir a `<img>` plano.
+>
+> 2. **Ícono y texto activo del navbar desaparecían** — `text-primary` aplicado en el `<Link>` padre dependía de herencia de CSS variables (`var(--primary)`) con Tailwind v4 `@theme inline`. En ciertos contextos la herencia se rompía. Fix: aplicar `text-primary`/`text-muted-foreground` directamente en cada `<icon>` y `<span>`.
+>
+> 3. **Logo propagado a toda la navegación** — al agregar la opción "Logo" en el picker de tarjetas, `logoUrl` se pasó erróneamente por toda la cadena layout → sidebar → header → profile panel. El logo del negocio es solo una opción de ícono de tarjeta; no debe aparecer en la UI de navegación.
+
+---
+
+### Fase 13 — Ícono Sello en Picker ✅ Completada
+
+> Tarea simple: agregar el ícono `Stamp` de lucide-react como opción seleccionable en el `IconPicker` para íconos de carta y de sello.
+
+- [x] Agregar `{ name: "stamp", label: "Sello", Icon: Stamp }` a `CARD_ICONS` en `lib/card-icons.ts`
+
+---
+
+### Pendientes UI para `1.1.0`
+
+#### Tema automático para tarjetas con colores claros
+
+> Cuando el negocio configura un color de marca muy claro, el texto blanco y elementos semitransparentes de `LoyaltyCardPreview` quedan ilegibles. Se necesita un tema de tarjeta independiente del dark mode global.
+
+- [ ] **Auto-detección**: calcular la luminancia relativa del `brandColor`; si supera un umbral (~0.7), aplicar automáticamente tema oscuro de tarjeta
+- [ ] **Control manual**: radio button en el edit dialog (`Tema de tarjeta: Auto / Claro / Oscuro`)
+- [ ] Guardar `LoyaltyCard.cardTheme String @default("auto")` con valores `"auto"`, `"light"`, `"dark"`
+- [ ] `LoyaltyCardPreview` recibe prop `cardTheme?: "auto" | "light" | "dark"` y aplica la paleta correcta de foreground/background para texto y stamps
+
+#### Color de texto configurable para tarjetas (blanco / negro)
+
+> Cuando el `brandColor` es muy claro, el texto blanco de la tarjeta queda ilegible. Se necesita permitir elegir el color del texto.
+
+- [ ] Agregar campo `textColor String @default("white")` al modelo `LoyaltyCard` en Prisma
+- [ ] Crear migración para el nuevo campo
+- [ ] Agregar radio button o toggle en el dialog de edición y en el wizard de creación (`/cards/new`)
+- [ ] `LoyaltyCardPreview` acepta prop `textColor` y aplica `text-white` o `text-black` según corresponda
+- [ ] Propagar `textColor` en todas las vistas: detalle de tarjeta, join flow, my-cards, scan, etc.
+
+#### Avatar / foto de perfil
+
+- [ ] Subir/cambiar avatar del negocio con flujo similar al logo en Branding
+- [ ] Mostrar avatar en `ProfilePanel`, sidebar y header en lugar del círculo con inicial
+- [ ] Agregar `avatarUrl` a `Business`
+- [ ] Evaluar `avatarUrl` para `Customer` en portal de cliente
+
+---
+
+### Backlog
+
+> Ideas y tareas priorizadas para sprints futuros, sin fecha asignada.
+> Incluye ítems degradados de pendientes de release por considerarse nice-to-have.
+
+- [ ] **Dark mode** — extender Tailwind con selector `.dark`, definir tokens dark sin romper colores de marca, validar en dashboard/login/join/my-cards/scan. Actualmente forzado a light mode. Los templates de email ya responden a `prefers-color-scheme: dark`.
+- [ ] **Estados vacíos con shadcn Empty** — agregar `pnpm dlx shadcn@latest add empty` y reemplazar las secciones sin datos (clientes, actividad reciente, etc.) con el componente `Empty` de shadcn/ui, eliminando los textos planos actuales
+
+### Post-MVP — Landing Page
+
+> Observaciones post-polish para aumentar conversión y credibilidad.
+
+- [ ] **Testimoniales** — 3 quotes con nombre, tipo de negocio y calificación (tarjetas en fila horizontal)
+- [ ] **Sección de números grandes** — bloque de fondo oscuro con 3 stats visibles (+N sellos, % retención, setup en X min)
+- [ ] **FAQ** — 5 preguntas clave con `shadcn/Accordion` (¿necesitan app?, pricing, personalización, cancelación, seguridad QR)
+- [ ] **Pricing beta más claro** — aunque sea "Gratis durante beta", mostrar features incluidas para reducir objeción
+
+---
+
 ### Post-MVP — Infraestructura
 
 - [ ] Activar Cloudflare WAF/proxy — el DNS ya apunta a Vercel sin proxy activo; activarlo añade DDoS protection y WAF
 - [ ] Custom Domain en Supabase Auth — elimina el dominio técnico de Supabase visible durante Google OAuth
 - [x] Templates de email personalizados — todos los 5 templates activos con logo real
 
-### Post-MVP — Dark Mode
-
-> La app aún no implementa dark mode oficialmente (Tailwind CSS maneja colores con variables CSS light-only).
-> Sin embargo, los 5 templates de email ya responden a `@media (prefers-color-scheme: dark)` usando
-> las clases `.em-*` con `!important` para sobrescribir estilos inline.
-
-**Paleta de emails (stone de Tailwind):**
-
-| Token      | Clase       | Light       | Dark        | Tailwind  |
-| ---------- | ----------- | ----------- | ----------- | --------- |
-| Fondo      | `.em-body`  | `#f5f5f4`   | `#0c0a09`   | stone-950 |
-| Tarjeta    | `.em-card`  | `#ffffff`   | `#1c1917`   | stone-900 |
-| Credenciales | `.em-creds` | `#f5f5f4` | `#292524`   | stone-800 |
-| Heading    | `.em-h1`    | `#1c1917`   | `#fafaf9`   | stone-50  |
-| Body text  | `.em-p`     | `#78716c`   | `#d6d3d1`   | stone-300 |
-| Muted text | `.em-muted` | `#a8a29e`   | `#78716c`   | stone-500 |
-| Divider    | `.em-divider` | `#e7e5e4` | `#44403c`   | stone-700 |
-| Links      | `.em-link`  | `#a8a29e`   | `#78716c`   | stone-500 |
-| CTA button | —           | `#f97316`   | `#f97316`   | orange-500 (sin cambio) |
-
-**Al implementar dark mode en la app:**
-- Extender `tailwind.config` con la clase `.dark` (selector strategy)
-- Los emails **no requieren cambios** si se mantiene la paleta stone — la implementación ya está lista
-- Si se cambian los colores base de la app, actualizar el bloque `@media (prefers-color-scheme: dark)`
-  en los 5 templates (`docs/email-templates/*.html`)
-
 ### Post-MVP — UX
 
 - [ ] `/login`: mejorar UI/UX del campo "ingresa tu contraseña" (padding, spacing, diseño del input)
 - [ ] `/login`: aumentar padding/margin sobre el texto "Bienvenido de vuelta, [email]" para mejorar la respiración visual
-- [ ] Foto de perfil para client y customer — subir/cambiar avatar similar al flujo de logo en tarjetas (Branding); mostrar en `ProfilePanel`, sidebar y header en lugar del círculo con inicial; campo `avatarUrl` en `Business` y en `Customer`
 
 ### Post-MVP — Magic Links
 
@@ -471,15 +677,14 @@ model StampLog {
 - [ ] Generar certificado Apple Wallet (Pass Type ID + certificado de firma)
 - [ ] Publicar en Wallet Console (Google) para quitar modo prueba
 
-### Post-MVP — Usuarios y Permisos
+### QR Impresión y PDF — Completado
 
-> Sistema multi-usuario con roles por negocio para que dueños puedan invitar
-> colaboradores con diferentes niveles de acceso.
+> Implementado en `feat/qr-print-pdf` y `feat/qr-code-sharing-ui`. Se usó `@react-pdf/renderer` (no pdfslick, que es un visor, no generador). El preview usa canvas PNG en lugar de PDF embebido para evitar bugs con `BlobProvider`/iframe. El PDF se abre en nueva pestaña donde el usuario puede guardar o imprimir nativamente.
 
-- [ ] Modelo `User` con email, nombre, rol y referencia a `Business`
-- [ ] Roles: `admin` (dueño, control total), `editor` (crear/editar tarjetas, sellar), `viewer` (solo leer reportes)
-- [ ] Login con selección de negocio si el usuario pertenece a más de uno
-- [ ] Pantalla de invitación: dueño envía magic link con rol asignado
+### Post-MVP — Usuarios y Permisos (ampliación)
+
+> `1.1.0` ya incorpora roles `admin` y `sellador`. Esta sección amplía permisos para versiones posteriores.
+
+- [ ] Roles adicionales: `viewer` (solo lectura de reportes)
 - [ ] Registro de auditoría: quién hizo qué acción (selló, canjeó, editó)
-- [ ] Restringir acciones según rol en API routes y UI
-- [ ] Migración de `Business.email` como owner implícito al nuevo modelo User
+- [ ] Dashboard de actividad por usuario

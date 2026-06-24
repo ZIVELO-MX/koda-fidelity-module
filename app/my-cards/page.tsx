@@ -67,7 +67,7 @@ export default function MyCardsPage() {
 
   if (state === "loading") {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-background forced-light flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     )
@@ -75,7 +75,7 @@ export default function MyCardsPage() {
 
   if (state === "sent") {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
+      <div className="min-h-screen bg-background forced-light flex flex-col">
         <main className="flex-1 flex flex-col items-center justify-center px-4 py-8">
           <div className="w-full max-w-md text-center space-y-6">
             <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
@@ -101,7 +101,7 @@ export default function MyCardsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background forced-light flex flex-col">
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-8">
         <div className="w-full max-w-md bg-card rounded-2xl p-6 border border-border space-y-6">
           <div className="text-center">
