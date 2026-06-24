@@ -9,7 +9,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/release-v1.1.0-orange" alt="Release">
   <img src="https://img.shields.io/badge/patch-1.1.x--patch-blue" alt="Patch">
-  <img src="https://img.shields.io/badge/made%20by-Zivelo-ff6b35" alt="Made by">
+  <img src="https://img.shields.io/badge/hecho%20por-Zivelo-ff6b35" alt="Hecho por">
 </p>
 
 ## Stack
@@ -58,4 +58,4 @@ Ver [`roadmap.md`](roadmap.md).
 
 ---
 
-[Made by Zivelo](https://zivelo.dev)
+[Hecho por Zivelo](https://zivelo.dev)
