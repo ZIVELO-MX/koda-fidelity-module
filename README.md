@@ -1,4 +1,6 @@
-[Logo]
+<p align="center">
+  <img src="public/short-logo.svg" alt="Koda Fidelity" width="120" height="120">
+</p>
 
 # Koda Fidelity
 
