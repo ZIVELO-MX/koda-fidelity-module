@@ -2,13 +2,15 @@
   <img src="public/short-logo.svg" alt="Koda Fidelity" width="120" height="120">
 </p>
 
-# Koda Fidelity
+<h1 align="center">Koda Fidelity</h1>
 
-Digital loyalty cards for modern businesses.
+<p align="center">Digital loyalty cards for modern businesses.</p>
 
-![Release](https://img.shields.io/badge/release-v1.1.0-orange)
-![Patch](https://img.shields.io/badge/patch-1.1.x--patch-blue)
-![Made by](https://img.shields.io/badge/made%20by-Zivelo-ff6b35)
+<p align="center">
+  <img src="https://img.shields.io/badge/release-v1.1.0-orange" alt="Release">
+  <img src="https://img.shields.io/badge/patch-1.1.x--patch-blue" alt="Patch">
+  <img src="https://img.shields.io/badge/made%20by-Zivelo-ff6b35" alt="Made by">
+</p>
 
 ## Stack
 
