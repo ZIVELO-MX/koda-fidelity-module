@@ -11,7 +11,7 @@ import {
   ArrowLeft, Mail, Loader2, Smartphone, ChevronDown, LogOut,
   Wallet, Download, Trash2, Search, RefreshCw, AlertTriangle, Clock,
 } from "lucide-react"
-import { getCardIcon } from "@/lib/card-icons"
+import { CustomerCardListIcon } from "@/components/dashboard/customer-card-list-icon"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
 import { getFriendlySendError } from "@/lib/auth-errors"
 import { logout } from "@/lib/actions/auth"
@@ -114,8 +114,6 @@ function ArchivedSection({
         <div className="overflow-hidden space-y-3">
           {cards.map((c) => {
             const isExpanded = expandedCards.has(c.id)
-            const icon = getCardIcon(c.card.iconName ?? c.card.business.iconName)
-            const IconComp = icon?.Icon
             const byBusiness = !c.card.isActive
             const badge = byBusiness ? "Archivada por el negocio" : "Archivada"
             const message = byBusiness
@@ -129,12 +127,14 @@ function ArchivedSection({
                   aria-expanded={isExpanded}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shrink-0 overflow-hidden grayscale"
-                      style={{ backgroundColor: c.card.brandColor }}>
-                      {c.card.business.logoUrl
-                        ? <img src={c.card.business.logoUrl} alt="" className="w-full h-full object-contain" />
-                        : IconComp ? <IconComp className="h-5 w-5" /> : c.card.business.name.charAt(0)}
-                    </div>
+                    <CustomerCardListIcon
+                      iconName={c.card.iconName}
+                      fallbackIconName={c.card.business.iconName}
+                      businessLogo={c.card.business.logoUrl}
+                      businessName={c.card.business.name}
+                      brandColor={c.card.brandColor}
+                      className="grayscale"
+                    />
                     <div className="text-left min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-semibold text-foreground truncate">{c.card.name}</p>
@@ -458,18 +458,13 @@ export default function DashboardMyCardsPage() {
                             aria-expanded={isExpanded}
                           >
                             <div className="flex items-center gap-3 min-w-0">
-                              {(() => {
-                                const icon = getCardIcon(c.card.iconName ?? c.card.business.iconName)
-                                const IconComp = icon?.Icon
-                                return (
-                                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shrink-0 overflow-hidden"
-                                    style={{ backgroundColor: c.card.brandColor }}>
-                                    {c.card.business.logoUrl ? (
-                                      <img src={c.card.business.logoUrl} alt="" className="w-full h-full object-contain" />
-                                    ) : IconComp ? <IconComp className="h-5 w-5" /> : c.card.business.name.charAt(0)}
-                                  </div>
-                                )
-                              })()}
+                              <CustomerCardListIcon
+                                iconName={c.card.iconName}
+                                fallbackIconName={c.card.business.iconName}
+                                businessLogo={c.card.business.logoUrl}
+                                businessName={c.card.business.name}
+                                brandColor={c.card.brandColor}
+                              />
                               <div className="text-left min-w-0">
                                 <div className="flex items-center gap-2">
                                   <p className="font-semibold text-foreground truncate">{c.card.name}</p>
@@ -548,12 +543,14 @@ export default function DashboardMyCardsPage() {
                   {expiredCards.map((c) => (
                     <div key={c.id} className="bg-card rounded-2xl border border-border overflow-hidden opacity-80">
                       <div className="p-4 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shrink-0 opacity-50 overflow-hidden"
-                          style={{ backgroundColor: c.card.brandColor }}>
-                          {c.card.business.logoUrl
-                            ? <img src={c.card.business.logoUrl} alt="" className="w-full h-full object-contain" />
-                            : c.card.business.name.charAt(0)}
-                        </div>
+                        <CustomerCardListIcon
+                          iconName={c.card.iconName}
+                          fallbackIconName={c.card.business.iconName}
+                          businessLogo={c.card.business.logoUrl}
+                          businessName={c.card.business.name}
+                          brandColor={c.card.brandColor}
+                          className="opacity-50"
+                        />
                         <div className="min-w-0 flex-1">
                           <p className="font-semibold text-foreground truncate">{c.card.name}</p>
                           <p className="text-xs text-muted-foreground">{c.card.business.name}</p>
