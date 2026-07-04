@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest"
 import { CustomerCardListIcon } from "@/components/dashboard/customer-card-list-icon"
 
 const defaultProps = {
-  fallbackIconName: "star",
   businessLogo: "https://example.com/logo.png",
   businessName: "Cafetería",
   brandColor: "#f97316",
@@ -27,12 +26,13 @@ describe("CustomerCardListIcon", () => {
     expect(container.querySelector("img")).toHaveAttribute("src", defaultProps.businessLogo)
   })
 
-  it("falls back to the business default icon for legacy cards", () => {
+  it("does not inherit the business icon when the card has no icon", () => {
     const { container } = render(
       <CustomerCardListIcon {...defaultProps} iconName={null} />,
     )
 
-    expect(container.querySelector(".lucide-star")).toBeInTheDocument()
+    expect(container.querySelector("svg")).not.toBeInTheDocument()
     expect(container.querySelector("img")).not.toBeInTheDocument()
+    expect(container).toHaveTextContent("C")
   })
 })

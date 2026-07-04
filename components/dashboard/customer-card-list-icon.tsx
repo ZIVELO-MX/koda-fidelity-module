@@ -3,7 +3,6 @@ import { cn } from "@/lib/utils"
 
 interface CustomerCardListIconProps {
   iconName: string | null
-  fallbackIconName: string | null
   businessLogo: string | null
   businessName: string
   brandColor: string
@@ -12,14 +11,12 @@ interface CustomerCardListIconProps {
 
 export function CustomerCardListIcon({
   iconName,
-  fallbackIconName,
   businessLogo,
   businessName,
   brandColor,
   className,
 }: CustomerCardListIconProps) {
-  const effectiveIconName = iconName ?? fallbackIconName
-  const icon = getCardIcon(effectiveIconName)
+  const icon = getCardIcon(iconName)
   const IconComp = icon?.Icon
 
   return (
@@ -30,7 +27,7 @@ export function CustomerCardListIcon({
       )}
       style={{ backgroundColor: brandColor }}
     >
-      {effectiveIconName === "logo" && businessLogo ? (
+      {iconName === "logo" && businessLogo ? (
         <img src={businessLogo} alt="" className="w-full h-full object-contain" />
       ) : IconComp ? (
         <IconComp className="h-5 w-5" />

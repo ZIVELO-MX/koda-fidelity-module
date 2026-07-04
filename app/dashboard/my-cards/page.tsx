@@ -53,7 +53,7 @@ interface MyCard {
     stampIconName: string | null
     isActive: boolean
     expiresAt: string | null
-    business: { name: string; brandColor: string; logoUrl: string | null; iconName: string | null }
+    business: { name: string; brandColor: string; logoUrl: string | null }
   }
 }
 
@@ -129,7 +129,6 @@ function ArchivedSection({
                   <div className="flex items-center gap-3 min-w-0">
                     <CustomerCardListIcon
                       iconName={c.card.iconName}
-                      fallbackIconName={c.card.business.iconName}
                       businessLogo={c.card.business.logoUrl}
                       businessName={c.card.business.name}
                       brandColor={c.card.brandColor}
@@ -158,7 +157,7 @@ function ArchivedSection({
                       <LoyaltyCardPreview
                         businessName={c.card.business.name}
                         businessLogo={c.card.business.logoUrl ?? undefined}
-                        iconName={c.card.iconName ?? c.card.business.iconName}
+                        iconName={c.card.iconName}
                         stampIconName={c.card.stampIconName}
                         customerName={c.name}
                         currentStamps={c.stamps}
@@ -460,7 +459,6 @@ export default function DashboardMyCardsPage() {
                             <div className="flex items-center gap-3 min-w-0">
                               <CustomerCardListIcon
                                 iconName={c.card.iconName}
-                                fallbackIconName={c.card.business.iconName}
                                 businessLogo={c.card.business.logoUrl}
                                 businessName={c.card.business.name}
                                 brandColor={c.card.brandColor}
@@ -483,7 +481,7 @@ export default function DashboardMyCardsPage() {
                                 <LoyaltyCardPreview
                                   businessName={c.card.business.name}
                                   businessLogo={c.card.business.logoUrl ?? undefined}
-                                  iconName={c.card.iconName ?? c.card.business.iconName}
+                                  iconName={c.card.iconName}
                                   stampIconName={c.card.stampIconName}
                                   customerName={c.name}
                                   currentStamps={c.stamps}
@@ -545,7 +543,6 @@ export default function DashboardMyCardsPage() {
                       <div className="p-4 flex items-center gap-3">
                         <CustomerCardListIcon
                           iconName={c.card.iconName}
-                          fallbackIconName={c.card.business.iconName}
                           businessLogo={c.card.business.logoUrl}
                           businessName={c.card.business.name}
                           brandColor={c.card.brandColor}
