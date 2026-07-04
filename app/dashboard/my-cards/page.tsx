@@ -50,6 +50,7 @@ interface MyCard {
     reward: string
     brandColor: string
     iconName: string | null
+    stampIconName: string | null
     isActive: boolean
     expiresAt: string | null
     business: { name: string; brandColor: string; logoUrl: string | null; iconName: string | null }
@@ -158,6 +159,7 @@ function ArchivedSection({
                         businessName={c.card.business.name}
                         businessLogo={c.card.business.logoUrl ?? undefined}
                         iconName={c.card.iconName ?? c.card.business.iconName}
+                        stampIconName={c.card.stampIconName}
                         customerName={c.name}
                         currentStamps={c.stamps}
                         maxStamps={c.card.stampsRequired}
@@ -487,6 +489,7 @@ export default function DashboardMyCardsPage() {
                                   businessName={c.card.business.name}
                                   businessLogo={c.card.business.logoUrl ?? undefined}
                                   iconName={c.card.iconName ?? c.card.business.iconName}
+                                  stampIconName={c.card.stampIconName}
                                   customerName={c.name}
                                   currentStamps={c.stamps}
                                   maxStamps={c.card.stampsRequired}

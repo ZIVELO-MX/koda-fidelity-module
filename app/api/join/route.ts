@@ -148,7 +148,30 @@ const customerInclude = {
     },
     orderBy: { createdAt: "desc" },
   },
+  stampsLog: {
+    where: { type: "redeem" },
+    select: { createdAt: true },
+    orderBy: { createdAt: "desc" },
+    take: 1,
+  },
 } as const
+
+export function withCurrentCycleMilestoneClaims<
+  T extends {
+    milestoneClaims: Array<{ createdAt: Date }>
+    stampsLog: Array<{ createdAt: Date }>
+  },
+>(customer: T) {
+  const { stampsLog, ...customerData } = customer
+  const lastRedeemedAt = stampsLog[0]?.createdAt
+
+  return {
+    ...customerData,
+    milestoneClaims: lastRedeemedAt
+      ? customer.milestoneClaims.filter((claim) => claim.createdAt > lastRedeemedAt)
+      : customer.milestoneClaims,
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -223,7 +246,7 @@ export async function GET(request: NextRequest) {
         throw new NotFoundError("Customer not found")
       }
 
-      return NextResponse.json({ customer })
+      return NextResponse.json({ customer: withCurrentCycleMilestoneClaims(customer) })
     }
 
     if (email) {
@@ -243,7 +266,9 @@ export async function GET(request: NextRequest) {
       })
 
       if (customers.length === 0) throw new NotFoundError("Customer not found")
-      return NextResponse.json({ customers })
+      return NextResponse.json({
+        customers: customers.map(withCurrentCycleMilestoneClaims),
+      })
     }
 
     throw new ValidationError("Provide either ?id= or ?email=")
