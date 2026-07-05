@@ -613,6 +613,14 @@ model StampLog {
 >
 > 3. **Logo propagado a toda la navegación** — al agregar la opción "Logo" en el picker de tarjetas, `logoUrl` se pasó erróneamente por toda la cadena layout → sidebar → header → profile panel. El logo del negocio es solo una opción de ícono de tarjeta; no debe aparecer en la UI de navegación.
 
+#### Hotfix — Iconos y Sellos Sorpresa en `/my-cards` (PR #106)
+
+- [x] **Ícono de sello correcto** — el portal del cliente pasa `stampIconName` a `LoyaltyCardPreview`; los sellos ya no heredan por error el ícono principal de la tarjeta.
+- [x] **Sellos sorpresa por ciclo** — la API muestra únicamente los premios obtenidos después del último canje; los claims históricos permanecen guardados sin reaparecer cuando una tirada posterior falla.
+- [x] **Ícono propio en listados** — las filas activas, archivadas y vencidas muestran el ícono configurado en la tarjeta. El logo del negocio solo aparece si la tarjeta seleccionó explícitamente la opción `logo`.
+- [x] **Sin herencia al quitar el ícono** — `iconName: null` se respeta como tarjeta sin ícono y usa la inicial del negocio como fallback visual, sin heredar `Business.iconName`.
+- [x] Pruebas de regresión para precedencia de íconos, selección explícita de logo, tarjeta sin ícono y vigencia de recompensas sorpresa.
+
 ---
 
 ### Fase 13 — Ícono Sello en Picker ✅ Completada
