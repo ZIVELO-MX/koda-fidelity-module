@@ -4,10 +4,27 @@
 
 ## Workflow
 
-- **Solo PRs a `dev`** — nunca push directo a `main`
-- Toda feature o fix va en una rama separada desde `dev` y pasa por code review antes de mergear
-- `main` solo recibe merges desde `dev` para releases estables
-- `1.1.x-patch` recibe hotfixes para la versión estable actual; se mergean a `main` y se sincronizan con `dev`
+> ⚠️ **No hay push directo a `main` ni a `dev`** — todo cambio entra mediante PR con code review.
+
+### Ramas activas
+
+| Rama | Versión | Propósito | Recibe cambios desde |
+|------|---------|-----------|---------------------|
+| `main` | `1.1.0` | 🟢 Producción estable | Solo vía `1.1.x-patch` |
+| `1.1.x-patch` | `1.1.x` | 🟢 Parches para producción | `hotfix/*` vía PR |
+| `dev` | `1.2.0` | 🟡 Desarrollo activo | `feat/*`, `fix/*`, `chore/*`, `docs/*` vía PR |
+
+### Desarrollo de features (`dev`)
+- Toda feature, fix o mejora va en una rama separada desde `dev` con prefijo `feat/`, `fix/`, `chore/`, `docs/`
+- Se mergea a `dev` mediante PR con code review
+- De `dev` **no se mergea a `main` directamente** — `dev` es la próxima versión (`1.2.0`) y no la actual
+
+### Parches para producción (`main`)
+- `main` (producción, `v1.1.0`) solo recibe cambios vía `1.1.x-patch`
+- Los hotfixes se ramifican desde `1.1.x-patch` como `hotfix/<nombre>` y se mergean vía PR a `1.1.x-patch`
+- Al mergear un hotfix a `1.1.x-patch`:
+  1. Se mergea `1.1.x-patch` → `main` y se taggea `v1.1.1`, `v1.1.2`, etc.
+  2. Se mergea `1.1.x-patch` → `dev` para sincronizar el fix en la próxima versión
 
 ---
 
@@ -30,10 +47,11 @@
 | Versión | Rama | Estado | Fases incluidas |
 | ------- | ---- | ------ | --------------- |
 | `1.0.0` | `main` | ✅ MVP estable | Fases 0–7. Tarjetas, clientes, QR, join flow, scan, portal cliente, Google OAuth/magic link, caducidad y guards. |
-| `1.1.0` | `main` | 🟢 En release (PR #104) | Fases 8–13 + QR print & share + UI/UX final polish. Multiusuario, equipo, UX móvil, operación, archivado/restauración, CI/plans, tabla de clientes compartida, ícono de sello, polish responsive, QR PDF personalizable con preview, descarga QR solo (PNG/SVG) y preview de página de registro. |
-| `1.2.0` | `dev` | 🟡 En desarrollo | Post-release: Wallets, landing comercial, permisos avanzados, auditoría y mejoras de auth. |
+| `1.1.0` | `main` | ✅ Producción | Fases 8–13 + QR print & share + UI/UX final polish. Multiusuario, equipo, UX móvil, operación, archivado/restauración, CI/plans, tabla de clientes compartida, ícono de sello, polish responsive, QR PDF personalizable con preview, descarga QR solo (PNG/SVG) y preview de página de registro. |
+| `1.1.x-patch` | `1.1.x-patch` | 🟢 Parches activos | Hotfixes para `main` (v1.1.0). Los fixes se mergean a `main` (tag `v1.1.x`) y a `dev`. |
+| `1.2.0` | `dev` | 🟡 En desarrollo | Wallets, landing comercial, permisos avanzados, auditoría y mejoras de auth. |
 
-> `main` debe reflejar siempre la última versión estable. `dev` contiene la próxima versión candidata. En este momento `1.1.0` está en proceso de release vía PR #104; una vez mergeado, `dev` continuará con `1.2.0`.
+> `main` debe reflejar siempre la última versión estable. `1.1.x-patch` recibe hotfixes para v1.1.x y se sincroniza con `dev`. `dev` contiene la próxima versión (`1.2.0`).
 
 ---
 
@@ -431,11 +449,11 @@ model StampLog {
 > **MVP completo** — Fases 0–7 completadas y desplegadas en `fidelity.zivelo.dev`.
 > Lanzamiento controlado activo (`INVITE_ONLY=true`). Las secciones Post-MVP agrupan trabajo futuro, no bloqueos del MVP.
 
-### `1.1.0` — Versión en release (PR #104) 🟡 En proceso
+### `1.1.0` — Versión liberada ✅
 
 > Incluye Fases 8–13 + QR print/share + Recompensas sorpresa + polish final de UI/UX. El desarrollo funcional base está cerrado; faltan gates finales de release sobre `dev` después de mergear los PRs abiertos.
 
-**Pendiente para liberar `1.1.0`:** — Migrado a checklist en PR #104
+**Pendiente para liberar `1.1.0`:** ✅ Completado vía PR #104
 
 **Features incluidas en `1.1.0` (completadas listas para deploy estable):**
 

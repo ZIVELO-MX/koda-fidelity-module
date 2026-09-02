@@ -1,6 +1,8 @@
 # Koda Fidelity — Arquitectura
 
-> Estado documentado desde `dev` como versión candidata `1.1.0`. `main` representa el MVP `1.0.0`; los cambios actuales en `dev` todavía no tienen release estable.
+> Estado documentado desde `dev` como versión `1.2.0` en desarrollo. `main`
+> representa la versión estable `1.1.0`; `1.1.x-patch` recibe correcciones de
+> producción.
 
 ## Resumen
 
@@ -12,9 +14,10 @@ La aplicación está construida con Next.js App Router. La UI vive en `app/` y `
 
 | Versión | Rama | Estado | Alcance |
 | --- | --- | --- | --- |
-| `1.0.0` | `main` | MVP estable | Dashboard base, tarjetas, clientes, QR, join flow, scan, portal cliente, Google OAuth/magic link, caducidad y guards. |
-| `1.1.0` | `dev` | En cierre, no liberada | Multiusuario con roles, equipo, UX móvil, scripts de operación, archivado/restauración, tabla de clientes compartida, CI/plans, selector de ícono de sello y polish. |
-| `1.2.0+` | futuras ramas desde `dev` | Pendiente | Wallets reactivadas, dark mode, mejoras de landing, permisos avanzados, auditoría y avatar/foto de perfil. |
+| `1.0.0` | historial de `main` | MVP histórico | Dashboard base, tarjetas, clientes, QR, join flow, scan, portal cliente, Google OAuth/magic link, caducidad y guards. |
+| `1.1.0` | `main` | Estable en producción | Multiusuario con roles, equipo, UX móvil, archivado/restauración, recompensas sorpresa, QR imprimible/PDF, personalización de tarjetas y polish responsive. |
+| `1.1.x` | `1.1.x-patch` | Parches de producción | Hotfixes para `main`; cada versión publicada se sincroniza también hacia `dev`. |
+| `1.2.0` | `dev` | En desarrollo | Siguiente ciclo de funcionalidades; Wallets, landing comercial, permisos avanzados, auditoría y mejoras de autenticación siguen pendientes. |
 
 ## Capas
 
@@ -36,6 +39,8 @@ El modelo central está en `prisma/schema.prisma`.
 - `User`: colaborador autenticado del negocio. Pertenece a un `Business` y tiene rol `admin` o `sellador`.
 - `LoyaltyCard`: tarjeta de fidelidad. Pertenece a un negocio, define recompensa, sellos requeridos, color, íconos, estado activo y caducidad.
 - `Customer`: cliente inscrito a una tarjeta. Guarda email opcional, progreso de sellos, estado activo y referencias futuras a Wallet.
+- `MilestoneReward`: recompensa sorpresa configurable para una tarjeta, asociada a un número de sello, probabilidad e ícono.
+- `CustomerMilestoneClaim`: recompensa sorpresa obtenida por un cliente, conservada como historial independiente del ciclo actual.
 - `StampLog`: historial de eventos de sellado/canje por cliente.
 
 Las relaciones usan cascada desde `Business` hacia `User` y `LoyaltyCard`, y desde `LoyaltyCard` hacia `Customer`.
@@ -145,17 +150,26 @@ pnpm build
 pnpm e2e
 ```
 
-`dev` incluye workflow de CI y planes técnicos en `plans/` para robustecer rutas, concurrencia de sellado, soft delete/stats y contraseñas temporales aleatorias.
+El workflow de CI ejecuta instalación reproducible, generación de Prisma, lint,
+typecheck y tests en `dev` y `main`.
+
+`plans/` conserva planes técnicos ejecutados y pendientes; las deudas activas
+más relevantes incluyen endurecer las rutas Wallet, reemplazar la contraseña
+temporal compartida y preparar el siguiente ciclo de producto.
 
 ## Estado de Release
 
-`1.0.0` vive en `main` como MVP estable. `1.1.0` vive en `dev` y está casi completo funcionalmente, pero debe cerrarse con verificación final antes de mergear a `main`.
+`1.1.0` vive en `main` como versión estable de producción. La rama
+`1.1.x-patch` se utiliza para hotfixes y `dev` contiene el siguiente ciclo
+`1.2.0`; no debe tratarse como una versión liberada.
 
-Gates recomendados para liberar `1.1.0`:
+Gates recomendados antes de liberar cambios de `dev` a una futura versión estable:
 
 - `pnpm typecheck`
 - `pnpm test`
 - `pnpm lint`
 - `pnpm build`
-- Validación manual de login admin, login sellador, invitación de equipo, sellado, archivado/restauración y branding con logo/ícono de sello.
-- Confirmar migraciones/schema en Supabase antes del merge a `main`.
+- Validación manual de login admin, login sellador, invitación de equipo,
+  sellado, archivado/restauración, recompensas sorpresa, QR/PDF y branding.
+- Confirmar migraciones/schema en Supabase y revisar los cambios pendientes de
+  Wallet antes de publicar una nueva versión estable.
