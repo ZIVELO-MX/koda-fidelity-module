@@ -119,6 +119,9 @@
   .scrim { background:var(--wf-fill-2); border-radius:var(--r-md); padding:16px; }
   .marq { background:var(--brand); color:#fff; font-size:10px; padding:6px 9px; border-radius:var(--r-sm); white-space:nowrap; overflow:hidden; }
   .star { color:var(--brand); font-size:10px; letter-spacing:1px; }
+  .avatar { width:24px; height:24px; border-radius:50%; background:var(--wf-fill-2); box-shadow:0 0 0 2px var(--brand); flex-shrink:0; }
+  .avatar.lg { width:56px; height:56px; box-shadow:0 0 0 3px var(--brand); }
+  .avatar.ring-teal { box-shadow:0 0 0 2px #0D9488; }
   .cam { height:96px; border-radius:var(--r-sm); background:var(--wf-fill-2); display:grid; place-items:center; }
   .reticle { width:60px; height:60px; border:2px solid var(--brand); border-radius:var(--r-sm); }
 
@@ -561,7 +564,7 @@
       </figure>
       <figure class="side after"><figcaption>Después</figcaption>
         <div class="canvas"><div class="frame">
-          <div class="bar"><div class="col" style="gap:0;"><span class="lbl on">Café Aurora</span><span class="xs">Admin</span></div><span class="btn gho">Buscar cliente</span></div>
+          <div class="bar"><div class="col" style="gap:0;"><span class="lbl on">Café Aurora</span><span class="xs">Admin</span></div><div class="row" style="align-items:center;"><span class="btn gho">Buscar cliente</span><div class="avatar"></div></div></div>
           <div class="row" style="gap:0;">
             <div class="rail"><span class="xs">Operación</span><div class="nav-i sel">Panel</div><div class="nav-i">Clientes</div><span class="xs">Programa</span><div class="nav-i">Tarjetas</div><div class="nav-i">QR</div><span class="xs">Negocio</span><div class="nav-i">Marca</div><div class="nav-i">Equipo</div></div>
             <div class="col pad" style="flex:1;">
@@ -777,6 +780,118 @@
   </article>
 </section>
 
+<!-- =================== PERFIL =================== -->
+<section class="part">
+  <h2>Perfil</h2>
+  <p class="lede">Hoy el perfil ya existe y ya tiene los dos destinos correctos, Mis tarjetas y Configuración, más cerrar sesión. Lo que falta es identidad: el avatar son iniciales sobre un círculo oscuro y no hay ningún campo de imagen en el modelo de datos.</p>
+
+  <article class="pair">
+    <header><h3>Menú de perfil</h3><span class="scope">Escritorio y móvil</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas narrow"><div class="frame" style="min-width:0;"><div class="pad col">
+          <div class="row" style="align-items:center;"><div class="box" style="width:24px;height:24px;border-radius:50%;"></div><div class="col" style="flex:1;gap:1px;"><span class="lbl on">RM</span><span class="xs">Admin</span></div><span class="lbl">⌄</span></div>
+          <div class="modal" style="margin-top:6px;">
+            <div class="row" style="padding:5px 0;"><span class="lbl">Mis tarjetas</span></div>
+            <div class="row" style="padding:5px 0;border-top:1px solid var(--border);"><span class="lbl">Configuración</span></div>
+            <div class="row" style="padding:5px 0;border-top:1px solid var(--border);"><span class="lbl" style="color:var(--danger);">Cerrar sesión</span></div>
+          </div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas narrow"><div class="frame" style="min-width:0;"><div class="pad col">
+          <div class="row" style="align-items:center;"><div class="avatar"></div><div class="col" style="flex:1;gap:1px;"><span class="lbl on">Raúl Méndez</span><span class="xs">Admin</span></div><span class="lbl">⌄</span></div>
+          <div class="modal" style="margin-top:6px;">
+            <div class="row" style="align-items:center;padding:6px 0;"><div class="avatar lg" style="width:34px;height:34px;"></div><div class="col" style="gap:1px;"><span class="lbl on">Raúl Méndez</span><span class="xs">raul@cafeaurora.mx</span></div></div>
+            <div class="row" style="padding:7px 0;border-top:1px solid var(--border);"><span class="lbl on">Mis tarjetas</span></div>
+            <div class="row" style="padding:7px 0;border-top:1px solid var(--border);"><span class="lbl on">Configuración</span></div>
+            <div class="row" style="padding:7px 0;border-top:1px solid var(--border);"><span class="lbl" style="color:var(--danger);">Cerrar sesión</span></div>
+          </div>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="keep"><b>Los dos destinos y el cierre de sesión.</b> El menú ya está bien resuelto y no se le agrega nada más.</li>
+      <li class="change"><b>La foto sustituye a las iniciales</b>, con el marco del color elegido. El encabezado del menú muestra nombre y correo, que es lo que confirma con qué cuenta estás dentro.</li>
+      <li class="change"><b>Configuración deja de ser solo para administradores.</b> Cualquiera necesita entrar a su propio perfil, aunque el resto de esa pantalla siga siendo de admin.</li>
+      <li class="change"><b>Área táctil de 44px por fila</b> y cierre con Escape devolviendo el foco al avatar.</li>
+    </ul>
+  </article>
+
+  <article class="pair">
+    <header><h3>Configuración de perfil</h3><span class="scope">Escritorio y móvil</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad col">
+          <span class="lbl on">Configuración</span>
+          <span class="xs">Nombre del negocio</span><div class="box" style="height:18px;"></div>
+          <span class="xs">Apodo, tipo, dirección, teléfono, web, Instagram</span><div class="box" style="height:18px;"></div>
+          <span class="xs">Correo, solo lectura</span><div class="box" style="height:18px;opacity:.6;"></div>
+          <div class="box dash" style="padding:9px;"><span class="xs">No hay sección de perfil personal ni forma de borrar la cuenta</span></div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad col">
+          <span class="lbl on">Tu perfil</span>
+          <div class="row" style="align-items:center;gap:12px;">
+            <div class="avatar lg"></div>
+            <div class="col" style="flex:1;">
+              <span class="btn gho" style="width:max-content;">Cambiar foto</span>
+              <span class="xs">JPG o PNG, hasta 2 MB</span>
+            </div>
+          </div>
+          <span class="xs">Color del marco</span>
+          <div class="row">
+            <div style="width:22px;height:22px;border-radius:50%;background:#f97316;box-shadow:0 0 0 2px var(--ink);"></div>
+            <div style="width:22px;height:22px;border-radius:50%;background:#3b82f6;"></div>
+            <div style="width:22px;height:22px;border-radius:50%;background:#10b981;"></div>
+            <div style="width:22px;height:22px;border-radius:50%;background:#8b5cf6;"></div>
+            <div style="width:22px;height:22px;border-radius:50%;background:#ec4899;"></div>
+            <div class="box" style="width:22px;height:22px;border-radius:50%;display:grid;place-items:center;"><span class="xs">+</span></div>
+          </div>
+          <div class="row" style="align-items:center;"><span class="xs">Vista previa</span><div class="avatar"></div><div class="avatar" style="width:18px;height:18px;"></div></div>
+          <div style="border-top:1px solid var(--border);padding-top:9px;">
+            <span class="lbl" style="color:var(--danger);font-weight:600;">Borrar mi cuenta</span>
+            <div class="line m" style="margin-top:5px;"></div>
+          </div>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="change"><b>Dos parámetros, dos selectores.</b> La foto desde el archivo, y el marco desde la misma paleta de seis colores más personalizado que ya usa el asistente de tarjetas. Nada nuevo que aprender.</li>
+      <li class="change"><b>Vista previa en los dos tamaños</b> en que el avatar aparece de verdad, 24px en la barra y 56px en el menú. Un marco que se ve bien en grande puede desaparecer en pequeño.</li>
+      <li class="keep"><b>El resto de Configuración no se toca.</b> Los campos del negocio, sus nombres y su orden se quedan igual.</li>
+      <li class="block"><b>No hay dónde guardar nada de esto.</b> Ni `avatarUrl` ni color de marco existen en el modelo, y el borrado de cuenta no tiene endpoint. Va en el handoff.</li>
+    </ul>
+  </article>
+
+  <article class="pair">
+    <header><h3>Borrar la cuenta</h3><span class="scope">Escritorio y móvil</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad col">
+          <div class="box dash" style="padding:14px;text-align:center;"><span class="lbl">No existe. Hoy la cuenta se borra pidiéndolo por WhatsApp.</span></div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas"><div class="scrim"><div class="modal">
+          <span class="lbl on">¿Borrar tu cuenta de Café Aurora?</span>
+          <div class="attn" style="margin:8px 0;"><span class="lbl">Se borran 3 tarjetas y el progreso de 128 clientes. No se puede deshacer.</span></div>
+          <span class="xs">Escribe BORRAR para confirmar</span>
+          <div class="box" style="height:20px;margin:5px 0 9px;"></div>
+          <div class="row" style="justify-content:flex-end;"><span class="btn gho">Cancelar</span><span class="btn pri" style="background:var(--danger);">Borrar cuenta</span></div>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="change"><b>La consecuencia se cuantifica antes de confirmar</b>, con los datos que la pantalla ya tiene. Borrar la cuenta del administrador de un negocio no borra a una persona, borra el negocio entero.</li>
+      <li class="change"><b>Confirmación escrita, no solo un botón rojo.</b> Es la única acción del producto verdaderamente irreversible.</li>
+      <li class="block"><b>Dos cuentas distintas, dos consecuencias distintas.</b> Un cliente que se borra pierde su progreso en las tarjetas donde está. Un administrador arrastra su negocio completo. El texto y el conteo tienen que salir del servidor, no adivinarse en la interfaz.</li>
+      <li class="keep"><b>Sigue existiendo la salida por soporte</b> para quien prefiera pedirlo por WhatsApp.</li>
+    </ul>
+  </article>
+</section>
+
 <!-- =================== MOVIL =================== -->
 <section class="part">
   <h2>Móvil</h2>
@@ -831,7 +946,7 @@
       </figure>
       <figure class="side after"><figcaption>Después</figcaption>
         <div class="canvas narrow"><div class="frame" style="min-width:0;">
-          <div class="bar"><span class="lbl on">Café Aurora</span><span class="btn pri">Sellar</span></div>
+          <div class="bar"><div class="row" style="align-items:center;"><div class="avatar"></div><span class="lbl on">Café Aurora</span></div><span class="btn pri">Sellar</span></div>
           <div class="pad col">
             <span class="lbl on">Hoy</span>
             <div class="row"><div class="stat"><span class="xs">Sellos</span><span class="num">37</span></div><div class="stat"><span class="xs">Canjes</span><span class="num">4</span></div><div class="stat"><span class="xs">Nuevos</span><span class="num">6</span></div></div>

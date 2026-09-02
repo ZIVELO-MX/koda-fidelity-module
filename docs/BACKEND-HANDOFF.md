@@ -1,4 +1,4 @@
-# Handoff a backend — rediseño de Koda Fidelity
+# Handoff a backend para el rediseño de Koda Fidelity
 
 Verificado contra `dev` @ `29de56e` el 2026-09-01. Todas las rutas son relativas a este
 repositorio. Nada de este documento está implementado: es la lista de trabajo de backend
@@ -30,7 +30,7 @@ Cosas que hacen que la interfaz nueva no se pueda terminar o no se pueda mostrar
 Siete lugares buscan el negocio con `prisma.business.findUnique({ where: { email: user.email } })`,
 es decir contra `Business.email`. Eso solo coincide con la cuenta fundadora: un colaborador
 invitado (`sellador`, o un `admin` agregado desde Equipo) tiene su propio correo, la consulta
-devuelve `null` y la página lo rebota a `/login` — con sesión válida.
+devuelve `null` y la página lo rebota a `/login`, con sesión válida.
 
 - `app/dashboard/(main)/cards/page.tsx:33`
 - `app/dashboard/(main)/cards/[id]/page.tsx:32`
@@ -38,7 +38,7 @@ devuelve `null` y la página lo rebota a `/login` — con sesión válida.
 - `app/dashboard/(main)/customers/page.tsx:25`
 - `app/dashboard/(main)/qr-codes/[cardId]/page.tsx:17`
 - `app/dashboard/(main)/qr-codes/[cardId]/preview/page.tsx:17`
-- `app/auth/callback/route.ts:20` — además decide a dónde entra el usuario tras el login
+- `app/auth/callback/route.ts:20`, que además decide a dónde entra el usuario tras el login
 
 El patrón correcto ya existe y está probado: `getBusinessFromSession()` en `lib/api-utils.ts:59`
 resuelve `User` por correo y de ahí toma `business`. `app/dashboard/(main)/layout.tsx:19` y
@@ -56,7 +56,7 @@ mucho 10 canjes históricos. "Sellos Entregados" (línea 99) suma `customer.stam
 **saldo actual**, no lo entregado: cada canje resetea a cero y la cifra baja.
 
 `app/api/dashboard/stats/route.ts` ya calcula bien los canjes (`stampLog.count` con
-`type: "redeem"`) y **nadie lo consume** — solo aparece en `lib/__tests__/openapi.test.ts`.
+`type: "redeem"`) y **nadie lo consume**: solo aparece en `lib/__tests__/openapi.test.ts`.
 
 Además el panel rediseñado necesita datos que hoy no existen:
 
@@ -71,8 +71,8 @@ dibujar, y hoy no puedo mostrar un número que sé que es falso.
 ### B3 · `/auth/error` renderiza una página en blanco
 
 `app/auth/error/page.tsx:14` devuelve un `<Suspense>` con `fallback` y **cuerpo vacío**.
-`AuthErrorContent` (línea 25) está completo — maneja `otp_expired`, `rate_limit`, reenvío de
-magic link y alternativa con Google — pero nunca se monta. Cualquier error de OAuth u OTP
+`AuthErrorContent` (línea 25) está completo y maneja `otp_expired`, `rate_limit`, reenvío de
+magic link y alternativa con Google, pero nunca se monta. Cualquier error de OAuth u OTP
 termina en una pantalla vacía. Basta con renderizar `<AuthErrorContent />` dentro del `Suspense`.
 
 **Impacto en diseño:** es la pantalla de rescate del flujo de acceso; no puedo rediseñar lo que
@@ -172,6 +172,36 @@ Lista para dimensionar; la acordamos antes de que la implementes.
 | C3 | Clientes con búsqueda, orden y paginación en servidor | `app/dashboard/(main)/cards/[id]/page.tsx:67` filtra y ordena **en memoria** tras traer todos los clientes activos |
 | C4 | Errores tipados y distinguibles (sin sesión, sin negocio, sin permiso) para pintar estados distintos | Todo cae en un `redirect("/login")` genérico |
 | C5 | Rol disponible en la sesión del layout | Ya existe (`app/dashboard/(main)/layout.tsx:28`); solo mantenerlo |
+
+### Perfil de la persona y borrado de cuenta
+
+Trabajo nuevo, pedido por producto: el perfil pasa a tener foto y color de marco, y desde
+Configuración se debe poder borrar la cuenta. Nada de esto tiene hoy dónde vivir.
+
+| # | Qué necesito | Estado actual |
+|---|---|---|
+| C6 | `avatarUrl` y `avatarRingColor` en `User` | No existe ningún campo de imagen en el esquema. El avatar de hoy son iniciales sobre `--ink` |
+| C7 | Subida y borrado de la imagen de perfil | `lib/supabase-storage.ts` ya resuelve esto para el logo del negocio. Conviene reutilizarlo: cuadrada, hasta 2 MB, JPG, PNG o WEBP, y borrar la anterior al reemplazar |
+| C8 | Consecuencias del borrado, antes de borrar | No existe. La interfaz necesita saber cuántas tarjetas y cuántos clientes se pierden para poder decirlo en el diálogo |
+| C9 | Borrado de cuenta real | No existe. Hoy se pide por WhatsApp. Debe borrar también el usuario en Supabase Auth, no solo la fila de Prisma |
+
+**El perfil del cliente final no tiene dónde guardarse.** `Customer` es una fila por tarjeta, no
+por persona: alguien con tres tarjetas son tres filas con el mismo correo, y `Customer.email` no
+es único. Si el avatar debe existir también para el cliente, hace falta una entidad de persona, o
+guardarlo en el usuario de Supabase. Es una decisión de modelo, no de interfaz.
+
+**El borrado arrastra más de lo que parece.** El esquema encadena
+`Business` hacia `User`, `LoyaltyCard`, `Customer`, `StampLog` y `MilestoneReward`, todos con
+`onDelete: Cascade`. Borrar la cuenta de un administrador que es el único usuario de su negocio
+borra el negocio entero y el progreso de todos sus clientes. Hacen falta dos decisiones de
+producto antes de implementar:
+
+1. Si el negocio tiene otros administradores, ¿la cuenta se borra y el negocio sobrevive, o se
+   exige transferir la propiedad primero?
+2. Si es el único administrador, ¿se permite el borrado inmediato, o hay periodo de gracia?
+
+Para el cliente final el caso es más simple: pierde su progreso en las tarjetas donde está
+inscrito, y los negocios dejan de verlo en sus listas.
 
 ## 4. Lo que está bien y no hay que tocar
 
