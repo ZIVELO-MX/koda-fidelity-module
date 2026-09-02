@@ -1,0 +1,1092 @@
+<title>Wireframes Koda Fidelity</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg:#FAFAF7; --bg-2:#F5F4EE; --surface:#FFFFFF; --surface-2:#F7F6F1;
+    --border:#EBE9E0; --border-strong:#D9D6C9;
+    --ink:#1C1B17; --ink-2:#5E5A51; --ink-3:#8E897C; --ink-4:#B5B0A4;
+    --brand:#FF6B35; --brand-soft:#FFF1E9; --brand-ink:#5A1F08;
+    --warning:#B45309; --warning-soft:#FDF2DC;
+    --success:#15803D; --success-soft:#E8F5EE;
+    --danger:#B91C1C; --danger-soft:#FBEAE9;
+    --wf-fill:#F0EEE7; --wf-fill-2:#E4E1D7; --wf-line:#D9D6C9;
+    --dark-ground:#17130F;
+    --r-sm:6px; --r-md:8px; --r-lg:10px; --r-xl:14px; --r-2xl:18px;
+    --sans:"Figtree",ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#0D0C0A; --bg-2:#141210; --surface:#1A1814; --surface-2:#221F1A;
+      --border:#2F2B25; --border-strong:#3D3830;
+      --ink:#FAFAF7; --ink-2:#CBC6B9; --ink-3:#8E897C; --ink-4:#5E5A51;
+      --brand:#FF7A47; --brand-soft:#2A1810; --brand-ink:#FFE1CF;
+      --warning:#FBBF24; --warning-soft:#2A1F0C;
+      --success:#34D399; --success-soft:#0E2A1E;
+      --danger:#F87171; --danger-soft:#2C1414;
+      --wf-fill:#221F1A; --wf-fill-2:#2C2823; --wf-line:#3D3830;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#0D0C0A; --bg-2:#141210; --surface:#1A1814; --surface-2:#221F1A;
+    --border:#2F2B25; --border-strong:#3D3830;
+    --ink:#FAFAF7; --ink-2:#CBC6B9; --ink-3:#8E897C; --ink-4:#5E5A51;
+    --brand:#FF7A47; --brand-soft:#2A1810; --brand-ink:#FFE1CF;
+    --warning:#FBBF24; --warning-soft:#2A1F0C;
+    --success:#34D399; --success-soft:#0E2A1E;
+    --danger:#F87171; --danger-soft:#2C1414;
+    --wf-fill:#221F1A; --wf-fill-2:#2C2823; --wf-line:#3D3830;
+  }
+
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans); font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:1240px; margin:0 auto; padding:0 24px 96px; }
+  h1,h2,h3,h4 { margin:0; text-wrap:balance; letter-spacing:-0.02em; }
+  p { margin:0; }
+  code { font-family:var(--mono); font-size:.86em; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-sm); padding:1px 5px; }
+
+  .masthead { padding:68px 0 36px; border-bottom:1px solid var(--border); }
+  .kicker { font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.14em; color:var(--ink-3); }
+  .masthead h1 { font-size:clamp(32px,5vw,50px); font-weight:800; line-height:1.05; margin:14px 0 16px; max-width:17ch; }
+  .masthead p { color:var(--ink-2); max-width:64ch; font-size:17px; }
+
+  .legend { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:1px; background:var(--border); border:1px solid var(--border); border-radius:var(--r-xl); overflow:hidden; margin-top:30px; }
+  .legend div { background:var(--surface); padding:15px 17px; }
+  .legend h4 { font-size:13.5px; margin-bottom:4px; }
+  .legend p { font-size:13px; color:var(--ink-2); }
+  .swatch { display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:7px; vertical-align:middle; }
+  .sw-keep { background:var(--success); } .sw-change { background:var(--brand); } .sw-drop { background:var(--danger); } .sw-block { background:var(--warning); }
+
+  .open { border:1px solid var(--warning); background:var(--warning-soft); border-radius:var(--r-xl); padding:18px 20px; margin-top:26px; }
+  .open h3 { font-size:15px; color:var(--warning); margin-bottom:8px; }
+  .open ul { margin:0; padding-left:18px; color:var(--ink-2); font-size:14px; }
+  .open li + li { margin-top:5px; }
+
+  .part { padding:52px 0 8px; border-top:1px solid var(--border); margin-top:44px; }
+  .part h2 { font-size:28px; font-weight:700; }
+  .part .lede { color:var(--ink-2); max-width:70ch; margin-top:9px; }
+
+  .pair { margin-top:38px; }
+  .pair > header { display:flex; flex-wrap:wrap; align-items:baseline; gap:10px; margin-bottom:14px; }
+  .pair h3 { font-size:19px; font-weight:650; }
+  .scope { font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-3); border:1px solid var(--border-strong); border-radius:999px; padding:3px 9px; }
+  .ab { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:860px) { .ab { grid-template-columns:1fr; } }
+  .side { margin:0; }
+  .side figcaption { font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-3); margin-bottom:7px; }
+  .side.after figcaption { color:var(--brand); }
+  .canvas { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--r-xl); padding:12px; overflow-x:auto; height:100%; }
+  .canvas.narrow { max-width:320px; }
+  .frame { background:var(--surface); border:1px solid var(--wf-line); border-radius:var(--r-md); overflow:hidden; min-width:270px; }
+  .frame.dark { background:var(--dark-ground); border-color:#2b241d; color:#f7f2ea; }
+
+  .row { display:flex; gap:8px; }
+  .col { display:flex; flex-direction:column; gap:8px; }
+  .pad { padding:10px; }
+  .bar { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 10px; border-bottom:1px solid var(--wf-line); background:var(--surface-2); }
+  .frame.dark .bar { background:rgba(255,255,255,.05); border-color:#2b241d; }
+  .box { background:var(--wf-fill); border:1px solid var(--wf-line); border-radius:var(--r-sm); }
+  .box.dash { background:transparent; border-style:dashed; }
+  .frame.dark .box { background:rgba(255,255,255,.06); border-color:#332a22; }
+  .lbl { font-size:11px; color:var(--ink-3); }
+  .lbl.on { color:var(--ink); font-weight:600; }
+  .frame.dark .lbl { color:#c9bfb2; } .frame.dark .lbl.on { color:#f7f2ea; }
+  .xs { font-family:var(--mono); font-size:9px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-4); }
+  .num { font-family:var(--mono); font-variant-numeric:tabular-nums; font-weight:600; }
+  .line { height:6px; background:var(--wf-fill-2); border-radius:3px; }
+  .line.s { width:38%; } .line.m { width:60%; } .line.l { width:85%; }
+  .frame.dark .line { background:rgba(255,255,255,.14); }
+  .btn { border-radius:var(--r-lg); padding:7px 11px; font-size:11.5px; font-weight:600; text-align:center; }
+  .btn.pri { background:var(--brand); color:#fff; }
+  .btn.gho { border:1px solid var(--border-strong); color:var(--ink-2); }
+  .frame.dark .btn.gho { border-color:rgba(255,255,255,.28); color:#e8ddd2; }
+  .btn.wide { display:block; }
+  .stat { flex:1; min-width:0; padding:8px 9px; background:var(--surface); border:1px solid var(--wf-line); border-radius:var(--r-sm); }
+  .stat .num { font-size:17px; display:block; }
+  .rail { width:86px; flex-shrink:0; border-right:1px solid var(--wf-line); background:var(--surface-2); padding:8px 7px; }
+  .nav-i { font-size:10px; color:var(--ink-3); padding:4px 6px; border-radius:4px; }
+  .nav-i.sel { background:var(--brand); color:#fff; font-weight:600; }
+  .cardface { border-radius:var(--r-sm); padding:9px; color:#fff; background:linear-gradient(135deg,#B45309,#7C2D12); min-height:74px; display:flex; flex-direction:column; justify-content:space-between; }
+  .cardface.gift { background:linear-gradient(135deg,#334155,#0F172A); }
+  .stamps { display:grid; grid-template-columns:repeat(5,1fr); gap:3px; max-width:96px; }
+  .stamp { aspect-ratio:1; border-radius:50%; border:1px dashed rgba(255,255,255,.45); }
+  .stamp.on { background:#fff; border-style:solid; border-color:#fff; }
+  .chart { height:54px; border:1px solid var(--wf-line); border-radius:var(--r-sm); background:linear-gradient(to top,var(--brand-soft),transparent 78%); position:relative; }
+  .chart .dot { position:absolute; right:9px; top:13px; width:6px; height:6px; border-radius:50%; background:var(--brand); box-shadow:0 0 0 3px var(--brand-soft); }
+  .attn { border:1px solid var(--warning); background:var(--warning-soft); border-radius:var(--r-sm); padding:7px 9px; }
+  .attn .lbl { color:var(--warning); font-weight:600; }
+  .modal { border:1px solid var(--wf-line); border-radius:var(--r-md); background:var(--surface); box-shadow:0 12px 32px rgba(28,27,23,.14); padding:12px; }
+  .scrim { background:var(--wf-fill-2); border-radius:var(--r-md); padding:16px; }
+  .marq { background:var(--brand); color:#fff; font-size:10px; padding:6px 9px; border-radius:var(--r-sm); white-space:nowrap; overflow:hidden; }
+  .star { color:var(--brand); font-size:10px; letter-spacing:1px; }
+  .cam { height:96px; border-radius:var(--r-sm); background:var(--wf-fill-2); display:grid; place-items:center; }
+  .reticle { width:60px; height:60px; border:2px solid var(--brand); border-radius:var(--r-sm); }
+
+  .delta { list-style:none; margin:14px 0 0; padding:0; display:grid; grid-template-columns:repeat(auto-fit,minmax(272px,1fr)); gap:1px; background:var(--border); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; }
+  .delta li { background:var(--surface); padding:11px 13px; font-size:13.5px; color:var(--ink-2); border-left:3px solid transparent; }
+  .delta li b { color:var(--ink); font-weight:650; }
+  .delta li.keep { border-left-color:var(--success); }
+  .delta li.change { border-left-color:var(--brand); }
+  .delta li.drop { border-left-color:var(--danger); }
+  .delta li.block { border-left-color:var(--warning); }
+  footer { margin-top:64px; padding-top:22px; border-top:1px solid var(--border); color:var(--ink-3); font-size:13px; }
+</style>
+
+<div class="wrap">
+
+<header class="masthead">
+  <div class="kicker">Koda Fidelity · Redesign preserve</div>
+  <h1>Antes y después, sección por sección</h1>
+  <p>El prototipo es la fuente de verdad. Este documento muestra qué queda igual, qué se refina y qué se retira en cada superficie, incluidas las vistas móviles y las ventanas emergentes que ya existen en el producto.</p>
+
+  <div class="legend">
+    <div><h4><span class="swatch sw-keep"></span>Se conserva</h4><p>Decisión del prototipo o del ADN que no se toca.</p></div>
+    <div><h4><span class="swatch sw-change"></span>Se refina</h4><p>Misma intención, mejor ejecución.</p></div>
+    <div><h4><span class="swatch sw-drop"></span>Se retira</h4><p>Genera ruido o incumple una regla dura.</p></div>
+    <div><h4><span class="swatch sw-block"></span>Bloqueado</h4><p>Depende de backend o de una decisión de negocio.</p></div>
+  </div>
+
+  <div class="open">
+    <h3>Dos decisiones abiertas que afectan a este documento</h3>
+    <ul>
+      <li>Motion de la landing en 3 o en 4. Con 3 se van el flotar y el brillo de la tarjeta del hero. Aquí está dibujado como 4, conservando la tarjeta viva.</li>
+      <li>Densidad del panel desde el ADN de KODA o desde la interfaz de TLOZ. Aquí está dibujada con la escala de KODA, densidad 7.</li>
+    </ul>
+  </div>
+</header>
+
+<section class="part" style="border-top:none;margin-top:0;padding-top:44px;">
+  <h2>La idea completa</h2>
+  <p class="lede">Fidelity ya hace lo que promete. El problema es que está organizado alrededor de las entidades del sistema, tarjetas, clientes, códigos, y no alrededor del trabajo del negocio, que es publicar un programa y sellar. El rediseño mueve eso, sin tocar la marca ni el diseño de las tarjetas.</p>
+  <div class="legend" style="margin-top:26px;">
+    <div><h4>El primer sello es la meta</h4><p>La primera sesión no termina cuando se crea una tarjeta, termina cuando un cliente recibe su primer sello. El panel vacío guía hasta ahí.</p></div>
+    <div><h4>Cada superficie, su tarea</h4><p>Teléfono para sellar, escritorio para administrar y decidir. La cámara deja de existir en escritorio y la búsqueda por nombre ocupa su lugar.</p></div>
+    <div><h4>Ningún número miente</h4><p>Las cifras que hoy están mal calculadas se marcan como parciales hasta que backend las corrija. Preferimos un hueco honesto a una gráfica bonita.</p></div>
+    <div><h4>La tarjeta manda</h4><p>Es lo que el cliente enseña en el mostrador. Se conserva intacta y aparece en cada pantalla que hable de ella, en vez de un cuadrito con una inicial.</p></div>
+    <div><h4>Un error dice cómo salir</h4><p>Qué pasó, qué hacer, y un código con referencia que se copia de un toque para soporte. El contrato está en el documento de errores.</p></div>
+    <div><h4>Se conserva lo que funciona</h4><p>Anclas, rutas, nombres de campo, voz del copy, tokens y tipografía del prototipo. El rediseño no es una excusa para reescribirlo todo.</p></div>
+  </div>
+</section>
+
+<!-- =================== LANDING =================== -->
+<section class="part">
+  <h2>Landing</h2>
+  <p class="lede">Las secciones en el orden que ya tiene el prototipo, salvo las tarjetas de regalo, que quedan fuera de este ciclo. El orden no cambia, las anclas no cambian, el copy conserva su voz.</p>
+
+  <!-- 1 -->
+  <article class="pair">
+    <header><h3>Navegación y hero</h3><span class="scope">Escritorio</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas"><div class="frame dark">
+          <div class="bar"><span class="lbl on">Koda Fidelity</span><div class="row"><span class="lbl">Cómo funciona</span><span class="lbl">Precios</span><span class="lbl">FAQ</span></div><div class="row"><span class="lbl">Iniciar Sesión</span><span class="btn pri">Empezar Gratis</span></div></div>
+          <div class="row pad" style="gap:12px;">
+            <div class="col" style="flex:1.02;">
+              <div class="box" style="padding:4px 8px;width:max-content;"><span class="xs">Parte del ecosistema Koda POS</span></div>
+              <div class="line l"></div><div class="line l"></div><div class="line m"></div>
+              <div class="line s" style="height:4px;"></div>
+              <div class="row"><span class="btn pri">Crear mi tarjeta gratis</span><span class="btn gho">Cómo funciona</span></div>
+              <div class="row"><span class="xs">Sin apps</span><span class="xs">QR</span><span class="xs">2 minutos</span></div>
+            </div>
+            <div class="col" style="flex:.98;">
+              <div class="cardface" style="min-height:118px;">
+                <div><div style="font-size:9px;opacity:.85;">Café Aurora</div><div style="font-size:12px;font-weight:700;">Décimo gratis</div></div>
+                <div class="stamps"><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div></div>
+              </div>
+            </div>
+          </div>
+        </div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas"><div class="frame dark">
+          <div class="bar"><span class="lbl on">Koda Fidelity</span><div class="row"><span class="lbl">Cómo funciona</span><span class="lbl">Precios</span><span class="lbl">FAQ</span></div><div class="row"><span class="lbl">Iniciar Sesión</span><span class="btn pri">Empezar Gratis</span></div></div>
+          <div class="row pad" style="gap:12px;">
+            <div class="col" style="flex:1.02;">
+              <div class="box" style="padding:4px 8px;width:max-content;"><span class="xs">Parte del ecosistema Koda POS</span></div>
+              <div class="line l"></div><div class="line m"></div>
+              <div class="line s" style="height:4px;"></div>
+              <div class="row"><span class="btn pri">Empezar Gratis</span><span class="btn gho">Cómo funciona</span></div>
+            </div>
+            <div class="col" style="flex:.98;">
+              <div class="cardface" style="min-height:118px;">
+                <div><div style="font-size:9px;opacity:.85;">Café Aurora</div><div style="font-size:12px;font-weight:700;">Décimo gratis</div></div>
+                <div class="stamps"><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div></div>
+              </div>
+            </div>
+          </div>
+        </div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="keep"><b>Intacto.</b> La tarjeta del hero, su degradado, sus sellos y su QR. También el badge del ecosistema y el acento Playfair en el titular.</li>
+      <li class="change"><b>Una sola etiqueta por intención.</b> El nav decía "Empezar Gratis" y el hero "Crear mi tarjeta gratis". Son la misma acción con dos nombres, y eso es fallo de pre-flight en la §4.5.</li>
+      <li class="drop"><b>Fila de tres micro sellos de confianza.</b> Sale del hero. La §4.7 permite cuatro elementos de texto y ya están ocupados por badge, titular, párrafo y botones.</li>
+      <li class="change"><b>Subtítulo a veinte palabras</b> para que el hero entre completo en el primer viewport, con los botones visibles sin scroll.</li>
+    </ul>
+  </article>
+
+  <!-- 2 -->
+  <article class="pair">
+    <header><h3>Franja naranja y cuatro claves</h3><span class="scope">Escritorio</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas"><div class="frame">
+          <div class="pad col">
+            <div class="marq">Cafeterías · Taquerías · Barberías · Gimnasios · Heladerías · Pizzerías · Pastelerías</div>
+            <div class="row">
+              <div class="stat"><div class="box" style="width:16px;height:16px;"></div><span class="lbl on">Tu marca</span><div class="line m" style="margin-top:5px;"></div></div>
+              <div class="stat"><div class="box" style="width:16px;height:16px;"></div><span class="lbl on">En su celular</span><div class="line m" style="margin-top:5px;"></div></div>
+              <div class="stat"><div class="box" style="width:16px;height:16px;"></div><span class="lbl on">Canje verificado</span><div class="line m" style="margin-top:5px;"></div></div>
+              <div class="stat"><div class="box" style="width:16px;height:16px;"></div><span class="lbl on">Sabes quién vuelve</span><div class="line m" style="margin-top:5px;"></div></div>
+            </div>
+          </div>
+        </div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas"><div class="frame">
+          <div class="pad col">
+            <div class="marq">Cafeterías · Taquerías · Barberías · Gimnasios · Heladerías · Pizzerías · Pastelerías</div>
+            <div class="row">
+              <div class="col" style="flex:1;"><div class="box" style="width:16px;height:16px;"></div><span class="lbl on">Tu marca</span><div class="line m"></div></div>
+              <div class="col" style="flex:1;"><div class="box" style="width:16px;height:16px;"></div><span class="lbl on">En su celular</span><div class="line m"></div></div>
+              <div class="col" style="flex:1;"><div class="box" style="width:16px;height:16px;"></div><span class="lbl on">Canje verificado</span><div class="line m"></div></div>
+              <div class="col" style="flex:1;"><div class="box" style="width:16px;height:16px;"></div><span class="lbl on">Sabes quién vuelve</span><div class="line m"></div></div>
+            </div>
+          </div>
+        </div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="keep"><b>La franja naranja se queda.</b> Es el único marquee que sobrevive en la página y lleva los giros reales que el producto atiende.</li>
+      <li class="change"><b>Las cuatro claves salen de sus cajas.</b> Cuatro tarjetas idénticas en fila es de los patrones más templados que existe. Mismo contenido, separado por aire y una línea, sin contenedor.</li>
+      <li class="keep"><b>El texto no cambia.</b> Los cuatro títulos y sus descripciones son del prototipo.</li>
+    </ul>
+  </article>
+
+  <!-- 3 -->
+  <article class="pair">
+    <header><h3>Diseños por giro</h3><span class="scope">Escritorio · sin cambios</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad col">
+          <span class="lbl on">Elige tu diseño</span>
+          <div class="row">
+            <div class="cardface" style="flex:1;"></div>
+            <div class="cardface" style="flex:1;background:linear-gradient(135deg,#EA580C,#9A3412);"></div>
+            <div class="cardface" style="flex:1;background:linear-gradient(135deg,#0D9488,#042F2C);"></div>
+            <div class="cardface" style="flex:1;background:linear-gradient(135deg,#7C3AED,#4C1D95);"></div>
+          </div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad col">
+          <span class="lbl on">Elige tu diseño</span>
+          <div class="row">
+            <div class="cardface" style="flex:1;"></div>
+            <div class="cardface" style="flex:1;background:linear-gradient(135deg,#EA580C,#9A3412);"></div>
+            <div class="cardface" style="flex:1;background:linear-gradient(135deg,#0D9488,#042F2C);"></div>
+            <div class="cardface" style="flex:1;background:linear-gradient(135deg,#7C3AED,#4C1D95);"></div>
+          </div>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="keep"><b>Sección intacta.</b> Los siete degradados por giro, el patrón de íconos al 14%, las proporciones y el carrusel infinito se quedan exactamente como están.</li>
+      <li class="keep"><b>Este es el marquee que se conserva</b> entre los tres del prototipo, porque aquí el movimiento muestra el producto en vez de decorar.</li>
+      <li class="change"><b>Pausa también al enfocar con teclado</b>, no solo al pasar el cursor. Es la única corrección, y es de accesibilidad.</li>
+    </ul>
+  </article>
+
+  <!-- 4 -->
+  <article class="pair">
+    <header><h3>Tarjetas de regalo</h3><span class="scope">Fuera de alcance</span></header>
+    <ul class="delta">
+      <li class="keep"><b>Queda para más adelante.</b> La sección se conserva exactamente como la dejó el prototipo, con sus cinco diseños y su carrusel. No la rediseño ni la retiro.</li>
+      <li class="keep"><b>Los patrones por giro sí entran</b> y se conservan intactos, tanto en las tarjetas de lealtad como donde ya aparecen hoy.</li>
+    </ul>
+  </article>
+
+  <!-- 5 -->
+  <article class="pair">
+    <header><h3>Cómo funciona</h3><span class="scope">Escritorio</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad row">
+          <div class="col" style="flex:1;"><div class="box" style="width:22px;height:22px;background:var(--brand);"></div><span class="lbl on">01 Elige tu diseño</span><div class="line l"></div><div class="line m"></div></div>
+          <div class="col" style="flex:1;"><div class="box" style="width:22px;height:22px;background:var(--brand);"></div><span class="lbl on">02 El cliente escanea</span><div class="line l"></div><div class="line m"></div></div>
+          <div class="col" style="flex:1;"><div class="box" style="width:22px;height:22px;background:var(--brand);"></div><span class="lbl on">03 Sella y recompensa</span><div class="line l"></div><div class="line m"></div></div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad col">
+          <div class="row" style="align-items:center;"><div class="box" style="width:20px;height:20px;background:var(--brand);"></div><div class="col" style="flex:1;"><span class="lbl on">Elige tu diseño</span><div class="line l"></div></div></div>
+          <div class="row" style="align-items:center;"><div class="box" style="width:20px;height:20px;background:var(--brand);"></div><div class="col" style="flex:1;"><span class="lbl on">El cliente escanea</span><div class="line l"></div></div></div>
+          <div class="row" style="align-items:center;"><div class="box" style="width:20px;height:20px;background:var(--brand);"></div><div class="col" style="flex:1;"><span class="lbl on">Sella y recompensa</span><div class="line l"></div></div></div>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="keep"><b>Los tres pasos y su redacción.</b> El contenido es correcto y la secuencia es real.</li>
+      <li class="drop"><b>Los números 01, 02 y 03.</b> La §9.F prohíbe el etiquetado por número cuando el verbo ya nombra el paso. "Elige tu diseño" se entiende sin el 01 delante.</li>
+      <li class="change"><b>De tres columnas iguales a lista secuencial.</b> Tres tarjetas idénticas en fila es patrón prohibido, y además la secuencia se lee mejor en vertical.</li>
+    </ul>
+  </article>
+
+  <!-- 6 -->
+  <article class="pair">
+    <header><h3>Wallet</h3><span class="scope">Escritorio</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas"><div class="frame dark"><div class="pad row" style="gap:12px;">
+          <div class="col" style="flex:1;"><span class="lbl on">Vive en el teléfono de tus clientes</span><div class="line l"></div><div class="line m"></div><div class="line s"></div></div>
+          <div class="row" style="flex:1;"><div class="box" style="flex:1;min-height:74px;"></div><div class="box" style="flex:1;min-height:74px;"></div></div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas"><div class="frame dark"><div class="pad row" style="gap:12px;">
+          <div class="col" style="flex:1;"><span class="lbl on">Vive en el teléfono de tus clientes</span><div class="line l"></div><div class="line m"></div>
+            <div class="box dash" style="padding:6px 8px;"><span class="xs">Estado por definir</span></div></div>
+          <div class="row" style="flex:1;"><div class="box" style="flex:1;min-height:74px;"></div><div class="box" style="flex:1;min-height:74px;"></div></div>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="keep"><b>La sección y sus mockups de pase</b>, tal como los dibujó el prototipo.</li>
+      <li class="block"><b>Wallet no funciona todavía.</b> El producto lo muestra como "Próximamente" en cinco lugares y las rutas de pases existen sin credenciales. La landing no puede prometer lo que la app apaga.</li>
+      <li class="block"><b>Decisión de negocio:</b> entra en este ciclo con flujo real, o la sección se retira de la landing. No la dibujo en firme hasta tener respuesta.</li>
+    </ul>
+  </article>
+
+  <!-- 7 -->
+  <article class="pair">
+    <header><h3>Comparación con la tarjeta de papel</h3><span class="scope">Escritorio</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad row" style="gap:10px;">
+          <div class="col" style="flex:1;"><span class="lbl on">Tarjeta de papel</span><div class="row"><span class="lbl" style="color:var(--danger);">✕</span><div class="line m"></div></div><div class="row"><span class="lbl" style="color:var(--danger);">✕</span><div class="line l"></div></div><div class="row"><span class="lbl" style="color:var(--danger);">✕</span><div class="line s"></div></div></div>
+          <div class="col" style="flex:1;background:var(--dark-ground);border-radius:var(--r-sm);padding:8px;"><span class="lbl on" style="color:#f7f2ea;">Koda Fidelity</span><div class="row"><span class="lbl" style="color:var(--brand);">✓</span><div class="line m" style="background:rgba(255,255,255,.16);"></div></div><div class="row"><span class="lbl" style="color:var(--brand);">✓</span><div class="line l" style="background:rgba(255,255,255,.16);"></div></div><div class="row"><span class="lbl" style="color:var(--brand);">✓</span><div class="line s" style="background:rgba(255,255,255,.16);"></div></div></div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad row" style="gap:10px;">
+          <div class="col" style="flex:1;"><span class="lbl on">Tarjeta de papel</span><div class="row"><span class="lbl">✕</span><div class="line m"></div></div><div class="row"><span class="lbl">✕</span><div class="line l"></div></div><div class="row"><span class="lbl">✕</span><div class="line s"></div></div></div>
+          <div class="col" style="flex:1;background:var(--dark-ground);border-radius:var(--r-sm);padding:8px;"><span class="lbl on" style="color:#f7f2ea;">Koda Fidelity</span><div class="row"><span class="lbl" style="color:var(--brand);">✓</span><div class="line m" style="background:rgba(255,255,255,.16);"></div></div><div class="row"><span class="lbl" style="color:var(--brand);">✓</span><div class="line l" style="background:rgba(255,255,255,.16);"></div></div><div class="row"><span class="lbl" style="color:var(--brand);">✓</span><div class="line s" style="background:rgba(255,255,255,.16);"></div></div></div>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="keep"><b>La estructura de dos columnas y el bloque oscuro de Koda.</b> Es la sección que mejor argumenta el producto.</li>
+      <li class="change"><b>Las cruces dejan de ser rojas.</b> El papel no es un error ni un peligro, es la alternativa. Rojo aquí es alarmismo, y gasta un color que necesitamos para estados reales.</li>
+      <li class="change"><b>Contraste del panel oscuro</b> revisado a AA contra el fondo claro que lo rodea.</li>
+    </ul>
+  </article>
+
+  <!-- 8 -->
+  <article class="pair">
+    <header><h3>Testimonios</h3><span class="scope">Escritorio</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad row">
+          <div class="col stat"><span class="star">★★★★★</span><div class="line l"></div><div class="line l"></div><div class="line m"></div><div class="row" style="align-items:center;"><div class="box" style="width:18px;height:18px;border-radius:50%;"></div><span class="xs">Nombre</span></div></div>
+          <div class="col stat"><span class="star">★★★★★</span><div class="line l"></div><div class="line l"></div><div class="line m"></div><div class="row" style="align-items:center;"><div class="box" style="width:18px;height:18px;border-radius:50%;"></div><span class="xs">Nombre</span></div></div>
+          <div class="col stat"><span class="star">★★★★★</span><div class="line l"></div><div class="line l"></div><div class="line m"></div><div class="row" style="align-items:center;"><div class="box" style="width:18px;height:18px;border-radius:50%;"></div><span class="xs">Nombre</span></div></div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad col">
+          <div class="box dash" style="padding:14px;text-align:center;"><span class="lbl">Sección en espera de verificación</span></div>
+          <span class="xs">Si las personas son reales, vuelve con una cita de tres líneas, nombre, rol y negocio</span>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="block"><b>No la dibujo hasta saber si son personas reales.</b> Tú mismo pediste no inventar testimonios, y no tengo cómo verificar los tres nombres del prototipo.</li>
+      <li class="change"><b>Si son reales:</b> cita de tres líneas como máximo, atribución con nombre, rol y negocio, sin estrellas inventadas por nosotros.</li>
+      <li class="drop"><b>Si no lo son:</b> la sección se retira. Un testimonio falso en una landing de producto de dinero es el peor negocio posible.</li>
+    </ul>
+  </article>
+
+  <!-- 9 -->
+  <article class="pair">
+    <header><h3>Precios</h3><span class="scope">Escritorio</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad col">
+          <div class="row" style="justify-content:center;"><span class="btn pri">Mensual</span><span class="btn gho">Anual</span></div>
+          <div class="row">
+            <div class="col stat"><span class="lbl on">Gratis</span><span class="num" style="font-size:16px;">$0</span><div class="line m"></div><span class="btn gho">Empezar</span></div>
+            <div class="col stat" style="background:var(--dark-ground);"><span class="xs" style="color:var(--brand);">Más popular</span><span class="lbl on" style="color:#f7f2ea;">Pro</span><span class="num" style="font-size:16px;color:#f7f2ea;">$250 MXN</span><span class="btn pri">Prueba de 14 días</span></div>
+            <div class="col stat"><span class="lbl on">Business</span><div class="line s"></div><div class="line m"></div><span class="btn gho">Solicitar cotización</span></div>
+          </div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad col">
+          <div class="row" style="justify-content:center;"><span class="btn pri">Mensual</span><span class="btn gho">Anual</span></div>
+          <div class="row">
+            <div class="col stat"><span class="lbl on">Gratis</span><span class="num" style="font-size:16px;">$0</span><div class="line m"></div><span class="btn gho">Empezar Gratis</span></div>
+            <div class="col stat" style="background:var(--dark-ground);"><span class="xs" style="color:var(--brand);">Más popular</span><span class="lbl on" style="color:#f7f2ea;">Pro</span><div class="box dash" style="padding:5px 7px;"><span class="xs">Precio por confirmar</span></div><span class="btn pri">Empezar Gratis</span></div>
+            <div class="col stat"><span class="lbl on">Business</span><div class="line s"></div><div class="line m"></div><span class="btn gho">Solicitar cotización</span></div>
+          </div>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="keep"><b>Tres planes, el toggle mensual y anual, y Pro destacado en oscuro.</b> La estructura comercial del prototipo se respeta.</li>
+      <li class="block"><b>250 y 200 MXN, y la prueba de 14 días.</b> El contexto del proyecto dice que la oferta comercial está por definir y que no hay cobros ni facturación en el repositorio. Publicar un precio que no se puede cobrar y una prueba que no existe es deuda legal, no solo de diseño.</li>
+      <li class="change"><b>El botón de Pro deja de decir "Prueba de 14 días"</b> mientras esa prueba no exista. Usa la misma etiqueta de intención que el resto de la página.</li>
+    </ul>
+  </article>
+
+  <!-- 10 -->
+  <article class="pair">
+    <header><h3>Preguntas frecuentes</h3><span class="scope">Escritorio</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad col">
+          <div class="row" style="justify-content:space-between;border-bottom:1px solid var(--wf-line);padding-bottom:6px;"><div class="line m"></div><span class="lbl">+</span></div>
+          <div class="row" style="justify-content:space-between;border-bottom:1px solid var(--wf-line);padding-bottom:6px;"><div class="line l"></div><span class="lbl">+</span></div>
+          <div class="row" style="justify-content:space-between;border-bottom:1px solid var(--wf-line);padding-bottom:6px;"><div class="line s"></div><span class="lbl">+</span></div>
+          <div class="row" style="justify-content:space-between;"><div class="line m"></div><span class="lbl">+</span></div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad col">
+          <div class="col" style="border-bottom:1px solid var(--wf-line);padding-bottom:7px;"><div class="row" style="justify-content:space-between;"><div class="line m" style="background:var(--brand);"></div><span class="lbl" style="color:var(--brand);">+</span></div><div class="line l"></div><div class="line s"></div></div>
+          <div class="row" style="justify-content:space-between;border-bottom:1px solid var(--wf-line);padding-bottom:7px;"><div class="line l"></div><span class="lbl">+</span></div>
+          <div class="row" style="justify-content:space-between;"><div class="line s"></div><span class="lbl">+</span></div>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="keep"><b>El acordeón nativo con details y summary</b>, incluido el ícono que rota 45 grados al abrir. Es accesible por construcción y no necesita librería.</li>
+      <li class="change"><b>La primera pregunta abre por defecto.</b> Muestra que el acordeón se abre, y responde la duda más común sin pedir un clic.</li>
+      <li class="change"><b>Foco visible en el summary</b>, que hoy hereda el del navegador y se pierde sobre el fondo claro.</li>
+    </ul>
+  </article>
+
+  <!-- 11 -->
+  <article class="pair">
+    <header><h3>Formulario de solicitud</h3><span class="scope">Escritorio</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas"><div class="frame dark"><div class="pad row" style="gap:12px;">
+          <div class="col" style="flex:1;"><span class="lbl on">¿Quieres verlo en tu negocio?</span><div class="line l"></div><span class="btn gho">WhatsApp</span></div>
+          <div class="col" style="flex:1;">
+            <div class="box" style="height:20px;"></div><div class="box" style="height:20px;"></div>
+            <div class="row"><div class="box" style="flex:1;height:20px;"></div><div class="box" style="flex:1;height:20px;"></div></div>
+            <div class="box" style="height:20px;"></div>
+            <span class="btn pri">Solicitar demo</span>
+          </div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas"><div class="frame dark"><div class="pad row" style="gap:12px;">
+          <div class="col" style="flex:1;"><span class="lbl on">¿Quieres verlo en tu negocio?</span><div class="line l"></div><span class="btn gho">WhatsApp</span></div>
+          <div class="col" style="flex:1;">
+            <div class="col" style="gap:3px;"><span class="xs">Nombre</span><div class="box" style="height:20px;"></div></div>
+            <div class="col" style="gap:3px;"><span class="xs">Negocio</span><div class="box" style="height:20px;"></div></div>
+            <div class="row"><div class="col" style="flex:1;gap:3px;"><span class="xs">Giro</span><div class="box" style="height:20px;"></div></div><div class="col" style="flex:1;gap:3px;"><span class="xs">Sucursales</span><div class="box" style="height:20px;"></div></div></div>
+            <div class="col" style="gap:3px;"><span class="xs">Contacto</span><div class="box" style="height:20px;border-color:var(--danger);"></div><span class="xs" style="color:var(--danger);">Escribe un correo o un teléfono de 10 dígitos</span></div>
+            <span class="btn pri">Solicitar demo</span>
+          </div>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="keep"><b>Los seis campos, sus ids y su orden.</b> Cambiarlos rompe analítica y autocompletado, y la §11.F lo prohíbe sin autorización. También se conserva la validación al salir del campo y la vista de confirmación.</li>
+      <li class="change"><b>Etiqueta visible sobre cada campo.</b> Hoy el placeholder hace de etiqueta, y desaparece al escribir. Es la regla más básica de formularios y es también accesibilidad.</li>
+      <li class="change"><b>Contraste de placeholder, error y foco</b> revisado contra el panel oscuro, que es donde hoy más se pierde.</li>
+    </ul>
+  </article>
+
+  <!-- 12 -->
+  <article class="pair">
+    <header><h3>Pie de página</h3><span class="scope">Escritorio</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas"><div class="frame dark"><div class="pad row">
+          <div class="col" style="flex:1.4;"><span class="lbl on">Koda Fidelity</span><div class="line m"></div></div>
+          <div class="col" style="flex:1;"><span class="xs">Producto</span><div class="line s"></div><div class="line s"></div></div>
+          <div class="col" style="flex:1;"><span class="xs">Empresa</span><div class="line s"></div><div class="line s"></div></div>
+          <div class="col" style="flex:1;"><span class="xs">Legal</span><div class="line s"></div><div class="line s"></div></div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas"><div class="frame dark"><div class="pad row">
+          <div class="col" style="flex:1.4;"><span class="lbl on">Koda Fidelity</span><div class="line m"></div><span class="xs">© 2026 ZIVELO</span></div>
+          <div class="col" style="flex:1;"><span class="xs">Producto</span><div class="line s"></div><div class="line s"></div></div>
+          <div class="col" style="flex:1;"><span class="xs">Empresa</span><div class="line s"></div><div class="line s"></div></div>
+          <div class="col" style="flex:1;"><span class="xs">Legal</span><div class="line s"></div><div class="line s"></div></div>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="keep"><b>Cuatro columnas, los enlaces y el aviso legal a nombre de ZIVELO.</b> El contenido legal no se toca.</li>
+      <li class="change"><b>Área táctil de los enlaces a 40px</b> y separación suficiente entre ellos, que hoy quedan muy juntos para un dedo.</li>
+    </ul>
+  </article>
+</section>
+
+<!-- =================== PANEL =================== -->
+<section class="part">
+  <h2>Panel del negocio</h2>
+  <p class="lede">Aquí no entran patrones de landing. Densidad funcional, tipografía compacta, cifras en mono tabular y ninguna superficie más grande de lo que su contenido merece.</p>
+
+  <!-- 13 -->
+  <article class="pair">
+    <header><h3>Panel</h3><span class="scope">Escritorio</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas"><div class="frame">
+          <div class="bar"><span class="lbl on">Panel</span><div class="row"><span class="btn gho">Escáner</span><span class="btn pri">Crear Tarjeta</span></div></div>
+          <div class="row" style="gap:0;">
+            <div class="rail"><div class="nav-i sel">Panel</div><div class="nav-i">Tarjetas</div><div class="nav-i">Clientes</div><div class="nav-i">QR</div><div class="nav-i">Escáner</div><div class="nav-i">Marca</div><div class="nav-i">Ajustes</div><div class="nav-i">Equipo</div><div class="nav-i">Docs</div></div>
+            <div class="col pad" style="flex:1;">
+              <div class="row">
+                <div class="stat"><span class="xs">Tarjetas activas</span><span class="num">3</span></div>
+                <div class="stat"><span class="xs">Total clientes</span><span class="num">128</span></div>
+                <div class="stat"><span class="xs">Sellos entregados</span><span class="num">412</span></div>
+                <div class="stat"><span class="xs">Canjes</span><span class="num">2</span></div>
+              </div>
+              <span class="lbl on">Tus tarjetas</span>
+              <div class="row"><div class="cardface" style="flex:1;"></div><div class="box dash" style="flex:1;"></div></div>
+              <span class="lbl on">Actividad reciente</span>
+              <div class="row"><div class="box" style="flex:1;height:44px;"></div><div class="box" style="flex:1;height:44px;"></div><div class="box" style="flex:1;height:44px;"></div></div>
+              <span class="xs">Carrusel horizontal</span>
+              <div class="box" style="height:44px;"><span class="xs">Tu tarjeta en su billetera</span></div>
+            </div>
+          </div>
+        </div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas"><div class="frame">
+          <div class="bar"><div class="col" style="gap:0;"><span class="lbl on">Café Aurora</span><span class="xs">Admin</span></div><span class="btn gho">Buscar cliente</span></div>
+          <div class="row" style="gap:0;">
+            <div class="rail"><span class="xs">Operación</span><div class="nav-i sel">Panel</div><div class="nav-i">Clientes</div><span class="xs">Programa</span><div class="nav-i">Tarjetas</div><div class="nav-i">QR</div><span class="xs">Negocio</span><div class="nav-i">Marca</div><div class="nav-i">Equipo</div></div>
+            <div class="col pad" style="flex:1;">
+              <span class="lbl on">Hoy</span>
+              <div class="row">
+                <div class="stat"><span class="xs">Sellos</span><span class="num">37</span><span class="xs" style="color:var(--success);">+9 vs. ayer</span></div>
+                <div class="stat"><span class="xs">Canjes</span><span class="num">4</span><span class="xs">igual que ayer</span></div>
+                <div class="stat"><span class="xs">Nuevos</span><span class="num">6</span><span class="xs" style="color:var(--success);">+2 vs. ayer</span></div>
+              </div>
+              <div class="chart"><div class="dot"></div></div>
+              <div class="attn"><span class="lbl">2 clientes a un sello de completar</span></div>
+              <div class="attn"><span class="lbl">Café de Otoño vence en 4 días</span></div>
+              <span class="lbl on">Tus tarjetas</span>
+              <div class="row"><div class="cardface" style="flex:1;"></div><div class="box dash" style="flex:1;"></div></div>
+              <span class="lbl on">Actividad</span>
+              <div class="col" style="gap:0;">
+                <div class="row" style="padding:5px 0;border-bottom:1px solid var(--border);align-items:center;"><div class="line m" style="flex:1;"></div><span class="num" style="font-size:9px;">14:02</span></div>
+                <div class="row" style="padding:5px 0;align-items:center;"><div class="line s" style="flex:1;"></div><span class="num" style="font-size:9px;">13:47</span></div>
+              </div>
+            </div>
+          </div>
+        </div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="change"><b>De cuatro totales a tres cifras de hoy con su comparación.</b> "Canjes 2" hoy sale de mirar solo los últimos diez eventos, y "Sellos entregados" suma el saldo actual, que baja con cada canje. Ambas cifras mienten.</li>
+      <li class="change"><b>Aparece lo accionable:</b> clientes a un sello de completar y tarjetas por vencer, en ámbar de advertencia, antes del inventario de tarjetas.</li>
+      <li class="drop"><b>El carrusel horizontal de actividad</b> y el bloque de Wallet, que promete una función apagada. La actividad pasa a lista con hora en mono.</li>
+      <li class="change"><b>Navegación agrupada en Operación, Programa y Negocio</b>, con el sellador viendo solo Operación. Nueve destinos planos son demasiados para escanear.</li>
+      <li class="change"><b>El escáner sale del escritorio.</b> Sellar con cámara es tarea de teléfono. Frente a una pantalla se sella desde Clientes buscando por nombre, y la tarjeta se sigue mostrando como tarjeta.</li>
+      <li class="block"><b>La gráfica de 30 días depende de backend.</b> Sin la serie diaria, la sección se muestra vacía con su explicación, nunca con datos de relleno.</li>
+    </ul>
+  </article>
+
+  <!-- 13b -->
+  <article class="pair">
+    <header><h3>Primera sesión</h3><span class="scope">Escritorio y móvil</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad col">
+          <span class="lbl on">¡Bienvenido!</span>
+          <div class="row">
+            <div class="stat"><span class="xs">Tarjetas activas</span><span class="num">0</span></div>
+            <div class="stat"><span class="xs">Total clientes</span><span class="num">0</span></div>
+            <div class="stat"><span class="xs">Sellos</span><span class="num">0</span></div>
+            <div class="stat"><span class="xs">Canjes</span><span class="num">0</span></div>
+          </div>
+          <span class="lbl on">Tus tarjetas de lealtad</span>
+          <div class="box dash" style="min-height:56px;display:grid;place-items:center;"><span class="lbl">Crear Nueva Tarjeta</span></div>
+          <div class="box" style="height:34px;"><span class="xs">Aún no hay actividad</span></div>
+          <div class="box" style="height:40px;"><span class="xs">Tu tarjeta en su billetera</span></div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad col">
+          <span class="lbl on">Hola, Raúl. Publiquemos tu primera tarjeta.</span>
+          <div class="col" style="gap:0;">
+            <div class="row" style="align-items:center;padding:7px 0;border-bottom:1px solid var(--border);"><div class="box" style="width:18px;height:18px;border-radius:50%;background:var(--brand);"></div><span class="lbl on" style="flex:1;">Crea tu programa</span></div>
+            <div class="row" style="align-items:center;padding:7px 0;border-bottom:1px solid var(--border);"><div class="box" style="width:18px;height:18px;border-radius:50%;"></div><span class="lbl" style="flex:1;">Comparte el código QR</span></div>
+            <div class="row" style="align-items:center;padding:7px 0;border-bottom:1px solid var(--border);"><div class="box" style="width:18px;height:18px;border-radius:50%;"></div><span class="lbl" style="flex:1;">Registra tu primer cliente</span></div>
+            <div class="row" style="align-items:center;padding:7px 0;"><div class="box" style="width:18px;height:18px;border-radius:50%;"></div><span class="lbl" style="flex:1;">Entrega el primer sello</span></div>
+          </div>
+          <div class="btn pri wide">Crear primera tarjeta</div>
+          <div class="cardface" style="min-height:64px;opacity:.5;"><span style="font-size:9px;">Vista previa de tu tarjeta</span></div>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="change"><b>Cuatro ceros no dicen qué hacer.</b> El primer día, el panel muestra la ruta hasta el primer sello, que es cuando el producto vale algo, no el inventario vacío de un negocio que todavía no empieza.</li>
+      <li class="change"><b>La lista avanza sola.</b> Cada paso se marca con datos que ya existen: una tarjeta creada, un QR abierto, un cliente registrado, un sello en el registro. Sin recorrido de globos ni carrusel de bienvenida.</li>
+      <li class="change"><b>Al crear la tarjeta, el destino es su QR</b>, no el listado. Publicar es el siguiente paso real, y hoy la creación devuelve al inventario.</li>
+      <li class="change"><b>El sellador no ve esta lista.</b> Su primera sesión es cambiar contraseña, permiso de cámara y entrar al escáner.</li>
+      <li class="block"><b>Marcar el onboarding como terminado</b> pide un campo persistido. Mientras no exista, el estado se deriva de los datos y se puede ocultar por navegador.</li>
+    </ul>
+  </article>
+
+  <!-- 14 -->
+  <article class="pair">
+    <header><h3>Tarjetas</h3><span class="scope">Escritorio</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad col">
+          <div class="row" style="justify-content:space-between;"><span class="lbl on">Tarjetas de Lealtad</span><div class="row"><span class="btn gho">Archivadas</span><span class="btn pri">Crear</span></div></div>
+          <div class="row"><div class="box" style="flex:1;height:20px;"></div><div class="row"><span class="btn gho">Todas</span><span class="btn gho">Activas</span><span class="btn gho">Vencidas</span></div></div>
+          <div class="row">
+            <div class="col stat" style="padding:0;overflow:hidden;"><div style="height:5px;background:#B45309;"></div><div class="col pad"><div class="row" style="justify-content:space-between;"><div class="box" style="width:24px;height:24px;"></div><span class="xs">Activa</span></div><span class="lbl on">Café Aurora</span><div class="box" style="height:34px;"></div><div class="row"><div class="stat"></div><div class="stat"></div><div class="stat"></div></div><div class="row"><span class="btn gho">Ver</span><span class="btn pri">Sellar</span></div></div></div>
+            <div class="col stat" style="padding:0;overflow:hidden;"><div style="height:5px;background:#0D9488;"></div><div class="col pad"><div class="row" style="justify-content:space-between;"><div class="box" style="width:24px;height:24px;"></div><span class="xs">Activa</span></div><span class="lbl on">Gym Norte</span><div class="box" style="height:34px;"></div><div class="row"><div class="stat"></div><div class="stat"></div><div class="stat"></div></div><div class="row"><span class="btn gho">Ver</span><span class="btn pri">Sellar</span></div></div></div>
+          </div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad col">
+          <div class="row" style="justify-content:space-between;"><span class="lbl on">Tarjetas</span><div class="row"><span class="btn gho">Archivadas</span><span class="btn pri">Crear</span></div></div>
+          <div class="row"><div class="box" style="flex:1;height:20px;"></div><div class="row"><span class="btn pri">Todas</span><span class="btn gho">Activas</span><span class="btn gho">Vencidas 1</span></div></div>
+          <div class="row">
+            <div class="col stat"><div class="cardface" style="min-height:56px;"></div><span class="lbl on">Café Aurora</span><div class="row"><span class="num" style="font-size:11px;">128</span><span class="xs">clientes</span><span class="num" style="font-size:11px;">412</span><span class="xs">sellos</span></div><div class="row"><span class="btn gho">Ver</span><span class="btn pri">Sellar</span></div></div>
+            <div class="col stat"><div class="cardface gift" style="min-height:56px;background:linear-gradient(135deg,#0D9488,#042F2C);"></div><span class="lbl on">Gym Norte</span><div class="row"><span class="num" style="font-size:11px;">64</span><span class="xs">clientes</span><span class="num" style="font-size:11px;">180</span><span class="xs">sellos</span></div><div class="row"><span class="btn gho">Ver</span><span class="btn pri">Sellar</span></div></div>
+          </div>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="change"><b>La tarjeta real sustituye a la franja de color.</b> Hoy cada elemento muestra una barrita del color de marca y un cuadro con la inicial. Enseñar la tarjeta como es hace la lista reconocible de un vistazo.</li>
+      <li class="change"><b>Tres mini cajas de estadística se vuelven una línea de cifras</b> en mono. Con densidad 7, la caja dentro de la caja sobra.</li>
+      <li class="keep"><b>Buscador, los tres filtros y el conteo de vencidas</b> se conservan, incluida la ordenación que pone las vencidas al final.</li>
+      <li class="change"><b>El botón de sellar deja de pintarse con el color de cada tarjeta</b> y usa el acento. Una fila con cuatro botones de cuatro colores distintos no tiene jerarquía.</li>
+    </ul>
+  </article>
+
+  <!-- 15 -->
+  <article class="pair">
+    <header><h3>Detalle de tarjeta</h3><span class="scope">Escritorio</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad col">
+          <span class="xs">Volver a tarjetas</span>
+          <div class="row" style="justify-content:space-between;align-items:center;"><div class="row" style="align-items:center;"><div class="box" style="width:28px;height:28px;"></div><span class="lbl on">Café Aurora</span></div><span class="btn gho">Acciones</span></div>
+          <div class="row"><div class="stat"><span class="num">128</span><span class="xs">Clientes</span></div><div class="stat"><span class="num">412</span><span class="xs">Sellos</span></div><div class="stat"><span class="num">7</span><span class="xs">Listos</span></div><div class="stat"><span class="num" style="font-size:11px;">31 dic</span><span class="xs">Vence</span></div></div>
+          <div class="box" style="height:40px;"><span class="xs">QR en línea</span></div>
+          <div class="box" style="flex:1;height:20px;"></div>
+          <div class="col" style="gap:0;"><div class="row" style="border-bottom:1px solid var(--wf-line);padding:5px 0;"><div class="line m" style="flex:1;"></div><div class="line s"></div></div><div class="row" style="border-bottom:1px solid var(--wf-line);padding:5px 0;"><div class="line l" style="flex:1;"></div><div class="line s"></div></div><div class="row" style="padding:5px 0;"><div class="line s" style="flex:1;"></div><div class="line s"></div></div></div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad col">
+          <span class="xs">Volver a tarjetas</span>
+          <div class="row" style="gap:10px;">
+            <div class="cardface" style="width:112px;min-height:74px;"></div>
+            <div class="col" style="flex:1;">
+              <div class="row" style="justify-content:space-between;"><span class="lbl on">Café Aurora</span><span class="btn gho">Acciones</span></div>
+              <div class="row"><span class="num" style="font-size:14px;">128</span><span class="xs">clientes</span><span class="num" style="font-size:14px;">412</span><span class="xs">sellos</span><span class="num" style="font-size:14px;">7</span><span class="xs">listos</span></div>
+              <span class="xs">Vence 31 dic</span>
+            </div>
+          </div>
+          <div class="row"><div class="box" style="flex:1;height:20px;"></div><span class="btn gho">Ordenar</span></div>
+          <div class="col" style="gap:0;"><div class="row" style="border-bottom:1px solid var(--wf-line);padding:5px 0;align-items:center;"><div class="line m" style="flex:1;"></div><span class="num" style="font-size:9px;">8/10</span></div><div class="row" style="border-bottom:1px solid var(--wf-line);padding:5px 0;align-items:center;"><div class="line l" style="flex:1;"></div><span class="num" style="font-size:9px;">10/10</span></div><div class="row" style="padding:5px 0;align-items:center;"><div class="line s" style="flex:1;"></div><span class="num" style="font-size:9px;">3/10</span></div></div>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="change"><b>La tarjeta encabeza su propio detalle.</b> Hoy la representa un cuadrado con un ícono, y la tarjeta real no aparece por ningún lado en la pantalla que la describe.</li>
+      <li class="change"><b>Cuatro cajas de estadística pasan a una línea de cifras.</b> Mismo dato, un tercio del espacio, y la tabla de clientes sube al primer viewport.</li>
+      <li class="keep"><b>El QR en línea, las acciones y los parámetros de búsqueda y orden</b> se conservan tal cual.</li>
+      <li class="block"><b>Orden y búsqueda de clientes deberían resolverse en servidor.</b> Hoy la página trae todos los clientes activos y filtra en memoria.</li>
+    </ul>
+  </article>
+
+  <!-- 16 -->
+  <article class="pair">
+    <header><h3>Clientes y códigos QR</h3><span class="scope">Escritorio</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad col">
+          <span class="lbl on">Clientes</span>
+          <div class="row"><div class="box" style="flex:1;height:18px;"></div><span class="btn gho">Tarjeta</span></div>
+          <div class="col" style="gap:0;">
+            <div class="row" style="border-bottom:1px solid var(--wf-line);padding:5px 0;"><div class="line m" style="flex:1;"></div><div class="line s"></div><span class="btn gho">⋯</span></div>
+            <div class="row" style="border-bottom:1px solid var(--wf-line);padding:5px 0;"><div class="line l" style="flex:1;"></div><div class="line s"></div><span class="btn gho">⋯</span></div>
+            <div class="row" style="padding:5px 0;"><div class="line s" style="flex:1;"></div><div class="line s"></div><span class="btn gho">⋯</span></div>
+          </div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad col">
+          <span class="lbl on">Clientes</span>
+          <div class="row"><div class="box" style="flex:1;height:18px;"></div><span class="btn gho">Tarjeta</span><span class="btn gho">Listos para canjear</span></div>
+          <div class="col" style="gap:0;">
+            <div class="row" style="border-bottom:1px solid var(--wf-line);padding:5px 0;align-items:center;"><div class="line m" style="flex:1;"></div><span class="num" style="font-size:9px;">8/10</span><span class="btn pri">Sellar</span></div>
+            <div class="row" style="border-bottom:1px solid var(--wf-line);padding:5px 0;align-items:center;background:var(--success-soft);"><div class="line l" style="flex:1;"></div><span class="num" style="font-size:9px;">10/10</span><span class="btn pri">Canjear</span></div>
+            <div class="row" style="padding:5px 0;align-items:center;"><div class="line s" style="flex:1;"></div><span class="num" style="font-size:9px;">3/10</span><span class="btn gho">Sellar</span></div>
+          </div>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="change"><b>La acción sale del menú de tres puntos.</b> Sellar es la tarea más repetida del producto y hoy vive escondida tras un desplegable en cada fila. Además es la vía de sellado en escritorio, ahora que la cámara es solo de teléfono.</li>
+      <li class="change"><b>Quien ya completó se distingue en la fila</b>, con fondo de éxito y la acción cambiada a canjear. Es la fila que el mostrador busca.</li>
+      <li class="change"><b>Filtro nuevo de listos para canjear</b>, derivado de datos que la página ya tiene.</li>
+      <li class="keep"><b>Los parámetros q, sort, order y card</b> siguen igual, y con ellos los enlaces que alguien haya guardado.</li>
+    </ul>
+  </article>
+
+  <!-- 17 -->
+  <article class="pair">
+    <header><h3>Equipo</h3><span class="scope">Escritorio</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad col">
+          <div class="row" style="justify-content:space-between;"><span class="lbl on">Equipo</span><span class="btn pri">Invitar</span></div>
+          <span class="xs">2 de 3 miembros</span>
+          <div class="col" style="gap:0;">
+            <div class="row" style="border-bottom:1px solid var(--wf-line);padding:6px 0;align-items:center;"><div class="box" style="width:20px;height:20px;border-radius:50%;"></div><div class="line m" style="flex:1;"></div><span class="xs">admin</span></div>
+            <div class="row" style="padding:6px 0;align-items:center;"><div class="box" style="width:20px;height:20px;border-radius:50%;"></div><div class="line s" style="flex:1;"></div><span class="xs">sellador</span></div>
+          </div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad col">
+          <div class="row" style="justify-content:space-between;"><span class="lbl on">Equipo</span><span class="btn pri">Invitar</span></div>
+          <div class="row" style="align-items:center;"><div class="line s" style="flex:1;height:4px;background:var(--brand);"></div><span class="xs">2 de 3</span></div>
+          <div class="col" style="gap:0;">
+            <div class="row" style="border-bottom:1px solid var(--wf-line);padding:6px 0;align-items:center;"><div class="box" style="width:20px;height:20px;border-radius:50%;"></div><div class="col" style="flex:1;gap:2px;"><div class="line m"></div><span class="xs">Último acceso hace 2 h</span></div><span class="xs">admin</span></div>
+            <div class="row" style="padding:6px 0;align-items:center;"><div class="box" style="width:20px;height:20px;border-radius:50%;"></div><div class="col" style="flex:1;gap:2px;"><div class="line s"></div><span class="xs">Sin acceder todavía</span></div><span class="xs">sellador</span></div>
+          </div>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="keep"><b>La lista, los roles y el límite de miembros</b> se conservan, igual que la consulta de último acceso que ya existe.</li>
+      <li class="change"><b>El último acceso se muestra en la fila.</b> Ya se consulta y hoy casi no se usa. Sirve para saber si una invitación se quedó sin abrir.</li>
+      <li class="change"><b>El límite se ve como barra</b>, no solo como texto, para que se entienda cuánto queda antes de toparse.</li>
+    </ul>
+  </article>
+</section>
+
+<!-- =================== MOVIL =================== -->
+<section class="part">
+  <h2>Móvil</h2>
+  <p class="lede">El prototipo de la landing está a 1280px fijos y no resuelve móvil, así que la columna de antes muestra lo que hoy ocurre, no un diseño alternativo. En el producto, móvil es donde vive el mostrador y donde vive el cliente final.</p>
+
+  <!-- 18 -->
+  <article class="pair">
+    <header><h3>Hero de la landing</h3><span class="scope">Móvil 375px</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas narrow"><div class="frame dark" style="min-width:0;">
+          <div class="bar"><span class="lbl on">Koda Fidelity</span><span class="lbl">☰</span></div>
+          <div class="pad col">
+            <div class="box dash" style="padding:10px;text-align:center;"><span class="xs">Sin diseño móvil. La página se ve a 1280px con scroll lateral.</span></div>
+          </div>
+        </div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas narrow"><div class="frame dark" style="min-width:0;">
+          <div class="bar"><span class="lbl on">Koda Fidelity</span><span class="lbl">☰</span></div>
+          <div class="pad col">
+            <div class="box" style="padding:3px 7px;width:max-content;"><span class="xs">Parte del ecosistema Koda POS</span></div>
+            <div class="line l"></div><div class="line m"></div>
+            <div class="btn pri wide">Empezar Gratis</div>
+            <div class="cardface" style="min-height:104px;">
+              <div style="font-size:11px;font-weight:700;">Décimo gratis</div>
+              <div class="stamps" style="max-width:none;"><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div></div>
+            </div>
+          </div>
+        </div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="change"><b>Una sola columna, sin scroll lateral</b>, con el titular, un botón y la tarjeta dentro del primer viewport.</li>
+      <li class="keep"><b>La tarjeta baja del lado derecho al flujo</b>, pero conserva su diseño, sus sellos y su proporción.</li>
+      <li class="change"><b>El botón secundario se va en móvil.</b> Una pantalla estrecha admite una sola acción primaria.</li>
+    </ul>
+  </article>
+
+  <!-- 19 -->
+  <article class="pair">
+    <header><h3>Panel</h3><span class="scope">Móvil 375px</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas narrow"><div class="frame" style="min-width:0;"><div class="pad col">
+          <div class="row"><div class="stat"><span class="xs">Tarjetas</span><span class="num">3</span></div><div class="stat"><span class="xs">Clientes</span><span class="num">128</span></div></div>
+          <div class="row"><div class="stat"><span class="xs">Sellos</span><span class="num">412</span></div><div class="stat"><span class="xs">Canjes</span><span class="num">2</span></div></div>
+          <div class="cardface" style="min-height:60px;"></div>
+          <div class="box" style="height:40px;"><span class="xs">Actividad, solo 3 visibles</span></div>
+          <div class="box" style="height:30px;"><span class="xs">Documentación, enlace roto a /docs</span></div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas narrow"><div class="frame" style="min-width:0;">
+          <div class="bar"><span class="lbl on">Café Aurora</span><span class="btn pri">Sellar</span></div>
+          <div class="pad col">
+            <span class="lbl on">Hoy</span>
+            <div class="row"><div class="stat"><span class="xs">Sellos</span><span class="num">37</span></div><div class="stat"><span class="xs">Canjes</span><span class="num">4</span></div><div class="stat"><span class="xs">Nuevos</span><span class="num">6</span></div></div>
+            <div class="attn"><span class="lbl">2 a un sello de completar</span></div>
+            <div class="cardface" style="min-height:60px;"></div>
+            <div class="col" style="gap:0;"><div class="row" style="border-bottom:1px solid var(--border);padding:5px 0;"><div class="line m" style="flex:1;"></div><span class="num" style="font-size:9px;">14:02</span></div><div class="row" style="padding:5px 0;"><div class="line s" style="flex:1;"></div><span class="num" style="font-size:9px;">13:47</span></div></div>
+          </div>
+        </div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="change"><b>Sellar sube a la barra fija.</b> En móvil es lo único que se hace de pie, y hoy hay que buscarlo.</li>
+      <li class="drop"><b>El enlace de documentación</b>, que en móvil apunta a /docs y esa ruta no existe. La documentación vive en /dashboard/docs.</li>
+      <li class="change"><b>La actividad deja de recortarse a tres.</b> Hoy en móvil el carrusel esconde el resto sin decirlo.</li>
+      <li class="keep"><b>Las cifras siguen en tres columnas</b>, ahora del día, que caben sin apretar en 375px.</li>
+    </ul>
+  </article>
+
+  <!-- 20 -->
+  <article class="pair">
+    <header><h3>Escáner</h3><span class="scope">Móvil 375px</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas narrow"><div class="frame" style="min-width:0;"><div class="pad col">
+          <div class="row"><span class="btn pri">Escanear</span><span class="btn gho">Buscar</span></div>
+          <div class="cam"><div class="reticle"></div></div>
+          <div class="box" style="height:44px;"></div>
+          <div class="row"><span class="btn pri" style="flex:1;">Agregar sello</span><span class="btn pri" style="flex:1;">Canjear</span></div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas narrow"><div class="frame" style="min-width:0;"><div class="pad col">
+          <div class="cam"><div class="reticle"></div></div>
+          <div class="box" style="height:20px;"><span class="xs">Buscar por nombre</span></div>
+          <div class="box" style="padding:8px;">
+            <div class="row" style="align-items:center;"><div class="box" style="width:26px;height:26px;border-radius:50%;"></div><div class="col" style="flex:1;gap:1px;"><span class="lbl on">Marisol Aguirre</span><span class="xs">Décimo gratis</span></div><span class="num" style="font-size:12px;">8/10</span></div>
+          </div>
+          <div class="btn pri wide" style="padding:13px;">Agregar sello</div>
+          <div class="btn gho wide">Canjear recompensa</div>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="change"><b>Cámara y búsqueda dejan de ser dos pestañas.</b> El visor abre directo y la búsqueda queda debajo, siempre disponible cuando la cámara falla.</li>
+      <li class="change"><b>Una sola acción primaria.</b> Hoy sellar y canjear tienen el mismo peso; se decide con la vista, no con la lectura.</li>
+      <li class="change"><b>Confirmar a quién se sella antes de tocar</b>, con nombre, tarjeta y progreso a la vista.</li>
+      <li class="keep"><b>Los cinco estados de operación</b> que ya maneja la pantalla se conservan, incluidos vigencia y tarjeta completa.</li>
+    </ul>
+  </article>
+
+  <!-- 21 -->
+  <article class="pair">
+    <header><h3>Portal del cliente y alta</h3><span class="scope">Móvil 375px</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas narrow"><div class="frame" style="min-width:0;"><div class="pad col">
+          <div class="row"><div class="box" style="flex:1;height:18px;"></div><span class="btn gho">↻</span></div>
+          <div class="box" style="padding:8px;"><div class="row" style="justify-content:space-between;"><span class="lbl on">Café Aurora</span><span class="xs">8/10</span></div><div class="line l" style="margin-top:5px;"></div></div>
+          <div class="box" style="padding:8px;"><div class="row" style="justify-content:space-between;"><span class="lbl on">Barbería Nueve</span><span class="xs">3/8</span></div><div class="line m" style="margin-top:5px;"></div></div>
+          <span class="xs">Wallet y descarga: Próximamente</span>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas narrow"><div class="frame" style="min-width:0;"><div class="pad col">
+          <div class="cardface" style="min-height:120px;">
+            <div class="row" style="justify-content:space-between;"><div><div style="font-size:9px;opacity:.85;">Café Aurora</div><div style="font-size:12px;font-weight:700;">Décimo gratis</div></div><div style="width:32px;height:32px;background:#fff;border-radius:6px;"></div></div>
+            <div class="stamps" style="max-width:none;"><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp"></div><div class="stamp"></div></div>
+          </div>
+          <span class="lbl">Te faltan 2 sellos</span>
+          <div class="cardface gift" style="min-height:52px;"><div style="font-size:11px;font-weight:700;">Corte gratis</div><span class="num" style="font-size:10px;">3 / 8</span></div>
+          <div class="box dash" style="padding:7px;"><span class="xs">Vencidas · 1</span></div>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="change"><b>La tarjeta ocupa la pantalla.</b> Hoy el portal la resume en una fila con una barra de progreso, y es lo que la persona enseña en el mostrador.</li>
+      <li class="change"><b>Lo que falta, en palabras.</b> "Te faltan 2 sellos" bajo la tarjeta, además de la fracción.</li>
+      <li class="change"><b>Orden por cercanía al premio</b>, agrupado por negocio, y las vencidas colapsadas al fondo en gris, no en rojo.</li>
+      <li class="drop"><b>Los tres botones apagados con "Próximamente".</b> Una acción que no se puede tocar no es una acción.</li>
+    </ul>
+  </article>
+</section>
+
+<!-- =================== EMERGENTES =================== -->
+<section class="part">
+  <h2>Ventanas emergentes</h2>
+  <p class="lede">Inventario real del producto: 11 diálogos de confirmación, 13 modales, 3 hojas laterales, 2 cajones, 3 popovers y 4 menús desplegables. Estos son los que cambian.</p>
+
+  <!-- 22 -->
+  <article class="pair">
+    <header><h3>Confirmaciones destructivas</h3><span class="scope">Escritorio y móvil</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas"><div class="scrim"><div class="modal">
+          <span class="lbl on">¿Eliminar tarjeta permanentemente?</span>
+          <div class="line l" style="margin:7px 0;"></div><div class="line m"></div>
+          <div class="row" style="justify-content:flex-end;margin-top:9px;"><span class="btn gho">Cancelar</span><span class="btn pri" style="background:var(--danger);">Eliminar</span></div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas"><div class="scrim"><div class="modal">
+          <span class="lbl on">¿Eliminar Café de Otoño?</span>
+          <div class="line l" style="margin:7px 0;"></div>
+          <div class="attn" style="margin-bottom:9px;"><span class="lbl">11 clientes pierden su progreso. No se puede deshacer.</span></div>
+          <div class="row" style="justify-content:flex-end;"><span class="btn gho">Cancelar</span><span class="btn pri" style="background:var(--danger);">Eliminar tarjeta</span></div>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="keep"><b>Los cinco diálogos siguen existiendo</b> con sus mismas preguntas: archivar tarjeta, eliminar permanentemente, eliminar vencida, archivar cliente y desactivar cliente.</li>
+      <li class="change"><b>El nombre del objeto entra en la pregunta.</b> "¿Eliminar Café de Otoño?" en vez de "¿Eliminar tarjeta permanentemente?". Es lo que evita borrar la equivocada.</li>
+      <li class="change"><b>La consecuencia se cuantifica</b> con el dato que la pantalla ya tiene: cuántos clientes pierden progreso.</li>
+      <li class="change"><b>El botón nombra la acción</b>, no dice "Eliminar" a secas, y el foco entra en Cancelar.</li>
+    </ul>
+  </article>
+
+  <!-- 23 -->
+  <article class="pair">
+    <header><h3>Invitar colaborador y credenciales</h3><span class="scope">Escritorio</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas"><div class="scrim"><div class="modal">
+          <span class="lbl on">Cuenta creada ✓</span>
+          <div class="line m" style="margin:7px 0;"></div>
+          <div class="box" style="padding:7px;"><span class="xs">Contraseña temporal</span><div class="num" style="font-size:12px;">Koda1234!</div></div>
+          <div class="row" style="justify-content:flex-end;margin-top:9px;"><span class="btn pri">Entendido</span></div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas"><div class="scrim"><div class="modal">
+          <span class="lbl on">Invitación enviada</span>
+          <div class="line m" style="margin:7px 0;"></div>
+          <div class="box" style="padding:7px;"><span class="xs">Enlace de invitación, un solo uso</span><div class="line l" style="margin-top:5px;"></div></div>
+          <div class="row" style="justify-content:flex-end;margin-top:9px;"><span class="btn gho">Copiar enlace</span><span class="btn pri">Listo</span></div>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="change"><b>Desaparece la contraseña temporal compartida.</b> Hoy el diálogo muestra la misma clave para todos los colaboradores del sistema, y la API la devuelve en claro.</li>
+      <li class="keep"><b>El flujo de invitar se conserva</b>, con sus campos de correo, nombre y rol, y el límite de miembros.</li>
+      <li class="block"><b>Depende de backend.</b> Mientras el punto S1 del handoff no se resuelva, este diálogo no se puede cambiar sin mentir sobre lo que el sistema hace.</li>
+    </ul>
+  </article>
+
+  <!-- 24 -->
+  <article class="pair">
+    <header><h3>Bono sorpresa durante el sellado</h3><span class="scope">Móvil</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas narrow"><div class="scrim"><div class="modal" style="text-align:center;">
+          <div class="box" style="width:38px;height:38px;border-radius:50%;margin:0 auto;"></div>
+          <span class="lbl on" style="display:block;margin-top:7px;">¡Bono Sorpresa!</span>
+          <div class="line m" style="margin:7px auto;"></div>
+          <span class="btn pri wide">Cerrar</span>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas narrow"><div class="frame" style="min-width:0;"><div class="pad col">
+          <div class="cam" style="height:64px;"><div class="reticle" style="width:40px;height:40px;"></div></div>
+          <div class="box" style="border-color:var(--brand);background:var(--brand-soft);padding:8px;">
+            <div class="row" style="align-items:center;"><div class="box" style="width:24px;height:24px;border-radius:50%;background:var(--brand);"></div><div class="col" style="flex:1;gap:1px;"><span class="lbl on">Bono sorpresa</span><span class="xs">Café gratis para Marisol</span></div></div>
+          </div>
+          <div class="btn pri wide">Siguiente cliente</div>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="change"><b>Deja de ser un modal que bloquea.</b> Aparece en el flujo, sobre la propia pantalla del escáner, sin tapar la cámara ni exigir un toque para continuar.</li>
+      <li class="keep"><b>El bono sigue celebrándose.</b> Es un buen momento del producto y merece color y presencia, solo que sin interrumpir la fila del mostrador.</li>
+      <li class="change"><b>La acción siguiente es la real:</b> pasar al siguiente cliente, no cerrar una ventana.</li>
+    </ul>
+  </article>
+
+  <!-- 25 -->
+  <article class="pair">
+    <header><h3>Selectores de vencimiento e ícono</h3><span class="scope">Escritorio y móvil</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad col">
+          <span class="xs">Fecha de vencimiento</span>
+          <div class="box" style="height:20px;"></div>
+          <div class="modal" style="width:150px;">
+            <div class="row" style="justify-content:space-between;"><span class="xs">‹</span><span class="xs">Diciembre</span><span class="xs">›</span></div>
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-top:6px;">
+              <div class="box" style="aspect-ratio:1;"></div><div class="box" style="aspect-ratio:1;"></div><div class="box" style="aspect-ratio:1;"></div><div class="box" style="aspect-ratio:1;"></div><div class="box" style="aspect-ratio:1;"></div><div class="box" style="aspect-ratio:1;"></div><div class="box" style="aspect-ratio:1;"></div>
+            </div>
+          </div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad col">
+          <span class="xs">Fecha de vencimiento</span>
+          <div class="row"><span class="btn gho">3 meses</span><span class="btn gho">6 meses</span><span class="btn pri">1 año</span><span class="btn gho">Otra</span></div>
+          <span class="xs">Vence el 1 de septiembre de 2027</span>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="change"><b>El calendario deja de ser la vía principal.</b> Casi nadie elige un día exacto para que caduque una promoción, elige una duración. El calendario queda detrás de "Otra".</li>
+      <li class="change"><b>La fecha resultante se escribe en palabras</b>, para que nadie confunda el formato.</li>
+      <li class="keep"><b>El selector de ícono se conserva</b> con su rejilla y la opción de usar el logo del negocio.</li>
+      <li class="change"><b>Ambos popovers cierran con Escape y devuelven el foco</b> al control que los abrió.</li>
+    </ul>
+  </article>
+
+  <!-- 26 -->
+  <article class="pair">
+    <header><h3>Navegación móvil y menú de perfil</h3><span class="scope">Móvil</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas narrow"><div class="frame" style="min-width:0;">
+          <div class="bar"><span class="lbl on">Barra lateral</span><span class="lbl">✕</span></div>
+          <div class="pad col">
+            <div class="nav-i">Panel</div><div class="nav-i">Tarjetas</div><div class="nav-i">Clientes</div><div class="nav-i">QR</div><div class="nav-i">Escáner</div><div class="nav-i">Marca</div><div class="nav-i">Ajustes</div><div class="nav-i">Equipo</div><div class="nav-i">Docs</div>
+            <div class="row" style="align-items:center;border-top:1px solid var(--wf-line);padding-top:7px;"><div class="box" style="width:22px;height:22px;border-radius:50%;"></div><div class="line m" style="flex:1;"></div></div>
+          </div>
+        </div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas narrow"><div class="frame" style="min-width:0;">
+          <div class="bar"><span class="lbl on">Café Aurora</span><span class="lbl">✕</span></div>
+          <div class="pad col">
+            <span class="xs">Operación</span>
+            <div class="nav-i sel">Panel</div><div class="nav-i">Escáner</div><div class="nav-i">Clientes</div>
+            <span class="xs">Programa</span>
+            <div class="nav-i">Tarjetas</div><div class="nav-i">Códigos QR</div>
+            <span class="xs">Negocio</span>
+            <div class="nav-i">Marca</div><div class="nav-i">Equipo</div><div class="nav-i">Ajustes</div>
+            <div class="row" style="align-items:center;border-top:1px solid var(--wf-line);padding-top:7px;"><div class="box" style="width:22px;height:22px;border-radius:50%;"></div><div class="col" style="flex:1;gap:1px;"><div class="line m"></div><span class="xs">Admin</span></div></div>
+          </div>
+        </div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="change"><b>La hoja se titula con el negocio</b>, no con "Barra lateral", que es el nombre del componente y no el de nada que la persona reconozca.</li>
+      <li class="change"><b>Nueve destinos planos se agrupan en tres bloques</b>, y el sellador ve solo Operación.</li>
+      <li class="keep"><b>Sigue siendo una hoja lateral con su pie de perfil</b> y el cierre de sesión detrás de confirmación.</li>
+      <li class="change"><b>Área táctil de cada destino a 44px</b>, que hoy queda por debajo.</li>
+    </ul>
+  </article>
+</section>
+
+<section class="part">
+  <h2>Lo que no se toca en ninguna pantalla</h2>
+  <ul class="delta" style="margin-top:22px;">
+    <li class="keep"><b>El diseño de la tarjeta.</b> Degradados por giro, patrón de íconos, sellos en rejilla 5 por 2, QR y foil de membresía. Se conserva íntegro en landing, panel, detalle, portal del cliente y alta.</li>
+    <li class="keep"><b>Los tokens del prototipo</b> y la tipografía Switzer con Playfair como acento de una a tres palabras.</li>
+    <li class="keep"><b>Las anclas de la landing y los ids del formulario</b>, porque de ellos dependen enlaces guardados y analítica.</li>
+    <li class="keep"><b>Las tarjetas de regalo.</b> Fuera del alcance de este ciclo. Se quedan como están hasta que decidas abrirlas.</li>
+    <li class="keep"><b>Rutas, nombres de campo, logo y contenido legal.</b> Nada de eso cambia sin que lo autorices.</li>
+  </ul>
+</section>
+
+<footer>
+  Wireframes de estructura, no de pixel final. Documento tipografiado con Figtree porque el visor solo admite Google Fonts; el producto usa Switzer. Los puntos marcados como bloqueados están detallados en <code>docs/BACKEND-HANDOFF.md</code>.
+</footer>
+
+</div>
