@@ -9,7 +9,8 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
-    exclude: ["e2e/**", "node_modules/**"],
+    // docs/** lleva pruebas de Playwright, que no corren bajo vitest.
+    exclude: ["e2e/**", "docs/**", "node_modules/**"],
     setupFiles: ["./lib/__tests__/setup.ts"],
   },
 })

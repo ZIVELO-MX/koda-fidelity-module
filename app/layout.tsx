@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
-import { Geist } from 'next/font/google'
+import { JetBrains_Mono } from 'next/font/google'
+import localFont from 'next/font/local'
 import { Analytics } from '@vercel/analytics/next'
 import { ServiceWorkerRegister } from '@/components/service-worker-register'
 import { ThemeProvider } from '@/components/theme-provider'
@@ -7,9 +8,26 @@ import { Toaster } from '@/components/ui/sonner'
 import { siteConfig } from '@/lib/site-config'
 import './globals.css'
 
-const geist = Geist({
+// Switzer es la tipografía del ADN de KODA. Vive en Fontshare, no en Google
+// Fonts, así que se sirve desde el propio proyecto.
+const switzer = localFont({
+  src: [
+    { path: '../public/fonts/switzer-400.woff2', weight: '400', style: 'normal' },
+    { path: '../public/fonts/switzer-500.woff2', weight: '500', style: 'normal' },
+    { path: '../public/fonts/switzer-600.woff2', weight: '600', style: 'normal' },
+    { path: '../public/fonts/switzer-700.woff2', weight: '700', style: 'normal' },
+    { path: '../public/fonts/switzer-800.woff2', weight: '800', style: 'normal' },
+  ],
+  variable: '--font-switzer',
+  display: 'swap',
+  fallback: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'ui-sans-serif'],
+})
+
+// Para cifras que se alinean en columna.
+const jetbrains = JetBrains_Mono({
   subsets: ['latin'],
-  variable: '--font-sans',
+  variable: '--font-jetbrains',
+  display: 'swap',
 })
 
 export const metadata: Metadata = {
@@ -84,7 +102,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className="bg-background" suppressHydrationWarning>
-      <body className={`${geist.variable} font-sans antialiased`}>
+      <body className={`${switzer.variable} ${jetbrains.variable} font-sans antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange>
           {children}
         </ThemeProvider>
