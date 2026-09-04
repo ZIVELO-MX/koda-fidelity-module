@@ -60,3 +60,7 @@ e2e-results.txt
 # Capturas de la verificación de diseño: se regeneran con
 # npx playwright test --config playwright.design.config.ts
 docs/design/verificadores/capturas/
+
+# Motor del documento de temas: es de terceros y no se versiona.
+# Para verlo completo, copiar support.js junto a loyalty-card-themes.dc.html
+docs/design/support.js
