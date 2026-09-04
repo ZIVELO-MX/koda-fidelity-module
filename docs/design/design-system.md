@@ -182,10 +182,25 @@ La forma es invariable. Lo que cambia es la piel.
 **Pro.** Cuatro acabados: gradiente vivo, foil holográfico, patrón cinético y vidrio premium. Los
 tres que se mueven se congelan bajo `prefers-reduced-motion`.
 
-**Trece categorías**, cada una con su acento: Panadería `#b45309`, Taquería `#dc2626`, Cafetería
-`#6f4e37`, Hamburguesas `#a16207`, Pizzería `#b91c1c`, Barbería `#334155`, Salón de Belleza
-`#be185d`, Gimnasio `#0f766e`, Fútbol `#15803d`, Sushi `#0e7490`, Veterinaria `#7c3aed`, Farmacia
-`#0369a1`, Heladería `#db2777`.
+**Trece categorías**, cada una con su acento, su ícono de cabecera y el juego de íconos con el que
+se genera su patrón. Los nombres son de Lucide.
+
+| Categoría | Acento | Ícono de cabecera | Juego de íconos del patrón |
+|---|---|---|---|
+| Panadería | `#b45309` | `croissant` | `croissant, wheat, cookie, cake` |
+| Taquería | `#dc2626` | `flame` | `flame, citrus, leaf, wheat` |
+| Cafetería | `#6f4e37` | `coffee` | `coffee, cookie, croissant, milk` |
+| Hamburguesas | `#a16207` | `sandwich` | `sandwich, cup-soda, flame, utensils-crossed` |
+| Pizzería | `#b91c1c` | `pizza` | `pizza, flame, leaf, utensils-crossed` |
+| Barbería | `#334155` | `scissors` | `scissors, paintbrush, sparkles, star` |
+| Salón de Belleza | `#be185d` | `sparkles` | `sparkles, flower-2, star, droplet` |
+| Gimnasio | `#0f766e` | `dumbbell` | `dumbbell, timer, heart, droplet` |
+| Fútbol | `#15803d` | `trophy` | `trophy, target, medal, flag` |
+| Sushi | `#0e7490` | `fish` | `fish, utensils-crossed, leaf, droplet` |
+| Veterinaria | `#7c3aed` | `paw-print` | `paw-print, bone, heart, stethoscope` |
+| Farmacia | `#0369a1` | `cross` | `pill, cross, syringe, thermometer` |
+| Heladería | `#db2777` | `ice-cream-cone` | `ice-cream-cone, ice-cream-bowl, cherry, candy` |
+
 
 **El patrón se genera**, con un solo grosor, escala y densidad para todas las categorías, de modo
 que una categoría nueva entra sin rehacer nada. Expone dos perillas y solo dos: intensidad y radio.
