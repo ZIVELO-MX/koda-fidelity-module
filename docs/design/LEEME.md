@@ -22,7 +22,8 @@ cd docs/design && python3 -m http.server 4173 --bind 127.0.0.1
 ## Para verificar
 
 ```bash
-node docs/design/verificadores/contraste.mjs
+node docs/design/verificadores/contraste.mjs   # temas de tarjeta
+node docs/design/verificadores/tokens.mjs      # pares de tokens en claro y oscuro
 npx playwright test --config playwright.design.config.ts
 ```
 

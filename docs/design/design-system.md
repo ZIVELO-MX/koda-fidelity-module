@@ -59,6 +59,9 @@ En oscuro la marca se aclara a `#FF7A47`, con suave `#2A1810` y tinta `#FFE1CF`.
 | Error | `#B91C1C` | `#FBEAE9` | `#F87171` |
 | Información | `#1E6DB8` | `#E7F0FA` | `#60A5FA` |
 
+El ADN no define fondo suave informativo para tema oscuro. **Queda pendiente de definir ahí**, no
+se inventa aquí: reutilizar el claro deja 2.21 de contraste, medido en `verificadores/tokens-resultado.md`.
+
 **Los semánticos nunca se tiñen con el color del negocio.** Verde es verde en todos los negocios.
 
 ## 3. Motor de color de marca
@@ -108,6 +111,20 @@ outline-offset: 2px;
 
 Global, en todo lo enfocable, y no se elimina en ningún componente. En superficies oscuras el
 contorno usa la marca aclarada.
+
+**Sobre superficies claras el contorno de marca se queda en 2.8 de contraste**, por debajo del
+mínimo de 3 para elementos de interfaz. Medido en `verificadores/tokens-resultado.md`. Como el token
+del ADN no se cambia desde aquí, el foco lleva además un contorno interior oscuro de 1px, o se dibuja
+sobre un halo blanco, para que el conjunto supere el mínimo.
+
+Otras tres reglas salen del mismo barrido:
+
+- El borde de un campo no comunica por sí solo: queda en 1.46. La etiqueta visible identifica el
+  campo, y el error se marca con color y texto, no solo con el borde.
+- `ink-4` no se usa para texto que haya que leer. Un marcador de posición con contenido real usa
+  `ink-3`.
+- El verde de éxito sobre su fondo suave se queda en 4.47 en texto pequeño. Ahí el texto va en
+  `ink` y el color queda como acento.
 
 ## 6. Componentes
 

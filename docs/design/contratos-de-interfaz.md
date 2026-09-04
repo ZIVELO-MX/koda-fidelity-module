@@ -81,7 +81,22 @@ de Pro.
 Al terminar ese mes se ofrece mantener Pro o continuar con Lite, enseñando cómo queda la tarjeta con
 cada uno. Los códigos de esta área son `KF-BILLING-001` a `KF-BILLING-004`.
 
-## 6. Estados de recuperación de acceso
+## 6. Wallet e integración
+
+Los códigos son `KF-WALLET-001` a `KF-WALLET-003`.
+
+| Situación | Qué ve la persona |
+|---|---|
+| Antes del gate | Los botones de Wallet no se muestran. No se sustituye una promesa apagada por otra |
+| Generando el pase | Progreso de creación, con el nombre del proveedor |
+| Sincronizando | Estado de sincronización, sin bloquear el resto de la tarjeta |
+| Éxito | Confirmación por proveedor, porque Apple y Google se resuelven por separado |
+| Error | Mensaje del proveedor que falló, con su código y referencia, y la tarjeta sigue usable por QR |
+
+**Descargar y eliminar tarjeta no pertenecen a Wallet.** Comparten la etiqueta Próximamente en el
+código actual, pero son del borrado del cliente y no dependen de este gate.
+
+## 7. Estados de recuperación de acceso
 
 Especificación para `FID-0013`. **Nada de esto se implementa en este ciclo:** esa misión está
 bloqueada y depende de `FID-0004`. Se documenta ahora para que cuando se desbloquee no haya que

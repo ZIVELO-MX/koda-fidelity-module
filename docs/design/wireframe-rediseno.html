@@ -1215,6 +1215,46 @@
   </article>
 </section>
 
+<!-- =================== WALLET =================== -->
+<section class="part">
+  <h2>Wallet e integración</h2>
+  <p class="lede">Hoy la interfaz promete Wallet y lo apaga. De los cinco textos con la etiqueta Próximamente, solo tres son de Wallet: los otros dos, descargar y eliminar tarjeta, pertenecen al borrado del cliente y no dependen de este gate.</p>
+
+  <article class="pair">
+    <header><h3>Wallet en el portal del cliente</h3><span class="scope">Móvil · cliente final</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas narrow"><div class="frame" style="min-width:0;"><div class="pad col">
+          <div class="box" style="padding:9px;opacity:.55;"><span class="lbl">Agregar a Wallet, Próximamente</span></div>
+          <div class="box" style="padding:9px;opacity:.55;"><span class="lbl">Descargar Tarjeta, Próximamente</span></div>
+          <div class="box" style="padding:9px;opacity:.55;"><span class="lbl">Eliminar Tarjeta, Próximamente</span></div>
+          <span class="xs">Tres botones apagados, sin decir de qué dependen ni cuándo</span>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas narrow"><div class="frame" style="min-width:0;"><div class="pad col">
+          <div class="btn pri wide">Agregar a Apple Wallet</div>
+          <div class="btn gho wide">Agregar a Google Wallet</div>
+          <div class="row" style="align-items:center;gap:8px;">
+            <div class="box" style="width:16px;height:16px;border-radius:50%;"></div>
+            <span class="xs">Sincronizando tu tarjeta</span>
+          </div>
+          <div style="border-top:1px solid var(--border);padding-top:9px;">
+            <div class="btn gho wide">Eliminar tarjeta</div>
+            <span class="xs">No depende de Wallet</span>
+          </div>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="change"><b>Un botón por proveedor, no uno genérico.</b> Apple y Google se activan por separado y pueden fallar por separado, así que se muestran por separado.</li>
+      <li class="change"><b>El pase tarda en generarse, y eso se ve.</b> Estado de creación y de sincronización, con el resultado por proveedor.</li>
+      <li class="change"><b>Eliminar tarjeta sale de detrás del gate.</b> Comparte la etiqueta Próximamente con Wallet pero pertenece al borrado del cliente, y hoy queda bloqueado por una función que no tiene nada que ver.</li>
+      <li class="block"><b>Nada de esto se implementa hasta el gate.</b> Mientras Apple y Google no estén verificados en entorno real, los dos botones de Wallet no se muestran. No se sustituye una promesa apagada por otra.</li>
+    </ul>
+  </article>
+</section>
+
 <!-- =================== MOVIL =================== -->
 <section class="part">
   <h2>Móvil</h2>
