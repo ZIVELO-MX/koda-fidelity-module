@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prototipo del alta de Koda Fidelity</title>
+<style>
+  /* Tokens de KODA. Ver docs/design/design-system.md.
+     La tipografía real del producto es Switzer de Fontshare; este prototipo usa
+     la pila del sistema para no depender de la red al verificarlo. */
+  :root {
+    --brand:#FF6B35; --brand-hover:#E8552B; --brand-soft:#FFF1E9; --brand-ink:#5A1F08;
+    --bg:#FAFAF7; --bg-2:#F5F4EE; --surface:#FFFFFF; --surface-2:#F7F6F1;
+    --border:#EBE9E0; --border-strong:#D9D6C9;
+    --ink:#1C1B17; --ink-2:#5E5A51; --ink-3:#8E897C; --ink-4:#B5B0A4;
+    --warning:#B45309; --warning-soft:#FDF2DC;
+    --r-md:8px; --r-lg:10px; --r-xl:14px; --r-2xl:18px;
+    --shadow-md:0 4px 12px rgba(28,27,23,.08), 0 1px 2px rgba(28,27,23,.04);
+    --sans:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#0D0C0A; --bg-2:#141210; --surface:#1A1814; --surface-2:#221F1A;
+      --border:#2F2B25; --border-strong:#3D3830;
+      --ink:#FAFAF7; --ink-2:#CBC6B9; --ink-3:#8E897C; --ink-4:#5E5A51;
+      --brand:#FF7A47; --brand-soft:#2A1810; --brand-ink:#FFE1CF;
+      --warning:#FBBF24; --warning-soft:#2A1F0C;
+    }
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--sans); font-size:15px; line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .marco { max-width:520px; margin:0 auto; padding:0 16px 48px; }
+  .barra { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 0; }
+  .pasos { display:flex; gap:5px; flex:1; }
+  .paso { height:4px; flex:1; border-radius:999px; background:var(--border); }
+  .paso.hecho { background:var(--brand); }
+  h1 { font-size:22px; line-height:1.25; letter-spacing:-0.02em; margin:0 0 8px; text-wrap:balance; }
+  p { margin:0 0 14px; color:var(--ink-2); }
+  .xs { font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-3); }
+  label { display:block; font-size:13px; font-weight:600; margin:14px 0 6px; }
+  input, select {
+    width:100%; min-height:44px; padding:10px 12px; font:inherit; font-size:15px;
+    color:var(--ink); background:var(--surface); border:1px solid var(--border-strong);
+    border-radius:var(--r-lg);
+  }
+  .ayuda { font-size:12.5px; color:var(--ink-3); margin-top:6px; }
+  button {
+    min-height:44px; padding:11px 18px; font:inherit; font-size:15px; font-weight:600;
+    border-radius:var(--r-lg); border:1px solid transparent; cursor:pointer;
+    transition:transform 120ms ease-out, background-color 120ms ease-out;
+  }
+  button:active { transform:scale(.97); }
+  :focus-visible { outline:2px solid var(--brand); outline-offset:2px; }
+  .primario { background:var(--brand); color:#fff; width:100%; }
+  .primario:hover { background:var(--brand-hover); }
+  .fantasma { background:transparent; color:var(--ink-2); border-color:var(--border-strong); }
+  .texto { background:transparent; color:var(--ink-2); border:none; padding:11px 8px; }
+  .acciones { display:flex; flex-direction:column; gap:8px; margin-top:20px; }
+  .tarjeta {
+    border-radius:var(--r-xl); padding:16px; color:#fff; min-height:190px;
+    display:flex; flex-direction:column; justify-content:space-between;
+    background:#6f4e37; position:relative; overflow:hidden; box-shadow:var(--shadow-md);
+  }
+  .tarjeta .patron {
+    position:absolute; inset:0;
+    background-image:radial-gradient(rgba(255,255,255,.30) 1.5px, transparent 2px);
+    background-size:16px 16px;
+  }
+  .tarjeta > * { position:relative; }
+  .sellos { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; }
+  .sello { aspect-ratio:1; border-radius:50%; border:1.5px dashed rgba(255,255,255,.55); }
+  .sello.on { background:#fff; border-style:solid; border-color:#fff; }
+  .planes { display:flex; flex-direction:column; gap:10px; }
+  .plan { border:1px solid var(--border-strong); border-radius:var(--r-xl); padding:14px; background:var(--surface); }
+  .plan.destacado { border-color:var(--brand); }
+  .plan.atenuado { opacity:.7; }
+  .precio { font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:22px; font-weight:600; }
+  .fila { display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
+  .regalo { background:var(--brand-soft); color:var(--brand-ink); border-radius:var(--r-md); padding:8px 10px; font-size:13px; margin:10px 0; }
+  .aviso { background:var(--warning-soft); border:1px solid var(--warning); color:var(--warning); border-radius:var(--r-md); padding:10px 12px; font-size:13.5px; font-weight:600; }
+  .conmutador { display:flex; gap:6px; background:var(--surface-2); padding:4px; border-radius:999px; margin-bottom:12px; }
+  .conmutador button { flex:1; border-radius:999px; font-size:13.5px; padding:9px 10px; }
+  .conmutador .activo { background:var(--brand); color:#fff; }
+  .conmutador .inactivo { background:transparent; color:var(--ink-2); }
+  [hidden] { display:none !important; }
+  @media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+</style>
+</head>
+<body>
+<div class="marco">
+
+  <div class="barra">
+    <div class="pasos" aria-hidden="true">
+      <div class="paso hecho" id="p1"></div><div class="paso" id="p2"></div>
+      <div class="paso" id="p3"></div><div class="paso" id="p4"></div>
+      <div class="paso" id="p5"></div>
+    </div>
+    <button class="texto" data-testid="saltar-intro" data-ir="datos">Saltar</button>
+  </div>
+
+  <section data-testid="pantalla-intro">
+    <h1>Tu programa de lealtad, listo hoy</h1>
+    <p>Tres pantallas para conocerlo. Puedes saltarlas cuando quieras.</p>
+    <div class="tarjeta">
+      <div class="patron"></div>
+      <div>
+        <div class="xs" style="color:rgba(255,255,255,.75)">Tarjeta de lealtad</div>
+        <div style="font-size:17px;font-weight:700">Café Aurora</div>
+      </div>
+      <div class="sellos">
+        <div class="sello on"></div><div class="sello on"></div><div class="sello on"></div>
+        <div class="sello on"></div><div class="sello on"></div><div class="sello on"></div>
+        <div class="sello"></div><div class="sello"></div><div class="sello"></div><div class="sello"></div>
+      </div>
+    </div>
+    <div class="acciones">
+      <button class="primario" data-testid="continuar-datos" data-ir="datos">Continuar</button>
+    </div>
+  </section>
+
+  <section data-testid="pantalla-datos" hidden>
+    <h1>Cuéntanos de tu negocio</h1>
+    <p>Solo dos datos. El resto lo configuras después.</p>
+    <label for="negocio">Nombre del negocio</label>
+    <input id="negocio" value="Café Aurora">
+    <label for="categoria">Categoría</label>
+    <select id="categoria">
+      <option>Cafetería</option><option>Panadería</option><option>Taquería</option>
+      <option>Barbería</option><option>Gimnasio</option><option>Heladería</option>
+    </select>
+    <p class="ayuda">La categoría define el patrón de tu tarjeta. Puedes cambiarla luego.</p>
+    <div class="acciones">
+      <button class="primario" data-testid="continuar-tarjeta" data-ir="tarjeta">Continuar</button>
+    </div>
+  </section>
+
+  <section data-testid="pantalla-tarjeta" hidden>
+    <h1>Tu primera tarjeta</h1>
+    <p>Tres decisiones y queda publicada.</p>
+    <label for="recompensa">¿Qué recibirá tu cliente?</label>
+    <input id="recompensa" value="Un café gratis">
+    <label for="sellos">Sellos necesarios</label>
+    <select id="sellos"><option>8</option><option selected>10</option><option>12</option></select>
+    <label for="tema">Tema</label>
+    <select id="tema">
+      <option>Color de tu marca, incluido en Lite</option>
+      <option>Gradiente vivo, Pro</option>
+      <option>Foil holográfico, Pro</option>
+    </select>
+    <p class="ayuda">Puedes elegir un tema Pro ahora aunque todavía no tengas plan.</p>
+    <div class="acciones">
+      <button class="primario" data-testid="continuar-club" data-ir="club">Continuar</button>
+    </div>
+  </section>
+
+  <section data-testid="pantalla-club" hidden>
+    <h1>Club Café Aurora</h1>
+    <p>Así lo verán tus clientes.</p>
+    <div class="tarjeta">
+      <div class="patron"></div>
+      <div class="fila">
+        <div>
+          <div class="xs" style="color:rgba(255,255,255,.75)">Café Aurora</div>
+          <div style="font-size:17px;font-weight:700">Un café gratis</div>
+        </div>
+        <div style="width:44px;height:44px;background:#fff;border-radius:var(--r-md)"></div>
+      </div>
+      <div class="sellos">
+        <div class="sello"></div><div class="sello"></div><div class="sello"></div>
+        <div class="sello"></div><div class="sello"></div><div class="sello"></div>
+        <div class="sello"></div><div class="sello"></div><div class="sello"></div><div class="sello"></div>
+      </div>
+    </div>
+    <p class="ayuda">Diez sellos por llenar. Tu programa empieza en cuanto lo publiques.</p>
+    <div class="acciones">
+      <button class="primario" data-testid="continuar-atribucion" data-ir="atribucion">Continuar</button>
+    </div>
+  </section>
+
+  <section data-testid="pantalla-atribucion" hidden>
+    <h1>¿Dónde conociste Fidelity?</h1>
+    <p>Una pregunta y seguimos. Puedes saltarla.</p>
+    <label for="origen">Nos conociste por</label>
+    <select id="origen">
+      <option>Un conocido</option><option>Redes sociales</option>
+      <option>Búsqueda en internet</option><option>Otro negocio que ya lo usa</option>
+    </select>
+    <div class="acciones">
+      <button class="primario" data-testid="continuar-paywall" data-ir="paywall">Continuar</button>
+      <button class="texto" data-testid="saltar-atribucion" data-ir="paywall">Saltar esta pregunta</button>
+    </div>
+  </section>
+
+  <section data-testid="pantalla-paywall" hidden>
+    <h1>Elige tu plan</h1>
+    <div class="conmutador">
+      <button class="inactivo" data-testid="mensual">Mensual</button>
+      <button class="activo" data-testid="anual">Anual, 2 meses gratis</button>
+    </div>
+    <div class="planes">
+      <div class="plan destacado">
+        <div class="fila"><strong>Lite</strong><span class="precio">$1,490</span></div>
+        <p class="ayuda">al año, equivale a $124 al mes</p>
+        <div class="regalo">Incluye un mes con todo Pro</div>
+        <button class="primario" data-testid="contratar-lite" data-ir="regreso">Contratar Lite</button>
+      </div>
+      <div class="plan atenuado">
+        <div class="fila"><strong>Pro</strong><span class="precio">$2,990</span></div>
+        <p class="ayuda">al año. Disponible al terminar tu primer mes.</p>
+      </div>
+    </div>
+    <div class="acciones">
+      <button class="texto" data-testid="salir-paywall" data-ir="regreso">Salir sin pagar</button>
+    </div>
+  </section>
+
+  <section data-testid="pantalla-regreso" hidden>
+    <h1>Tu tarjeta te espera</h1>
+    <div class="tarjeta" style="opacity:.55">
+      <div class="patron"></div>
+      <div style="font-size:17px;font-weight:700">Un café gratis</div>
+      <div class="sellos">
+        <div class="sello"></div><div class="sello"></div><div class="sello"></div>
+        <div class="sello"></div><div class="sello"></div><div class="sello"></div>
+        <div class="sello"></div><div class="sello"></div><div class="sello"></div><div class="sello"></div>
+      </div>
+    </div>
+    <p class="aviso" style="margin-top:14px">Tu tarjeta está lista, pero todavía no publicada</p>
+    <p class="ayuda">Tu negocio y tu tarjeta siguen guardados. No generamos su código QR hasta que la actives.</p>
+    <div class="acciones">
+      <button class="primario" data-testid="activar" data-ir="paywall">Activar con Lite, $149</button>
+      <button class="texto" data-testid="reiniciar" data-ir="intro">Volver al inicio del prototipo</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  var ORDEN = ["intro", "datos", "tarjeta", "club", "atribucion", "paywall", "regreso"];
+
+  function mostrar(nombre) {
+    ORDEN.forEach(function (p) {
+      var el = document.querySelector('[data-testid="pantalla-' + p + '"]');
+      if (el) el.hidden = p !== nombre;
+    });
+    var indice = ORDEN.indexOf(nombre);
+    for (var i = 1; i <= 5; i++) {
+      var barra = document.getElementById("p" + i);
+      if (barra) barra.classList.toggle("hecho", i <= Math.min(indice + 1, 5));
+    }
+    var saltar = document.querySelector('[data-testid="saltar-intro"]');
+    if (saltar) saltar.hidden = nombre !== "intro";
+    window.scrollTo(0, 0);
+  }
+
+  document.addEventListener("click", function (evento) {
+    var destino = evento.target.closest("[data-ir]");
+    if (destino) mostrar(destino.getAttribute("data-ir"));
+  });
+
+  mostrar("intro");
+</script>
+</body>
+</html>

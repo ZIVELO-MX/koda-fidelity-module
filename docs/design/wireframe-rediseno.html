@@ -72,10 +72,10 @@
   .scope { font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-3); border:1px solid var(--border-strong); border-radius:999px; padding:3px 9px; }
   .ab { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
   @media (max-width:860px) { .ab { grid-template-columns:1fr; } }
-  .side { margin:0; }
+  .side { margin:0; min-width:0; }
   .side figcaption { font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-3); margin-bottom:7px; }
   .side.after figcaption { color:var(--brand); }
-  .canvas { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--r-xl); padding:12px; overflow-x:auto; height:100%; }
+  .canvas { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--r-xl); padding:12px; overflow-x:auto; height:100%; min-width:0; }
   .canvas.narrow { max-width:320px; }
   .frame { background:var(--surface); border:1px solid var(--wf-line); border-radius:var(--r-md); overflow:hidden; min-width:270px; }
   .frame.dark { background:var(--dark-ground); border-color:#2b241d; color:#f7f2ea; }
