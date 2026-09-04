@@ -14,7 +14,7 @@ export default async function ArchivedCardsPage() {
 
   if (!user?.email) redirect("/login")
 
-  const business = await prisma.business.findUnique({ where: { email: user.email } })
+  const business = await prisma.business.findFirst({ where: { users: { some: { authUserId: user.id } } } })
   if (!business) redirect("/login")
 
   const cards = await prisma.loyaltyCard.findMany({

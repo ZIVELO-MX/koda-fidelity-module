@@ -12,7 +12,7 @@ export default async function TeamPage() {
   if (!user?.email) redirect("/login")
 
   const userRecord = await prisma.user.findUnique({
-    where: { email: user.email },
+    where: { authUserId: user.id },
     select: { id: true, name: true, role: true, businessId: true, business: { select: { name: true } } },
   })
 

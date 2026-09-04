@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { createAdminClient } from "@/lib/supabase-admin"
 import {
   getBusinessFromSession,
   handleApiError,
@@ -66,13 +65,6 @@ export async function DELETE(
     }
 
     await prisma.user.delete({ where: { id } })
-
-    const supabase = createAdminClient()
-    const { data: { users } } = await supabase.auth.admin.listUsers()
-    const authUser = users.find((u) => u.email === target.email)
-    if (authUser) {
-      await supabase.auth.admin.deleteUser(authUser.id)
-    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

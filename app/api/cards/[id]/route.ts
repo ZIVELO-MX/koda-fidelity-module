@@ -274,10 +274,11 @@ export async function PUT(
         }
         for (const m of body.milestoneRewards) {
           if (m.id && incomingIds.includes(m.id)) {
-            await tx.milestoneReward.update({
-              where: { id: m.id },
+            const updated = await tx.milestoneReward.updateMany({
+              where: { id: m.id, cardId: id },
               data: { stampNumber: m.stampNumber, label: m.label.trim(), iconName: m.iconName || null, probability: m.probability },
             })
+            if (updated.count !== 1) throw new NotFoundError("Milestone not found")
           } else {
             await tx.milestoneReward.create({
               data: { cardId: id, stampNumber: m.stampNumber, label: m.label.trim(), iconName: m.iconName || null, probability: m.probability },

@@ -22,7 +22,7 @@ export default async function CustomersPage({
 
   if (!user?.email) redirect("/login")
 
-  const business = await prisma.business.findUnique({ where: { email: user.email } })
+  const business = await prisma.business.findFirst({ where: { users: { some: { authUserId: user.id } } } })
   if (!business) redirect("/login")
 
   const [loyaltyCards, customers] = await Promise.all([

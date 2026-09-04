@@ -36,7 +36,7 @@ export default async function DashboardPage() {
     }
 
     const userRecord = await prisma.user.findUnique({
-      where: { email: user.email },
+    where: { authUserId: user.id },
       select: { businessId: true },
     })
 
