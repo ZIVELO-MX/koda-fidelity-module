@@ -210,5 +210,28 @@ ese valor, diez de las trece categorías dejan de alcanzar 3:1 en el peor caso. 
 apoya siempre en superficie sólida; solo el nombre del negocio y el de la tarjeta pueden ir sobre el
 patrón.
 
+### Cómo se aplica sobre el componente que ya existe
+
+El tema es una piel sobre `components/loyalty-card-preview.tsx`, que ya está en producción y
+funciona. **No se rediseña ese componente ni se duplica.** Su anatomía coincide con la de la
+referencia de temas: cabecera con chip de ícono o logo, fila de miembro, "Tu Progreso" con la
+cuenta, sellos, fila de premio, QR y pie con vigencia y la firma de Koda.
+
+Lo único que el tema añade son tres cosas:
+
+1. El fondo. Hoy el componente pinta `backgroundColor: brandColor`, que es exactamente la piel
+   Lite. Las cuatro pieles Pro sustituyen ese fondo por su acabado.
+2. Una capa de patrón por encima del fondo y por debajo del contenido, con el juego de íconos de la
+   categoría.
+3. El ícono del giro dentro de los sellos llenos, que el componente ya soporta mediante
+   `stampIconName`.
+
+Valores que se conservan del componente y que este documento no cambia: radio de 24px, superficies
+internas al 12% de blanco, pie al 10% de negro y texto secundario al 60%.
+
+- [problem] El componente fija `const fg = "#ffffff"`: el texto de la tarjeta es siempre blanco,
+  sin calcular contraste. Con un color de marca claro, el contenido queda ilegible. Es justo lo que
+  resuelve el motor de color de la sección 3, y es la razón de que ese motor exista.
+
 **Degradación.** Al bajar de Pro a Lite, el acabado se sustituye por el color que eligió el negocio,
 o por `#FF6B35` si no eligió ninguno. Ninguna tarjeta se queda sin identidad.

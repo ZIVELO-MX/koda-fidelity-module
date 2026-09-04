@@ -56,3 +56,40 @@ test("todo destino de navegación llega a 44px de alto", async ({ page }) => {
     if (caja) expect(caja.height, await boton.innerText()).toBeGreaterThanOrEqual(44)
   }
 })
+
+test("el conmutador de facturación cambia los precios", async ({ page }) => {
+  await page.goto(pathToFileURL(resolve("docs/design/prototipo-alta.html")).href)
+  for (const paso of ["datos", "tarjeta", "club", "atribucion", "paywall"]) {
+    await page.getByTestId(`continuar-${paso}`).click()
+  }
+  await expect(page.locator('[data-precio="lite"]')).toHaveText("$1,490")
+  await page.getByTestId("mensual").click()
+  await expect(page.locator('[data-precio="lite"]')).toHaveText("$149")
+  await expect(page.locator('[data-precio="pro"]')).toHaveText("$299")
+  await expect(page.getByTestId("mensual")).toHaveAttribute("aria-pressed", "true")
+  await page.getByTestId("anual").click()
+  await expect(page.locator('[data-precio="lite"]')).toHaveText("$1,490")
+  await expect(page.getByTestId("anual")).toHaveAttribute("aria-pressed", "true")
+})
+
+test("los selectores cambian la categoría y la piel de la tarjeta", async ({ page }) => {
+  await page.goto(pathToFileURL(resolve("docs/design/prototipo-alta.html")).href)
+  await page.getByTestId("continuar-datos").click()
+  await expect(page.getByTestId("categoria").locator("option")).toHaveCount(13)
+  await page.getByTestId("continuar-tarjeta").click()
+  await expect(page.getByTestId("tema").locator("option")).toHaveCount(5)
+
+  const tarjeta = page.locator("[data-tarjeta]").first()
+  const cafeteria = await tarjeta.evaluate((el) => getComputedStyle(el).backgroundColor)
+
+  await page.getByTestId("continuar-club").click()
+  await page.getByTestId("continuar-atribucion").click()
+  await page.getByTestId("continuar-paywall").click()
+  await page.getByTestId("salir-paywall").click()
+  await page.getByTestId("reiniciar").click()
+  await page.getByTestId("continuar-datos").click()
+  await page.getByTestId("categoria").selectOption({ label: "Heladería" })
+  const heladeria = await tarjeta.evaluate((el) => getComputedStyle(el).backgroundColor)
+  expect(heladeria).not.toBe(cafeteria)
+  expect(heladeria).toBe("rgb(219, 39, 119)")
+})

@@ -65,7 +65,7 @@
      cabecera con chip de ícono, fila de miembro, progreso, sellos en cinco por dos,
      fila de premio, QR centrado y pie con vigencia. Piel Lite: acento sólido de la
      categoría más su patrón de íconos. */
-  .kcard { position:relative; width:100%; max-width:340px; margin:0 auto; border-radius:28px; overflow:hidden; background:#6f4e37; color:#fff; box-shadow:var(--shadow-md); }
+  .kcard { position:relative; width:100%; max-width:340px; margin:0 auto; border-radius:24px; overflow:hidden; background:#6f4e37; color:#fff; box-shadow:var(--shadow-md); }
   .kcard .patron { position:absolute; inset:0; background-repeat:repeat; background-size:150px 150px; opacity:.22; }
   .kcard > *:not(.patron) { position:relative; }
   .khead { padding:20px 20px 10px; }
@@ -73,7 +73,7 @@
   .kicon svg { width:24px; height:24px; }
   .ketiqueta { font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:rgba(255,255,255,.75); margin:0; }
   .knegocio { font-size:18px; font-weight:700; letter-spacing:-0.01em; margin:2px 0 0; color:#fff; }
-  .kmember { border-radius:13px; padding:10px 14px; background:rgba(255,255,255,.16); }
+  .kmember { border-radius:12px; padding:10px 14px; background:rgba(255,255,255,.12); }
   .kmember p { margin:0; }
   .kmember .rol { font-size:11px; color:rgba(255,255,255,.7); }
   .kmember .nombre { font-weight:600; color:#fff; }
@@ -88,7 +88,7 @@
   .kreward .kmember { text-align:center; }
   .kqrwrap { display:flex; justify-content:center; padding-bottom:12px; }
   .kqr { border-radius:13px; padding:9px; background:rgba(255,255,255,.97); display:grid; grid-template-columns:repeat(5,9px); grid-template-rows:repeat(5,9px); gap:2px; }
-  .kfoot { display:flex; justify-content:space-between; padding:11px 20px; font-size:11px; background:rgba(0,0,0,.14); color:rgba(255,255,255,.72); }
+  .kfoot { display:flex; justify-content:space-between; padding:11px 20px; font-size:11px; background:rgba(0,0,0,.10); color:rgba(255,255,255,.60); }
   .kcard.apagada { opacity:.55; }
   .planes { display:flex; flex-direction:column; gap:10px; }
   .plan { border:1px solid var(--border-strong); border-radius:var(--r-xl); padding:14px; background:var(--surface); }
@@ -133,10 +133,7 @@
     <label for="negocio">Nombre del negocio</label>
     <input id="negocio" value="Café Aurora">
     <label for="categoria">Categoría</label>
-    <select id="categoria">
-      <option>Cafetería</option><option>Panadería</option><option>Taquería</option>
-      <option>Barbería</option><option>Gimnasio</option><option>Heladería</option>
-    </select>
+    <select id="categoria" data-testid="categoria"></select>
     <p class="ayuda">La categoría define el patrón de tu tarjeta. Puedes cambiarla luego.</p>
     <div class="acciones">
       <button class="primario" data-testid="continuar-tarjeta" data-ir="tarjeta">Continuar</button>
@@ -151,11 +148,7 @@
     <label for="sellos">Sellos necesarios</label>
     <select id="sellos"><option>8</option><option selected>10</option><option>12</option></select>
     <label for="tema">Tema</label>
-    <select id="tema">
-      <option>Color de tu marca, incluido en Lite</option>
-      <option>Gradiente vivo, Pro</option>
-      <option>Foil holográfico, Pro</option>
-    </select>
+    <select id="tema" data-testid="tema"></select>
     <p class="ayuda">Puedes elegir un tema Pro ahora aunque todavía no tengas plan.</p>
     <div class="acciones">
       <button class="primario" data-testid="continuar-club" data-ir="club">Continuar</button>
@@ -188,20 +181,20 @@
 
   <section data-testid="pantalla-paywall" hidden>
     <h1>Elige tu plan</h1>
-    <div class="conmutador">
-      <button class="inactivo" data-testid="mensual">Mensual</button>
-      <button class="activo" data-testid="anual">Anual, 2 meses gratis</button>
+    <div class="conmutador" role="group" aria-label="Periodo de facturación">
+      <button class="inactivo" data-testid="mensual" data-facturacion="mensual" aria-pressed="false">Mensual</button>
+      <button class="activo" data-testid="anual" data-facturacion="anual" aria-pressed="true">Anual, 2 meses gratis</button>
     </div>
     <div class="planes">
       <div class="plan destacado">
-        <div class="fila"><strong>Lite</strong><span class="precio">$1,490</span></div>
-        <p class="ayuda">al año, equivale a $124 al mes</p>
+        <div class="fila"><strong>Lite</strong><span class="precio" data-precio="lite">$1,490</span></div>
+        <p class="ayuda" data-nota="lite">al año, equivale a $124 al mes</p>
         <div class="regalo">Incluye un mes con todo Pro</div>
         <button class="primario" data-testid="contratar-lite" data-ir="regreso">Contratar Lite</button>
       </div>
       <div class="plan atenuado">
-        <div class="fila"><strong>Pro</strong><span class="precio">$2,990</span></div>
-        <p class="ayuda">al año. Disponible al terminar tu primer mes.</p>
+        <div class="fila"><strong>Pro</strong><span class="precio" data-precio="pro">$2,990</span></div>
+        <p class="ayuda" data-nota="pro">al año. Disponible al terminar tu primer mes.</p>
       </div>
     </div>
     <div class="acciones">
@@ -215,13 +208,14 @@
     <p class="aviso" style="margin-top:14px">Tu tarjeta está lista, pero todavía no publicada</p>
     <p class="ayuda">Tu negocio y tu tarjeta siguen guardados. No generamos su código QR hasta que la actives.</p>
     <div class="acciones">
-      <button class="primario" data-testid="activar" data-ir="paywall">Activar con Lite, $149</button>
+      <button class="primario" data-testid="activar" data-ir="paywall">Activar con Lite, <span data-activar>$1,490</span></button>
       <button class="texto" data-testid="reiniciar" data-ir="intro">Volver al inicio del prototipo</button>
     </div>
   </section>
 
 </div>
 
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <script>
   var ORDEN = ["intro", "datos", "tarjeta", "club", "atribucion", "paywall", "regreso"];
 
@@ -246,25 +240,72 @@
   });
 
 
-  // Ícono de la categoría, de Lucide, el mismo set que usa la referencia de temas.
-  var COFFEE = '<path d="M10 2v2"/><path d="M14 2v2"/><path d="M6 2v2"/>' +
-    '<path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1"/>';
+  // Las trece categorías con su acento y su juego de íconos, tomadas de
+  // loyalty-card-themes.dc.html sin cambiarlas.
+  var CATEGORIAS = [
+    { key:"Panadería", acento:"#b45309", hdr:"croissant", icons:["croissant","wheat","cookie","cake"] },
+    { key:"Taquería", acento:"#dc2626", hdr:"flame", icons:["flame","citrus","leaf","wheat"] },
+    { key:"Cafetería", acento:"#6f4e37", hdr:"coffee", icons:["coffee","cookie","croissant","milk"] },
+    { key:"Hamburguesas", acento:"#a16207", hdr:"sandwich", icons:["sandwich","cup-soda","flame","utensils-crossed"] },
+    { key:"Pizzería", acento:"#b91c1c", hdr:"pizza", icons:["pizza","flame","leaf","utensils-crossed"] },
+    { key:"Barbería", acento:"#334155", hdr:"scissors", icons:["scissors","paintbrush","sparkles","star"] },
+    { key:"Salón de Belleza", acento:"#be185d", hdr:"sparkles", icons:["sparkles","flower-2","star","droplet"] },
+    { key:"Gimnasio", acento:"#0f766e", hdr:"dumbbell", icons:["dumbbell","timer","heart","droplet"] },
+    { key:"Fútbol", acento:"#15803d", hdr:"trophy", icons:["trophy","target","medal","flag"] },
+    { key:"Sushi", acento:"#0e7490", hdr:"fish", icons:["fish","utensils-crossed","leaf","droplet"] },
+    { key:"Veterinaria", acento:"#7c3aed", hdr:"paw-print", icons:["paw-print","bone","heart","stethoscope"] },
+    { key:"Farmacia", acento:"#0369a1", hdr:"cross", icons:["pill","cross","syringe","thermometer"] },
+    { key:"Heladería", acento:"#db2777", hdr:"ice-cream-cone", icons:["ice-cream-cone","ice-cream-bowl","cherry","candy"] }
+  ];
 
-  function svgIcono(color) {
-    return '<svg viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="2" ' +
-      'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + COFFEE + '</svg>';
+  // Lite es el acento sólido. Los cuatro Pro son los acabados de la referencia.
+  var PIELES = [
+    { key:"lite", nombre:"Color de tu marca, incluido en Lite", fondo:function (a) { return a; } },
+    { key:"gradiente", nombre:"Gradiente vivo, Pro", fondo:function (a) { return "linear-gradient(135deg,#fb923c,#f97316 38%," + a + ")"; } },
+    { key:"foil", nombre:"Foil holográfico, Pro", fondo:function () { return "#141212"; } },
+    { key:"cinetico", nombre:"Patrón cinético, Pro", fondo:function (a) { return "linear-gradient(160deg," + a + ",#9a3412 70%)"; } },
+    { key:"vidrio", nombre:"Vidrio premium, Pro", fondo:function () { return "#1a1a1a"; } }
+  ];
+
+  // Respaldo cuando Lucide no está disponible, para que la verificación sin red siga sirviendo.
+  var RESPALDO = '<path d="M10 2v2"/><path d="M14 2v2"/><path d="M6 2v2"/>' +
+    '<path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1"/>';
+  var CACHE = {};
+
+  function interiorIcono(nombre) {
+    if (CACHE[nombre]) return CACHE[nombre];
+    var dentro = RESPALDO;
+    if (window.lucide && window.lucide.createIcons) {
+      var caja = document.createElement("div");
+      caja.style.cssText = "position:absolute;left:-9999px";
+      caja.innerHTML = '<i data-lucide="' + nombre + '"></i>';
+      document.body.appendChild(caja);
+      try {
+        window.lucide.createIcons();
+        var svg = caja.querySelector("svg");
+        if (svg && svg.innerHTML.trim()) dentro = svg.innerHTML;
+      } catch (e) { /* se queda el respaldo */ }
+      caja.remove();
+    }
+    CACHE[nombre] = dentro;
+    return dentro;
   }
 
-  // Patrón sin costura con el ícono del giro, igual que el tile() de la referencia.
-  function patronURI() {
+  function svgIcono(nombre, color) {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="2" ' +
+      'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + interiorIcono(nombre) + "</svg>";
+  }
+
+  function patronURI(cat) {
     var piezas = [
       { x:40, y:36, s:30, r:-16 }, { x:106, y:54, s:22, r:22 },
       { x:62, y:98, s:27, r:10 }, { x:120, y:116, s:19, r:-28 },
       { x:24, y:122, s:17, r:38 }, { x:128, y:24, s:16, r:8 }
-    ].map(function (q) {
+    ].map(function (q, n) {
       var e = q.s / 24;
       return '<g transform="translate(' + q.x + ',' + q.y + ') rotate(' + q.r + ') scale(' + e +
-        ') translate(-12,-12)" stroke-width="' + (1.7 / e).toFixed(2) + '">' + COFFEE + '</g>';
+        ') translate(-12,-12)" stroke-width="' + (1.7 / e).toFixed(2) + '">' +
+        interiorIcono(cat.icons[n % cat.icons.length]) + "</g>";
     }).join("");
     var svg = "<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'>" +
       "<g fill='none' stroke='#ffffff' stroke-linecap='round' stroke-linejoin='round'>" + piezas + "</g></svg>";
@@ -272,9 +313,12 @@
   }
 
   var QR = [1,0,1,1,0, 0,1,0,0,1, 1,0,1,0,1, 1,1,0,1,0, 0,1,1,0,1];
+  var estado = { categoria: CATEGORIAS[2], piel: PIELES[0] };
 
   function construirTarjetas() {
-    var uri = patronURI();
+    var cat = estado.categoria;
+    var uri = patronURI(cat);
+    var fondo = estado.piel.fondo(cat.acento);
     document.querySelectorAll("[data-tarjeta]").forEach(function (host) {
       var llenos = parseInt(host.getAttribute("data-llenos") || "0", 10);
       var conQR = host.getAttribute("data-qr") === "1";
@@ -282,20 +326,22 @@
       var sellos = "";
       for (var k = 0; k < 10; k++) {
         sellos += k < llenos
-          ? '<div class="kstamp on">' + svgIcono("currentColor") + "</div>"
+          ? '<div class="kstamp on">' + svgIcono(cat.hdr, "currentColor") + "</div>"
           : '<div class="kstamp"></div>';
       }
       var qr = conQR
         ? '<div class="kqrwrap"><div class="kqr">' + QR.map(function (v) {
-            return '<div style="background:' + (v ? "#6f4e37" : "transparent") + '"></div>';
+            return '<div style="background:' + (v ? cat.acento : "transparent") + '"></div>';
           }).join("") + "</div></div>"
         : "";
       host.className = "kcard" + (apagada ? " apagada" : "");
+      host.style.background = fondo;
+      host.style.setProperty("--acento", cat.acento);
       host.innerHTML =
         '<div class="patron" style="background-image:url(&quot;' + uri + '&quot;)"></div>' +
         '<div class="khead">' +
           '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">' +
-            '<div class="kicon">' + svgIcono("#fff") + "</div>" +
+            '<div class="kicon">' + svgIcono(cat.hdr, "#fff") + "</div>" +
             '<div><p class="ketiqueta">Tarjeta de lealtad</p><p class="knegocio">Café Aurora</p></div>' +
           "</div>" +
           '<div class="kmember"><p class="rol">Miembro</p><p class="nombre">María González</p></div>' +
@@ -307,10 +353,74 @@
         '<div class="kreward"><div class="kmember"><p class="rol">Premio</p><p class="nombre">Un café gratis</p></div></div>' +
         qr +
         '<div class="kfoot"><span>Vence: 31 dic 2026</span><span>Con tecnología de Koda</span></div>';
+      host.querySelectorAll(".kstamp.on").forEach(function (e) { e.style.color = cat.acento; });
     });
   }
 
+  function poblarSelectores() {
+    var sc = document.getElementById("categoria");
+    if (sc) {
+      sc.innerHTML = CATEGORIAS.map(function (c, n) {
+        return '<option value="' + n + '"' + (n === 2 ? " selected" : "") + ">" + c.key + "</option>";
+      }).join("");
+      sc.addEventListener("change", function () {
+        estado.categoria = CATEGORIAS[parseInt(sc.value, 10)];
+        construirTarjetas();
+      });
+    }
+    var st = document.getElementById("tema");
+    if (st) {
+      st.innerHTML = PIELES.map(function (t, n) {
+        return '<option value="' + n + '">' + t.nombre + "</option>";
+      }).join("");
+      st.addEventListener("change", function () {
+        estado.piel = PIELES[parseInt(st.value, 10)];
+        construirTarjetas();
+      });
+    }
+  }
+
+  poblarSelectores();
   construirTarjetas();
+
+  // Conmutador de facturación. El anual llega preseleccionado porque es el
+  // recomendado, y equivale a doce meses con dos de descuento.
+  var TARIFAS = {
+    mensual: {
+      lite: { precio: "$149", nota: "al mes" },
+      pro:  { precio: "$299", nota: "al mes. Disponible al terminar tu primer mes." },
+      activar: "$149"
+    },
+    anual: {
+      lite: { precio: "$1,490", nota: "al año, equivale a $124 al mes" },
+      pro:  { precio: "$2,990", nota: "al año. Disponible al terminar tu primer mes." },
+      activar: "$1,490"
+    }
+  };
+
+  function fijarFacturacion(modo) {
+    var t = TARIFAS[modo];
+    if (!t) return;
+    document.querySelector('[data-precio="lite"]').textContent = t.lite.precio;
+    document.querySelector('[data-nota="lite"]').textContent = t.lite.nota;
+    document.querySelector('[data-precio="pro"]').textContent = t.pro.precio;
+    document.querySelector('[data-nota="pro"]').textContent = t.pro.nota;
+    var activar = document.querySelector("[data-activar]");
+    if (activar) activar.textContent = t.activar;
+    document.querySelectorAll("[data-facturacion]").forEach(function (b) {
+      var elegido = b.getAttribute("data-facturacion") === modo;
+      b.className = elegido ? "activo" : "inactivo";
+      b.setAttribute("aria-pressed", elegido ? "true" : "false");
+    });
+  }
+
+  document.addEventListener("click", function (evento) {
+    var boton = evento.target.closest("[data-facturacion]");
+    if (boton) fijarFacturacion(boton.getAttribute("data-facturacion"));
+  });
+
+  fijarFacturacion("anual");
+
 
   mostrar("intro");
 </script>
