@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { getBusinessFromSession, handleApiError, ValidationError, requireRole } from "@/lib/api-utils"
 import { createAdminClient } from "@/lib/supabase-admin"
 import { createInvitationToken, enforceRateLimit, normalizeEmail } from "@/lib/auth-security"
+import { sendSecureInviteEmail } from "@/lib/invite-email"
 
 export async function GET() {
   try {
@@ -53,6 +54,7 @@ export async function POST(request: NextRequest) {
     const memberLimit = parseInt(process.env.TEAM_MEMBER_LIMIT ?? "3", 10)
     await enforceRateLimit("invitation-business", business.id, 10, 60 * 60 * 1000)
     await enforceRateLimit("invitation-recipient", email, 3, 60 * 60 * 1000)
+    await enforceRateLimit("invitation-ip", request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown", 20, 60 * 60 * 1000)
     const memberCount = await prisma.user.count({ where: { businessId: business.id } })
     if (memberCount >= memberLimit) {
       throw new ValidationError(`Team member limit of ${memberLimit} reached`)
@@ -71,17 +73,21 @@ export async function POST(request: NextRequest) {
     })
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
     const supabase = createAdminClient()
+    const callbackTarget = `${baseUrl}/auth/callback?next=${encodeURIComponent(`/invite?token=${token}`)}`
     const { error: authError } = await supabase.auth.admin.inviteUserByEmail(email, {
-      redirectTo: `${baseUrl}/invite?token=${encodeURIComponent(token)}`,
+      redirectTo: callbackTarget,
       data: { name: name.trim() },
     })
 
     if (authError) {
       if (authError.message.includes("already been registered")) {
-        throw new ValidationError("A user with that email already exists in auth")
+        const { data: link, error: linkError } = await supabase.auth.admin.generateLink({ type: "magiclink", email, options: { redirectTo: callbackTarget } })
+        if (linkError || !link.properties?.action_link) throw new Error(linkError?.message || "Could not create invitation link")
+        await sendSecureInviteEmail({ email, name: name.trim(), businessName: business.name, url: link.properties.action_link })
+      } else {
+        await prisma.teamInvitation.update({ where: { id: invitation.id }, data: { status: "delivery_failed" } })
+        throw new Error(authError.message)
       }
-      await prisma.teamInvitation.update({ where: { id: invitation.id }, data: { status: "delivery_failed" } })
-      throw new Error(authError.message)
     }
     return NextResponse.json({ invitation }, { status: 202 })
   } catch (error) {

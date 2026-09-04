@@ -9,6 +9,7 @@ import { getFriendlySendError } from "@/lib/auth-errors"
 import { createClient } from "@/lib/supabase-server"
 import { enforceRateLimit, normalizeEmail } from "@/lib/auth-security"
 import { provisionSignup } from "@/lib/signup-provisioning"
+import { headers } from "next/headers"
 
 export type AuthResult = { error?: string; success?: true; isBusiness?: boolean }
 
@@ -19,6 +20,9 @@ export async function login(_prev: AuthResult, formData: FormData): Promise<Auth
   if (!email || !password) return { error: "Correo y contraseña requeridos" }
 
   try {
+    const requestHeaders = await headers()
+    await enforceRateLimit("login-identity", normalizeEmail(email), 10, 15 * 60 * 1000)
+    await enforceRateLimit("login-ip", requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown", 30, 15 * 60 * 1000)
     await authService.signIn(email, password)
   } catch (err) {
     console.error("[login] Error signing in:", err)
@@ -85,6 +89,9 @@ export async function signup(_prev: AuthResult, formData: FormData): Promise<Aut
   if (!email || !password || !name) return { error: "Todos los campos son requeridos" }
 
   const normalizedEmail = normalizeEmail(email)
+  const requestHeaders = await headers()
+  await enforceRateLimit("signup-identity", normalizedEmail, 3, 60 * 60 * 1000)
+  await enforceRateLimit("signup-ip", requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown", 5, 60 * 60 * 1000)
   await prisma.signupIntent.upsert({ where: { email: normalizedEmail }, create: { email: normalizedEmail, name: name.trim() }, update: { name: name.trim(), status: "pending" } })
   const supabase = await createClient()
   const { data, error } = await supabase.auth.signUp({ email: normalizedEmail, password, options: { data: { name: name.trim() } } })
@@ -102,6 +109,8 @@ export async function signup(_prev: AuthResult, formData: FormData): Promise<Aut
 export async function sendLoginMagicLink(email: string): Promise<AuthResult> {
   try {
     await enforceRateLimit("magic-link", normalizeEmail(email), 3, 15 * 60 * 1000)
+    const requestHeaders = await headers()
+    await enforceRateLimit("magic-link-ip", requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown", 20, 15 * 60 * 1000)
     await authService.sendMagicLink(email, {
       redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/dashboard/my-cards`,
     })
@@ -121,6 +130,9 @@ export async function sendPasswordReset(_prev: AuthResult, formData: FormData): 
   const redirectTo = `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/auth/callback?next=/dashboard/update-password`
 
   try {
+    const requestHeaders = await headers()
+    await enforceRateLimit("password-reset", normalizeEmail(email), 3, 15 * 60 * 1000)
+    await enforceRateLimit("password-reset-ip", requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown", 20, 15 * 60 * 1000)
     await authService.sendPasswordResetEmail(email.trim(), { redirectTo })
     return { success: true }
   } catch (err) {
