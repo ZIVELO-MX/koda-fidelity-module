@@ -72,9 +72,19 @@
     background-size:16px 16px;
   }
   .tarjeta > * { position:relative; }
-  .sellos { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; }
-  .sello { aspect-ratio:1; border-radius:50%; border:1.5px dashed rgba(255,255,255,.55); }
+  /* Rejilla de cinco por dos, con la proporción de la referencia de temas:
+     cuadrados redondeados, no discos, y el sello lleno marca su centro. */
+  .sellos { display:grid; grid-template-columns:repeat(5,1fr); gap:7px; max-width:280px; }
+  .sello {
+    aspect-ratio:1; border-radius:11px; border:1.5px dashed rgba(255,255,255,.45);
+    display:flex; align-items:center; justify-content:center;
+  }
   .sello.on { background:#fff; border-style:solid; border-color:#fff; }
+  .sello.on::after {
+    content:""; width:38%; height:38%; border-radius:3px;
+    background:currentColor; opacity:.85;
+  }
+  .tarjeta .sello.on { color:#6f4e37; }
   .planes { display:flex; flex-direction:column; gap:10px; }
   .plan { border:1px solid var(--border-strong); border-radius:var(--r-xl); padding:14px; background:var(--surface); }
   .plan.destacado { border-color:var(--brand); }
