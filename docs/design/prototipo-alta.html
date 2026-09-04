@@ -67,7 +67,7 @@
      categoría más su patrón de íconos. */
   .kcard { position:relative; width:100%; max-width:340px; margin:0 auto; border-radius:24px; overflow:hidden; background:#6f4e37; color:#fff; box-shadow:var(--shadow-md); }
   .kcard .patron { position:absolute; inset:0; background-repeat:repeat; background-size:150px 150px; opacity:.22; }
-  .kcard > *:not(.patron) { position:relative; }
+  .kcard > .contenido { position:relative; }
   .khead { padding:20px 20px 10px; }
   .kicon { width:52px; height:52px; border-radius:16px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.22); flex-shrink:0; }
   .kicon svg { width:24px; height:24px; }
@@ -90,6 +90,33 @@
   .kqr { border-radius:13px; padding:9px; background:rgba(255,255,255,.97); display:grid; grid-template-columns:repeat(5,9px); grid-template-rows:repeat(5,9px); gap:2px; }
   .kfoot { display:flex; justify-content:space-between; padding:11px 20px; font-size:11px; background:rgba(0,0,0,.10); color:rgba(255,255,255,.60); }
   .kcard.apagada { opacity:.55; }
+
+  /* Acabados Pro. Las animaciones son las de loyalty-card-themes.dc.html. */
+  @keyframes kf-hue { 0%,100% { filter:hue-rotate(0deg); } 50% { filter:hue-rotate(18deg); } }
+  @keyframes kf-shimmer { 0% { transform:translateX(-140%) rotate(12deg); } 100% { transform:translateX(140%) rotate(12deg); } }
+  @keyframes kf-float1 { 0%,100% { transform:translate(0,0) scale(1); } 50% { transform:translate(18px,-14px) scale(1.08); } }
+  @keyframes kf-float2 { 0%,100% { transform:translate(0,0) scale(1); } 50% { transform:translate(-16px,12px) scale(1.05); } }
+  @keyframes kf-scan { 0% { background-position:0 0; } 100% { background-position:0 64px; } }
+  .capa { position:absolute; inset:0; pointer-events:none; }
+  .kcard.piel-gradiente { animation:kf-hue 9s ease-in-out infinite; }
+  .brillo { position:absolute; top:0; left:0; width:60%; height:100%; pointer-events:none;
+    background:linear-gradient(75deg,transparent 40%,rgba(255,255,255,.22) 50%,transparent 60%);
+    animation:kf-shimmer 4.5s ease-in-out infinite; }
+  .piel-foil .brillo { width:55%; mix-blend-mode:overlay; animation-duration:3.2s;
+    background:linear-gradient(75deg,transparent 30%,rgba(255,255,255,.5) 48%,rgba(255,196,150,.3) 52%,transparent 70%); }
+  .globo { position:absolute; border-radius:50%; pointer-events:none; }
+  .piel-cinetico .trama { background-image:radial-gradient(rgba(255,255,255,.14) 2px,transparent 2.5px);
+    background-size:22px 22px; animation:kf-scan 6s linear infinite; }
+  .piel-vidrio .contenido { backdrop-filter:blur(22px); background:rgba(20,20,20,.38); }
+  /* Miniaturas para elegir acabado */
+  .temas { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+  .tema { padding:0; border:2px solid transparent; border-radius:12px; background:none; min-height:44px; cursor:pointer; }
+  .tema[aria-pressed="true"] { border-color:var(--brand); }
+  .tema .muestra { display:block; height:46px; border-radius:9px; position:relative; overflow:hidden; isolation:isolate; }
+  .tema .pie { display:block; font-size:10px; font-weight:600; color:var(--ink-2); margin-top:5px; line-height:1.2; }
+  @media (prefers-reduced-motion: reduce) {
+    .kcard.piel-gradiente, .brillo, .globo, .piel-cinetico .trama { animation:none !important; }
+  }
   .planes { display:flex; flex-direction:column; gap:10px; }
   .plan { border:1px solid var(--border-strong); border-radius:var(--r-xl); padding:14px; background:var(--surface); }
   .plan.destacado { border-color:var(--brand); }
@@ -147,9 +174,11 @@
     <input id="recompensa" value="Un café gratis">
     <label for="sellos">Sellos necesarios</label>
     <select id="sellos"><option>8</option><option selected>10</option><option>12</option></select>
-    <label for="tema">Tema</label>
-    <select id="tema" data-testid="tema"></select>
-    <p class="ayuda">Puedes elegir un tema Pro ahora aunque todavía no tengas plan.</p>
+    <label id="etiqueta-tema">Tema</label>
+    <div class="temas" id="temas" role="group" aria-labelledby="etiqueta-tema"></div>
+    <p class="ayuda">Puedes elegir un tema Pro ahora aunque todavía no tengas plan. Los cuatro Pro se mueven; con reduced motion se quedan quietos.</p>
+    <div data-tarjeta data-llenos="3" style="margin-top:16px"></div>
+    <p class="ayuda">Vista previa en vivo</p>
     <div class="acciones">
       <button class="primario" data-testid="continuar-club" data-ir="club">Continuar</button>
     </div>
@@ -259,13 +288,47 @@
   ];
 
   // Lite es el acento sólido. Los cuatro Pro son los acabados de la referencia.
+  // Cinco acabados. Lite es el acento sólido; los cuatro Pro añaden capas y movimiento.
   var PIELES = [
-    { key:"lite", nombre:"Color de tu marca, incluido en Lite", fondo:function (a) { return a; } },
-    { key:"gradiente", nombre:"Gradiente vivo, Pro", fondo:function (a) { return "linear-gradient(135deg,#fb923c,#f97316 38%," + a + ")"; } },
-    { key:"foil", nombre:"Foil holográfico, Pro", fondo:function () { return "#141212"; } },
-    { key:"cinetico", nombre:"Patrón cinético, Pro", fondo:function (a) { return "linear-gradient(160deg," + a + ",#9a3412 70%)"; } },
-    { key:"vidrio", nombre:"Vidrio premium, Pro", fondo:function () { return "#1a1a1a"; } }
+    { key:"lite", nombre:"Color de tu marca", pro:false,
+      fondo:function (a) { return a; }, capas:function () { return ""; } },
+    { key:"gradiente", nombre:"Gradiente vivo", pro:true,
+      fondo:function (a) { return "linear-gradient(135deg," + aclarar(a, .35) + "," + a + " 38%," + oscurecer(a, .30) + ")"; },
+      capas:function () {
+        return '<div class="globo" style="top:-90px;right:-60px;width:260px;height:260px;background:radial-gradient(circle,rgba(255,255,255,.35),transparent 70%);animation:kf-float1 7s ease-in-out infinite"></div>' +
+               '<div class="globo" style="bottom:-70px;left:-50px;width:220px;height:220px;background:radial-gradient(circle,rgba(255,214,180,.35),transparent 70%);animation:kf-float2 8s ease-in-out infinite"></div>' +
+               '<div class="brillo"></div>';
+      } },
+    { key:"foil", nombre:"Foil holográfico", pro:true,
+      fondo:function () { return "#141212"; },
+      capas:function (a) {
+        return '<div class="capa" style="background:conic-gradient(from 200deg at 30% 20%,' + a + '99,#ffc47840,#783cff33,' + a + '99);opacity:.55;mix-blend-mode:screen"></div>' +
+               '<div class="brillo"></div>';
+      } },
+    { key:"cinetico", nombre:"Patrón cinético", pro:true,
+      fondo:function (a) { return a; },
+      capas:function (a) {
+        return '<div class="capa trama"></div>' +
+               '<div class="capa" style="background:linear-gradient(160deg,' + aclarar(a, .15) + 'e6,' + oscurecer(a, .35) + '33 60%)"></div>';
+      } },
+    { key:"vidrio", nombre:"Vidrio premium", pro:true,
+      fondo:function () { return "#1a1a1a"; },
+      capas:function (a) {
+        return '<div class="globo" style="top:-60px;left:-40px;width:220px;height:220px;background:' + a + ';filter:blur(50px);opacity:.65;animation:kf-float1 8s ease-in-out infinite"></div>' +
+               '<div class="globo" style="bottom:-70px;right:-50px;width:240px;height:240px;background:#7c3aed;filter:blur(55px);opacity:.5;animation:kf-float2 9s ease-in-out infinite"></div>';
+      } }
   ];
+
+  function mezcla(hex, destino, p) {
+    var n = hex.replace("#", "");
+    var c = [0, 2, 4].map(function (k) {
+      var v = parseInt(n.slice(k, k + 2), 16);
+      return Math.round(v + (destino - v) * p).toString(16).padStart(2, "0");
+    });
+    return "#" + c.join("");
+  }
+  function aclarar(hex, p) { return mezcla(hex, 255, p); }
+  function oscurecer(hex, p) { return mezcla(hex, 0, p); }
 
   // Respaldo cuando Lucide no está disponible, para que la verificación sin red siga sirviendo.
   var RESPALDO = '<path d="M10 2v2"/><path d="M14 2v2"/><path d="M6 2v2"/>' +
@@ -334,11 +397,13 @@
             return '<div style="background:' + (v ? cat.acento : "transparent") + '"></div>';
           }).join("") + "</div></div>"
         : "";
-      host.className = "kcard" + (apagada ? " apagada" : "");
+      host.className = "kcard piel-" + estado.piel.key + (apagada ? " apagada" : "");
       host.style.background = fondo;
       host.style.setProperty("--acento", cat.acento);
       host.innerHTML =
         '<div class="patron" style="background-image:url(&quot;' + uri + '&quot;)"></div>' +
+        estado.piel.capas(cat.acento) +
+        '<div class="contenido">' +
         '<div class="khead">' +
           '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">' +
             '<div class="kicon">' + svgIcono(cat.hdr, "#fff") + "</div>" +
@@ -352,7 +417,8 @@
         "</div>" +
         '<div class="kreward"><div class="kmember"><p class="rol">Premio</p><p class="nombre">Un café gratis</p></div></div>' +
         qr +
-        '<div class="kfoot"><span>Vence: 31 dic 2026</span><span>Con tecnología de Koda</span></div>';
+        '<div class="kfoot"><span>Vence: 31 dic 2026</span><span>Con tecnología de Koda</span></div>' +
+        "</div>";
       host.querySelectorAll(".kstamp.on").forEach(function (e) { e.style.color = cat.acento; });
     });
   }
@@ -365,19 +431,42 @@
       }).join("");
       sc.addEventListener("change", function () {
         estado.categoria = CATEGORIAS[parseInt(sc.value, 10)];
+        pintarMuestras();
         construirTarjetas();
       });
     }
-    var st = document.getElementById("tema");
-    if (st) {
-      st.innerHTML = PIELES.map(function (t, n) {
-        return '<option value="' + n + '">' + t.nombre + "</option>";
+    var ct = document.getElementById("temas");
+    if (ct) {
+      ct.innerHTML = PIELES.map(function (t, n) {
+        var elegido = t.key === estado.piel.key;
+        return '<button class="tema" type="button" data-piel="' + n + '" data-testid="tema-' + t.key +
+          '" aria-pressed="' + elegido + '">' +
+          '<span class="muestra" data-muestra="' + n + '"></span>' +
+          '<span class="pie">' + t.nombre + (t.pro ? " · Pro" : "") + "</span></button>";
       }).join("");
-      st.addEventListener("change", function () {
-        estado.piel = PIELES[parseInt(st.value, 10)];
+      ct.addEventListener("click", function (evento) {
+        var b = evento.target.closest("[data-piel]");
+        if (!b) return;
+        estado.piel = PIELES[parseInt(b.getAttribute("data-piel"), 10)];
+        ct.querySelectorAll("[data-piel]").forEach(function (o) {
+          o.setAttribute("aria-pressed", o === b ? "true" : "false");
+        });
+        pintarMuestras();
         construirTarjetas();
       });
+      pintarMuestras();
     }
+  }
+
+  // Cada miniatura enseña su acabado con el acento de la categoría elegida.
+  function pintarMuestras() {
+    var a = estado.categoria.acento;
+    document.querySelectorAll("[data-muestra]").forEach(function (m) {
+      var t = PIELES[parseInt(m.getAttribute("data-muestra"), 10)];
+      m.style.background = t.fondo(a);
+      m.className = "muestra piel-" + t.key;
+      m.innerHTML = t.capas(a);
+    });
   }
 
   poblarSelectores();

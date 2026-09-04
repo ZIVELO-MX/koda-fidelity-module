@@ -77,7 +77,12 @@ test("los selectores cambian la categoría y la piel de la tarjeta", async ({ pa
   await page.getByTestId("continuar-datos").click()
   await expect(page.getByTestId("categoria").locator("option")).toHaveCount(13)
   await page.getByTestId("continuar-tarjeta").click()
-  await expect(page.getByTestId("tema").locator("option")).toHaveCount(5)
+  await expect(page.locator("#temas .tema")).toHaveCount(5)
+  await expect(page.getByTestId("tema-lite")).toHaveAttribute("aria-pressed", "true")
+  await page.getByTestId("tema-foil").click()
+  await expect(page.getByTestId("tema-foil")).toHaveAttribute("aria-pressed", "true")
+  // El foil es negro en toda categoría, así que se vuelve a Lite para comparar acentos.
+  await page.getByTestId("tema-lite").click()
 
   const tarjeta = page.locator("[data-tarjeta]").first()
   const cafeteria = await tarjeta.evaluate((el) => getComputedStyle(el).backgroundColor)
