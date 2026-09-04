@@ -61,30 +61,35 @@
   .fantasma { background:transparent; color:var(--ink-2); border-color:var(--border-strong); }
   .texto { background:transparent; color:var(--ink-2); border:none; padding:11px 8px; }
   .acciones { display:flex; flex-direction:column; gap:8px; margin-top:20px; }
-  .tarjeta {
-    border-radius:var(--r-xl); padding:16px; color:#fff; min-height:190px;
-    display:flex; flex-direction:column; justify-content:space-between;
-    background:#6f4e37; position:relative; overflow:hidden; box-shadow:var(--shadow-md);
-  }
-  .tarjeta .patron {
-    position:absolute; inset:0;
-    background-image:radial-gradient(rgba(255,255,255,.30) 1.5px, transparent 2px);
-    background-size:16px 16px;
-  }
-  .tarjeta > * { position:relative; }
-  /* Rejilla de cinco por dos, con la proporción de la referencia de temas:
-     cuadrados redondeados, no discos, y el sello lleno marca su centro. */
-  .sellos { display:grid; grid-template-columns:repeat(5,1fr); gap:7px; max-width:280px; }
-  .sello {
-    aspect-ratio:1; border-radius:11px; border:1.5px dashed rgba(255,255,255,.45);
-    display:flex; align-items:center; justify-content:center;
-  }
-  .sello.on { background:#fff; border-style:solid; border-color:#fff; }
-  .sello.on::after {
-    content:""; width:38%; height:38%; border-radius:3px;
-    background:currentColor; opacity:.85;
-  }
-  .tarjeta .sello.on { color:#6f4e37; }
+  /* Anatomía de la tarjeta, tomada de loyalty-card-themes.dc.html sin cambiarla:
+     cabecera con chip de ícono, fila de miembro, progreso, sellos en cinco por dos,
+     fila de premio, QR centrado y pie con vigencia. Piel Lite: acento sólido de la
+     categoría más su patrón de íconos. */
+  .kcard { position:relative; width:100%; max-width:340px; margin:0 auto; border-radius:28px; overflow:hidden; background:#6f4e37; color:#fff; box-shadow:var(--shadow-md); }
+  .kcard .patron { position:absolute; inset:0; background-repeat:repeat; background-size:150px 150px; opacity:.22; }
+  .kcard > *:not(.patron) { position:relative; }
+  .khead { padding:20px 20px 10px; }
+  .kicon { width:52px; height:52px; border-radius:16px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.22); flex-shrink:0; }
+  .kicon svg { width:24px; height:24px; }
+  .ketiqueta { font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:rgba(255,255,255,.75); margin:0; }
+  .knegocio { font-size:18px; font-weight:700; letter-spacing:-0.01em; margin:2px 0 0; color:#fff; }
+  .kmember { border-radius:13px; padding:10px 14px; background:rgba(255,255,255,.16); }
+  .kmember p { margin:0; }
+  .kmember .rol { font-size:11px; color:rgba(255,255,255,.7); }
+  .kmember .nombre { font-weight:600; color:#fff; }
+  .kstamps { padding:0 20px 12px; }
+  .kprogreso { display:flex; justify-content:space-between; margin-bottom:10px; font-size:13.5px; font-weight:600; color:#fff; }
+  .kprogreso .cuenta { font-family:var(--mono); font-variant-numeric:tabular-nums; color:rgba(255,255,255,.8); }
+  .kgrid { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+  .kstamp { aspect-ratio:1; border-radius:11px; display:flex; align-items:center; justify-content:center; border:2px dashed rgba(255,255,255,.4); }
+  .kstamp.on { background:#fff; border:none; color:#6f4e37; }
+  .kstamp svg { width:55%; height:55%; }
+  .kreward { padding:0 20px 12px; }
+  .kreward .kmember { text-align:center; }
+  .kqrwrap { display:flex; justify-content:center; padding-bottom:12px; }
+  .kqr { border-radius:13px; padding:9px; background:rgba(255,255,255,.97); display:grid; grid-template-columns:repeat(5,9px); grid-template-rows:repeat(5,9px); gap:2px; }
+  .kfoot { display:flex; justify-content:space-between; padding:11px 20px; font-size:11px; background:rgba(0,0,0,.14); color:rgba(255,255,255,.72); }
+  .kcard.apagada { opacity:.55; }
   .planes { display:flex; flex-direction:column; gap:10px; }
   .plan { border:1px solid var(--border-strong); border-radius:var(--r-xl); padding:14px; background:var(--surface); }
   .plan.destacado { border-color:var(--brand); }
@@ -116,18 +121,7 @@
   <section data-testid="pantalla-intro">
     <h1>Tu programa de lealtad, listo hoy</h1>
     <p>Tres pantallas para conocerlo. Puedes saltarlas cuando quieras.</p>
-    <div class="tarjeta">
-      <div class="patron"></div>
-      <div>
-        <div class="xs" style="color:rgba(255,255,255,.75)">Tarjeta de lealtad</div>
-        <div style="font-size:17px;font-weight:700">Café Aurora</div>
-      </div>
-      <div class="sellos">
-        <div class="sello on"></div><div class="sello on"></div><div class="sello on"></div>
-        <div class="sello on"></div><div class="sello on"></div><div class="sello on"></div>
-        <div class="sello"></div><div class="sello"></div><div class="sello"></div><div class="sello"></div>
-      </div>
-    </div>
+    <div data-tarjeta data-llenos="6"></div>
     <div class="acciones">
       <button class="primario" data-testid="continuar-datos" data-ir="datos">Continuar</button>
     </div>
@@ -171,21 +165,7 @@
   <section data-testid="pantalla-club" hidden>
     <h1>Club Café Aurora</h1>
     <p>Así lo verán tus clientes.</p>
-    <div class="tarjeta">
-      <div class="patron"></div>
-      <div class="fila">
-        <div>
-          <div class="xs" style="color:rgba(255,255,255,.75)">Café Aurora</div>
-          <div style="font-size:17px;font-weight:700">Un café gratis</div>
-        </div>
-        <div style="width:44px;height:44px;background:#fff;border-radius:var(--r-md)"></div>
-      </div>
-      <div class="sellos">
-        <div class="sello"></div><div class="sello"></div><div class="sello"></div>
-        <div class="sello"></div><div class="sello"></div><div class="sello"></div>
-        <div class="sello"></div><div class="sello"></div><div class="sello"></div><div class="sello"></div>
-      </div>
-    </div>
+    <div data-tarjeta data-llenos="0" data-qr="1"></div>
     <p class="ayuda">Diez sellos por llenar. Tu programa empieza en cuanto lo publiques.</p>
     <div class="acciones">
       <button class="primario" data-testid="continuar-atribucion" data-ir="atribucion">Continuar</button>
@@ -231,15 +211,7 @@
 
   <section data-testid="pantalla-regreso" hidden>
     <h1>Tu tarjeta te espera</h1>
-    <div class="tarjeta" style="opacity:.55">
-      <div class="patron"></div>
-      <div style="font-size:17px;font-weight:700">Un café gratis</div>
-      <div class="sellos">
-        <div class="sello"></div><div class="sello"></div><div class="sello"></div>
-        <div class="sello"></div><div class="sello"></div><div class="sello"></div>
-        <div class="sello"></div><div class="sello"></div><div class="sello"></div><div class="sello"></div>
-      </div>
-    </div>
+    <div data-tarjeta data-llenos="0" data-apagada="1"></div>
     <p class="aviso" style="margin-top:14px">Tu tarjeta está lista, pero todavía no publicada</p>
     <p class="ayuda">Tu negocio y tu tarjeta siguen guardados. No generamos su código QR hasta que la actives.</p>
     <div class="acciones">
@@ -272,6 +244,73 @@
     var destino = evento.target.closest("[data-ir]");
     if (destino) mostrar(destino.getAttribute("data-ir"));
   });
+
+
+  // Ícono de la categoría, de Lucide, el mismo set que usa la referencia de temas.
+  var COFFEE = '<path d="M10 2v2"/><path d="M14 2v2"/><path d="M6 2v2"/>' +
+    '<path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1"/>';
+
+  function svgIcono(color) {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="2" ' +
+      'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + COFFEE + '</svg>';
+  }
+
+  // Patrón sin costura con el ícono del giro, igual que el tile() de la referencia.
+  function patronURI() {
+    var piezas = [
+      { x:40, y:36, s:30, r:-16 }, { x:106, y:54, s:22, r:22 },
+      { x:62, y:98, s:27, r:10 }, { x:120, y:116, s:19, r:-28 },
+      { x:24, y:122, s:17, r:38 }, { x:128, y:24, s:16, r:8 }
+    ].map(function (q) {
+      var e = q.s / 24;
+      return '<g transform="translate(' + q.x + ',' + q.y + ') rotate(' + q.r + ') scale(' + e +
+        ') translate(-12,-12)" stroke-width="' + (1.7 / e).toFixed(2) + '">' + COFFEE + '</g>';
+    }).join("");
+    var svg = "<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'>" +
+      "<g fill='none' stroke='#ffffff' stroke-linecap='round' stroke-linejoin='round'>" + piezas + "</g></svg>";
+    return "data:image/svg+xml," + encodeURIComponent(svg);
+  }
+
+  var QR = [1,0,1,1,0, 0,1,0,0,1, 1,0,1,0,1, 1,1,0,1,0, 0,1,1,0,1];
+
+  function construirTarjetas() {
+    var uri = patronURI();
+    document.querySelectorAll("[data-tarjeta]").forEach(function (host) {
+      var llenos = parseInt(host.getAttribute("data-llenos") || "0", 10);
+      var conQR = host.getAttribute("data-qr") === "1";
+      var apagada = host.getAttribute("data-apagada") === "1";
+      var sellos = "";
+      for (var k = 0; k < 10; k++) {
+        sellos += k < llenos
+          ? '<div class="kstamp on">' + svgIcono("currentColor") + "</div>"
+          : '<div class="kstamp"></div>';
+      }
+      var qr = conQR
+        ? '<div class="kqrwrap"><div class="kqr">' + QR.map(function (v) {
+            return '<div style="background:' + (v ? "#6f4e37" : "transparent") + '"></div>';
+          }).join("") + "</div></div>"
+        : "";
+      host.className = "kcard" + (apagada ? " apagada" : "");
+      host.innerHTML =
+        '<div class="patron" style="background-image:url(&quot;' + uri + '&quot;)"></div>' +
+        '<div class="khead">' +
+          '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">' +
+            '<div class="kicon">' + svgIcono("#fff") + "</div>" +
+            '<div><p class="ketiqueta">Tarjeta de lealtad</p><p class="knegocio">Café Aurora</p></div>' +
+          "</div>" +
+          '<div class="kmember"><p class="rol">Miembro</p><p class="nombre">María González</p></div>' +
+        "</div>" +
+        '<div class="kstamps">' +
+          '<div class="kprogreso"><span>Tu progreso</span><span class="cuenta">' + llenos + "/10</span></div>" +
+          '<div class="kgrid">' + sellos + "</div>" +
+        "</div>" +
+        '<div class="kreward"><div class="kmember"><p class="rol">Premio</p><p class="nombre">Un café gratis</p></div></div>' +
+        qr +
+        '<div class="kfoot"><span>Vence: 31 dic 2026</span><span>Con tecnología de Koda</span></div>';
+    });
+  }
+
+  construirTarjetas();
 
   mostrar("intro");
 </script>
