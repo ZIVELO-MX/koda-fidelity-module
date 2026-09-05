@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getBusinessFromSession, handleApiError, NotFoundError, requireRole } from "@/lib/api-utils"
 
+/**
+ * @openapi
+ * /api/cards/{id}/restore:
+ *   post:
+ *     tags: [Cards]
+ *     summary: Restore an archived card
+ *     security: [{ cookieAuth: [] }]
+ *     responses: { 200: { description: Card restored } }
+ */
+
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },

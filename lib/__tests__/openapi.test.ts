@@ -27,13 +27,19 @@ describe("OpenAPI spec", () => {
       "/api/business",
       "/api/cards",
       "/api/cards/{id}",
+      "/api/cards/{id}/restore",
       "/api/customers",
       "/api/customers/{id}",
+      "/api/dashboard/activity",
       "/api/dashboard/stats",
       "/api/join",
+      "/api/my-cards/{customerId}",
+      "/api/openapi",
       "/api/passes/apple/{cardId}",
       "/api/passes/google/{cardId}",
       "/api/stamps",
+      "/api/users",
+      "/api/users/{id}",
     ])
   })
 
@@ -50,6 +56,7 @@ describe("OpenAPI spec", () => {
 
     expect(spec.paths["/api/customers"]).toHaveProperty("get")
     expect(spec.paths["/api/dashboard/stats"]).toHaveProperty("get")
+    expect(spec.paths["/api/dashboard/activity"]).toHaveProperty("get")
     expect(spec.paths["/api/join"]).toHaveProperty("get")
     expect(spec.paths["/api/join"]).toHaveProperty("post")
     expect(spec.paths["/api/stamps"]).toHaveProperty("post")

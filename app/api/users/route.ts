@@ -1,6 +1,21 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getBusinessFromSession, handleApiError, ValidationError, requireRole } from "@/lib/api-utils"
+
+/**
+ * @openapi
+ * /api/users:
+ *   get:
+ *     tags: [Users]
+ *     summary: List business users
+ *     security: [{ cookieAuth: [] }]
+ *     responses: { 200: { description: User list } }
+ *   post:
+ *     tags: [Users]
+ *     summary: Invite a business user
+ *     security: [{ cookieAuth: [] }]
+ *     responses: { 202: { description: Invitation created } }
+ */
 import { createAdminClient } from "@/lib/supabase-admin"
 import { createInvitationToken, enforceRateLimit, normalizeEmail } from "@/lib/auth-security"
 import { sendSecureInviteEmail } from "@/lib/invite-email"

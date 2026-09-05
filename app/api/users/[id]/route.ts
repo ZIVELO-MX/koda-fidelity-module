@@ -9,6 +9,21 @@ import {
   requireRole,
 } from "@/lib/api-utils"
 
+/**
+ * @openapi
+ * /api/users/{id}:
+ *   patch:
+ *     tags: [Users]
+ *     summary: Update a business user
+ *     security: [{ cookieAuth: [] }]
+ *     responses: { 200: { description: User updated } }
+ *   delete:
+ *     tags: [Users]
+ *     summary: Remove a business user
+ *     security: [{ cookieAuth: [] }]
+ *     responses: { 200: { description: User removed } }
+ */
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },

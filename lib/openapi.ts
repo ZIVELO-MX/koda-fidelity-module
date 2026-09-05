@@ -165,6 +165,22 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        DashboardStatsV2: {
+          type: "object",
+          required: ["period", "totals", "daily", "weeklyNewCustomers", "topCards"],
+          properties: {
+            period: { type: "object", properties: { from: { type: "string", format: "date-time" }, to: { type: "string", format: "date-time" }, timezone: { type: "string" } } },
+            totals: { type: "object", properties: { activeCards: { type: "integer" }, activeCustomers: { type: "integer" }, stamps: { type: "integer" }, redemptions: { type: "integer" }, completedCycles: { type: "integer" }, redemptionRate: { type: "number", nullable: true } } },
+            daily: { type: "array", items: { type: "object" } },
+            weeklyNewCustomers: { type: "array", items: { type: "object" } },
+            topCards: { type: "array", items: { type: "object" } },
+          },
+        },
+        ApiError: {
+          type: "object",
+          required: ["error", "code", "action", "requestId", "retryable"],
+          properties: { error: { type: "string" }, code: { type: "string" }, action: { type: "string" }, requestId: { type: "string", format: "uuid" }, retryable: { type: "boolean" } },
+        },
         Error: {
           type: "object",
           properties: {

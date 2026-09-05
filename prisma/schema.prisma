@@ -40,6 +40,7 @@ model Business {
   phone             String?
   website           String?
   instagram         String?
+  timezone          String             @default("America/Mexico_City")
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   loyaltyCards      LoyaltyCard[]
@@ -262,6 +263,8 @@ model StampLog {
   createdAt              DateTime        @default(now())
 
   @@index([businessId, createdAt])
+  @@index([businessId, type, createdAt])
+  @@index([businessId, cardId, createdAt, id])
   @@index([cardId, type, createdAt])
   @@index([customerId, type, createdAt])
 }

@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createSupabaseReqResClient } from "@/lib/supabase-req-res"
+import { randomUUID } from "node:crypto"
 
 export async function proxy(request: NextRequest) {
   const { supabase, response: supabaseResponse } =
@@ -26,9 +27,13 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    supabaseResponse.headers.set("x-request-id", randomUUID())
+  }
+
   return supabaseResponse
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/signup"],
+  matcher: ["/api/:path*", "/dashboard/:path*", "/login", "/signup"],
 }
