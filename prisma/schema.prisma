@@ -40,6 +40,7 @@ model Business {
   phone             String?
   website           String?
   instagram         String?
+  timezone          String             @default("America/Mexico_City")
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   loyaltyCards      LoyaltyCard[]

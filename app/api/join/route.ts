@@ -208,12 +208,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ existing: true })
     }
 
-    const customer = await prisma.customer.create({
-      data: {
-        name: name.trim(),
-        email,
-        cardId,
-      },
+    const customer = await prisma.$transaction(async (tx) => {
+      const created = await tx.customer.create({ data: { name: name.trim(), email, cardId } })
+      await tx.stampLog.create({ data: { businessId: card.businessId, cardId: card.id, customerId: created.id, type: "customer_joined" } })
+      return created
     })
 
     return NextResponse.json({ customerId: customer.id, existing: false })

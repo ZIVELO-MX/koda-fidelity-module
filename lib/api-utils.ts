@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase-server"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import type { Role } from "@prisma/client"
+import { randomUUID } from "node:crypto"
 
 export class UnauthorizedError extends Error {
   constructor() {
@@ -31,6 +32,45 @@ export class ForbiddenError extends Error {
   }
 }
 
+export type ApiErrorCode =
+  | "KF-AUTH-001" | "KF-ACCOUNT-001" | "KF-ACCESS-001" | "KF-CARD-001"
+  | "KF-CARD-004" | "KF-CUSTOMER-001" | "KF-REQUEST-001" | "KF-SYS-001"
+
+export class AppError extends Error {
+  constructor(
+    public readonly code: ApiErrorCode,
+    message: string,
+    public readonly status = 400,
+    public readonly retryable = false,
+    public readonly action = "Revisa la solicitud e inténtalo de nuevo.",
+  ) {
+    super(message)
+    this.name = "AppError"
+  }
+}
+
+export function requestIdFrom(request?: Request) {
+  return randomUUID()
+}
+
+export function withRequestId(response: Response, requestId: string = randomUUID()) {
+  response.headers.set("x-request-id", requestId)
+  return response
+}
+
+export function withApiContext(
+  handler: (requestId: string) => Promise<Response>,
+) {
+  return async () => {
+    const requestId = randomUUID()
+    try {
+      return withRequestId(await handler(requestId), requestId)
+    } catch (error) {
+      return withRequestId(handleApiError(error, requestId), requestId)
+    }
+  }
+}
+
 export type SessionBusiness = {
   business: {
     id: string
@@ -45,6 +85,7 @@ export type SessionBusiness = {
     phone: string | null
     website: string | null
     instagram: string | null
+    timezone: string
     createdAt: Date
     updatedAt: Date
   }
@@ -112,19 +153,28 @@ export function requireRole(user: Pick<SessionBusiness["user"], "role">, ...allo
   }
 }
 
-export function handleApiError(error: unknown) {
+export function handleApiError(error: unknown, requestId: string = randomUUID()) {
+  if (error instanceof AppError) {
+    return NextResponse.json({
+      error: error.message,
+      code: error.code,
+      action: error.action,
+      requestId,
+      retryable: error.retryable,
+    }, { status: error.status, headers: { "x-request-id": requestId } })
+  }
   if (error instanceof UnauthorizedError) {
-    return NextResponse.json({ error: error.message }, { status: 401 })
+    return NextResponse.json({ error: error.message, code: "KF-AUTH-001", action: "Inicia sesión de nuevo.", requestId, retryable: false }, { status: 401, headers: { "x-request-id": requestId } })
   }
   if (error instanceof ForbiddenError) {
-    return NextResponse.json({ error: error.message }, { status: 403 })
+    return NextResponse.json({ error: error.message, code: "KF-ACCESS-001", action: "Solicita permisos a un administrador.", requestId, retryable: false }, { status: 403, headers: { "x-request-id": requestId } })
   }
   if (error instanceof NotFoundError) {
-    return NextResponse.json({ error: error.message }, { status: 404 })
+    return NextResponse.json({ error: error.message, code: "KF-CUSTOMER-001", action: "Verifica el identificador solicitado.", requestId, retryable: false }, { status: 404, headers: { "x-request-id": requestId } })
   }
   if (error instanceof ValidationError) {
-    return NextResponse.json({ error: error.message }, { status: 400 })
+    return NextResponse.json({ error: error.message, code: "KF-REQUEST-001", action: "Corrige los datos enviados.", requestId, retryable: false }, { status: 400, headers: { "x-request-id": requestId } })
   }
-  console.error("API Error:", error)
-  return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  console.error("API Error", { requestId, errorName: error instanceof Error ? error.name : "UnknownError" })
+  return NextResponse.json({ error: "Internal server error", code: "KF-SYS-001", action: "Inténtalo de nuevo más tarde.", requestId, retryable: true }, { status: 500, headers: { "x-request-id": requestId } })
 }
