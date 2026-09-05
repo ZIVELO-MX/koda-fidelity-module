@@ -1,7 +1,7 @@
 import { Prisma, PrismaClient } from "@prisma/client"
 import { randomUUID } from "node:crypto"
 import { NotFoundError, ValidationError } from "@/lib/api-utils"
-import { isExpired, pickMilestoneReward, type MilestoneRewardData } from "@/lib/card-utils"
+import { isExpired, type MilestoneRewardData } from "@/lib/card-utils"
 
 type Db = PrismaClient
 
@@ -31,13 +31,25 @@ function asMilestones(value: unknown): MilestoneRewardData[] {
   return value as MilestoneRewardData[]
 }
 
+async function withSerializableRetry<T>(operation: () => Promise<T>): Promise<T> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      return await operation()
+    } catch (error) {
+      const retryable = error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034"
+      if (!retryable || attempt === 2) throw error
+    }
+  }
+  throw new Error("Serializable transaction retry exhausted")
+}
+
 export async function executeLoyaltyOperation(db: Db, input: OperationInput): Promise<OperationResult> {
   if (!input.idempotencyKey || input.idempotencyKey.length > 200) {
     throw new ValidationError("Idempotency-Key is required and must be at most 200 characters")
   }
 
   try {
-    return await db.$transaction(async tx => {
+    return await withSerializableRetry(() => db.$transaction(async tx => {
       const existing = await tx.loyaltyOperation.findUnique({
         where: { businessId_idempotencyKey: { businessId: input.businessId, idempotencyKey: input.idempotencyKey } },
       })
@@ -92,13 +104,26 @@ export async function executeLoyaltyOperation(db: Db, input: OperationInput): Pr
 
         let milestoneClaim: OperationResult["milestoneClaim"] = null
         const milestones = asMilestones(configuration.milestones)
-        const picked = pickMilestoneReward(nextBalance, milestones)
-        if (picked) {
-          const milestone = customer.card.milestoneRewards.find(item => item.stampNumber === picked.stampNumber)
-          if (milestone) {
+        const configuredMilestone = milestones.find(item => item.stampNumber === nextBalance)
+        const randomRoll = configuredMilestone ? Math.random() * 100 : null
+        const picked = configuredMilestone && randomRoll !== null && randomRoll < configuredMilestone.probability ? configuredMilestone : null
+        if (configuredMilestone) {
+          const milestone = customer.card.milestoneRewards.find(item => item.stampNumber === configuredMilestone.stampNumber)
+          const auditMetadata = {
+            configurationVersion: configuration.version,
+            milestoneId: milestone?.id ?? null,
+            milestoneLabel: configuredMilestone.label,
+            milestoneIconName: configuredMilestone.iconName,
+            probability: configuredMilestone.probability,
+            randomRoll,
+            outcome: picked ? "awarded" : "no_prize",
+          }
+          if (milestone && picked) {
             const claim = await tx.customerMilestoneClaim.create({ data: { customerId: customer.id, milestoneId: milestone.id, cardId: customer.card.id, label: picked.label, iconName: picked.iconName } })
-            await tx.stampLog.create({ data: { businessId: input.businessId, cardId: customer.card.id, customerId: customer.id, cycleId: cycle.id, type: "milestone", balanceAfter: nextBalance, stampsRequiredSnapshot: configuration.stampsRequired, metadata: { milestoneClaimId: claim.id, milestoneId: milestone.id, milestoneLabel: picked.label, milestoneIconName: picked.iconName, probability: picked.probability } } })
             milestoneClaim = { id: claim.id, label: picked.label, iconName: picked.iconName }
+            await tx.stampLog.create({ data: { businessId: input.businessId, cardId: customer.card.id, customerId: customer.id, cycleId: cycle.id, type: "milestone", balanceAfter: nextBalance, stampsRequiredSnapshot: configuration.stampsRequired, metadata: { ...auditMetadata, milestoneClaimId: claim.id } } })
+          } else {
+            await tx.stampLog.create({ data: { businessId: input.businessId, cardId: customer.card.id, customerId: customer.id, cycleId: cycle.id, type: "milestone", balanceAfter: nextBalance, stampsRequiredSnapshot: configuration.stampsRequired, metadata: auditMetadata } })
           }
         }
 
@@ -124,7 +149,7 @@ export async function executeLoyaltyOperation(db: Db, input: OperationInput): Pr
 
       await tx.loyaltyOperation.create({ data: { id: operationId, businessId: input.businessId, cardId: customer.card.id, customerId: customer.id, cycleId: result.cycleId, type: input.type, idempotencyKey: input.idempotencyKey, response: result as unknown as Prisma.InputJsonValue } })
       return result
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, maxWait: 5000, timeout: 10000 })
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, maxWait: 5000, timeout: 10000 }))
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       const existing = await db.loyaltyOperation.findUnique({ where: { businessId_idempotencyKey: { businessId: input.businessId, idempotencyKey: input.idempotencyKey } } })

@@ -13,6 +13,19 @@ enum Role {
   sellador
 }
 
+enum LedgerEventType {
+  customer_joined
+  stamp
+  milestone
+  completion
+  redeem
+}
+
+enum LoyaltyOperationType {
+  stamp
+  redeem
+}
+
 model Business {
   id                String             @id @default(cuid())
   name              String
@@ -117,6 +130,8 @@ model LoyaltyCard {
   loyaltyCycles    LoyaltyCycle[]
   stampOperations  LoyaltyOperation[]
   stampLogs        StampLog[]
+
+  @@index([businessId])
 }
 
 model Customer {
@@ -139,6 +154,8 @@ model Customer {
   currentCycle    LoyaltyCycle?            @relation("CurrentCustomerCycle", fields: [currentCycleId], references: [id], onDelete: SetNull)
 
   @@index([currentCycleId])
+  @@index([cardId, isActive])
+  @@index([email])
 }
 
 model CardConfiguration {
@@ -178,19 +195,19 @@ model LoyaltyCycle {
 }
 
 model LoyaltyOperation {
-  id             String        @id @default(cuid())
+  id             String               @id @default(cuid())
   businessId     String
   cardId         String
   customerId     String
   cycleId        String?
-  type           String
+  type           LoyaltyOperationType
   idempotencyKey String
   response       Json
-  createdAt      DateTime      @default(now())
-  business       Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  card           LoyaltyCard   @relation(fields: [cardId], references: [id], onDelete: Cascade)
-  customer       Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  cycle          LoyaltyCycle? @relation(fields: [cycleId], references: [id], onDelete: SetNull)
+  createdAt      DateTime             @default(now())
+  business       Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  card           LoyaltyCard          @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  customer       Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  cycle          LoyaltyCycle?        @relation(fields: [cycleId], references: [id], onDelete: SetNull)
 
   @@unique([businessId, idempotencyKey])
   @@index([customerId, createdAt])
@@ -215,9 +232,9 @@ model MilestoneReward {
 model CustomerMilestoneClaim {
   id          String          @id @default(cuid())
   customerId  String
-  customer    Customer        @relation(fields: [customerId], references: [id])
+  customer    Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
   milestoneId String
-  milestone   MilestoneReward @relation(fields: [milestoneId], references: [id])
+  milestone   MilestoneReward @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
   cardId      String
   label       String
   iconName    String?
@@ -229,20 +246,20 @@ model CustomerMilestoneClaim {
 }
 
 model StampLog {
-  id                     String        @id @default(cuid())
+  id                     String          @id @default(cuid())
   businessId             String?
   cardId                 String?
   customerId             String?
   cycleId                String?
   balanceAfter           Int?
   stampsRequiredSnapshot Int?
-  business               Business?     @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  card                   LoyaltyCard?  @relation(fields: [cardId], references: [id], onDelete: SetNull)
-  customer               Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  cycle                  LoyaltyCycle? @relation(fields: [cycleId], references: [id], onDelete: SetNull)
-  type                   String // "customer_joined" | "stamp" | "milestone" | "completion" | "redeem"
+  business               Business?       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  card                   LoyaltyCard?    @relation(fields: [cardId], references: [id], onDelete: SetNull)
+  customer               Customer?       @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  cycle                  LoyaltyCycle?   @relation(fields: [cycleId], references: [id], onDelete: SetNull)
+  type                   LedgerEventType
   metadata               Json?
-  createdAt              DateTime      @default(now())
+  createdAt              DateTime        @default(now())
 
   @@index([businessId, createdAt])
   @@index([cardId, type, createdAt])
