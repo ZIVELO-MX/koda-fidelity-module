@@ -68,7 +68,7 @@ export function CustomerActionsMenu({
       const type = currentStamps >= maxStamps ? "redeem" : "stamp"
       const res = await fetch("/api/stamps", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Idempotency-Key": crypto.randomUUID() },
         body: JSON.stringify({ customerId, type }),
       })
       const data = await res.json()

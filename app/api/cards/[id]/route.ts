@@ -242,7 +242,8 @@ export async function PUT(
 
     const stampsRequired = body.stampsRequired !== undefined ? Number(body.stampsRequired) : existing.stampsRequired
 
-    if (body.milestoneRewards !== undefined) {
+    const card = await prisma.$transaction(async tx => {
+      if (body.milestoneRewards !== undefined) {
       if (!Array.isArray(body.milestoneRewards)) {
         throw new ValidationError("milestoneRewards must be an array")
       }
@@ -268,7 +269,6 @@ export async function PUT(
       const incomingIds = body.milestoneRewards.filter((m: { id?: string }) => m.id).map((m: { id: string }) => m.id)
       const toDelete = existing.milestoneRewards.filter(m => !incomingIds.includes(m.id)).map(m => m.id)
 
-      await prisma.$transaction(async tx => {
         if (toDelete.length > 0) {
           await tx.milestoneReward.deleteMany({ where: { id: { in: toDelete }, cardId: id } })
         }
@@ -285,10 +285,9 @@ export async function PUT(
             })
           }
         }
-      })
-    }
+      }
 
-    const card = await prisma.loyaltyCard.update({
+      const updatedCard = await tx.loyaltyCard.update({
       where: { id },
       data: {
         ...(body.name?.trim() && { name: body.name.trim() }),
@@ -300,14 +299,21 @@ export async function PUT(
         ...(body.description !== undefined && { description: body.description?.trim() || null }),
         ...(body.expiresAt !== undefined && { expiresAt: body.expiresAt ? new Date(body.expiresAt) : null }),
       },
+      include: { milestoneRewards: { orderBy: { stampNumber: "asc" } } },
     })
 
-    const milestones = await prisma.milestoneReward.findMany({
-      where: { cardId: id },
-      orderBy: { stampNumber: "asc" },
+      const latest = await tx.cardConfiguration.findFirst({ where: { cardId: id }, orderBy: { version: "desc" } })
+      const milestones = updatedCard.milestoneRewards.map(m => ({ stampNumber: m.stampNumber, label: m.label, iconName: m.iconName, probability: m.probability }))
+      const changed = !latest || latest.stampsRequired !== updatedCard.stampsRequired || latest.reward !== updatedCard.reward || JSON.stringify(latest.milestones) !== JSON.stringify(milestones)
+      if (changed) {
+        await tx.cardConfiguration.create({
+          data: { cardId: id, version: (latest?.version ?? 0) + 1, stampsRequired: updatedCard.stampsRequired, reward: updatedCard.reward, milestones },
+        })
+      }
+      return updatedCard
     })
 
-    return NextResponse.json({ card, milestoneRewards: milestones })
+    return NextResponse.json({ card, milestoneRewards: card.milestoneRewards })
   } catch (error) {
     return handleApiError(error)
   }
