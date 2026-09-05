@@ -263,6 +263,8 @@ model StampLog {
   createdAt              DateTime        @default(now())
 
   @@index([businessId, createdAt])
+  @@index([businessId, type, createdAt])
+  @@index([businessId, cardId, createdAt, id])
   @@index([cardId, type, createdAt])
   @@index([customerId, type, createdAt])
 }
