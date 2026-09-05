@@ -61,8 +61,10 @@ export const authService: AuthService = {
   },
 
   async getUser() {
-    const session = await this.getSession()
-    return session?.user ?? null
+    const supabase = await createClient()
+    const { data, error } = await supabase.auth.getUser()
+    if (error || !data.user) return null
+    return { id: data.user.id, email: data.user.email ?? "", name: data.user.user_metadata?.name }
   },
 
   async sendMagicLink(email: string, options?: { redirectTo?: string }) {

@@ -4,11 +4,26 @@ on:
   push:
     branches: [dev, main]
   pull_request:
-    branches: [dev, main]
+    branches: [benrod/1.2.0, main]
 
 jobs:
   verify:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: fidelity_ci
+        ports: [5432:5432]
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fidelity_ci
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/fidelity_ci
     steps:
       - uses: actions/checkout@v4
 
@@ -26,6 +41,12 @@ jobs:
 
       - name: Generate Prisma client
         run: pnpm db:generate
+
+      - name: Rebuild schema from migrations
+        run: |
+          psql "$DIRECT_URL" -c 'CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN;'
+          pnpm exec prisma migrate deploy
+          pnpm exec prisma migrate diff --from-url "$DIRECT_URL" --to-schema-datamodel prisma/schema.prisma --exit-code
 
       - name: Lint
         run: pnpm lint

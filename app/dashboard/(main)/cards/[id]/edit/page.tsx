@@ -17,7 +17,7 @@ export default async function EditCardPage({
   if (!user?.email) redirect("/login")
 
   const userRecord = await prisma.user.findUnique({
-    where: { email: user.email },
+    where: { authUserId: user.id },
     include: {
       business: {
         select: {

@@ -53,6 +53,7 @@ export type SessionBusiness = {
     email: string
     name: string
     role: Role
+    passwordSetupRequired: boolean
   }
 }
 
@@ -60,12 +61,12 @@ export async function getBusinessFromSession(): Promise<SessionBusiness> {
   const supabase = await createClient()
   const { data: { user: authUser }, error } = await supabase.auth.getUser()
 
-  if (error || !authUser?.email) {
+  if (error || !authUser) {
     throw new UnauthorizedError()
   }
 
   const userRecord = await prisma.user.findUnique({
-    where: { email: authUser.email },
+    where: { authUserId: authUser.id },
     include: { business: true },
   })
 
@@ -80,11 +81,32 @@ export async function getBusinessFromSession(): Promise<SessionBusiness> {
       email: userRecord.email,
       name: userRecord.name,
       role: userRecord.role,
+      passwordSetupRequired: userRecord.passwordSetupRequired,
     },
   }
 }
 
-export function requireRole(user: SessionBusiness["user"], ...allowed: Role[]) {
+export const getAccountPrincipal = async () => {
+  const supabase = await createClient()
+  const { data: { user }, error } = await supabase.auth.getUser()
+  if (error || !user) throw new UnauthorizedError()
+  return user
+}
+
+export const requireBusinessPrincipal = getBusinessFromSession
+
+export async function requireReadyBusinessPrincipal() {
+  const principal = await getBusinessFromSession()
+  if (principal.user.passwordSetupRequired) throw new ForbiddenError("Password setup required")
+  return principal
+}
+
+export function safeNextPath(value: string | null | undefined, fallback: string) {
+  if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("\\")) return fallback
+  return value
+}
+
+export function requireRole(user: Pick<SessionBusiness["user"], "role">, ...allowed: Role[]) {
   if (!allowed.includes(user.role)) {
     throw new ForbiddenError(`Role ${user.role} is not allowed to perform this action`)
   }

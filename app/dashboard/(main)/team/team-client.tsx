@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import {
   UserPlus, UserMinus, UsersRound, Shield, Stamp,
-  Copy, Check, MessageCircle, ChevronRight, Loader2, Lock, Clock,
+  Check, ChevronRight, Loader2, Lock, Clock,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -141,25 +141,6 @@ function RoleCard({ role, selected, onSelect }: { role: Role; selected: boolean;
   )
 }
 
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false)
-  const handleCopy = () => {
-    navigator.clipboard.writeText(text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-  return (
-    <button
-      type="button"
-      onClick={handleCopy}
-      className="shrink-0 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-      aria-label="Copiar"
-    >
-      {copied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
-    </button>
-  )
-}
-
 export function TeamClient({ currentUserId, currentUserName, businessName, initialUsers, memberLimit }: TeamClientProps) {
   const router = useRouter()
   const [users, setUsers] = useState<TeamUser[]>(initialUsers)
@@ -172,8 +153,7 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
   const [inviteRole, setInviteRole] = useState<Role>("sellador")
   const [inviteLoading, setInviteLoading] = useState(false)
   const [inviteError, setInviteError] = useState<string | null>(null)
-  const [invitedUser, setInvitedUser] = useState<{ name: string; email: string; password: string } | null>(null)
-  const [whatsappPhone, setWhatsappPhone] = useState("")
+  const [invitedUser, setInvitedUser] = useState<{ name: string; email: string } | null>(null)
 
   // Remove modal state
   const [removeTarget, setRemoveTarget] = useState<TeamUser | null>(null)
@@ -184,22 +164,6 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
 
   const isAtLimit = users.length >= memberLimit
 
-  const baseUrl = typeof window !== "undefined" ? window.location.origin : ""
-  const loginUrl = invitedUser
-    ? `${baseUrl}/invite?email=${encodeURIComponent(invitedUser.email)}&business=${encodeURIComponent(businessName)}&name=${encodeURIComponent(invitedUser.name)}`
-    : ""
-
-  const whatsappMessage = invitedUser
-    ? `Hola ${invitedUser.name} 👋, te invitamos a unirte al equipo de *${businessName}* en Koda Fidelity.\n\n` +
-      `Accede con tu correo: *${invitedUser.email}*\n` +
-      `Contraseña temporal: *${invitedUser.password}*\n\n` +
-      `Entra aquí: ${loginUrl}`
-    : ""
-
-  const whatsappUrl = whatsappPhone && invitedUser
-    ? `https://wa.me/${whatsappPhone.replace(/\D/g, "")}?text=${encodeURIComponent(whatsappMessage)}`
-    : null
-
   const resetInviteModal = () => {
     setInviteStep("form")
     setInviteName("")
@@ -207,7 +171,6 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
     setInviteRole("sellador")
     setInviteError(null)
     setInvitedUser(null)
-    setWhatsappPhone("")
   }
 
   const handleInvite = async () => {
@@ -224,8 +187,7 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
         setInviteError(data.error ?? "No fue posible invitar al usuario")
         return
       }
-      setUsers((prev) => [...prev, data.user])
-      setInvitedUser({ name: inviteName, email: inviteEmail, password: data.temporaryPassword })
+      setInvitedUser({ name: inviteName, email: inviteEmail })
       setInviteStep("credentials")
     } catch {
       setInviteError("Error de red. Intenta de nuevo.")
@@ -525,78 +487,15 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
           ) : (
             <div className="flex flex-col gap-4 min-h-0">
               <DialogHeader>
-                <DialogTitle>Cuenta creada ✓</DialogTitle>
+                <DialogTitle>Invitación enviada ✓</DialogTitle>
                 <DialogDescription className="break-words">
-                  Comparte las credenciales con{" "}
+                  Enviamos un enlace seguro a{" "}
                   <strong className="text-foreground">{invitedUser?.name}</strong>{" "}
-                  para que pueda acceder.
+                  para aceptar la invitación y crear su propia contraseña.
                 </DialogDescription>
               </DialogHeader>
 
-              {/* Scrollable body — header and button stay fixed */}
-              <div className="space-y-4 overflow-y-auto">
-                {/* Credentials box */}
-                <div className="rounded-xl bg-muted/50 border border-border p-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs text-muted-foreground mb-0.5">Correo</p>
-                      <p className="text-sm font-mono font-medium text-foreground truncate">{invitedUser?.email}</p>
-                    </div>
-                    <CopyButton text={invitedUser?.email ?? ""} />
-                  </div>
-                  <Separator />
-                  <div className="flex items-center gap-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs text-muted-foreground mb-0.5">Contraseña temporal</p>
-                      <p className="text-sm font-mono font-medium text-foreground">{invitedUser?.password}</p>
-                    </div>
-                    <CopyButton text={invitedUser?.password ?? ""} />
-                  </div>
-                  <Separator />
-                  {/* Link row: label + copy en la misma línea, URL con scroll horizontal abajo */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs text-muted-foreground">Link de acceso</p>
-                      <CopyButton text={loginUrl} />
-                    </div>
-                    <div className="overflow-x-auto rounded-md bg-background border border-border px-2.5 py-1.5">
-                      <p className="text-xs font-mono text-muted-foreground whitespace-nowrap">{loginUrl}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* WhatsApp section */}
-                <div className="space-y-2">
-                  <Label htmlFor="whatsapp-phone" className="flex items-center gap-1.5">
-                    <MessageCircle className="h-3.5 w-3.5 text-[#25D366]" />
-                    Enviar por WhatsApp
-                  </Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="whatsapp-phone"
-                      value={whatsappPhone}
-                      onChange={(e) => setWhatsappPhone(e.target.value)}
-                      placeholder="+52 55 1234 5678"
-                      type="tel"
-                      className="flex-1"
-                    />
-                    <Button
-                      type="button"
-                      disabled={!whatsappPhone.trim()}
-                      className="bg-[#25D366] hover:bg-[#1ebe5d] text-white shrink-0 gap-1.5"
-                      onClick={() => {
-                        if (whatsappUrl) window.open(whatsappUrl, "_blank", "noopener,noreferrer")
-                      }}
-                    >
-                      <MessageCircle className="h-4 w-4" />
-                      Enviar
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    El número solo se usa para abrir WhatsApp — no se guarda en ningún lado.
-                  </p>
-                </div>
-              </div>
+              <div className="rounded-xl bg-muted/50 border border-border p-4"><p className="text-sm text-muted-foreground">Estado: pendiente · {invitedUser?.email}</p></div>
 
               <Button onClick={() => { setInviteOpen(false); resetInviteModal() }} className="w-full">
                 Listo
