@@ -13,39 +13,54 @@ enum Role {
   sellador
 }
 
+enum LedgerEventType {
+  customer_joined
+  stamp
+  milestone
+  completion
+  redeem
+}
+
+enum LoyaltyOperationType {
+  stamp
+  redeem
+}
+
 model Business {
-  id           String        @id @default(cuid())
-  name         String
-  brandColor   String        @default("#ff6b35")
-  logoUrl       String?
-  iconName      String?
-  stampIconName String?
-  email         String        @unique
-  nickname     String?
-  businessType String?
-  address      String?
-  phone        String?
-  website      String?
-  instagram    String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  loyaltyCards LoyaltyCard[]
-  users        User[]
-  invitations  TeamInvitation[]
+  id                String             @id @default(cuid())
+  name              String
+  brandColor        String             @default("#ff6b35")
+  logoUrl           String?
+  iconName          String?
+  stampIconName     String?
+  email             String             @unique
+  nickname          String?
+  businessType      String?
+  address           String?
+  phone             String?
+  website           String?
+  instagram         String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  loyaltyCards      LoyaltyCard[]
+  users             User[]
+  invitations       TeamInvitation[]
+  stampLogs         StampLog[]
+  loyaltyOperations LoyaltyOperation[]
 }
 
 model User {
-  id         String   @id @default(cuid())
-  email      String   @unique
-  name       String
-  role       Role     @default(admin)
-  businessId String
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  authUserId String?  @unique @db.Uuid
-  passwordSetupRequired Boolean @default(false)
-  invitationsSent TeamInvitation[] @relation("InvitationSender")
+  id                    String           @id @default(cuid())
+  email                 String           @unique
+  name                  String
+  role                  Role             @default(admin)
+  businessId            String
+  business              Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  authUserId            String?          @unique @db.Uuid
+  passwordSetupRequired Boolean          @default(false)
+  invitationsSent       TeamInvitation[] @relation("InvitationSender")
 
   @@index([businessId])
 }
@@ -61,20 +76,20 @@ model SignupIntent {
 }
 
 model TeamInvitation {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   email       String
   name        String
   role        Role
-  tokenHash   String   @unique
-  status      String   @default("pending")
+  tokenHash   String    @unique
+  status      String    @default("pending")
   expiresAt   DateTime
   acceptedAt  DateTime?
   businessId  String
-  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   invitedById String
-  invitedBy   User     @relation("InvitationSender", fields: [invitedById], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  invitedBy   User      @relation("InvitationSender", fields: [invitedById], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([businessId, status])
   @@index([email, status])
@@ -95,66 +110,135 @@ model AuthRateLimit {
 }
 
 model LoyaltyCard {
-  id               String             @id @default(cuid())
+  id               String              @id @default(cuid())
   businessId       String
-  business         Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business         Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
   name             String
   reward           String
-  stampsRequired   Int                @default(10)
-  brandColor       String             @default("#ff6b35")
+  stampsRequired   Int                 @default(10)
+  brandColor       String              @default("#ff6b35")
   iconName         String?
   stampIconName    String?
-  isActive         Boolean            @default(true)
+  isActive         Boolean             @default(true)
   expiresAt        DateTime?
   description      String?
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
   customers        Customer[]
   milestoneRewards MilestoneReward[]
+  configurations   CardConfiguration[]
+  loyaltyCycles    LoyaltyCycle[]
+  stampOperations  LoyaltyOperation[]
+  stampLogs        StampLog[]
+
+  @@index([businessId])
 }
 
 model Customer {
-  id               String                   @id @default(cuid())
-  name             String
-  email            String?
+  id              String                   @id @default(cuid())
+  name            String
+  email           String?
+  cardId          String
+  card            LoyaltyCard              @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  stamps          Int                      @default(0)
+  isActive        Boolean                  @default(true)
+  applePassId     String?
+  googlePassId    String?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  stampsLog       StampLog[]
+  milestoneClaims CustomerMilestoneClaim[]
+  operations      LoyaltyOperation[]
+  cycles          LoyaltyCycle[]
+  currentCycleId  String?
+  currentCycle    LoyaltyCycle?            @relation("CurrentCustomerCycle", fields: [currentCycleId], references: [id], onDelete: SetNull)
+
+  @@index([currentCycleId])
+  @@index([cardId, isActive])
+  @@index([email])
+}
+
+model CardConfiguration {
+  id             String         @id @default(cuid())
+  cardId         String
+  card           LoyaltyCard    @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  version        Int
+  stampsRequired Int
+  reward         String
+  milestones     Json
+  createdAt      DateTime       @default(now())
+  cycles         LoyaltyCycle[]
+
+  @@unique([cardId, version])
+  @@index([cardId, createdAt])
+}
+
+model LoyaltyCycle {
+  id               String             @id @default(cuid())
+  customerId       String
+  customer         Customer           @relation(fields: [customerId], references: [id], onDelete: Cascade)
   cardId           String
-  card             LoyaltyCard              @relation(fields: [cardId], references: [id], onDelete: Cascade)
-  stamps           Int                      @default(0)
-  isActive         Boolean                  @default(true)
-  applePassId      String?
-  googlePassId     String?
-  createdAt        DateTime                 @default(now())
-  updatedAt        DateTime                 @updatedAt
-  stampsLog        StampLog[]
-  milestoneClaims  CustomerMilestoneClaim[]
+  card             LoyaltyCard        @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  configurationId  String
+  configuration    CardConfiguration  @relation(fields: [configurationId], references: [id], onDelete: Restrict)
+  balance          Int                @default(0)
+  completedAt      DateTime?
+  redeemedAt       DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  currentCustomers Customer[]         @relation("CurrentCustomerCycle")
+  logs             StampLog[]
+  operations       LoyaltyOperation[]
+
+  @@index([customerId, createdAt])
+  @@index([cardId, createdAt])
+}
+
+model LoyaltyOperation {
+  id             String               @id @default(cuid())
+  businessId     String
+  cardId         String
+  customerId     String
+  cycleId        String?
+  type           LoyaltyOperationType
+  idempotencyKey String
+  response       Json
+  createdAt      DateTime             @default(now())
+  business       Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  card           LoyaltyCard          @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  customer       Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  cycle          LoyaltyCycle?        @relation(fields: [cycleId], references: [id], onDelete: SetNull)
+
+  @@unique([businessId, idempotencyKey])
+  @@index([customerId, createdAt])
 }
 
 model MilestoneReward {
-  id              String                   @id @default(cuid())
-  cardId          String
-  card            LoyaltyCard              @relation(fields: [cardId], references: [id], onDelete: Cascade)
-  stampNumber     Int
-  label           String
-  iconName        String?
-  probability     Int                      @default(100)
-  sortOrder       Int                      @default(0)
-  createdAt       DateTime                 @default(now())
-  customerClaims  CustomerMilestoneClaim[]
+  id             String                   @id @default(cuid())
+  cardId         String
+  card           LoyaltyCard              @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  stampNumber    Int
+  label          String
+  iconName       String?
+  probability    Int                      @default(100)
+  sortOrder      Int                      @default(0)
+  createdAt      DateTime                 @default(now())
+  customerClaims CustomerMilestoneClaim[]
 
   @@unique([cardId, stampNumber])
   @@index([cardId])
 }
 
 model CustomerMilestoneClaim {
-  id          String   @id @default(cuid())
+  id          String          @id @default(cuid())
   customerId  String
-  customer    Customer @relation(fields: [customerId], references: [id])
+  customer    Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
   milestoneId String
-  milestone   MilestoneReward @relation(fields: [milestoneId], references: [id])
+  milestone   MilestoneReward @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
   cardId      String
   label       String
   iconName    String?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime        @default(now())
 
   @@index([customerId])
   @@index([milestoneId])
@@ -162,10 +246,22 @@ model CustomerMilestoneClaim {
 }
 
 model StampLog {
-  id         String   @id @default(cuid())
-  customerId String
-  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  type       String // "stamp" | "redeem" | "milestone"
-  metadata   Json?
-  createdAt  DateTime @default(now())
+  id                     String          @id @default(cuid())
+  businessId             String?
+  cardId                 String?
+  customerId             String?
+  cycleId                String?
+  balanceAfter           Int?
+  stampsRequiredSnapshot Int?
+  business               Business?       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  card                   LoyaltyCard?    @relation(fields: [cardId], references: [id], onDelete: SetNull)
+  customer               Customer?       @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  cycle                  LoyaltyCycle?   @relation(fields: [cycleId], references: [id], onDelete: SetNull)
+  type                   LedgerEventType
+  metadata               Json?
+  createdAt              DateTime        @default(now())
+
+  @@index([businessId, createdAt])
+  @@index([cardId, type, createdAt])
+  @@index([customerId, type, createdAt])
 }

@@ -70,10 +70,10 @@ export async function GET() {
       }),
     ])
 
-    const recentActivity = allLogs.map((log) => ({
+    const recentActivity = allLogs.filter((log) => log.customer !== null).map((log) => ({
       type: log.type,
-      customerName: log.customer.name,
-      cardName: log.customer.card.name,
+      customerName: log.customer!.name,
+      cardName: log.customer!.card.name,
       createdAt: log.createdAt.toISOString(),
     }))
 
