@@ -68,6 +68,9 @@ CREATE INDEX IF NOT EXISTS "LoyaltyCycle_cardId_createdAt_idx" ON "LoyaltyCycle"
 CREATE UNIQUE INDEX IF NOT EXISTS "LoyaltyOperation_businessId_idempotencyKey_key" ON "LoyaltyOperation"("businessId", "idempotencyKey");
 CREATE INDEX IF NOT EXISTS "LoyaltyOperation_customerId_createdAt_idx" ON "LoyaltyOperation"("customerId", "createdAt");
 CREATE INDEX IF NOT EXISTS "Customer_currentCycleId_idx" ON "Customer"("currentCycleId");
+CREATE INDEX IF NOT EXISTS "Customer_cardId_isActive_idx" ON "Customer"("cardId", "isActive");
+CREATE INDEX IF NOT EXISTS "Customer_email_idx" ON "Customer"("email");
+CREATE INDEX IF NOT EXISTS "LoyaltyCard_businessId_idx" ON "LoyaltyCard"("businessId");
 CREATE INDEX IF NOT EXISTS "StampLog_businessId_createdAt_idx" ON "StampLog"("businessId", "createdAt");
 CREATE INDEX IF NOT EXISTS "StampLog_cardId_type_createdAt_idx" ON "StampLog"("cardId", "type", "createdAt");
 CREATE INDEX IF NOT EXISTS "StampLog_customerId_type_createdAt_idx" ON "StampLog"("customerId", "type", "createdAt");
