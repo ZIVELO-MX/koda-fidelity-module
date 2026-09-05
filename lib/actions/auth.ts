@@ -10,6 +10,8 @@ import { createClient } from "@/lib/supabase-server"
 import { enforceRateLimit, normalizeEmail } from "@/lib/auth-security"
 import { provisionSignup } from "@/lib/signup-provisioning"
 import { headers } from "next/headers"
+import { randomUUID } from "node:crypto"
+import { classifyLoginError } from "@/lib/auth-errors"
 
 export type AuthResult = { error?: string; success?: true; isBusiness?: boolean }
 
@@ -19,14 +21,30 @@ export async function login(_prev: AuthResult, formData: FormData): Promise<Auth
 
   if (!email || !password) return { error: "Correo y contraseña requeridos" }
 
+  const requestId = randomUUID()
   try {
     const requestHeaders = await headers()
     await enforceRateLimit("login-identity", normalizeEmail(email), 10, 15 * 60 * 1000)
     await enforceRateLimit("login-ip", requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown", 30, 15 * 60 * 1000)
     await authService.signIn(email, password)
   } catch (err) {
-    console.error("[login] Error signing in:", err)
-    return { error: "No fue posible iniciar sesión. Verifica tus datos." }
+    const kind = classifyLoginError(err)
+    if (kind === "invalid_credentials") {
+      return { error: "Correo o contraseña incorrectos." }
+    }
+    if (kind === "rate_limited") {
+      return { error: "Demasiados intentos. Espera unos minutos e inténtalo de nuevo." }
+    }
+
+    const error = err instanceof Error ? err : new Error("Unknown login error")
+    const domain = email.includes("@") ? email.slice(email.indexOf("@") + 1).toLowerCase() : "unknown"
+    console.error("[login] Unexpected authentication failure", {
+      requestId,
+      errorName: error.name,
+      errorMessage: error.message,
+      emailDomain: domain,
+    })
+    return { error: `No fue posible iniciar sesión temporalmente. Código de referencia: ${requestId}` }
   }
 
   const supabase = await createClient()
