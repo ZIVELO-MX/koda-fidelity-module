@@ -10,6 +10,10 @@ vi.mock("next/link", () => ({
 vi.mock("../customer-actions-menu", () => ({
   CustomerActionsMenu: () => <div data-testid="actions-menu" />,
 }))
+// La acción de la fila NO se simula: es justo lo que estas pruebas verifican.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn() }),
+}))
 vi.mock("@/components/ui/avatar", () => ({
   Avatar: ({ children }: any) => <div>{children}</div>,
   AvatarFallback: ({ children }: any) => <span>{children}</span>,
@@ -131,5 +135,30 @@ describe("CustomersTable", () => {
     renderTable([])
     expect(screen.queryByText("Ana García")).not.toBeInTheDocument()
     expect(screen.getByText("0 clientes")).toBeInTheDocument()
+  })
+
+  describe("acción en la fila", () => {
+    it("ofrece sellar en la propia fila, sin abrir un menú", () => {
+      renderTable([makeCustomer({ stamps: 3 })])
+      expect(screen.getByRole("button", { name: /sellar/i })).toBeVisible()
+    })
+
+    it("cambia la acción a canjear cuando la tarjeta está completa", () => {
+      renderTable([makeCustomer({ stamps: 10 })])
+      expect(screen.getByRole("button", { name: /canjear/i })).toBeVisible()
+      expect(screen.queryByRole("button", { name: /sellar/i })).toBeNull()
+    })
+
+    it("distingue la fila de quien ya completó", () => {
+      renderTable([makeCustomer({ stamps: 10 })])
+      const fila = screen.getByText("Ana García").closest("tr") as HTMLElement
+      expect(fila.className).toMatch(/green/)
+    })
+
+    it("no distingue una fila a medias", () => {
+      renderTable([makeCustomer({ stamps: 3 })])
+      const fila = screen.getByText("Ana García").closest("tr") as HTMLElement
+      expect(fila.className).not.toMatch(/green/)
+    })
   })
 })

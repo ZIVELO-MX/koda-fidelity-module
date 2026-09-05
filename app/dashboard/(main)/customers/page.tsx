@@ -2,7 +2,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Search } from "lucide-react"
+import { Gift, Search } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 import { CustomersTable, SortField, SortOrder } from "@/components/dashboard/customers-table"
@@ -10,9 +10,10 @@ import { CustomersTable, SortField, SortOrder } from "@/components/dashboard/cus
 export default async function CustomersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; sort?: string; order?: string; card?: string }>
+  searchParams: Promise<{ q?: string; sort?: string; order?: string; card?: string; listos?: string }>
 }) {
-  const { q, sort: sortParam, order: orderParam, card: cardFilter } = await searchParams
+  const { q, sort: sortParam, order: orderParam, card: cardFilter, listos } = await searchParams
+  const soloListos = listos === "1"
 
   const sort: SortField = (["name", "stamps", "createdAt"].includes(sortParam ?? "") ? sortParam : "createdAt") as SortField
   const order: SortOrder = orderParam === "asc" ? "asc" : "desc"
@@ -49,9 +50,29 @@ export default async function CustomersPage({
   const baseParams = new URLSearchParams({
     ...(q ? { q } : {}),
     ...(cardFilter ? { card: cardFilter } : {}),
+    ...(soloListos ? { listos: "1" } : {}),
   })
 
+  // Enlace que conserva los filtros vigentes y cambia solo lo que se le pasa.
+  // Un valor undefined quita ese filtro.
+  const conFiltros = (cambios: Record<string, string | undefined> = {}) => {
+    const p = new URLSearchParams(baseParams)
+    if (sortParam) p.set("sort", sortParam)
+    if (orderParam) p.set("order", orderParam)
+    for (const [clave, valor] of Object.entries(cambios)) {
+      if (valor === undefined) p.delete(clave)
+      else p.set(clave, valor)
+    }
+    return `/dashboard/customers?${p.toString()}`
+  }
+
   const activeCard = loyaltyCards.find((c) => c.id === cardFilter)
+
+  // El filtro sale de los datos que la página ya recibió: Prisma no compara dos
+  // columnas del mismo registro en un where.
+  const estaListo = (c: (typeof customers)[number]) => c.stamps >= c.card.stampsRequired
+  const listosCount = customers.filter(estaListo).length
+  const visibles = soloListos ? customers.filter(estaListo) : customers
 
   return (
     <div className="space-y-8">
@@ -78,21 +99,37 @@ export default async function CustomersPage({
                 autoComplete="off"
               />
               {cardFilter && <input type="hidden" name="card" value={cardFilter} />}
+              {soloListos && <input type="hidden" name="listos" value="1" />}
               {sortParam && <input type="hidden" name="sort" value={sortParam} />}
               {orderParam && <input type="hidden" name="order" value={orderParam} />}
             </form>
           </div>
-          {(q || cardFilter) && (
+          {(q || cardFilter || soloListos) && (
             <Button asChild variant="ghost">
               <Link href="/dashboard/customers">Limpiar filtros</Link>
             </Button>
           )}
         </div>
 
+        {listosCount > 0 && (
+          <Link
+            href={conFiltros({ listos: soloListos ? undefined : "1" })}
+            aria-pressed={soloListos}
+            className={`inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm font-medium transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 ${
+              soloListos
+                ? "bg-green-600 text-white hover:bg-green-700"
+                : "bg-green-50 text-green-800 hover:bg-green-100 dark:bg-green-950/30 dark:text-green-300"
+            }`}
+          >
+            <Gift className="h-4 w-4" aria-hidden="true" />
+            Listos para canjear ({listosCount})
+          </Link>
+        )}
+
         {loyaltyCards.length > 1 && (
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
             <Link
-              href={`/dashboard/customers?${new URLSearchParams({ ...(q ? { q } : {}), ...(sortParam ? { sort: sortParam } : {}), ...(orderParam ? { order: orderParam } : {}) }).toString()}`}
+              href={conFiltros({ card: undefined })}
               className={`shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 ${
                 !cardFilter
                   ? "bg-primary/10 text-primary"
@@ -101,44 +138,38 @@ export default async function CustomersPage({
             >
               Todas las tarjetas
             </Link>
-            {loyaltyCards.map((card) => {
-              const p = new URLSearchParams({
-                ...(q ? { q } : {}),
-                card: card.id,
-                ...(sortParam ? { sort: sortParam } : {}),
-                ...(orderParam ? { order: orderParam } : {}),
-              })
-              return (
-                <Link
-                  key={card.id}
-                  href={`/dashboard/customers?${p.toString()}`}
-                  className={`shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 ${
-                    cardFilter === card.id
-                      ? "bg-primary/10 text-primary"
-                      : "bg-muted text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {card.name}
-                </Link>
-              )
-            })}
+            {loyaltyCards.map((card) => (
+              <Link
+                key={card.id}
+                href={conFiltros({ card: card.id })}
+                className={`shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 ${
+                  cardFilter === card.id
+                    ? "bg-primary/10 text-primary"
+                    : "bg-muted text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {card.name}
+              </Link>
+            ))}
           </div>
         )}
       </div>
 
-      {customers.length === 0 ? (
+      {visibles.length === 0 ? (
         <div className="text-center py-20">
           <h3 className="text-lg font-semibold text-foreground mb-2">
-            {q || cardFilter ? "No se encontraron clientes" : "Aún no tienes clientes"}
+            {q || cardFilter || soloListos ? "No se encontraron clientes" : "Aún no tienes clientes"}
           </h3>
           <p className="text-muted-foreground mb-6">
-            {q
+            {soloListos
+              ? "Nadie tiene la tarjeta completa con estos filtros"
+              : q
               ? "Intenta con otro término de búsqueda"
               : cardFilter
               ? `No hay clientes en "${activeCard?.name ?? "esta tarjeta"}"`
               : "Los clientes se registrarán al unirse a tus tarjetas"}
           </p>
-          {!q && !cardFilter && (
+          {!q && !cardFilter && !soloListos && (
             <Button asChild variant="outline">
               <Link href="/dashboard/cards">Ver tarjetas</Link>
             </Button>
@@ -146,7 +177,7 @@ export default async function CustomersPage({
         </div>
       ) : (
         <CustomersTable
-          customers={customers}
+          customers={visibles}
           sort={sort}
           order={order}
           basePath="/dashboard/customers"
