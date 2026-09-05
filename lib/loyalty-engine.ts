@@ -147,8 +147,9 @@ export async function executeLoyaltyOperation(db: Db, input: OperationInput): Pr
         result = { customer: updated, event: "redeem", message: `${customer.name} redeemed ${configuration.reward}`, operationId, cycleId: cycle.id }
       }
 
-      await tx.loyaltyOperation.create({ data: { id: operationId, businessId: input.businessId, cardId: customer.card.id, customerId: customer.id, cycleId: result.cycleId, type: input.type, idempotencyKey: input.idempotencyKey, response: result as unknown as Prisma.InputJsonValue } })
-      return result
+      const stableResult = JSON.parse(JSON.stringify(result)) as OperationResult
+      await tx.loyaltyOperation.create({ data: { id: operationId, businessId: input.businessId, cardId: customer.card.id, customerId: customer.id, cycleId: result.cycleId, type: input.type, idempotencyKey: input.idempotencyKey, response: stableResult as unknown as Prisma.InputJsonValue } })
+      return stableResult
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, maxWait: 5000, timeout: 10000 }))
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
