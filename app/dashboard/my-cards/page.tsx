@@ -9,7 +9,7 @@ import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { GoogleButton } from "@/components/auth/google-button"
 import {
   ArrowLeft, Mail, Loader2, Smartphone, ChevronDown, LogOut,
-  Wallet, Download, Trash2, Search, RefreshCw, AlertTriangle, Clock,
+  Trash2, Search, RefreshCw, AlertTriangle, Clock,
 } from "lucide-react"
 import { CustomerCardListIcon } from "@/components/dashboard/customer-card-list-icon"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
@@ -62,7 +62,7 @@ type PageState = "loading" | "email" | "sent" | "cards"
 function expiredMessage(stamps: number, required: number): string {
   if (stamps === 0) return "Esta tarjeta venció antes de comenzar 🤷"
   if (stamps >= required - 1) return "¡Tan cerca y tan lejos! Solo te faltó 1 sello 😅"
-  return `¡Ups! No alcanzaste los ${required} sellos — llegaste a ${stamps} 🫠`
+  return `¡Ups! No alcanzaste los ${required} sellos, llegaste a ${stamps} 🫠`
 }
 
 function ExpiryBadge({ expiresAt }: { expiresAt: string | null }) {
@@ -71,7 +71,8 @@ function ExpiryBadge({ expiresAt }: { expiresAt: string | null }) {
   if (days <= 0) return null // expired — handled separately
   if (days <= 1)
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-destructive/15 text-destructive">
+      // Ámbar y no rojo: vencer no es un error de quien trae la tarjeta.
+      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
         <Clock className="h-2.5 w-2.5" />
         Vence hoy
       </span>
@@ -265,6 +266,12 @@ export default function DashboardMyCardsPage() {
       group.push(c)
       groups.set(key, group)
     }
+    // Dentro de cada negocio, primero la que está más cerca del premio.
+    for (const group of groups.values()) {
+      group.sort(
+        (a, b) => (a.card.stampsRequired - a.stamps) - (b.card.stampsRequired - b.stamps),
+      )
+    }
     return Array.from(groups.entries())
   }, [filteredActive])
 
@@ -441,21 +448,25 @@ export default function DashboardMyCardsPage() {
                 <div className={`grid transition-all duration-300 ease-in-out ${isGroupCollapsed ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"}`}>
                   <div className="overflow-hidden space-y-3">
                     {businessCards.map((c) => {
-                      const isExpanded = expandedCards.has(c.id)
                       const days = daysUntilExpiry(c.card.expiresAt)
+                      const faltan = Math.max(c.card.stampsRequired - c.stamps, 0)
                       return (
                         <div key={c.id} className="bg-card rounded-2xl border border-border overflow-hidden">
-                          {/* Near-expiry banner */}
+                          {/* Aviso de vencimiento cercano. En ámbar también el
+                              último día: que una tarjeta venza no es un error de
+                              quien la trae. */}
                           {days !== null && days > 0 && days <= 7 && (
-                            <div className={`px-4 py-2 text-xs font-medium flex items-center gap-1.5 ${days <= 1 ? "bg-destructive/10 text-destructive" : "bg-amber-50 text-amber-700"}`}>
-                              {days <= 1 ? <Clock className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
-                              {days <= 1 ? "Esta tarjeta vence hoy o mañana — úsala antes de que expire" : `Esta tarjeta vence en ${days} días`}
+                            <div className="px-4 py-2 text-xs font-medium flex items-center gap-1.5 bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400">
+                              <AlertTriangle className="h-3.5 w-3.5" />
+                              {days <= 1
+                                ? "Esta tarjeta vence hoy o mañana, úsala antes de que expire"
+                                : `Esta tarjeta vence en ${days} días`}
                             </div>
                           )}
-                          <button onClick={() => toggleCard(c.id)}
-                            className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
-                            aria-expanded={isExpanded}
-                          >
+
+                          {/* La tarjeta está a la vista. Antes vivía detrás de un
+                              acordeón, y es lo único que se viene a ver aquí. */}
+                          <div className="p-4 space-y-4">
                             <div className="flex items-center gap-3 min-w-0">
                               <CustomerCardListIcon
                                 iconName={c.card.iconName}
@@ -469,46 +480,34 @@ export default function DashboardMyCardsPage() {
                                   <ExpiryBadge expiresAt={c.card.expiresAt} />
                                 </div>
                                 <p className="text-sm text-muted-foreground truncate">
-                                  {c.stamps}/{c.card.stampsRequired} sellos
+                                  {faltan === 0
+                                    ? "Ya puedes canjear tu recompensa"
+                                    : `Te faltan ${faltan} sello${faltan !== 1 ? "s" : ""}`}
+                                  {" · "}
+                                  {c.stamps}/{c.card.stampsRequired}
                                 </p>
                               </div>
                             </div>
-                            <ChevronDown className={`h-5 w-5 text-muted-foreground shrink-0 transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`} />
-                          </button>
-                          <div className={`grid transition-all duration-300 ease-in-out ${isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
-                            <div className="overflow-hidden">
-                              <div className="px-4 pb-4 space-y-4">
-                                <LoyaltyCardPreview
-                                  businessName={c.card.business.name}
-                                  businessLogo={c.card.business.logoUrl ?? undefined}
-                                  iconName={c.card.iconName}
-                                  stampIconName={c.card.stampIconName}
-                                  customerName={c.name}
-                                  currentStamps={c.stamps}
-                                  maxStamps={c.card.stampsRequired}
-                                  reward={c.card.reward}
-                                  expirationDate={c.card.expiresAt ? new Date(c.card.expiresAt).toLocaleDateString("es-MX") : undefined}
-                                  brandColor={c.card.brandColor}
-                                  showQR={true}
-                                  qrValue={c.id}
-                                  milestoneClaims={c.milestoneClaims.map(cl => ({ stampNumber: cl.milestone.stampNumber, iconName: cl.iconName }))}
-                                />
-                                <p className="text-xs text-muted-foreground text-center">
-                                  Muestra este código QR en el negocio para acumular sellos
-                                </p>
-                                <div className="flex flex-col gap-2 pt-2">
-                                  <Button variant="outline" size="sm" disabled className="w-full text-muted-foreground/50 border-dashed gap-2">
-                                    <Wallet className="h-4 w-4" />Agregar a Wallet — Próximamente
-                                  </Button>
-                                  <Button variant="outline" size="sm" disabled className="w-full text-muted-foreground/50 border-dashed gap-2">
-                                    <Download className="h-4 w-4" />Descargar Tarjeta — Próximamente
-                                  </Button>
-                                  <Button variant="outline" size="sm" disabled className="w-full text-muted-foreground/50 border-dashed gap-2">
-                                    <Trash2 className="h-4 w-4" />Eliminar Tarjeta — Próximamente
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
+
+                            <LoyaltyCardPreview
+                              businessName={c.card.business.name}
+                              businessLogo={c.card.business.logoUrl ?? undefined}
+                              iconName={c.card.iconName}
+                              stampIconName={c.card.stampIconName}
+                              customerName={c.name}
+                              currentStamps={c.stamps}
+                              maxStamps={c.card.stampsRequired}
+                              reward={c.card.reward}
+                              expirationDate={c.card.expiresAt ? new Date(c.card.expiresAt).toLocaleDateString("es-MX") : undefined}
+                              brandColor={c.card.brandColor}
+                              showQR={true}
+                              qrValue={c.id}
+                              milestoneClaims={c.milestoneClaims.map(cl => ({ stampNumber: cl.milestone.stampNumber, iconName: cl.iconName }))}
+                            />
+
+                            <p className="text-xs text-muted-foreground text-center">
+                              Muestra este código QR en el negocio para acumular sellos
+                            </p>
                           </div>
                         </div>
                       )
