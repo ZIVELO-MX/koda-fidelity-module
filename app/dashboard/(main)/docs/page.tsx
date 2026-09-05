@@ -193,7 +193,7 @@ const faqs = [
   {
     question: "¿Cómo creo una tarjeta de lealtad?",
     answer:
-      "Ve a la sección 'Tarjetas de Lealtad' en el panel lateral y haz clic en 'Nueva Tarjeta'. Allí podrás configurar el nombre, la descripción, los beneficios y el diseño de tu tarjeta. Una vez creada, tus clientes podrán unirse mediante un código QR o un enlace.",
+      "Ve a 'Tarjetas', dentro del grupo Programa del panel lateral, y haz clic en 'Nueva Tarjeta'. Allí podrás configurar el nombre, la descripción, los beneficios y el diseño de tu tarjeta. Una vez creada, tus clientes podrán unirse mediante un código QR o un enlace.",
   },
   {
     question: "¿Cómo se unen los clientes a una tarjeta?",

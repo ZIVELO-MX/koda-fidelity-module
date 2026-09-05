@@ -61,21 +61,28 @@ interface DashboardSidebarProps {
 
 const navGroups = [
   {
-    label: "Gestión",
+    label: "Operación",
     roles: ["admin", "sellador"] as Role[],
     items: [
-      { name: "Tarjetas de Lealtad", href: "/dashboard/cards", icon: CreditCard },
+      { name: "Panel", href: "/dashboard", icon: LayoutDashboard },
       { name: "Clientes", href: "/dashboard/customers", icon: Users },
+    ],
+  },
+  {
+    label: "Programa",
+    roles: ["admin"] as Role[],
+    items: [
+      { name: "Tarjetas", href: "/dashboard/cards", icon: CreditCard },
       { name: "Códigos QR", href: "/dashboard/qr-codes", icon: QrCode },
     ],
   },
   {
-    label: "Administración",
+    label: "Negocio",
     roles: ["admin"] as Role[],
     items: [
       { name: "Marca", href: "/dashboard/branding", icon: Palette },
-      { name: "Configuración", href: "/dashboard/settings", icon: Settings },
       { name: "Equipo", href: "/dashboard/team", icon: UserCog },
+      { name: "Configuración", href: "/dashboard/settings", icon: Settings },
       { name: "Documentación", href: "/dashboard/docs", icon: BookOpen },
     ],
   },
@@ -89,6 +96,8 @@ const BOTTOM_NAV_HREFS = new Set([
 ])
 
 const SIDEBAR_GROUPS_STORAGE_KEY = "dashboard-sidebar-groups"
+
+const GRUPOS_ABIERTOS = navGroups.map((g) => g.label)
 
 function NavLink({
   href,
@@ -109,7 +118,7 @@ function NavLink({
       href={href}
       className={cn(
         "flex items-center rounded-lg text-sm font-medium transition-colors",
-        collapsed ? "justify-center p-2" : "gap-3 px-3 py-2.5",
+        collapsed ? "justify-center p-2 min-h-11" : "gap-3 px-3 min-h-11",
         isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
       )}
     >
@@ -137,7 +146,7 @@ function CollapsedNavLink({
         <Link
           href={href}
           className={cn(
-            "flex items-center justify-center p-2 rounded-lg transition-colors",
+            "flex items-center justify-center p-2 min-h-11 rounded-lg transition-colors",
             isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
           )}
         >
@@ -163,14 +172,19 @@ export function DashboardSidebar({
   const [moreOpen, setMoreOpen] = useState(false)
   const [logoutOpen, setLogoutOpen] = useState(false)
   const [openGroups, setOpenGroups] = useState<string[]>(() => {
-    if (typeof window === "undefined") return ["Gestión", "Administración"]
+    if (typeof window === "undefined") return GRUPOS_ABIERTOS
     try {
       const raw = window.localStorage.getItem(SIDEBAR_GROUPS_STORAGE_KEY)
-      if (!raw) return ["Gestión", "Administración"]
+      if (!raw) return GRUPOS_ABIERTOS
       const parsed = JSON.parse(raw) as string[]
-      return Array.isArray(parsed) ? parsed : ["Gestión", "Administración"]
+      if (!Array.isArray(parsed)) return GRUPOS_ABIERTOS
+      // Una preferencia guardada con las etiquetas anteriores dejaría todos los
+      // grupos cerrados, así que se descarta. Haberlos cerrado a propósito sí
+      // se respeta.
+      const vigentes = parsed.filter((label) => GRUPOS_ABIERTOS.includes(label))
+      return vigentes.length > 0 || parsed.length === 0 ? vigentes : GRUPOS_ABIERTOS
     } catch {
-      return ["Gestión", "Administración"]
+      return GRUPOS_ABIERTOS
     }
   })
 
@@ -180,21 +194,9 @@ export function DashboardSidebar({
 
   const visibleGroups = navGroups.filter((g) => g.roles.includes(role))
 
-  const moreNavGroups = [
-    {
-      label: "General",
-      items: [{ name: "Panel", href: "/dashboard", icon: LayoutDashboard }],
-    },
-    ...navGroups
-      .filter((g) => g.roles.includes(role))
-      .map((g) => ({
-        label: g.label,
-        items:
-          g.label === "Gestión"
-            ? [...g.items, { name: "Escáner", href: "/dashboard/scan", icon: Camera }]
-            : [...g.items],
-      })),
-  ]
+  // El panel de "más" repite los mismos grupos del rol. El escáner no entra:
+  // ya tiene su botón central en la barra móvil.
+  const moreNavGroups = visibleGroups.map((g) => ({ label: g.label, items: [...g.items] }))
 
   const isScanActive = pathname === "/dashboard/scan"
   const isMenuActive = moreNavGroups.some((g) =>
@@ -203,11 +205,15 @@ export function DashboardSidebar({
     ),
   )
 
-  const mobileMainItems = [
+  // La barra móvil sigue al rol igual que el aside: el sellador no administra
+  // tarjetas, así que tampoco tiene el destino aquí.
+  const mobileIzquierda = [
     { name: "Panel", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Tarjetas", href: "/dashboard/cards", icon: CreditCard },
-    { name: "Clientes", href: "/dashboard/customers", icon: Users },
+    ...(role === "admin"
+      ? [{ name: "Tarjetas", href: "/dashboard/cards", icon: CreditCard }]
+      : []),
   ]
+  const mobileDerecha = [{ name: "Clientes", href: "/dashboard/customers", icon: Users }]
 
   return (
     <>
@@ -234,17 +240,6 @@ export function DashboardSidebar({
         </div>
 
         <nav className="flex-1 overflow-y-auto">
-          {/* Panel */}
-          {collapsed ? (
-            <CollapsedNavLink href="/dashboard" icon={LayoutDashboard} label="Panel" pathname={pathname} />
-          ) : (
-            <div className="mx-2 my-1">
-              <NavLink href="/dashboard" icon={LayoutDashboard} pathname={pathname} collapsed={collapsed}>
-                Panel
-              </NavLink>
-            </div>
-          )}
-
           {/* Grouped sections with Accordion */}
           {!collapsed && (
             <Accordion
@@ -382,7 +377,7 @@ export function DashboardSidebar({
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="flex items-end justify-around h-16 px-2">
-          {mobileMainItems.slice(0, 2).map((item) => {
+          {mobileIzquierda.map((item) => {
             const isActive =
               pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
             return (
@@ -431,7 +426,7 @@ export function DashboardSidebar({
           </Link>
 
           {/* Clientes */}
-          {mobileMainItems.slice(2).map((item) => {
+          {mobileDerecha.map((item) => {
             const isActive = pathname.startsWith(item.href)
             return (
               <Link
