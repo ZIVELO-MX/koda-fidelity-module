@@ -2,63 +2,90 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { StatCard } from "@/components/dashboard/stat-card"
-import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 import { getCardIcon } from "@/lib/card-icons"
 import { daysUntilExpiry } from "@/lib/card-utils"
-import { CreditCard, Users, Stamp, TrendingUp, Plus, ArrowRight, AlertCircle, Eye, AlertTriangle } from "lucide-react"
+import { inicioDelDia, inicioDelDiaAnterior } from "@/lib/dia-local"
+import { Users, Stamp, Gift, Plus, ArrowRight, AlertCircle, Eye, AlertTriangle } from "lucide-react"
 
-function timeAgo(date: Date): string {
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
-  if (seconds < 60) return "hace unos segundos"
-  const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `hace ${minutes} min`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `hace ${hours}h`
-  const days = Math.floor(hours / 24)
-  if (days < 30) return `hace ${days}d`
-  return date.toLocaleDateString("es-MX")
+const ZONA = "America/Mexico_City"
+
+const HORA = new Intl.DateTimeFormat("es-MX", {
+  timeZone: ZONA,
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+})
+
+const DIA = new Intl.DateTimeFormat("es-MX", { timeZone: ZONA, day: "numeric", month: "short" })
+
+/** Hora del evento si es de hoy, y su fecha corta si no. */
+function cuando(fecha: Date, inicioDeHoy: Date): string {
+  return fecha >= inicioDeHoy ? HORA.format(fecha) : DIA.format(fecha)
+}
+
+function contraAyer(hoy: number, ayer: number): {
+  change: string
+  changeType: "positive" | "negative" | "neutral"
+} {
+  const diferencia = hoy - ayer
+  if (diferencia === 0) return { change: "Igual que ayer a esta hora", changeType: "neutral" }
+  return {
+    change: `${Math.abs(diferencia)} ${diferencia > 0 ? "más" : "menos"} que ayer a esta hora`,
+    changeType: diferencia > 0 ? "positive" : "negative",
+  }
 }
 
 export default async function DashboardPage() {
+  // La sesión y el negocio se resuelven fuera del try: redirect() funciona
+  // lanzando NEXT_REDIRECT, y el catch de abajo se lo tragaría, pintando un
+  // error de carga en vez de mandar al login.
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user?.email) {
+    redirect("/login")
+  }
+
+  const userRecord = await prisma.user.findUnique({
+    where: { email: user.email },
+    select: { businessId: true },
+  })
+
+  if (!userRecord) {
+    redirect("/login")
+  }
+
+  const business = await prisma.business.findUnique({
+    where: { id: userRecord.businessId },
+    select: { id: true, name: true, nickname: true, brandColor: true, logoUrl: true, iconName: true },
+  })
+
+  if (!business) {
+    redirect("/login")
+  }
+
+  const ahora = new Date()
+  const inicioDeHoy = inicioDelDia(ahora)
+  const inicioDeAyer = inicioDelDiaAnterior(ahora)
+  // Hoy va a medias y ayer está completo, así que ayer se corta a la misma hora
+  // del día. Si no, la comparación diría "menos que ayer" toda la mañana.
+  const corteDeAyer = new Date(inicioDeAyer.getTime() + (ahora.getTime() - inicioDeHoy.getTime()))
+
   let loadingError = false
-  let business: Record<string, any> | null = null
   let cards: any[] = []
   let allLogs: any[] = []
+  let logsDelPeriodo: { type: string; createdAt: Date }[] = []
+  let altasDelPeriodo: { createdAt: Date }[] = []
 
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user?.email) {
-      redirect("/login")
-    }
-
-    const userRecord = await prisma.user.findUnique({
-      where: { email: user.email },
-      select: { businessId: true },
-    })
-
-    if (!userRecord) {
-      redirect("/login")
-    }
-
-    business = await prisma.business.findUnique({
-      where: { id: userRecord.businessId },
-      select: { id: true, name: true, nickname: true, brandColor: true, logoUrl: true, iconName: true },
-    })
-
-    if (!business) {
-      redirect("/login")
-    }
-
-    const [fetchedCards, fetchedLogs] = await Promise.all([
+    const [fetchedCards, fetchedLogs, fetchedPeriodo, fetchedAltas] = await Promise.all([
       prisma.loyaltyCard.findMany({
         where: { businessId: business.id, isActive: true },
         include: {
           _count: { select: { customers: { where: { isActive: true } } } },
-          customers: { where: { isActive: true }, select: { stamps: true } },
+          customers: { where: { isActive: true }, select: { id: true, name: true, stamps: true } },
         },
         orderBy: { createdAt: "desc" },
       }),
@@ -70,15 +97,28 @@ export default async function DashboardPage() {
           customer: { select: { name: true, card: { select: { name: true } } } },
         },
       }),
+      prisma.stampLog.findMany({
+        where: {
+          customer: { card: { businessId: business.id } },
+          createdAt: { gte: inicioDeAyer },
+        },
+        select: { type: true, createdAt: true },
+      }),
+      prisma.customer.findMany({
+        where: { card: { businessId: business.id }, createdAt: { gte: inicioDeAyer } },
+        select: { createdAt: true },
+      }),
     ])
 
     cards = fetchedCards
     allLogs = fetchedLogs
+    logsDelPeriodo = fetchedPeriodo
+    altasDelPeriodo = fetchedAltas
   } catch {
     loadingError = true
   }
 
-  if (loadingError || !business) {
+  if (loadingError) {
     return (
       <div className="text-center py-20 space-y-4">
         <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto">
@@ -94,14 +134,29 @@ export default async function DashboardPage() {
       </div>
     )
   }
-  const activeCards = cards.length
-  const totalCustomers = (cards as any[]).reduce((sum: number, c: any) => sum + c._count.customers, 0)
-  const stampsGiven = (cards as any[]).reduce((sum: number, c: any) => sum + (c.customers as any[]).reduce((s: number, cust: any) => s + cust.stamps, 0), 0)
-  const redemptions = allLogs.filter((l) => l.type === "redeem").length
+
+  const deHoy = (fecha: Date) => fecha >= inicioDeHoy
+  const deAyerALaMismaHora = (fecha: Date) => fecha >= inicioDeAyer && fecha < corteDeAyer
+
+  const contar = (tipo: string, dentro: (fecha: Date) => boolean) =>
+    logsDelPeriodo.filter((l) => l.type === tipo && dentro(l.createdAt)).length
+
+  const sellosHoy = contar("stamp", deHoy)
+  const canjesHoy = contar("redeem", deHoy)
+  const altasHoy = altasDelPeriodo.filter((c) => deHoy(c.createdAt)).length
+  const altasAyer = altasDelPeriodo.filter((c) => deAyerALaMismaHora(c.createdAt)).length
 
   const soonExpiring = cards
     .map((c) => ({ ...c, daysLeft: daysUntilExpiry(c.expiresAt) }))
     .filter((c) => c.daysLeft !== null && c.daysLeft >= 0 && c.daysLeft <= 7)
+
+  const aUnSello = cards.flatMap((card) =>
+    (card.customers as any[])
+      .filter((cliente) => card.stampsRequired - cliente.stamps === 1)
+      .map((cliente) => ({ id: cliente.id, nombre: cliente.name, tarjeta: card.name })),
+  )
+
+  const hayAtencion = aUnSello.length > 0 || soonExpiring.length > 0
 
   return (
     <div className="space-y-8">
@@ -126,31 +181,82 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {soonExpiring.length > 0 && (
+      {hayAtencion && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 px-4 py-3 flex gap-3">
           <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-          <div className="space-y-1 min-w-0">
-            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-              {soonExpiring.length === 1 ? "Una tarjeta vence pronto" : `${soonExpiring.length} tarjetas vencen pronto`}
-            </p>
-            <ul className="space-y-0.5">
-              {soonExpiring.map((c) => (
-                <li key={c.id} className="text-sm text-amber-700 dark:text-amber-400">
-                  <Link href={`/dashboard/cards/${c.id}`} className="hover:underline font-medium">{c.name}</Link>
-                  {" — "}
-                  {c.daysLeft === 0 ? "vence hoy" : `${c.daysLeft} día${c.daysLeft !== 1 ? "s" : ""}`}
-                </li>
-              ))}
-            </ul>
+          <div className="space-y-3 min-w-0">
+            {aUnSello.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                  {aUnSello.length === 1
+                    ? "Un cliente está a un sello de completar"
+                    : `${aUnSello.length} clientes están a un sello de completar`}
+                </p>
+                <ul className="space-y-0.5">
+                  {aUnSello.map((cliente) => (
+                    <li key={cliente.id} className="text-sm text-amber-700 dark:text-amber-400">
+                      <span className="font-medium">{cliente.nombre}</span>
+                      {" — "}
+                      {cliente.tarjeta}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {soonExpiring.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                  {soonExpiring.length === 1 ? "Una tarjeta vence pronto" : `${soonExpiring.length} tarjetas vencen pronto`}
+                </p>
+                <ul className="space-y-0.5">
+                  {soonExpiring.map((c) => (
+                    <li key={c.id} className="text-sm text-amber-700 dark:text-amber-400">
+                      <Link href={`/dashboard/cards/${c.id}`} className="hover:underline font-medium">{c.name}</Link>
+                      {" — "}
+                      {c.daysLeft === 0 ? "vence hoy" : `${c.daysLeft} día${c.daysLeft !== 1 ? "s" : ""}`}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Tarjetas Activas" value={activeCards} icon={CreditCard} />
-        <StatCard title="Total Clientes" value={totalCustomers} icon={Users} />
-        <StatCard title="Sellos Entregados" value={stampsGiven} icon={Stamp} />
-        <StatCard title="Canjes" value={redemptions} icon={TrendingUp} />
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold text-foreground">Hoy</h2>
+        <div className="grid sm:grid-cols-3 gap-4">
+          <StatCard
+            title="Sellos de hoy"
+            value={sellosHoy}
+            icon={Stamp}
+            {...contraAyer(sellosHoy, contar("stamp", deAyerALaMismaHora))}
+          />
+          <StatCard
+            title="Canjes de hoy"
+            value={canjesHoy}
+            icon={Gift}
+            {...contraAyer(canjesHoy, contar("redeem", deAyerALaMismaHora))}
+          />
+          <StatCard
+            title="Clientes nuevos hoy"
+            value={altasHoy}
+            icon={Users}
+            {...contraAyer(altasHoy, altasAyer)}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold text-foreground">Tendencia de 30 días</h2>
+        <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-6">
+          <p className="text-sm text-muted-foreground">
+            Todavía no se puede mostrar. Con los datos que hoy entrega el servidor solo se pueden
+            contar los eventos del día; la serie diaria llega cuando el backend la publique. Queda
+            vacía a propósito, antes que dibujar una tendencia inventada.
+          </p>
+        </div>
       </div>
 
       <div className="space-y-6">
@@ -241,97 +347,48 @@ export default async function DashboardPage() {
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
-          <div className="bg-card rounded-2xl border border-border p-4">
+          <div className="bg-card rounded-2xl border border-border px-4">
             {allLogs.length === 0 ? (
               <div className="text-center text-sm text-muted-foreground py-6">
                 Aún no hay actividad. Crea una tarjeta y comparte el código QR.
               </div>
             ) : (
-              <div className="flex flex-col lg:flex-row gap-3 lg:overflow-x-auto pb-2 lg:scrollbar-thin">
-                {allLogs.map((log, i) => (
-                  <div
-                    key={log.id}
-                    className={`${i >= 3 ? "hidden lg:flex" : ""} lg:flex-shrink-0 lg:w-64 bg-muted/30 rounded-xl p-4 hover:bg-muted/50 transition-colors`}
-                  >
-                    <div className="flex items-center gap-3 mb-3">
-                      <div
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                          log.type === "stamp"
-                            ? "bg-primary/10 text-primary"
-                            : "bg-green-100 text-green-600"
-                        }`}
-                      >
-                        {log.type === "stamp" ? (
-                          <Stamp className="h-4 w-4" />
-                        ) : (
-                          <TrendingUp className="h-4 w-4" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">
-                          {log.customer.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {log.customer.card.name}
-                        </p>
-                      </div>
+              <ul className="divide-y divide-border">
+                {allLogs.map((log) => (
+                  <li key={log.id} className="flex items-center gap-3 py-3">
+                    <div
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                        log.type === "stamp" ? "bg-primary/10 text-primary" : "bg-green-100 text-green-700"
+                      }`}
+                    >
+                      {log.type === "stamp" ? <Stamp className="h-4 w-4" /> : <Gift className="h-4 w-4" />}
                     </div>
-                    <p className="text-sm">
-                      {log.type === "stamp" ? "🎯 Recibió un sello" : "🎁 Canjeó recompensa"}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {timeAgo(log.createdAt)}
-                    </p>
-                  </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-foreground truncate">{log.customer.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {log.type === "stamp" ? "Recibió un sello" : "Canjeó su recompensa"}
+                        {" · "}
+                        {log.customer.card.name}
+                      </p>
+                    </div>
+                    <time
+                      dateTime={log.createdAt.toISOString()}
+                      className="font-mono tabular-nums text-xs text-muted-foreground shrink-0"
+                    >
+                      {cuando(log.createdAt, inicioDeHoy)}
+                    </time>
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
           </div>
         </div>
       </div>
 
-      {cards.length > 0 && (() => {
-        const card = cards[0]
-        const sampleCustomer = card.customers[0]
-        return (
-          <div className="bg-card rounded-2xl border border-border p-4 sm:p-6 overflow-hidden">
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-              <div className="max-w-md">
-                <h2 className="text-lg font-semibold text-foreground mb-2">
-                  Tu tarjeta, en su billetera
-                </h2>
-                <p className="text-muted-foreground mb-4">
-                  Así es como tus clientes ven su tarjeta de lealtad en Apple Wallet o Google Wallet.
-                </p>
-                <Link href="/dashboard/cards/new">
-                  <Button variant="outline">
-                    Personalizar Diseño
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </Link>
-              </div>
-              <div className="w-full max-w-full sm:max-w-xs overflow-hidden">
-                <LoyaltyCardPreview
-                  businessName={business.name}
-                  businessLogo={business.logoUrl ?? undefined}
-                  iconName={card.iconName ?? business.iconName}
-                  customerName="Tus Clientes"
-                  currentStamps={card.customers.length > 0 ? Math.max(...(card.customers as any[]).map((c: any) => c.stamps)) : 0}
-                  maxStamps={card.stampsRequired}
-                  reward={card.reward}
-                  expirationDate={card.expiresAt ? card.expiresAt.toLocaleDateString("es-MX") : undefined}
-                  brandColor={card.brandColor}
-                />
-              </div>
-            </div>
-          </div>
-        )
-      })()}
-
       {/* Mobile: link to docs */}
       <div className="lg:hidden">
         <Link
-          href="/docs"
+          href="/dashboard/docs"
           className="flex items-center justify-between p-4 bg-card rounded-2xl border border-border hover:shadow-md transition-shadow"
         >
           <div>
