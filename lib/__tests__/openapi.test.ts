@@ -27,14 +27,19 @@ describe("OpenAPI spec", () => {
       "/api/business",
       "/api/cards",
       "/api/cards/{id}",
+      "/api/cards/{id}/restore",
       "/api/customers",
       "/api/customers/{id}",
       "/api/dashboard/activity",
       "/api/dashboard/stats",
       "/api/join",
+      "/api/my-cards/{customerId}",
+      "/api/openapi",
       "/api/passes/apple/{cardId}",
       "/api/passes/google/{cardId}",
       "/api/stamps",
+      "/api/users",
+      "/api/users/{id}",
     ])
   })
 

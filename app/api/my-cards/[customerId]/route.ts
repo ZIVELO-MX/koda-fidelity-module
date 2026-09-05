@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 import { handleApiError, NotFoundError, ValidationError, UnauthorizedError } from "@/lib/api-utils"
+
+/**
+ * @openapi
+ * /api/my-cards/{customerId}:
+ *   delete:
+ *     tags: [Customer]
+ *     summary: Withdraw a customer membership
+ *     responses: { 200: { description: Membership withdrawn } }
+ */
 import { isExpired } from "@/lib/card-utils"
 
 export async function DELETE(
