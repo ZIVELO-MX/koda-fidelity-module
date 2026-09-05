@@ -22,16 +22,6 @@ import {
 } from "lucide-react"
 import { daysUntilExpiry } from "@/lib/card-utils"
 import { getCardIcon } from "@/lib/card-icons"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 
 interface SearchCustomer {
   id: string
@@ -57,7 +47,8 @@ function ScanPageInner() {
   const [actionLoading, setActionLoading] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
   const [milestoneClaim, setMilestoneClaim] = useState<{ id: string; label: string; iconName: string | null } | null>(null)
-  const [useCamera, setUseCamera] = useState(false)
+  // La cámara abre sola: sellar es la razón por la que se entra a esta pantalla.
+  const [useCamera, setUseCamera] = useState(true)
   const [cameraError, setCameraError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -111,13 +102,14 @@ function ScanPageInner() {
     }
   }
 
-  const addStamp = async () => {
+  // La acción se pide, no se adivina: la pantalla ofrece sellar y canjear, y
+  // quien sella elige. El tipo viaja explícito al servidor.
+  const ejecutar = async (type: "stamp" | "redeem") => {
     if (!selectedCustomer) return
     setActionLoading(true)
     setActionError(null)
 
     try {
-      const type = selectedCustomer.stamps >= selectedCustomer.maxStamps ? "redeem" : "stamp"
       const res = await fetch("/api/stamps", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -151,6 +143,7 @@ function ScanPageInner() {
     setActionError(null)
     setMilestoneClaim(null)
     setCameraError(null)
+    setUseCamera(true)
   }
 
   const selectCustomer = (customer: SearchCustomer) => {
@@ -188,48 +181,56 @@ function ScanPageInner() {
           {scanState === "idle" && (
             <div className="space-y-6">
               <div className="space-y-3">
-                <Button
-                  onClick={() => setUseCamera(!useCamera)}
-                  variant={useCamera ? "default" : "outline"}
-                  className="w-full"
-                  size="lg"
-                >
-                  {useCamera ? (
-                    <>
-                      <Scan className="h-5 w-5 mr-2" />
-                      Escáner Activo
-                    </>
-                  ) : (
-                    <>
-                      <Camera className="h-5 w-5 mr-2" />
-                      Abrir Escáner
-                    </>
-                  )}
-                </Button>
+                {useCamera && (
+                  <QRScanner
+                    onScan={handleScanResult}
+                    onError={(err) => {
+                      // Si la cámara falló, se apaga: así el botón ofrece
+                      // reintentar en vez de decir que sigue encendida.
+                      setCameraError(err)
+                      setUseCamera(false)
+                    }}
+                  />
+                )}
 
                 {cameraError && (
                   <p className="text-sm text-red-500 text-center">{cameraError}</p>
                 )}
 
-                {useCamera && (
-                  <QRScanner
-                    onScan={handleScanResult}
-                    onError={(err) => setCameraError(err)}
-                  />
-                )}
-              </div>
-
-              <div className="flex items-center gap-4">
-                <div className="flex-1 h-px bg-border" />
-                <span className="text-sm text-muted-foreground">o buscar</span>
-                <div className="flex-1 h-px bg-border" />
+                {/* El botón solo apaga la cámara, o la recupera cuando el permiso
+                    falló. Abrirla no es una decisión que haya que tomar cada vez. */}
+                <Button
+                  onClick={() => {
+                    setCameraError(null)
+                    setUseCamera(!useCamera)
+                  }}
+                  variant="outline"
+                  className="w-full min-h-11"
+                  size="lg"
+                >
+                  {useCamera ? (
+                    <>
+                      <Scan className="h-5 w-5 mr-2" />
+                      Apagar cámara
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="h-5 w-5 mr-2" />
+                      {cameraError ? "Reintentar cámara" : "Encender cámara"}
+                    </>
+                  )}
+                </Button>
               </div>
 
               <div className="space-y-3">
+                <label htmlFor="buscar-cliente" className="text-sm font-medium text-foreground">
+                  Buscar por nombre
+                </label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Buscar por nombre de cliente..."
+                    id="buscar-cliente"
+                    placeholder="Nombre del cliente"
                     className="pl-10"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -354,30 +355,52 @@ function ScanPageInner() {
                 <p className="text-sm text-red-500 text-center">{actionError}</p>
               )}
 
-              <Button
-                onClick={addStamp}
-                disabled={actionLoading}
-                size="lg"
-                className="w-full h-16 text-lg text-white"
-                style={selectedCustomer.stamps >= selectedCustomer.maxStamps
-                  ? { backgroundColor: "#16a34a" }
-                  : { backgroundColor: selectedCustomer.cardBrandColor }
-                }
-              >
-                {actionLoading ? (
-                  <Loader2 className="h-6 w-6 mr-3 animate-spin" />
-                ) : selectedCustomer.stamps >= selectedCustomer.maxStamps ? (
-                  <>
-                    <Gift className="h-6 w-6 mr-3" />
-                    Canjear Recompensa
-                  </>
-                ) : (
-                  <>
-                    <Stamp className="h-6 w-6 mr-3" />
-                    Agregar Sello
-                  </>
-                )}
-              </Button>
+              {(() => {
+                const completa = selectedCustomer.stamps >= selectedCustomer.maxStamps
+                return (
+                  <div className="space-y-3">
+                    <Button
+                      onClick={() => ejecutar("stamp")}
+                      disabled={actionLoading || completa}
+                      size="lg"
+                      variant={completa ? "outline" : "default"}
+                      className="w-full h-16 text-lg"
+                      style={completa ? undefined : { backgroundColor: selectedCustomer.cardBrandColor, color: "#FFFFFF" }}
+                    >
+                      {actionLoading ? (
+                        <Loader2 className="h-6 w-6 mr-3 animate-spin" />
+                      ) : (
+                        <Stamp className="h-6 w-6 mr-3" />
+                      )}
+                      Agregar Sello
+                    </Button>
+
+                    {completa && (
+                      <p className="text-sm text-muted-foreground text-center">
+                        La tarjeta está llena. Canjea la recompensa para volver a sellar.
+                      </p>
+                    )}
+
+                    <Button
+                      onClick={() => ejecutar("redeem")}
+                      disabled={actionLoading || !completa}
+                      size="lg"
+                      variant={completa ? "default" : "outline"}
+                      className="w-full h-12 text-base"
+                      style={completa ? { backgroundColor: "#16a34a", color: "#FFFFFF" } : undefined}
+                    >
+                      <Gift className="h-5 w-5 mr-3" />
+                      Canjear Recompensa
+                    </Button>
+
+                    {!completa && (
+                      <p className="text-sm text-muted-foreground text-center">
+                        Faltan {selectedCustomer.maxStamps - selectedCustomer.stamps} sellos para poder canjear.
+                      </p>
+                    )}
+                  </div>
+                )
+              })()}
             </div>
           )}
 
@@ -425,36 +448,35 @@ function ScanPageInner() {
                 </div>
               )}
 
+              {/* El bono se anuncia en la propia pantalla. Un diálogo bloqueante
+                  obligaba a despacharlo antes de seguir atendiendo. */}
               {milestoneClaim && (() => {
                 const milestoneIcon = getCardIcon(milestoneClaim.iconName)
                 const MilestoneIconComp = milestoneIcon?.Icon
                 return (
-                  <AlertDialog open={true} onOpenChange={(o) => { if (!o) setMilestoneClaim(null) }}>
-                    <AlertDialogContent className="max-w-sm">
-                      <AlertDialogHeader>
-                        <div className="mx-auto w-14 h-14 rounded-full flex items-center justify-center mb-2"
-                          style={{ backgroundColor: selectedCustomer?.cardBrandColor ?? "#f97316" }}>
-                          {MilestoneIconComp ? <MilestoneIconComp className="h-7 w-7 text-white" /> : <Gift className="h-7 w-7 text-white" />}
-                        </div>
-                        <AlertDialogTitle className="text-center text-xl">¡Bono Sorpresa!</AlertDialogTitle>
-                        <AlertDialogDescription className="text-center text-base">
-                          <strong className="text-foreground">{selectedCustomer?.name}</strong> obtuvo <strong className="text-foreground">{milestoneClaim.label}</strong>
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg px-4 py-3 text-sm text-amber-700 dark:text-amber-400 text-center">
-                        Notifica al cliente sobre su recompensa
-                      </div>
-                      <AlertDialogFooter className="sm:justify-center gap-2">
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction
-                          className="text-white"
-                          style={{ backgroundColor: selectedCustomer?.cardBrandColor ?? "#f97316" }}
-                        >
-                          Canjear recompensa
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <div
+                    role="status"
+                    className="anuncio-entra flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left dark:border-amber-800 dark:bg-amber-950/20"
+                  >
+                    <div
+                      className="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: selectedCustomer.cardBrandColor }}
+                    >
+                      {MilestoneIconComp ? (
+                        <MilestoneIconComp className="h-6 w-6 text-white" />
+                      ) : (
+                        <Gift className="h-6 w-6 text-white" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-amber-800 dark:text-amber-300">
+                        Bono sorpresa: {milestoneClaim.label}
+                      </p>
+                      <p className="text-sm text-amber-700 dark:text-amber-400">
+                        Avísale a {selectedCustomer.name} antes de que se vaya.
+                      </p>
+                    </div>
+                  </div>
                 )
               })()}
 
