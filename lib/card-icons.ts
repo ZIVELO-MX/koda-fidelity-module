@@ -48,7 +48,7 @@ import {
 export interface CardIcon {
   name: string
   label: string
-  /** Rubro con el que se agrupa en el selector. */
+  /** Rubro del que viene. No se muestra: sirve para que la búsqueda lo encuentre. */
   grupo: string
   Icon: LucideIcon
 }
@@ -119,9 +119,6 @@ export const CARD_ICONS: CardIcon[] = [
   { name: "cherry", label: "Cereza", grupo: "Heladería", Icon: Cherry },
   { name: "candy", label: "Dulce", grupo: "Heladería", Icon: Candy },
 ]
-
-/** Los rubros en el orden en que se muestran, sin repetir. */
-export const GRUPOS_DE_ICONOS: string[] = [...new Set(CARD_ICONS.map((i) => i.grupo))]
 
 export function getCardIcon(name: string | null | undefined): CardIcon | undefined {
   if (!name) return undefined

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { CARD_ICONS, GRUPOS_DE_ICONOS, getCardIcon } from "../card-icons"
+import { CARD_ICONS, getCardIcon } from "../card-icons"
 
 // `name` es lo que se guarda en la base. Renombrar o quitar uno deja sin ícono a
 // las tarjetas ya publicadas con él, y eso no se ve hasta que alguien abre su
@@ -34,17 +34,12 @@ describe("catálogo de íconos", () => {
     }
   })
 
-  it("lista cada rubro una sola vez y en el orden del catálogo", () => {
-    expect(GRUPOS_DE_ICONOS[0]).toBe("General")
-    expect(new Set(GRUPOS_DE_ICONOS).size).toBe(GRUPOS_DE_ICONOS.length)
-    for (const icono of CARD_ICONS) {
-      expect(GRUPOS_DE_ICONOS).toContain(icono.grupo)
-    }
-  })
-
+  // El rubro no se muestra, pero la búsqueda entra por él: escribir "farmacia"
+  // trae sus íconos aunque ninguna etiqueta diga esa palabra.
   it("cubre los rubros de los temas de tarjeta de FID-0009", () => {
+    const rubros = new Set(CARD_ICONS.map((i) => i.grupo))
     for (const rubro of ["Panadería", "Taquería", "Cafetería", "Farmacia", "Heladería"]) {
-      expect(GRUPOS_DE_ICONOS, `falta el rubro ${rubro}`).toContain(rubro)
+      expect(rubros, `falta el rubro ${rubro}`).toContain(rubro)
     }
   })
 
