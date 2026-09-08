@@ -57,7 +57,10 @@ describe("DashboardSidebar — role-based navigation", () => {
     it("shows Marca", () => expect(hasText("Marca")).toBe(true))
     it("shows Configuración", () => expect(hasText("Configuración")).toBe(true))
     it("shows Equipo", () => expect(hasText("Equipo")).toBe(true))
-    it("shows Documentación", () => expect(hasText("Documentación")).toBe(true))
+    // La ayuda dejó de ser un destino: se abre desde el encabezado, con lo de
+    // la pantalla en la que estás. Ver components/dashboard/ayuda-contextual.tsx.
+    it("ya no ofrece Documentación como destino", () =>
+      expect(lacksText("Documentación")).toBe(true))
 
     it("agrupa los destinos en Operación, Programa y Negocio", () => {
       expect(hasText("Operación")).toBe(true)
@@ -102,14 +105,14 @@ describe("DashboardSidebar — role-based navigation", () => {
         expect(allHrefs).not.toContain("/dashboard/scan")
       })
 
-      it("includes admin-only items (Marca, Configuración, Equipo, Docs)", () => {
+      it("includes admin-only items (Marca, Configuración, Equipo)", () => {
         const allHrefs = capturedProps.current.navGroups.flatMap((g: any) =>
           g.items.map((i: any) => i.href)
         )
         expect(allHrefs).toContain("/dashboard/branding")
         expect(allHrefs).toContain("/dashboard/settings")
         expect(allHrefs).toContain("/dashboard/team")
-        expect(allHrefs).toContain("/dashboard/docs")
+        expect(allHrefs).not.toContain("/dashboard/docs")
       })
     })
   })

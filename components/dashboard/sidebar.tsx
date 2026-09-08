@@ -11,7 +11,6 @@ import {
   QrCode,
   Palette,
   Settings,
-  BookOpen,
   Smartphone,
   LogOut,
   UserCog,
@@ -85,7 +84,6 @@ const navGroups = [
       { name: "Marca", href: "/dashboard/branding", icon: Palette },
       { name: "Equipo", href: "/dashboard/team", icon: UserCog },
       { name: "Configuración", href: "/dashboard/settings", icon: Settings },
-      { name: "Documentación", href: "/dashboard/docs", icon: BookOpen },
     ],
   },
 ]

@@ -109,6 +109,21 @@ test.describe("ola 3, administración del negocio", () => {
       await expect(page.getByRole("button", { name: /Guardar cambios/i })).toHaveCount(1)
     })
 
+    test("la ayuda del encabezado habla de la pantalla que tienes delante", async ({ page }) => {
+      await entrar(page)
+
+      await page.goto("/dashboard/team")
+      await page.getByRole("button", { name: "Ayuda de Equipo" }).click()
+      const ayuda = page.getByRole("dialog")
+      await expect(ayuda.getByRole("heading", { name: "Equipo" })).toBeVisible()
+      await expect(ayuda.getByText("¿Cómo invito a alguien?")).toBeVisible()
+      await page.keyboard.press("Escape")
+
+      await page.goto("/dashboard/branding")
+      await page.getByRole("button", { name: "Ayuda de Marca" }).click()
+      await expect(page.getByRole("dialog").getByText("¿Qué decide Marca?")).toBeVisible()
+    })
+
     test("Equipo explica los permisos una sola vez, a peticion", async ({ page }) => {
       await entrar(page)
       await page.goto("/dashboard/team")

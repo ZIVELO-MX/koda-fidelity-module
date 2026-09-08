@@ -22,7 +22,6 @@ const DESTINOS = [
   { grupo: "Negocio", nombre: "Marca", url: "/dashboard/branding", titulo: "Marca" },
   { grupo: "Negocio", nombre: "Equipo", url: "/dashboard/team", titulo: "Equipo" },
   { grupo: "Negocio", nombre: "Configuración", url: "/dashboard/settings", titulo: "Configuración" },
-  { grupo: "Negocio", nombre: "Documentación", url: "/dashboard/docs", titulo: "Documentación" },
   { grupo: "Operación", nombre: "Panel", url: "/dashboard", titulo: "Panel" },
 ]
 
@@ -46,7 +45,7 @@ test.describe("fluidez de la navegación", () => {
   test.describe("escritorio", () => {
     test.use({ viewport: { width: 1440, height: 900 } })
 
-    test("recorre los ocho destinos del aside sin perderse", async ({ page }) => {
+    test("recorre los destinos del aside sin perderse", async ({ page }) => {
       await entrar(page)
       const aside = page.locator("aside")
 
@@ -135,12 +134,21 @@ test.describe("fluidez de la navegación", () => {
       await page.getByRole("button", { name: "Abrir menú" }).click()
       // Por visibilidad: a 375px el aside sigue en el DOM pero oculto, así que
       // lo visible con ese nombre es lo que abrió el menú.
-      for (const destino of ["Marca", "Equipo", "Configuración", "Documentación"]) {
+      for (const destino of ["Marca", "Equipo", "Configuración"]) {
         await expect(
           page.getByRole("link", { name: destino, exact: true }).filter({ visible: true }),
           `${destino} no aparece en el menú móvil`,
         ).toBeVisible({ timeout: MARGEN_MS })
       }
+    })
+
+    test("la ayuda no se busca en el menú: está en el encabezado", async ({ page }) => {
+      await entrar(page)
+      // Documentación dejó de ser un destino de navegación. La ayuda de cada
+      // pantalla se abre desde el encabezado, en los dos anchos.
+      await expect(page.getByRole("link", { name: "Documentación", exact: true })).toHaveCount(0)
+      await page.getByRole("button", { name: /^Ayuda/ }).click()
+      await expect(page.getByRole("dialog")).toBeVisible({ timeout: MARGEN_MS })
     })
   })
 })

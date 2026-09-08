@@ -255,7 +255,7 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
           <h1 className="text-2xl font-bold text-foreground">Equipo</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {users.length === 1
-              ? `1 / ${memberLimit} — solo tú tienes acceso al negocio`
+              ? `1 / ${memberLimit}, solo tú tienes acceso al negocio`
               : `${users.length} / ${memberLimit} personas con acceso`}
           </p>
         </div>
