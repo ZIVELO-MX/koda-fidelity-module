@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -75,9 +74,8 @@ export default function BrandingPage() {
       const res = await fetch("/api/business", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        // Sin `name`: lo posee Configuración. El PUT es parcial, así que
-        // omitirlo lo deja intacto en vez de borrarlo.
         body: JSON.stringify({
+          name: businessName,
           brandColor,
           logoUrl: logoUrl || null,
           iconName: iconName || null,
@@ -126,19 +124,22 @@ export default function BrandingPage() {
         </p>
       </div>
 
-      {/* El nombre se edita en Configuración y aquí solo se muestra. Estaba en
-          las dos pantallas, cada una con su propio guardado, así que el último
-          que guardabas pisaba al otro. */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-6">
-        <div className="min-w-0">
-          <p className="text-xs text-muted-foreground">Nombre del negocio</p>
-          <p className="truncate font-semibold text-foreground">
-            {businessName || "Sin nombre"}
-          </p>
-        </div>
-        <Button asChild variant="outline" className="min-h-11">
-          <Link href="/dashboard/settings">Cambiar en Configuración</Link>
-        </Button>
+      {/* Marca es la dueña del nombre: es donde se ve sobre la tarjeta y donde
+          la vista previa lo refleja al escribir. Configuración lo muestra sin
+          editarlo. */}
+      <div className="bg-card rounded-2xl p-6 border border-border space-y-2">
+        <h2 className="font-semibold text-foreground">Nombre del Negocio</h2>
+        <Label htmlFor="businessName" className="sr-only">Nombre del negocio</Label>
+        <Input
+          id="businessName"
+          name="businessName"
+          value={businessName}
+          onChange={(e) => setBusinessName(e.target.value)}
+          placeholder="Ingresa el nombre de tu negocio…"
+        />
+        <p className="text-xs text-muted-foreground">
+          Aparece en las tarjetas de lealtad y comunicaciones con clientes.
+        </p>
       </div>
 
       {/* Logo Upload */}

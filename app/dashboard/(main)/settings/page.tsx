@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
@@ -47,8 +48,9 @@ export default function SettingsPage() {
       const res = await fetch("/api/business", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
+        // Sin `name`: lo posee Marca. El PUT es parcial, así que omitirlo lo
+        // deja intacto en vez de borrarlo.
         body: JSON.stringify({
-          name: businessName,
           nickname,
           businessType,
           address,
@@ -107,15 +109,22 @@ export default function SettingsPage() {
           </div>
         </div>
         <div className="space-y-4">
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="businessName">Nombre del Negocio</Label>
-              <Input id="businessName" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
+          {/* El nombre lo posee Marca, que es donde se ve sobre la tarjeta. Se
+              editaba en las dos pantallas, cada una con su guardado, y el último
+              que guardabas pisaba al otro. */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted/30 p-4">
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground">Nombre del negocio</p>
+              <p className="truncate font-medium text-foreground">{businessName || "Sin nombre"}</p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="businessType">Tipo de Negocio</Label>
-              <Input id="businessType" value={businessType} onChange={(e) => setBusinessType(e.target.value)} />
-            </div>
+            <Button asChild variant="outline" className="min-h-11">
+              <Link href="/dashboard/branding">Cambiar en Marca</Link>
+            </Button>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="businessType">Tipo de Negocio</Label>
+            <Input id="businessType" value={businessType} onChange={(e) => setBusinessType(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="nickname">Apodo (visible en el panel)</Label>
