@@ -319,7 +319,7 @@ export default async function DashboardPage() {
                 </div>
                 <Link
                   href={`/dashboard/cards/${card.id}`}
-                  className="flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-primary border-t border-border hover:bg-primary/5 transition-colors"
+                  className="flex items-center justify-center gap-2 min-h-11 py-2.5 text-sm font-medium text-primary border-t border-border hover:bg-primary/5 transition-colors"
                 >
                   <Eye className="h-4 w-4" />
                   Ver tarjeta

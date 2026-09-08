@@ -466,7 +466,7 @@ export function CardQRClient({
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]">
-          <div className="space-y-5">
+          <div className="min-w-0 space-y-5">
             <div>
               <p className="mb-2 text-sm font-medium text-foreground">Tamaño de impresión</p>
               <div className="grid gap-2 sm:grid-cols-3">
@@ -540,9 +540,12 @@ export function CardQRClient({
 
           <div>
             <p className="mb-2 text-sm font-medium text-foreground">Vista previa</p>
+            {/* max-w-full en el lienzo: se dibuja al tamaño de la pieza y en móvil
+                no cabe. Centrado y sin encoger, desbordaba por los dos lados y ni
+                siquiera se podía desplazar para verlo. */}
             <div className="flex min-h-44 items-center justify-center overflow-auto rounded-xl border border-border bg-muted/30 p-4">
               {qrDataUrl ? (
-                <canvas ref={previewCanvasRef} className="shrink-0 rounded shadow-sm" />
+                <canvas ref={previewCanvasRef} className="max-w-full rounded shadow-sm" />
               ) : (
                 <span className="text-sm text-muted-foreground">Generando vista previa…</span>
               )}
