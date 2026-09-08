@@ -284,7 +284,7 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
             Límite alcanzado
           </div>
         ) : (
-          <Button onClick={() => { resetInviteModal(); setInviteOpen(true) }} className="gap-2">
+          <Button onClick={() => { resetInviteModal(); setInviteOpen(true) }} className="min-h-11 gap-2">
             <UserPlus className="h-4 w-4" />
             <span className="hidden sm:inline">Invitar colaborador</span>
             <span className="sm:hidden">Invitar</span>
@@ -305,7 +305,7 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
                 Invita a un colaborador para que pueda sellar tarjetas y atender clientes desde su propio acceso.
               </p>
             </div>
-            <Button onClick={() => { resetInviteModal(); setInviteOpen(true) }} variant="outline" className="gap-2 mt-2">
+            <Button onClick={() => { resetInviteModal(); setInviteOpen(true) }} variant="outline" className="mt-2 min-h-11 gap-2">
               <UserPlus className="h-4 w-4" />
               Invitar primer colaborador
             </Button>
@@ -351,7 +351,7 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="sm:hidden h-8 w-8 ml-auto shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        className="sm:hidden min-h-10 min-w-10 ml-auto shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                         disabled={isSelf}
                         onClick={() => setRemoveTarget(member)}
                         aria-label={`Eliminar a ${member.name}`}
@@ -398,7 +398,7 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        className="min-h-10 min-w-10 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                         disabled={isSelf}
                         onClick={() => setRemoveTarget(member)}
                         aria-label={`Eliminar a ${member.name}`}

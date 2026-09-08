@@ -242,7 +242,7 @@ export default function DocsPage() {
     <div className="mx-auto max-w-4xl space-y-12">
       <Link
         href="/dashboard"
-        className="lg:hidden inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+        className="lg:hidden inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
         Volver al Panel

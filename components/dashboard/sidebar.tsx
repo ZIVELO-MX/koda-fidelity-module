@@ -17,6 +17,7 @@ import {
   UserCog,
   Camera,
   Menu,
+  Moon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -45,6 +46,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { logout } from "@/lib/actions/auth"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { MobileSettingsPanel } from "./mobile-settings-panel"
 import { useEffect, useState } from "react"
 import type { Role } from "@prisma/client"
@@ -364,6 +366,21 @@ export function DashboardSidebar({
                   Configuración
                 </Link>
               </DropdownMenuItem>
+
+              {/* El tema es una preferencia de quien mira, no un dato del
+                  negocio, así que vive con la cuenta y no en Configuración.
+                  onSelect preventDefault: cambiarlo no debe cerrar el menú. */}
+              <DropdownMenuItem
+                onSelect={(e) => e.preventDefault()}
+                className="cursor-default justify-between focus:bg-transparent"
+              >
+                <span className="flex items-center">
+                  <Moon className="mr-2 h-4 w-4" />
+                  Modo oscuro
+                </span>
+                <ThemeToggle />
+              </DropdownMenuItem>
+
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => setLogoutOpen(true)}
