@@ -193,8 +193,16 @@ function ScanPageInner() {
                   />
                 )}
 
+                {/* No poder abrir la cámara no es un error de quien sella: es un
+                    estado con salida, y la salida es buscar por nombre. */}
                 {cameraError && (
-                  <p className="text-sm text-red-500 text-center">{cameraError}</p>
+                  <div
+                    role="status"
+                    className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/20 dark:text-amber-300"
+                  >
+                    <p className="font-medium">{cameraError}</p>
+                    <p className="mt-0.5">Puedes sellar buscando al cliente por su nombre.</p>
+                  </div>
                 )}
 
                 {/* El botón solo apaga la cámara, o la recupera cuando el permiso

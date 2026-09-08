@@ -137,18 +137,20 @@ describe("QRScanner", () => {
     render(<QRScanner onScan={() => {}} onError={onError} />)
     const props = scannerProps()!
     act(() => props.onError!({ kind: "unsupported", message: "unsupported", cause: null }))
-    expect(onError).toHaveBeenCalledWith("Escáner no soportado en este navegador")
+    expect(onError).toHaveBeenCalledWith("Este navegador no puede abrir la cámara")
   })
 
-  it("usa el mensaje original si el kind no está mapeado", () => {
+  // El mensaje de la librería viene en inglés. Filtrarlo a la pantalla le dejaba
+  // a quien sella un "Not supported" que no le dice nada.
+  it("nunca muestra el mensaje original de la librería", () => {
     const onError = vi.fn()
     render(<QRScanner onScan={() => {}} onError={onError} />)
     const props = scannerProps()!
-    act(() => props.onError!({ kind: "security" as any, message: "security error", cause: null }))
-    expect(onError).toHaveBeenCalledWith("security error")
+    act(() => props.onError!({ kind: "security" as any, message: "Not supported", cause: null }))
+    expect(onError).toHaveBeenCalledWith("No se pudo abrir la cámara en este dispositivo")
   })
 
-  it("usa mensaje genérico si no hay kind ni message", () => {
+  it("usa la frase genérica en español si no hay kind ni message", () => {
     const onError = vi.fn()
     render(<QRScanner onScan={() => {}} onError={onError} />)
     const props = scannerProps()!
@@ -157,7 +159,7 @@ describe("QRScanner", () => {
       message: "",
       cause: null,
     } as IScannerError))
-    expect(onError).toHaveBeenCalledWith("Error al acceder a la cámara")
+    expect(onError).toHaveBeenCalledWith("No se pudo abrir la cámara en este dispositivo")
   })
 
   it("no explota si onError no está definido", () => {

@@ -29,9 +29,16 @@ export function QRScanner({ onScan, onError }: QRScannerProps) {
       "no-camera": "No se detectó ninguna cámara",
       "in-use": "La cámara está siendo usada por otra aplicación",
       "insecure-context": "Se requiere HTTPS para acceder a la cámara",
-      unsupported: "Escáner no soportado en este navegador",
+      unsupported: "Este navegador no puede abrir la cámara",
+      "not-supported": "Este navegador no puede abrir la cámara",
     }
-    onError?.(messages[error.kind] || error.message || "Error al acceder a la cámara")
+    // El mensaje de la librería viene en inglés y no le dice nada a quien sella.
+    // Nunca se muestra: se registra para diagnóstico y en pantalla va una frase
+    // que sí se entiende.
+    if (!messages[error.kind]) {
+      console.warn("[QRScanner] error sin traducir:", error.kind, error.message)
+    }
+    onError?.(messages[error.kind] ?? "No se pudo abrir la cámara en este dispositivo")
   }, [onError])
 
   return (
