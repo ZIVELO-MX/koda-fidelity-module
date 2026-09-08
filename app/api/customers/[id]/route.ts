@@ -43,7 +43,7 @@ import { getBusinessFromSession, handleApiError, NotFoundError, requireRole } fr
  *               $ref: '#/components/schemas/Error'
  */
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
@@ -60,10 +60,16 @@ export async function DELETE(
       throw new NotFoundError("Customer not found")
     }
 
-    await prisma.customer.update({
-      where: { id },
-      data: { isActive: false },
-    })
+    const permanent = new URL(request.url).searchParams.get("permanent") === "true"
+    if (permanent) {
+      await prisma.$transaction(async (tx) => {
+        // Keep the immutable ledger useful without retaining the deleted person's identity.
+        await tx.stampLog.updateMany({ where: { customerId: id }, data: { customerId: null } })
+        await tx.customer.delete({ where: { id } })
+      })
+    } else {
+      await prisma.customer.update({ where: { id }, data: { isActive: false } })
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

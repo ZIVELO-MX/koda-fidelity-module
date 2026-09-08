@@ -25,6 +25,13 @@ export class ValidationError extends Error {
   }
 }
 
+export class ConflictError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = "ConflictError"
+  }
+}
+
 export class ForbiddenError extends Error {
   constructor(message = "Forbidden") {
     super(message)
@@ -174,6 +181,9 @@ export function handleApiError(error: unknown, requestId: string = randomUUID())
   }
   if (error instanceof ValidationError) {
     return NextResponse.json({ error: error.message, code: "KF-REQUEST-001", action: "Corrige los datos enviados.", requestId, retryable: false }, { status: 400, headers: { "x-request-id": requestId } })
+  }
+  if (error instanceof ConflictError) {
+    return NextResponse.json({ error: error.message, code: "KF-REQUEST-001", action: "Recarga los datos e inténtalo de nuevo.", requestId, retryable: true }, { status: 409, headers: { "x-request-id": requestId } })
   }
   console.error("API Error", { requestId, errorName: error instanceof Error ? error.name : "UnknownError" })
   return NextResponse.json({ error: "Internal server error", code: "KF-SYS-001", action: "Inténtalo de nuevo más tarde.", requestId, retryable: true }, { status: 500, headers: { "x-request-id": requestId } })
