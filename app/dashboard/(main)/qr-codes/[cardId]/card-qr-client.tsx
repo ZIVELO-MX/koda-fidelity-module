@@ -421,35 +421,21 @@ export function CardQRClient({
                 </p>
               </div>
 
-              <div className="grid gap-2 sm:grid-cols-2">
-                <Button variant="default" onClick={copyUrl} className="w-full gap-2" disabled={!joinUrl}>
-                  {copied ? (
-                    <>
-                      <Check className="h-4 w-4" aria-hidden="true" />
-                      Link Copiado
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4" aria-hidden="true" />
-                      Copiar Link
-                    </>
-                  )}
-                </Button>
-                <Button variant="outline" onClick={downloadQRPNG} disabled={!qrDataUrl} className="w-full gap-2">
-                  <Download className="h-4 w-4" aria-hidden="true" />
-                  Descargar QR PNG
-                </Button>
-                <Button variant="outline" onClick={downloadQRSVG} disabled={!joinUrl} className="w-full gap-2">
-                  <QrCode className="h-4 w-4" aria-hidden="true" />
-                  Descargar QR SVG
-                </Button>
-                <Button asChild variant="outline" className="w-full gap-2">
-                  <Link href={`/dashboard/qr-codes/${card.id}/preview`}>
-                    <ExternalLink className="h-4 w-4" aria-hidden="true" />
-                    Probar Registro
-                  </Link>
-                </Button>
-              </div>
+              {/* Compartir es una sola acción. Descargar el QR e imprimirlo son
+                  otra cosa y viven abajo, en su propia sección. */}
+              <Button variant="default" onClick={copyUrl} className="min-h-11 w-full gap-2 sm:w-auto" disabled={!joinUrl}>
+                {copied ? (
+                  <>
+                    <Check className="h-4 w-4" aria-hidden="true" />
+                    Link copiado
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4" aria-hidden="true" />
+                    Copiar link
+                  </>
+                )}
+              </Button>
 
               <p className="sr-only" aria-live="polite" aria-atomic="true">
                 {copyMessage}
@@ -457,35 +443,26 @@ export function CardQRClient({
             </div>
           </div>
         </section>
-
-        <aside className="rounded-xl border border-border bg-card p-5 transition-shadow hover:shadow-md">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Tarjeta</h2>
-          <div className="mt-4 space-y-4">
-            <div>
-              <p className="text-xs text-muted-foreground">Nombre</p>
-              <p className="break-words text-sm font-medium text-foreground">{card.name}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Recompensa</p>
-              <p className="break-words text-sm font-medium text-foreground">{card.reward}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Meta</p>
-              <p className="text-sm font-medium text-foreground">{card.stampsRequired} sellos</p>
-            </div>
-            <div className="rounded-lg bg-muted/40 p-3 text-sm text-muted-foreground">
-              Usa este QR en redes sociales, mensajes o materiales digitales. Para piezas impresas, ajusta el formato abajo.
-            </div>
-          </div>
-        </aside>
       </div>
 
       <section className="rounded-xl border border-border bg-card p-5 sm:p-6 transition-shadow hover:shadow-md">
         <div className="mb-5 flex flex-col gap-1">
-          <h2 className="text-lg font-semibold text-foreground">Material Impreso</h2>
+          <h2 className="text-lg font-semibold text-foreground">Descargar e imprimir</h2>
           <p className="text-sm text-muted-foreground">
-            Personaliza el texto y descarga una pieza lista para imprimir.
+            El código suelto para tus propios diseños, o una pieza lista para imprimir.
           </p>
+        </div>
+
+        {/* El código solo, para meterlo en algo que ya tienes hecho. */}
+        <div className="mb-6 flex flex-wrap gap-2 border-b border-border pb-6">
+          <Button variant="outline" onClick={downloadQRPNG} disabled={!qrDataUrl} className="min-h-11 gap-2">
+            <Download className="h-4 w-4" aria-hidden="true" />
+            Solo el código, PNG
+          </Button>
+          <Button variant="outline" onClick={downloadQRSVG} disabled={!joinUrl} className="min-h-11 gap-2">
+            <QrCode className="h-4 w-4" aria-hidden="true" />
+            Solo el código, SVG
+          </Button>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]">
@@ -545,12 +522,12 @@ export function CardQRClient({
             </div>
 
             <div className="grid gap-2 sm:grid-cols-2">
-              <Button variant="outline" onClick={downloadPNG} className="w-full gap-2" disabled={!qrDataUrl}>
+              <Button variant="outline" onClick={downloadPNG} className="min-h-11 w-full gap-2" disabled={!qrDataUrl}>
                 <Download className="h-4 w-4" aria-hidden="true" />
-                Descargar Material PNG
+                Descargar la pieza, PNG
               </Button>
 
-              <Button variant="outline" onClick={generateAndOpenPDF} className="w-full gap-2" disabled={!qrDataUrl || loading}>
+              <Button variant="outline" onClick={generateAndOpenPDF} className="min-h-11 w-full gap-2" disabled={!qrDataUrl || loading}>
                 {loading ? (
                   <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                 ) : (
