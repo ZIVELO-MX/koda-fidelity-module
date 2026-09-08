@@ -100,8 +100,11 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  // data-scroll-behavior: el CSS declara scroll-behavior smooth, y sin este
+  // atributo Next lo aplica también al cambiar de ruta, donde el desplazamiento
+  // suave hasta el inicio se ve como un salto raro.
   return (
-    <html lang="es" className="bg-background" suppressHydrationWarning>
+    <html lang="es" className="bg-background" data-scroll-behavior="smooth" suppressHydrationWarning>
       <body className={`${switzer.variable} ${jetbrains.variable} font-sans antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange>
           {children}
