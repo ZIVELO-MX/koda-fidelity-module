@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { IconPicker } from "@/components/dashboard/icon-picker"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
-import { Upload, Check, Loader2 } from "lucide-react"
+import { Upload, Check, ChevronDown, Loader2 } from "lucide-react"
+import { getCardIcon } from "@/lib/card-icons"
 
 const colorPresets = [
   "#f97316", "#3b82f6", "#10b981", "#8b5cf6", "#ec4899", "#f59e0b",
@@ -97,6 +98,14 @@ export default function BrandingPage() {
     }
   }
 
+  const nombreDeIcono = (valor: string | null) =>
+    valor === "logo" ? "logo" : valor ? getCardIcon(valor)?.label.toLowerCase() ?? valor : null
+
+  const resumenDeIconos = [
+    `Tarjeta: ${nombreDeIcono(iconName) ?? "sin ícono"}`,
+    `Sello: ${nombreDeIcono(stampIconName) ?? "un sello"}`,
+  ].join(" · ")
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -116,36 +125,41 @@ export default function BrandingPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground text-balance">Marca</h1>
         <p className="text-muted-foreground">
-          Personaliza cómo se ven tus tarjetas. Estos datos se usan como plantilla al crear nuevas tarjetas.
+          Cómo se ven tus tarjetas. Es la plantilla de las que crees a partir de ahora.
         </p>
       </div>
 
-      {/* Marca es la dueña del nombre: es donde se ve sobre la tarjeta y donde
-          la vista previa lo refleja al escribir. Configuración lo muestra sin
-          editarlo. */}
-      <div className="bg-card rounded-2xl p-6 border border-border space-y-2">
-        <h2 className="font-semibold text-foreground">Nombre del Negocio</h2>
-        <Label htmlFor="businessName" className="sr-only">Nombre del negocio</Label>
-        <Input
-          id="businessName"
-          name="businessName"
-          value={businessName}
-          onChange={(e) => setBusinessName(e.target.value)}
-          placeholder="Ingresa el nombre de tu negocio…"
-        />
-        <p className="text-xs text-muted-foreground">
-          Aparece en las tarjetas de lealtad y comunicaciones con clientes.
-        </p>
-      </div>
+      {/* Una sola superficie: controles a la izquierda, la tarjeta fija a la
+          derecha. Antes eran seis tarjetas apiladas con la vista previa al
+          final. */}
+      <div className="grid gap-8 lg:grid-cols-2">
+        <div className="space-y-6">
+          <div className="space-y-5 rounded-2xl border border-border bg-card p-6">
+        {/* Marca es la dueña del nombre: es donde se ve sobre la tarjeta y donde
+            la vista previa lo refleja al escribir. Configuración lo muestra sin
+            editarlo. */}
+        <div className="space-y-2">
+          <Label htmlFor="businessName">Nombre del negocio</Label>
+          <Input
+            id="businessName"
+            name="businessName"
+            value={businessName}
+            onChange={(e) => setBusinessName(e.target.value)}
+            placeholder="Ingresa el nombre de tu negocio…"
+          />
+          <p className="text-xs text-muted-foreground">
+            Aparece en las tarjetas de lealtad y comunicaciones con clientes.
+          </p>
+        </div>
 
-      {/* Logo Upload */}
-      <div className="bg-card rounded-2xl p-6 border border-border space-y-4">
-        <h2 className="font-semibold text-foreground">Logo del Negocio <span className="text-muted-foreground font-normal text-sm">(opcional)</span></h2>
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+        {/* Logo, a la vista. */}
+        <div className="space-y-3">
+          <Label>Logo del negocio</Label>
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
           <div
             className="w-20 h-20 rounded-2xl flex items-center justify-center text-white font-bold text-2xl shrink-0 overflow-hidden relative"
             style={{ backgroundColor: brandColor }}
@@ -158,7 +172,7 @@ export default function BrandingPage() {
           </div>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Sube un logo cuadrado (recomendado 512×512 px). Habilita la opción &ldquo;Logo&rdquo; en los pickers de ícono.
+              Cuadrado, 512×512 px va bien. Al subirlo se usa como ícono de la tarjeta.
             </p>
             <input
               ref={fileInputRef}
@@ -170,50 +184,27 @@ export default function BrandingPage() {
               onChange={handleLogoUpload}
             />
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+              <Button variant="outline" className="min-h-11" onClick={() => fileInputRef.current?.click()}>
                 <Upload className="h-4 w-4 mr-2" />
-                {logoUrl ? "Cambiar Logo" : "Subir Logo"}
+                {logoUrl ? "Cambiar logo" : "Subir logo"}
               </Button>
               {logoUrl && (
-                <Button variant="ghost" size="sm" className="text-destructive" onClick={() => { setLogoUrl(""); setLogoError(null) }}>
+                <Button variant="ghost" className="min-h-11 text-destructive" onClick={() => { setLogoUrl(""); setLogoError(null) }}>
                   Quitar
                 </Button>
               )}
             </div>
             {logoError && (
-              <p className="text-sm text-destructive">{logoError}</p>
+              <p role="alert" className="text-sm text-destructive">{logoError}</p>
             )}
           </div>
+          </div>
         </div>
-      </div>
 
-      {/* Icon Selection */}
-      <div className="bg-card rounded-2xl p-6 border border-border space-y-4">
-        <div>
-          <h2 className="font-semibold text-foreground">Ícono de Marca <span className="text-muted-foreground font-normal text-sm">(opcional)</span></h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Aparece en la tarjeta cuando no hay logo. Si subiste logo, puedes seleccionarlo como ícono.
-          </p>
-        </div>
-        <IconPicker value={iconName} onChange={setIconName} businessLogoUrl={logoUrl || undefined} />
-      </div>
-
-      {/* Stamp Icon Selection */}
-      <div className="bg-card rounded-2xl p-6 border border-border space-y-4">
-        <div>
-          <h2 className="font-semibold text-foreground">Ícono del Sello <span className="text-muted-foreground font-normal text-sm">(opcional)</span></h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Se muestra en las celdas selladas. Si no eliges uno, se usa un sello.
-          </p>
-        </div>
-        <IconPicker value={stampIconName} onChange={setStampIconName} businessLogoUrl={logoUrl || undefined} />
-      </div>
-
-      {/* Brand Color */}
-      <div className="bg-card rounded-2xl p-6 border border-border space-y-4">
-        <h2 className="font-semibold text-foreground">Color de Marca</h2>
+        {/* Color, a la vista: junto con el logo es lo que de verdad cambia la
+            tarjeta. */}
         <div className="space-y-3">
-          <Label className="text-sm text-muted-foreground">Colores rápidos</Label>
+          <Label>Color de marca</Label>
           <div className="flex flex-wrap gap-3">
             {colorPresets.map((color) => (
               <button
@@ -239,10 +230,11 @@ export default function BrandingPage() {
               aria-label="Color personalizado"
               value={brandColor}
               onChange={(e) => setBrandColor(e.target.value)}
-              className="w-10 h-10 rounded-lg cursor-pointer border-0"
+              className="h-10 w-10 cursor-pointer rounded-lg border-0"
             />
             <Input
               name="brandColor"
+              aria-label="Color de marca en hexadecimal"
               value={brandColor}
               onChange={(e) => setBrandColor(e.target.value)}
               className="w-28 font-mono text-sm"
@@ -252,29 +244,65 @@ export default function BrandingPage() {
         </div>
       </div>
 
-      {/* Preview */}
-      <div className="bg-card rounded-2xl p-6 border border-border space-y-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="font-semibold text-foreground">Vista Previa de Tarjeta</h2>
-          <div className="flex w-full items-center gap-1 rounded-lg bg-muted p-1 sm:w-auto">
-            <button
-              type="button"
-              aria-pressed={previewMode === "normal"}
-              onClick={() => setPreviewMode("normal")}
-              className={`flex-1 rounded-md px-3 py-1 text-xs font-medium transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:flex-none ${previewMode === "normal" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              Normal
-            </button>
-            <button
-              type="button"
-              aria-pressed={previewMode === "sellada"}
-              onClick={() => setPreviewMode("sellada")}
-              className={`flex-1 rounded-md px-3 py-1 text-xs font-medium transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:flex-none ${previewMode === "sellada" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              Sellada
-            </button>
+      {/* Los dos selectores de ícono se pliegan: se tocan una vez y luego
+          estorban entre el logo y el color, que son los que se ajustan. */}
+      <details className="group rounded-2xl border border-border bg-card">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 p-6 [&::-webkit-details-marker]:hidden">
+          <span className="min-w-0">
+            <span className="block font-medium text-foreground">Íconos</span>
+            <span className="block text-xs text-muted-foreground">{resumenDeIconos}</span>
+          </span>
+          <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+        </summary>
+
+        <div className="space-y-6 border-t border-border p-6">
+          <div className="space-y-3">
+            <Label>Ícono de la tarjeta</Label>
+            <p className="text-xs text-muted-foreground">
+              {logoUrl
+                ? "Ábrelo para elegir el logo de tu negocio o un ícono."
+                : "Aparece en la tarjeta cuando no hay logo."}
+            </p>
+            <IconPicker value={iconName} onChange={setIconName} businessLogoUrl={logoUrl || undefined} />
+          </div>
+
+          <div className="space-y-3">
+            <Label>Ícono del sello</Label>
+            <p className="text-xs text-muted-foreground">
+              Se muestra en las celdas selladas. Si no eliges uno, se usa un sello.
+            </p>
+            <IconPicker value={stampIconName} onChange={setStampIconName} businessLogoUrl={logoUrl || undefined} />
           </div>
         </div>
+      </details>
+    </div>
+
+    {/* La vista previa se queda fija al lado, con el guardado debajo. Antes
+        vivía al final de seis tarjetas apiladas, así que ajustabas un color
+        arriba y tenías que bajar para ver el efecto. */}
+    <div className="h-fit lg:sticky lg:top-24">
+      <div className="rounded-2xl border border-border bg-muted/30 p-6">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-sm font-medium text-muted-foreground">Así queda</h2>
+          <div className="flex w-full overflow-hidden rounded-lg border border-border text-xs sm:w-auto">
+            {(["normal", "sellada"] as const).map((modo) => (
+              <button
+                key={modo}
+                type="button"
+                aria-pressed={previewMode === modo}
+                onClick={() => setPreviewMode(modo)}
+                className={`min-h-10 flex-1 px-3 transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:flex-none ${
+                  previewMode === modo
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-card text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {modo === "normal" ? "A medias" : "Completa"}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <LoyaltyCardPreview
           businessName={businessName || "Tu Negocio"}
           businessLogo={logoUrl || undefined}
@@ -286,19 +314,21 @@ export default function BrandingPage() {
           reward="Tu recompensa aquí"
           showQR={false}
         />
-      </div>
 
-      {/* Save */}
-      <div className="flex flex-col items-center gap-3">
-        {saveError && <p className="text-sm text-destructive text-center">{saveError}</p>}
-        <Button onClick={handleSave} className="px-10" disabled={saving}>
+        {/* Una sola barra de guardado, junto a lo que estás mirando. */}
+        <Button onClick={handleSave} className="mt-6 min-h-11 w-full" disabled={saving}>
           {saving ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : saved ? (
-            <Check className="h-4 w-4 mr-2" />
+            <Check className="mr-2 h-4 w-4" />
           ) : null}
-          {saved ? "¡Guardado!" : "Guardar Cambios"}
+          {saved ? "¡Guardado!" : "Guardar cambios"}
         </Button>
+        {saveError && (
+          <p role="alert" className="mt-2 text-center text-sm text-destructive">{saveError}</p>
+        )}
+      </div>
+    </div>
       </div>
     </div>
   )
