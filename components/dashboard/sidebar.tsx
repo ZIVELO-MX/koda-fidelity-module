@@ -116,6 +116,9 @@ function NavLink({
   return (
     <Link
       href={href}
+      // El destino activo se marcaba solo con color. Quien navega por lector de
+      // pantalla no sabía dónde estaba.
+      aria-current={isActive ? "page" : undefined}
       className={cn(
         "flex items-center rounded-lg text-sm font-medium transition-colors",
         collapsed ? "justify-center p-2 min-h-11" : "gap-3 px-3 min-h-11",
@@ -145,6 +148,10 @@ function CollapsedNavLink({
       <TooltipTrigger asChild>
         <Link
           href={href}
+          aria-current={isActive ? "page" : undefined}
+          // Colapsado solo queda el icono. El tooltip no es nombre accesible, así
+          // que sin esto el destino no se anuncia con lector de pantalla.
+          aria-label={label}
           className={cn(
             "flex items-center justify-center p-2 min-h-11 rounded-lg transition-colors",
             isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -384,6 +391,7 @@ export function DashboardSidebar({
               <Link
                 key={item.name}
                 href={item.href}
+                aria-current={isActive ? "page" : undefined}
                 className="flex flex-col items-center justify-center gap-0.5 min-h-11 min-w-0 px-2 py-1 rounded-lg transition-colors"
               >
                 <item.icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted-foreground")} />
@@ -402,6 +410,7 @@ export function DashboardSidebar({
           {/* Center: Escáner FAB */}
           <Link
             href="/dashboard/scan"
+            aria-current={isScanActive ? "page" : undefined}
             className="flex flex-col items-center gap-0.5 -mt-4 pb-1"
             aria-label="Abrir escáner"
           >
@@ -432,6 +441,7 @@ export function DashboardSidebar({
               <Link
                 key={item.name}
                 href={item.href}
+                aria-current={isActive ? "page" : undefined}
                 className="flex flex-col items-center justify-center gap-0.5 min-h-11 min-w-0 px-2 py-1 rounded-lg transition-colors"
               >
                 <item.icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted-foreground")} />
