@@ -144,11 +144,14 @@ export function LoyaltyCardPreview({
                     const MilestoneIconComp = milestoneIcon?.Icon ?? Stamp
                     return <MilestoneIconComp className="w-5 h-5" style={{ color: "#ffffff" }} strokeWidth={2} />
                   }
-                  const effectiveStampIcon = stampIconName ?? iconName
-                  if (effectiveStampIcon === "logo" && businessLogo) {
+                  // El sello no hereda el ícono de la tarjeta: son dos decisiones
+                  // distintas, y heredarlo hacía que elegir el ícono de la
+                  // tarjeta cambiara los sellos sin pedirlo. Sin elección propia,
+                  // un sello es un sello.
+                  if (stampIconName === "logo" && businessLogo) {
                     return <img src={businessLogo} alt="" className="w-5 h-5 object-contain rounded" />
                   }
-                  const cardIcon = getCardIcon(effectiveStampIcon)
+                  const cardIcon = getCardIcon(stampIconName)
                   const StampIcon = cardIcon?.Icon ?? Stamp
                   return <StampIcon className="w-5 h-5" style={{ color: brandColor }} strokeWidth={2} />
                 })()}

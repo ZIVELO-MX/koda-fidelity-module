@@ -57,7 +57,14 @@ export default function BrandingPage() {
     }
     setLogoError(null)
     const reader = new FileReader()
-    reader.onload = (ev) => setLogoUrl(ev.target?.result as string)
+    reader.onload = (ev) => {
+      setLogoUrl(ev.target?.result as string)
+      // Subir un logo es decir que quieres usarlo. La vista previa solo lo pinta
+      // si además está elegido como ícono de la tarjeta, así que subirlo y no
+      // verlo parecía que la subida había fallado. Si ya elegiste otro ícono a
+      // propósito, no se toca.
+      setIconName((actual) => actual ?? "logo")
+    }
     reader.readAsDataURL(file)
   }
 
@@ -194,7 +201,7 @@ export default function BrandingPage() {
         <div>
           <h2 className="font-semibold text-foreground">Ícono del Sello <span className="text-muted-foreground font-normal text-sm">(opcional)</span></h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Se muestra en las celdas selladas. Si no se elige, usa el mismo ícono de marca.
+            Se muestra en las celdas selladas. Si no eliges uno, se usa un sello.
           </p>
         </div>
         <IconPicker value={stampIconName} onChange={setStampIconName} businessLogoUrl={logoUrl || undefined} />

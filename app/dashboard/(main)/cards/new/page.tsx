@@ -309,7 +309,7 @@ export default function CreateCardPage() {
               <div className="space-y-3">
                 <Label>Ícono del sello</Label>
                 <p className="text-xs text-muted-foreground">
-                  Si no eliges uno, se usa el de la tarjeta.
+                  Si no eliges uno, se usa un sello.
                 </p>
                 <IconPicker value={stampIconName} onChange={(v) => { setStampIconName(v); setMarcaHeredada(false) }} businessLogoUrl={businessLogo} />
               </div>

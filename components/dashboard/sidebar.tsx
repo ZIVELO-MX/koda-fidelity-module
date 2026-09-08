@@ -237,12 +237,32 @@ export function DashboardSidebar({
             collapsed ? "justify-center px-0 py-5" : "gap-2 px-6 py-5",
           )}
         >
-          <Image src="/short-logo.svg" alt="Koda" width={36} height={36} className="size-9 shrink-0" />
-          {!collapsed && (
-            <div className="flex flex-col">
-              <span className="font-semibold text-foreground">Koda Fidelity</span>
-              <span className="text-xs text-muted-foreground">Plataforma de Lealtad</span>
-            </div>
+          {/* Colapsada, el propio logo recupera la barra. Así no hace falta un
+              botón de expandir suelto, que además quedaba lejos del sitio donde
+              se plegó. Solo en escritorio: este aside no existe en móvil. */}
+          {collapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={onToggleCollapse}
+                  aria-label="Expandir barra lateral"
+                  aria-expanded={false}
+                  className="flex min-h-11 min-w-11 items-center justify-center rounded-lg transition-colors hover:bg-muted"
+                >
+                  <Image src="/short-logo.svg" alt="" width={36} height={36} className="size-9 shrink-0" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Expandir barra lateral</TooltipContent>
+            </Tooltip>
+          ) : (
+            <>
+              <Image src="/short-logo.svg" alt="Koda" width={36} height={36} className="size-9 shrink-0" />
+              <div className="flex flex-col">
+                <span className="font-semibold text-foreground">Koda Fidelity</span>
+                <span className="text-xs text-muted-foreground">Plataforma de Lealtad</span>
+              </div>
+            </>
           )}
         </div>
 
