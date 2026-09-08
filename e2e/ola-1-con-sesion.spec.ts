@@ -31,14 +31,20 @@ async function entrar(page: Page) {
   await page.getByLabel("Correo electrónico").fill(CORREO!)
   await page.getByRole("button", { name: "Continuar", exact: true }).click()
 
-  const contraseña = page.getByLabel("Contraseña")
-  try {
-    await contraseña.waitFor({ state: "visible", timeout: 5000 })
-  } catch {
+  // Se espera a que el primer paso se resuelva hacia uno de sus dos destinos. La
+  // espera es amplia a propósito: en desarrollo la ruta se compila al primer
+  // pedido. Solo se culpa al enlace mágico si esa pantalla apareció de verdad.
+  // Por id: el botón de mostrar u ocultar lleva "contraseña" en su aria-label y
+  // haría ambigua una búsqueda por etiqueta.
+  const contraseña = page.locator("#password")
+  const enlaceEnviado = page.getByText("Revisa tu correo")
+  await expect(contraseña.or(enlaceEnviado).first()).toBeVisible({ timeout: 60000 })
+
+  if (await enlaceEnviado.isVisible()) {
     throw new Error(
-      `E2E_EMAIL (${CORREO}) no es la cuenta de un negocio en esta base de datos. ` +
-        "La app lo tomó como cliente y le mandó un enlace mágico por correo. " +
-        "Usa la cuenta de un negocio con rol admin antes de volver a correr esto.",
+      `E2E_EMAIL (${CORREO}) no es la cuenta de un negocio en esta base de datos: la app lo ` +
+        "tomó como cliente y le mandó un enlace mágico por correo. Usa la cuenta de un negocio " +
+        "con rol admin antes de volver a correr esto.",
     )
   }
 
@@ -53,12 +59,24 @@ async function desborda(page: Page): Promise<boolean> {
   )
 }
 
+// El ADN pide 40px de área táctil mínima, y 44px en destinos de navegación. Los
+// destinos son enlaces; los botones son controles. Antes esto solo medía
+// botones, y por eso no veía la barra de navegación móvil, que son enlaces.
 async function areasTactiles(page: Page, contexto: string) {
-  for (const objetivo of await page.getByRole("button").all()) {
-    if (!(await objetivo.isVisible())) continue
-    const caja = await objetivo.boundingBox()
-    if (caja) {
-      expect(caja.height, `${await objetivo.innerText()} en ${contexto}`).toBeGreaterThanOrEqual(44)
+  const grupos = [
+    { rol: "link" as const, minimo: 44 },
+    { rol: "button" as const, minimo: 40 },
+  ]
+  for (const { rol, minimo } of grupos) {
+    for (const objetivo of await page.getByRole(rol).all()) {
+      if (!(await objetivo.isVisible())) continue
+      const nombre =
+        (await objetivo.getAttribute("aria-label")) || (await objetivo.innerText()).trim()
+      if (/next\.js/i.test(nombre)) continue
+      const caja = await objetivo.boundingBox()
+      if (caja) {
+        expect(caja.height, `${rol} "${nombre}" en ${contexto}`).toBeGreaterThanOrEqual(minimo)
+      }
     }
   }
 }
@@ -108,7 +126,8 @@ test.describe("superficies de la ola 1, con sesión", () => {
 
       test("clientes ofrece la acción en la fila y el filtro de listos", async ({ page }) => {
         await page.goto("/dashboard/customers")
-        await expect(page.getByRole("heading", { name: "Clientes" })).toBeVisible()
+        // Exacto: el estado vacío trae "Aún no tienes clientes", que también casa.
+        await expect(page.getByRole("heading", { name: "Clientes", exact: true })).toBeVisible()
 
         const filas = page.locator("tbody tr")
         if ((await filas.count()) > 0) {
@@ -129,9 +148,11 @@ test.describe("superficies de la ola 1, con sesión", () => {
     test("agrupa en Operación, Programa y Negocio, sin escáner", async ({ page }) => {
       await entrar(page)
       const aside = page.locator("aside")
-      await expect(aside.getByText("Operación")).toBeVisible()
-      await expect(aside.getByText("Programa")).toBeVisible()
-      await expect(aside.getByText("Negocio")).toBeVisible()
+      // Por rol y exacto: el nombre del negocio en el perfil también contiene
+      // "Negocio", y haría ambigua una búsqueda por texto suelto.
+      for (const grupo of ["Operación", "Programa", "Negocio"]) {
+        await expect(aside.getByRole("button", { name: grupo, exact: true })).toBeVisible()
+      }
       await expect(aside.getByRole("link", { name: /escáner/i })).toHaveCount(0)
       await expect(aside.getByRole("link", { name: "Panel" })).toHaveCount(1)
     })

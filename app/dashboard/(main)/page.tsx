@@ -167,13 +167,13 @@ export default async function DashboardPage() {
         </div>
         <div className="flex gap-2">
           <Link href="/dashboard/scan">
-            <Button variant="outline">
+            <Button variant="outline" className="min-h-11">
               <Stamp className="h-4 w-4 mr-2" />
               Escáner
             </Button>
           </Link>
           <Link href="/dashboard/cards/new">
-            <Button>
+            <Button className="min-h-11">
               <Plus className="h-4 w-4 mr-2" />
               Crear Tarjeta
             </Button>
@@ -263,7 +263,10 @@ export default async function DashboardPage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-foreground">Tus Tarjetas de Lealtad</h2>
-            <Link href="/dashboard/cards" className="text-sm text-primary hover:underline">
+            <Link
+              href="/dashboard/cards"
+              className="inline-flex min-h-11 items-center text-sm text-primary hover:underline"
+            >
               Ver todas
             </Link>
           </div>
@@ -341,7 +344,7 @@ export default async function DashboardPage() {
             <h2 className="text-lg font-semibold text-foreground">Actividad Reciente</h2>
             <Link
               href="/dashboard/customers"
-              className="text-sm text-primary hover:underline flex items-center gap-1"
+              className="inline-flex min-h-11 items-center gap-1 text-sm text-primary hover:underline"
             >
               Ver toda
               <ArrowRight className="h-4 w-4" />

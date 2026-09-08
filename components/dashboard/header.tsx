@@ -18,7 +18,7 @@ export function DashboardHeader({ collapsed, onToggleCollapse }: DashboardHeader
               type="button"
               onClick={onToggleCollapse}
               aria-label={collapsed ? "Expandir barra lateral" : "Colapsar barra lateral"}
-              className="flex items-center justify-center rounded-lg transition-colors text-muted-foreground hover:bg-muted hover:text-foreground p-2"
+              className="flex min-h-10 min-w-10 items-center justify-center rounded-lg transition-colors text-muted-foreground hover:bg-muted hover:text-foreground p-2"
             >
               {collapsed ? <PanelLeft className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
             </button>

@@ -250,7 +250,7 @@ export function DashboardSidebar({
             >
               {visibleGroups.map((group) => (
                 <AccordionItem key={group.label} value={group.label} className="border-b-0">
-                  <AccordionTrigger className="px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:no-underline">
+                  <AccordionTrigger className="min-h-10 items-center px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:no-underline">
                     {group.label}
                   </AccordionTrigger>
                   <AccordionContent>
@@ -384,7 +384,7 @@ export function DashboardSidebar({
               <Link
                 key={item.name}
                 href={item.href}
-                className="flex flex-col items-center justify-center gap-0.5 min-w-0 px-2 py-1 rounded-lg transition-colors"
+                className="flex flex-col items-center justify-center gap-0.5 min-h-11 min-w-0 px-2 py-1 rounded-lg transition-colors"
               >
                 <item.icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted-foreground")} />
                 <span
@@ -432,7 +432,7 @@ export function DashboardSidebar({
               <Link
                 key={item.name}
                 href={item.href}
-                className="flex flex-col items-center justify-center gap-0.5 min-w-0 px-2 py-1 rounded-lg transition-colors"
+                className="flex flex-col items-center justify-center gap-0.5 min-h-11 min-w-0 px-2 py-1 rounded-lg transition-colors"
               >
                 <item.icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted-foreground")} />
                 <span
@@ -450,7 +450,7 @@ export function DashboardSidebar({
           {/* Menú button */}
           <button
             onClick={() => setMoreOpen(true)}
-            className="flex flex-col items-center justify-center gap-0.5 min-w-0 px-2 py-1 rounded-lg transition-colors"
+            className="flex flex-col items-center justify-center gap-0.5 min-h-11 min-w-0 px-2 py-1 rounded-lg transition-colors"
             aria-label="Abrir menú"
           >
             <Menu className={cn("h-5 w-5", isMenuActive ? "text-primary" : "text-muted-foreground")} />
