@@ -108,5 +108,19 @@ test.describe("ola 3, administración del negocio", () => {
       await page.goto("/dashboard/branding")
       await expect(page.getByRole("button", { name: /Guardar cambios/i })).toHaveCount(1)
     })
+
+    test("Equipo explica los permisos una sola vez, a peticion", async ({ page }) => {
+      await entrar(page)
+      await page.goto("/dashboard/team")
+
+      // La comparacion no se muestra sin pedirla: antes estaba al pie y otra vez
+      // dentro del selector de rol de la invitacion.
+      await expect(page.getByText("Control total del negocio")).toHaveCount(0)
+
+      await page.getByRole("button", { name: "Ver permisos por rol" }).click()
+      const comparacion = page.getByRole("dialog")
+      await expect(comparacion.getByText("Control total del negocio")).toBeVisible()
+      await expect(comparacion.getByText("Operaciones del día a día")).toBeVisible()
+    })
   })
 })
