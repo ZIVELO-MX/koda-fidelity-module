@@ -74,6 +74,34 @@ test.describe("fluidez de la navegación", () => {
       }
     })
 
+    test("se navega con teclado, con el foco a la vista", async ({ page }) => {
+      await entrar(page)
+
+      // Con Tab de verdad, no con focus(): `:focus-visible` solo se aplica
+      // cuando el foco llegó por teclado, y es justo eso lo que se mide.
+      const clientes = page.locator("aside").getByRole("link", { name: "Clientes", exact: true })
+      let alcanzado = false
+      for (let i = 0; i < 40 && !alcanzado; i++) {
+        await page.keyboard.press("Tab")
+        alcanzado = await clientes.evaluate((el) => el === document.activeElement)
+      }
+      expect(alcanzado, "Clientes no se alcanza tabulando desde el inicio").toBe(true)
+
+      // El foco tiene que verse: el ADN prohíbe quitar el contorno.
+      const contorno = await clientes.evaluate((el) => {
+        const cs = getComputedStyle(el)
+        return { outlineStyle: cs.outlineStyle, outlineWidth: cs.outlineWidth, boxShadow: cs.boxShadow }
+      })
+      expect(
+        contorno.outlineStyle !== "none" || contorno.boxShadow !== "none",
+        `el destino enfocado no dibuja foco: ${JSON.stringify(contorno)}`,
+      ).toBe(true)
+
+      await page.keyboard.press("Enter")
+      await page.waitForURL("**/dashboard/customers", { timeout: MARGEN_MS })
+      await expect(page.getByRole("heading", { name: "Clientes", exact: true })).toBeVisible()
+    })
+
     test("el aside se colapsa y se recupera sin perder los destinos", async ({ page }) => {
       await entrar(page)
       const aside = page.locator("aside")
