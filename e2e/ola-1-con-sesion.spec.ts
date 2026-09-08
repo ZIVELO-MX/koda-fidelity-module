@@ -19,10 +19,30 @@ const ANCHOS = [
   { nombre: "escritorio", width: 1440, height: 900 },
 ]
 
+// El acceso va en dos pasos: primero el correo, y la contraseña después.
+//
+// CUIDADO: el primer paso decide por el correo. Si NO pertenece a un negocio, la
+// app lo trata como cliente y le manda un enlace mágico por correo de verdad,
+// creando la cuenta si no existe. Por eso `E2E_EMAIL` tiene que ser la cuenta de
+// un negocio, y por eso esto falla de inmediato en vez de reintentar: repetirlo
+// quema la cuota de correo del proyecto de Supabase.
 async function entrar(page: Page) {
   await page.goto("/login")
   await page.getByLabel("Correo electrónico").fill(CORREO!)
-  await page.getByLabel("Contraseña").fill(CLAVE!)
+  await page.getByRole("button", { name: "Continuar", exact: true }).click()
+
+  const contraseña = page.getByLabel("Contraseña")
+  try {
+    await contraseña.waitFor({ state: "visible", timeout: 5000 })
+  } catch {
+    throw new Error(
+      `E2E_EMAIL (${CORREO}) no es la cuenta de un negocio en esta base de datos. ` +
+        "La app lo tomó como cliente y le mandó un enlace mágico por correo. " +
+        "Usa la cuenta de un negocio con rol admin antes de volver a correr esto.",
+    )
+  }
+
+  await contraseña.fill(CLAVE!)
   await page.getByRole("button", { name: "Iniciar Sesión" }).click()
   await page.waitForURL("**/dashboard")
 }
