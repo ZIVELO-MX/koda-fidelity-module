@@ -38,6 +38,12 @@ describe("sorpresasQueViajan", () => {
     const [enviada] = sorpresasQueViajan([sorpresa({ stampNumber: 7, probability: 15, iconName: "gift" })])
     expect(enviada).toEqual({ stampNumber: 7, label: "Postre gratis", iconName: "gift", probability: 15 })
   })
+
+  // La edición manda el id para que el servidor actualice en vez de recrear.
+  it("conserva el id que trae la edición", () => {
+    const [enviada] = sorpresasQueViajan([{ ...sorpresa(), id: "ms-1" }])
+    expect(enviada.id).toBe("ms-1")
+  })
 })
 
 describe("validarBorrador", () => {

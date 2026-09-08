@@ -27,7 +27,9 @@ export type Validacion = {
  * una fila que quien la abrió no llegó a llenar, y no tiene nada que hacer en
  * la tarjeta publicada.
  */
-export function sorpresasQueViajan(sorpresas: Sorpresa[]): Sorpresa[] {
+// Genérica: la edición trae además el `id` de cada sorpresa, y tiene que
+// sobrevivir para que el servidor actualice en vez de recrear.
+export function sorpresasQueViajan<T extends Sorpresa>(sorpresas: T[]): T[] {
   return sorpresas
     .filter((s) => s.label.trim() !== "")
     .map((s) => ({ ...s, label: s.label.trim() }))
