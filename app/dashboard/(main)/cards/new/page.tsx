@@ -296,11 +296,21 @@ export default function CreateCardPage() {
 
               <div className="space-y-3">
                 <Label>Ícono de la tarjeta</Label>
+                {/* El logo es una opción del selector, no un campo aparte, y la
+                    etiqueta nunca lo decía: había que abrirlo para descubrirlo. */}
+                <p className="text-xs text-muted-foreground">
+                  {businessLogo
+                    ? "Ábrelo para elegir el logo de tu negocio o un ícono."
+                    : "Sube el logo en Marca para poder usarlo aquí."}
+                </p>
                 <IconPicker value={iconName} onChange={(v) => { setIconName(v); setMarcaHeredada(false) }} businessLogoUrl={businessLogo} />
               </div>
 
               <div className="space-y-3">
                 <Label>Ícono del sello</Label>
+                <p className="text-xs text-muted-foreground">
+                  Si no eliges uno, se usa el de la tarjeta.
+                </p>
                 <IconPicker value={stampIconName} onChange={(v) => { setStampIconName(v); setMarcaHeredada(false) }} businessLogoUrl={businessLogo} />
               </div>
 

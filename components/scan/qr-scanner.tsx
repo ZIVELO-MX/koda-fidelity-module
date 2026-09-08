@@ -42,19 +42,37 @@ export function QRScanner({ onScan, onError }: QRScannerProps) {
   }, [onError])
 
   return (
-    <div className="aspect-square max-h-[300px] w-full rounded-3xl overflow-hidden bg-muted relative">
+    // El cuadrado se consigue limitando el ancho, no el alto. Con `w-full` y
+    // `max-h`, el ancho ganaba y la caja quedaba 448x300: ni cuadrada, ni con
+    // sitio para el marco del visor, que se recortaba contra el overflow.
+    <div className="relative mx-auto aspect-square w-full max-w-sm overflow-hidden rounded-3xl bg-muted">
       <Scanner
         formats={["qr_code"]}
         onScan={handleScan}
         onError={handleError}
         paused={paused}
-        components={{ finder: true }}
+        // El marco propio va abajo: la librería solo deja estilar el contenedor
+        // y el vídeo, así que su marco rojo no se puede llevar al acento de KODA.
+        components={{ finder: false }}
         styles={{
           container: { width: "100%", height: "100%" },
           video: { objectFit: "cover" },
         }}
         allowMultiple={false}
       />
+
+      <div aria-hidden className="pointer-events-none absolute inset-0 grid place-items-center">
+        <div className="relative h-3/5 w-3/5">
+          {[
+            "left-0 top-0 rounded-tl-lg border-l-4 border-t-4",
+            "right-0 top-0 rounded-tr-lg border-r-4 border-t-4",
+            "bottom-0 left-0 rounded-bl-lg border-b-4 border-l-4",
+            "bottom-0 right-0 rounded-br-lg border-b-4 border-r-4",
+          ].map((esquina) => (
+            <span key={esquina} className={`absolute h-9 w-9 border-primary ${esquina}`} />
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

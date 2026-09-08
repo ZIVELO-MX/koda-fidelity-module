@@ -29,9 +29,26 @@ describe("QRScanner", () => {
     const props = scannerProps()
     expect(props).not.toBeNull()
     expect(props!.formats).toEqual(["qr_code"])
-    expect(props!.components).toEqual({ finder: true })
+    // El marco de la librería queda apagado: solo deja estilar contenedor y
+    // vídeo, así que su rojo no se puede llevar al acento de KODA. El marco lo
+    // dibuja este componente.
+    expect(props!.components).toEqual({ finder: false })
     expect(props!.allowMultiple).toBe(false)
     expect(props!.paused).toBe(false)
+  })
+
+  it("dibuja su propio marco, con las cuatro esquinas en el acento", () => {
+    const { container } = render(<QRScanner onScan={() => {}} />)
+    const esquinas = container.querySelectorAll("span.border-primary")
+    expect(esquinas).toHaveLength(4)
+  })
+
+  it("mantiene el visor cuadrado, sin límite de alto que lo deforme", () => {
+    const { container } = render(<QRScanner onScan={() => {}} />)
+    const caja = container.querySelector("div.aspect-square") as HTMLElement
+    expect(caja).not.toBeNull()
+    expect(caja.className).toContain("max-w-sm")
+    expect(caja.className).not.toMatch(/max-h-/)
   })
 
   it("llama a onScan con el rawValue cuando se detecta un código", () => {
