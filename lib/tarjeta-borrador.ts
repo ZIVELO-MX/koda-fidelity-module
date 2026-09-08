@@ -45,11 +45,14 @@ export function validarBorrador(borrador: Borrador): Validacion {
     orden.push(campo)
   }
 
-  if (!borrador.nombre.trim()) registrar("nombre", "Ponle un nombre a la tarjeta")
+  // En el orden en que aparecen en pantalla: recompensa, sellos y nombre. De
+  // aquí sale el campo que recibe el foco, así que si la pantalla se reordena,
+  // esto también.
   if (!borrador.recompensa.trim()) registrar("recompensa", "Di qué se lleva el cliente")
   if (borrador.sellosRequeridos < 1) {
     registrar("sellosRequeridos", "La tarjeta necesita al menos un sello")
   }
+  if (!borrador.nombre.trim()) registrar("nombre", "Ponle un nombre a la tarjeta")
 
   // Solo se validan las sorpresas que van a viajar. Una fila vacía se descarta
   // sola y no tiene por qué frenar la publicación.

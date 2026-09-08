@@ -59,9 +59,11 @@ describe("validarBorrador", () => {
     expect(r.primerCampo).toBe("recompensa")
   })
 
-  it("señala el nombre antes que la recompensa cuando faltan los dos", () => {
+  // El foco va al primer campo inválido *de la pantalla*, y ahí la recompensa
+  // va antes que el nombre.
+  it("señala la recompensa antes que el nombre cuando faltan los dos", () => {
     const r = validarBorrador(borrador({ nombre: "", recompensa: "" }))
-    expect(r.primerCampo).toBe("nombre")
+    expect(r.primerCampo).toBe("recompensa")
   })
 
   it("rechaza una sorpresa fuera del rango de sellos", () => {
