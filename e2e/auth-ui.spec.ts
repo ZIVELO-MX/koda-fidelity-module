@@ -14,6 +14,9 @@ test.describe("Auth UI", () => {
     await page.goto("/login")
     await expect(page.getByText("Iniciar Sesión").first()).toBeVisible()
     await expect(page.getByLabel("Correo electrónico")).toBeVisible()
+    await expect(page.getByRole("button", { name: "Continuar" })).toBeVisible()
+    await page.getByLabel("Correo electrónico").fill("test@example.com")
+    await page.getByRole("button", { name: "Continuar" }).click()
     await expect(page.getByLabel("Contraseña")).toBeVisible()
     await expect(page.getByRole("button", { name: "Iniciar Sesión" })).toBeVisible()
   })
@@ -21,6 +24,7 @@ test.describe("Auth UI", () => {
   test("login with invalid credentials shows error", async ({ page }) => {
     await page.goto("/login")
     await page.getByLabel("Correo electrónico").fill("wrong@email.com")
+    await page.getByRole("button", { name: "Continuar" }).click()
     await page.getByLabel("Contraseña").fill("wrongpassword")
     await page.getByRole("button", { name: "Iniciar Sesión" }).click()
     await expect(page.getByText("No fue posible iniciar sesión. Verifica tus datos.")).toBeVisible({ timeout: 10000 })
