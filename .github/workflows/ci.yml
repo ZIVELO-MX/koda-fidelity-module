@@ -66,6 +66,7 @@ jobs:
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
       NEXT_PUBLIC_BASE_URL: http://localhost:3000
       INVITE_ONLY: "false"
+      AUTH_SECURITY_SECRET: ci-auth-security-secret-32-bytes-minimum
     steps:
       - uses: actions/checkout@v4
 

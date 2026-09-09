@@ -17,7 +17,7 @@ test.describe("Auth UI", () => {
     await expect(page.getByRole("button", { name: "Continuar", exact: true })).toBeVisible()
     await page.getByLabel("Correo electrónico").fill("test@example.com")
     await page.getByRole("button", { name: "Continuar", exact: true }).click()
-    await expect(page.getByLabel("Contraseña")).toBeVisible()
+    await expect(page.getByRole("textbox", { name: "Contraseña", exact: true })).toBeVisible()
     await expect(page.getByRole("button", { name: "Iniciar Sesión" })).toBeVisible()
   })
 
