@@ -97,7 +97,7 @@ test.describe("FID-0016 development authentication", () => {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ email: "fidelity.e2e.member@dev.invalid", name: "FID E2E Member", role: "sellador" }),
     })
-    expect(adminResponse.status).toBe(202)
+    expect(adminResponse.status, JSON.stringify(adminResponse.body)).toBe(202)
 
     const selladorPage = await context.newPage()
     await login(selladorPage, SELLADOR_EMAIL, SELLADOR_PASSWORD)

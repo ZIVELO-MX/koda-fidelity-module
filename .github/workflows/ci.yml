@@ -133,6 +133,11 @@ jobs:
       E2E_REQUIRED_EMAIL: fidelity.seed.required@dev.invalid
       E2E_REQUIRED_PASSWORD: ci-required-password-2
       MAILPIT_URL: http://127.0.0.1:55434
+      SMTP_HOST: 127.0.0.1
+      SMTP_PORT: "55434"
+      SMTP_SECURE: "false"
+      SMTP_USER: ci-mailpit@dev.invalid
+      SMTP_PASS: ci-mailpit
     steps:
       - uses: actions/checkout@v4
 
