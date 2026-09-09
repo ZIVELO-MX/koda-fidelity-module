@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getBusinessFromSession, handleApiError, withRequestId } from "@/lib/api-utils"
+import { getBusinessFromSession, handleApiError, requestIdFrom, withRequestId } from "@/lib/api-utils"
 import { activityQuerySchema } from "@/lib/dashboard-contracts"
 
 /**
@@ -18,7 +18,7 @@ import { activityQuerySchema } from "@/lib/dashboard-contracts"
  *       400: { description: Invalid cursor }
  */
 export async function GET(request: NextRequest) {
-  const requestId = crypto.randomUUID()
+  const requestId = requestIdFrom(request)
   try {
     const { business } = await getBusinessFromSession()
     const parsed = activityQuerySchema.safeParse(Object.fromEntries(new URL(request.url).searchParams))

@@ -8,8 +8,8 @@ vi.mock("next/server", () => ({ NextRequest: class {}, NextResponse: { json: (bo
 
 import { POST } from "@/app/api/stamps/route"
 
-function makeRequest(body: unknown, key = "operation-1") {
-  return { json: async () => body, headers: new Headers({ "Idempotency-Key": key }) } as never
+function makeRequest(body: unknown, key = "operation-1", requestId?: string) {
+  return { json: async () => body, headers: new Headers({ "Idempotency-Key": key, ...(requestId ? { "x-request-id": requestId } : {}) }) } as never
 }
 
 const sessionUser = { email: "owner@biz.test" }
@@ -25,8 +25,10 @@ beforeEach(() => {
 describe("POST /api/stamps", () => {
   it("returns 401 when unauthenticated", async () => {
     mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
-    const res = await POST(makeRequest({ customerId: "cust1", type: "stamp" }))
+    const res = await POST(makeRequest({ customerId: "cust1", type: "stamp" }, "operation-1", "request-123"))
     expect(res.status).toBe(401)
+    expect(res.headers.get("x-request-id")).toBe("request-123")
+    expect((await res.json()).requestId).toBe("request-123")
   })
 
   it("returns 400 when customerId is missing", async () => {

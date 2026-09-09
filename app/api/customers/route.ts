@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
-import { getBusinessFromSession, handleApiError, withRequestId } from "@/lib/api-utils"
+import { getBusinessFromSession, handleApiError, requestIdFrom, withRequestId } from "@/lib/api-utils"
 import { pageQuerySchema } from "@/lib/dashboard-contracts"
 
 /**
@@ -16,7 +16,7 @@ import { pageQuerySchema } from "@/lib/dashboard-contracts"
  *       400: { description: Invalid filters }
  */
 export async function GET(request: NextRequest) {
-  const requestId = crypto.randomUUID()
+  const requestId = requestIdFrom(request)
   try {
     const { business } = await getBusinessFromSession()
     const parsed = pageQuerySchema.safeParse(Object.fromEntries(new URL(request.url).searchParams))
