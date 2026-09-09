@@ -6,7 +6,7 @@ test.describe("Auth UI", () => {
     await expect(page.getByText("Crear Cuenta").first()).toBeVisible()
     await expect(page.getByLabel("Nombre del negocio")).toBeVisible()
     await expect(page.getByLabel("Correo electrónico")).toBeVisible()
-    await expect(page.getByLabel("Contraseña")).toBeVisible()
+    await expect(page.getByRole("textbox", { name: "Contraseña", exact: true })).toBeVisible()
     await expect(page.getByRole("button", { name: "Crear Cuenta" })).toBeVisible()
   })
 
@@ -25,7 +25,7 @@ test.describe("Auth UI", () => {
     await page.goto("/login")
     await page.getByLabel("Correo electrónico").fill("wrong@email.com")
     await page.getByRole("button", { name: "Continuar", exact: true }).click()
-    await page.getByLabel("Contraseña").fill("wrongpassword")
+    await page.getByRole("textbox", { name: "Contraseña", exact: true }).fill("wrongpassword")
     await page.getByRole("button", { name: "Iniciar Sesión" }).click()
     await expect(page.getByText("No fue posible iniciar sesión. Verifica tus datos.")).toBeVisible({ timeout: 10000 })
   })
