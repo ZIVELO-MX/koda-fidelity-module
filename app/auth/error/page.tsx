@@ -18,6 +18,10 @@ export default function AuthErrorPage() {
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     }>
+      {/* El contenido nunca se montó: el Suspense estaba vacío y toda pantalla
+          de error de autenticación salía en blanco, con las 180 líneas de
+          AuthErrorContent ahí sin usar. */}
+      <AuthErrorContent />
     </Suspense>
   )
 }
