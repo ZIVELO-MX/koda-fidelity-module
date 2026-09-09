@@ -59,9 +59,21 @@ jobs:
 
   browser-smoke:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: fidelity_browser_ci
+        ports: [5432:5432]
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
     env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fidelity_ci
-      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/fidelity_ci
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fidelity_browser_ci
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/fidelity_browser_ci
       NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
       NEXT_PUBLIC_BASE_URL: http://localhost:3000
@@ -84,6 +96,11 @@ jobs:
 
       - name: Generate Prisma client
         run: pnpm db:generate
+
+      - name: Prepare browser smoke database
+        run: |
+          psql "$DIRECT_URL" -c 'CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN;'
+          pnpm exec prisma migrate deploy
 
       - name: Install Playwright browser
         run: pnpm exec playwright install chromium
