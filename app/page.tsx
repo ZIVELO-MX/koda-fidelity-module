@@ -238,19 +238,19 @@ export default async function LandingPage({
               Funciones diseñadas para pequeños negocios que quieren grandes resultados.
             </p>
           </div>
-          <RevealGrid className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Sin cajas. Seis tarjetas idénticas en rejilla es de los patrones más
+              templados que hay, y aquí no aportan nada: el mismo contenido
+              separado por aire y una línea se lee igual y pesa menos. */}
+          <RevealGrid className="grid gap-x-12 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
             {siteConfig.features.map((feature) => {
               const Icon = iconMap[feature.icon]
               return (
-                <div
-                  key={feature.title}
-                  className="bg-card rounded-2xl p-6 border border-border hover:border-primary/30 hover:-translate-y-0.5 transition-[border-color,transform] duration-200 group"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/15 transition-colors">
-                    {Icon && <Icon className="h-6 w-6 text-primary" />}
+                <div key={feature.title} className="border-t border-border pt-6">
+                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                    {Icon && <Icon className="h-5 w-5 text-primary" />}
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+                  <h3 className="mb-2 text-lg font-semibold text-foreground">{feature.title}</h3>
+                  <p className="text-sm leading-relaxed text-muted-foreground">{feature.description}</p>
                 </div>
               )
             })}

@@ -9,6 +9,7 @@ import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { Check, Mail, Loader2 } from "lucide-react"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
 import { getFriendlySendError } from "@/lib/auth-errors"
+import { mensajeDeAlta, type MotivoAlta } from "@/lib/alta-estados"
 
 type Step = "loading" | "error" | "form" | "sent" | "ready"
 
@@ -46,7 +47,7 @@ export default function JoinCardPage() {
     businessLogoUrl: string | null
     businessIconName: string | null
   } | null>(null)
-  const [cardError, setCardError] = useState<string | null>(null)
+  const [motivo, setMotivo] = useState<MotivoAlta>("no-encontrada")
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [sending, setSending] = useState(false)
@@ -60,13 +61,13 @@ export default function JoinCardPage() {
     const init = async () => {
       const cardRes = await fetch(`/api/cards/${cardId}`)
       if (!cardRes.ok) {
-        setCardError("Tarjeta no encontrada")
+        setMotivo("no-encontrada")
         setStep("error")
         return
       }
       const cardJson = await cardRes.json()
       if (cardJson.card.expired) {
-        setCardError("Esta tarjeta de lealtad ha vencido y ya no acepta nuevos participantes.")
+        setMotivo("vencida")
         setStep("error")
         return
       }
@@ -78,7 +79,7 @@ export default function JoinCardPage() {
       // Archived cards: existing members can still view; new members cannot join
       if (!cardJson.card.isActive) {
         if (!session?.user?.email) {
-          setCardError("Esta tarjeta ya no acepta nuevos miembros.")
+          setMotivo("cerrada")
           setStep("error")
           return
         }
@@ -137,7 +138,7 @@ export default function JoinCardPage() {
       }
 
       if (!cardJson.card.isActive) {
-        setCardError("Esta tarjeta ya no acepta nuevos miembros.")
+        setMotivo("cerrada")
         setStep("error")
       } else {
         setStep("form")
@@ -231,13 +232,18 @@ export default function JoinCardPage() {
   }
 
   if (step === "error") {
+    // Cada motivo dice qué pasó y a dónde ir. Antes los tres salían bajo
+    // "Tarjeta no encontrada". Ver lib/alta-estados.ts.
+    const mensaje = mensajeDeAlta(motivo)
     return (
       <div className="min-h-screen bg-background forced-light flex flex-col items-center justify-center p-4">
-        <h1 className="text-2xl font-bold text-foreground mb-2">Tarjeta no encontrada</h1>
-        <p className="text-muted-foreground mb-4">{cardError || "El enlace no es válido"}</p>
-        <Link href="/">
-          <Button variant="outline">Volver al inicio</Button>
-        </Link>
+        <div className="w-full max-w-sm space-y-4 text-center">
+          <h1 className="text-2xl font-bold text-foreground">{mensaje.titulo}</h1>
+          <p className="text-muted-foreground">{mensaje.detalle}</p>
+          <Button asChild variant="outline" className="min-h-11">
+            <Link href={mensaje.accion.href}>{mensaje.accion.texto}</Link>
+          </Button>
+        </div>
       </div>
     )
   }

@@ -117,6 +117,16 @@ test.describe("ola 4, landing pública", () => {
       ).toHaveLength(1)
     })
 
+    test("un enlace de alta inválido dice qué pasó, no que no existe la tarjeta", async ({ page }) => {
+      await page.goto("/join/esta-tarjeta-no-existe")
+      await expect(
+        page.getByRole("heading", { name: "Este enlace no lleva a ninguna tarjeta" }),
+      ).toBeVisible({ timeout: 30000 })
+      // La regresión: los tres motivos salían bajo "Tarjeta no encontrada".
+      await expect(page.locator("body").getByText("Tarjeta no encontrada")).toHaveCount(0)
+      await expect(page.getByRole("link", { name: "Ir al inicio" })).toBeVisible()
+    })
+
     test("los pasos no se numeran, el verbo ya los nombra", async ({ page }) => {
       await page.goto("/")
       const comoFunciona = page.locator("#how-it-works")
