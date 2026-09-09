@@ -63,8 +63,6 @@ export async function DELETE(
     const permanent = new URL(request.url).searchParams.get("permanent") === "true"
     if (permanent) {
       await prisma.$transaction(async (tx) => {
-        // Keep the immutable ledger useful without retaining the deleted person's identity.
-        await tx.stampLog.updateMany({ where: { customerId: id }, data: { customerId: null } })
         await tx.customer.delete({ where: { id } })
       })
     } else {

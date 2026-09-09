@@ -15,7 +15,7 @@ export async function getOnboarding(db: Db, authUserId: string) {
   })
   if (!user) throw new NotFoundError("Cuenta no encontrada")
   if (!user.onboardingProgress) {
-    await db.onboardingProgress.create({ data: { userId: user.id, businessId: user.businessId } })
+    await db.onboardingProgress.create({ data: { userId: user.id, businessId: user.businessId ?? undefined } })
     return getOnboarding(db, authUserId)
   }
   return user
@@ -62,8 +62,11 @@ export async function advanceOnboarding(db: Db, authUserId: string, action: stri
     return db.$transaction(async (tx) => {
       const claimed = await tx.onboardingProgress.updateMany({ where: { id: progress.id, draftVersion }, data: { draftVersion: { increment: 1 } } })
       if (claimed.count !== 1) throw new ConflictError("El borrador cambió; recarga el onboarding")
-      const business = await tx.business.update({ where: { id: user.businessId }, data: { name, categoryId: category.id } })
-      const card = await tx.loyaltyCard.create({ data: { businessId: business.id, name: typeof cardDraft.name === "string" && cardDraft.name.trim() ? cardDraft.name.trim() : `Club ${name}`, reward: String(cardDraft.reward), stampsRequired, brandColor: typeof cardDraft.brandColor === "string" ? cardDraft.brandColor : business.brandColor, isActive: false, isLite: true } })
+      const business = user.businessId
+        ? await tx.business.update({ where: { id: user.businessId }, data: { name, categoryId: category.id } })
+        : await tx.business.create({ data: { name, categoryId: category.id, email: user.email } })
+      if (!user.businessId) await tx.user.update({ where: { id: user.id }, data: { businessId: business.id } })
+      const card = await tx.loyaltyCard.create({ data: { businessId: business.id, name: typeof cardDraft.name === "string" && cardDraft.name.trim() ? cardDraft.name.trim() : `Club ${name}`, reward: String(cardDraft.reward), stampsRequired, brandColor: typeof cardDraft.brandColor === "string" ? cardDraft.brandColor : business.brandColor, isActive: false, isLite: true, status: "DRAFT" } })
       await tx.onboardingProgress.update({ where: { id: progress.id }, data: { ...next, businessId: business.id, firstCardId: card.id } })
       return { business, card }
     })

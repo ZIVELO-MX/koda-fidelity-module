@@ -118,7 +118,7 @@ export async function getBusinessFromSession(): Promise<SessionBusiness> {
     include: { business: true },
   })
 
-  if (!userRecord) {
+  if (!userRecord || !userRecord.business || !userRecord.business.id) {
     throw new NotFoundError("User not found")
   }
 

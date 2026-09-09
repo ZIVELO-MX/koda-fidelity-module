@@ -82,7 +82,7 @@ export async function updatePassword(_prev: AuthResult, formData: FormData): Pro
     where: { authUserId: user.id },
       select: { businessId: true },
     })
-    if (userRecord) {
+    if (userRecord?.businessId) {
       await prisma.business.update({
         where: { id: userRecord.businessId },
         data: { nickname },

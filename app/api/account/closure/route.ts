@@ -4,7 +4,7 @@ import { getAccountPrincipal, getBusinessFromSession, handleApiError, Validation
 import { cancelClosure, previewClosure, scheduleClosure } from "@/lib/account-lifecycle"
 
 function hasRecentSignIn(lastSignInAt?: string) {
-  return Boolean(lastSignInAt && Date.now() - new Date(lastSignInAt).getTime() <= 15 * 60 * 1000)
+  return Boolean(lastSignInAt && Date.now() - new Date(lastSignInAt).getTime() <= 10 * 60 * 1000)
 }
 
 export async function GET() {

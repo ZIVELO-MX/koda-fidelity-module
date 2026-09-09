@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest"
 import { randomUUID } from "node:crypto"
 import { prisma } from "@/lib/prisma"
 import { ConflictError } from "@/lib/api-utils"
-import { activateManualSubscription, addCalendarMonths, createCustomerProfile, getEntitlements, scheduleClosure } from "../account-lifecycle"
+import { activateManualSubscription, createCustomerProfile, getEntitlements, scheduleClosure } from "../account-lifecycle"
 import { ensureCategories, getOnboarding, saveDraft } from "../onboarding-service"
 
 const integration = describe.skipIf(process.env.CI !== "true")
@@ -35,20 +35,20 @@ integration("account lifecycle PostgreSQL integration", () => {
     expect(writes.find((result) => result.status === "rejected")?.reason).toBeInstanceOf(ConflictError)
   })
 
-  it("supports trial, explicit Lite downgrade, duplicate protection and grace period", async () => {
+  it("supports symbolic Pro access, explicit Lite downgrade, duplicate protection and grace period", async () => {
     const card = await prisma.loyaltyCard.createManyAndReturn({ data: [
       { businessId, name: "One", reward: "R1", isActive: false, isLite: true },
       { businessId, name: "Two", reward: "R2", isActive: false, isLite: false },
     ] })
     const trial = await activateManualSubscription(prisma, { businessId, plan: "LITE", billingInterval: "MONTHLY" })
     expect((await getEntitlements(prisma, businessId)).plan).toBe("PRO")
-    expect(trial.proTrialEndsAt?.getTime()).toBe(addCalendarMonths(trial.periodStart, 1).getTime())
-    await expect(createCustomerProfile(prisma, { businessId, email: "person@example.com", name: "Person", authUserId: randomUUID() })).resolves.toBeTruthy()
-    await expect(createCustomerProfile(prisma, { businessId, email: "PERSON@example.com", name: "Other", authUserId: randomUUID() })).rejects.toBeInstanceOf(ConflictError)
-    await activateManualSubscription(prisma, { businessId, plan: "LITE", proTrialEndsAt: null })
+    expect(trial.proTrialEndsAt).toBeNull()
+    await expect(createCustomerProfile(prisma, { email: "person@example.com", name: "Person", authUserId: randomUUID() })).resolves.toBeTruthy()
+    await expect(createCustomerProfile(prisma, { email: "PERSON@example.com", name: "Other", authUserId: randomUUID() })).rejects.toBeInstanceOf(ConflictError)
+    await activateManualSubscription(prisma, { businessId, plan: "LITE", proAccessGranted: false, idempotencyKey: randomUUID() })
     expect((await prisma.loyaltyCard.findMany({ where: { businessId, isActive: true } }))).toHaveLength(1)
     const closure = await scheduleClosure(prisma, businessId, new Date("2026-01-31T00:00:00.000Z"))
-    expect(closure.scheduledFor.toISOString()).toBe("2026-02-28T00:00:00.000Z")
+    expect(closure.scheduledFor.toISOString()).toBe("2026-03-02T00:00:00.000Z")
     expect(card).toHaveLength(2)
   })
 

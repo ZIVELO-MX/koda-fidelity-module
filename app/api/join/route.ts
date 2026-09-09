@@ -193,7 +193,7 @@ export async function POST(request: NextRequest) {
       throw new NotFoundError("Loyalty card not found")
     }
 
-    if (!card.isActive) {
+    if (!card.isActive || (card.status && card.status !== "ACTIVE")) {
       throw new ValidationError("This loyalty card is no longer accepting new members")
     }
 

@@ -22,7 +22,7 @@ type OperationResult = {
 }
 
 const customerInclude = {
-  card: { select: { id: true, businessId: true, name: true, stampsRequired: true, reward: true, expiresAt: true, milestoneRewards: { select: { id: true, stampNumber: true, label: true, iconName: true, probability: true } } } },
+  card: { select: { id: true, businessId: true, name: true, stampsRequired: true, reward: true, expiresAt: true, status: true, milestoneRewards: { select: { id: true, stampNumber: true, label: true, iconName: true, probability: true } } } },
   currentCycle: { include: { configuration: true } },
 } as const
 
@@ -59,6 +59,7 @@ export async function executeLoyaltyOperation(db: Db, input: OperationInput): Pr
       if (!customer || customer.card.businessId !== input.businessId || !customer.isActive) {
         throw new NotFoundError("Customer not found")
       }
+      if (customer.card.status !== "ACTIVE") throw new NotFoundError("Customer not found")
       if (isExpired(customer.card.expiresAt)) throw new ValidationError("This loyalty card has expired")
 
       const now = new Date()
