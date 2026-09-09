@@ -16,9 +16,22 @@ const ANCHOS = [
 
 const RUTAS_PUBLICAS = ["/login", "/signup", "/dashboard/my-cards"]
 
-// Destinos medidos por debajo de 44px el 2026-09-07. Los tres viven en pantallas
-// de acceso que pertenecen a FID-0013, bloqueada, así que esta ola no los toca.
-const CONOCIDOS_FID_0013 = ["Continuar", "Crear Cuenta", "Continuar con Google"]
+// El ADN pide 40px de área táctil en un control y 44px en un destino de
+// navegación. Medido el 2026-09-08 en los tres anchos. Todo lo de aquí vive en
+// pantallas de acceso que pertenecen a FID-0013, bloqueada, así que se
+// documenta en vez de corregirse.
+const CONOCIDOS_FID_0013 = [
+  "boton Continuar",         // 36px en /login, el mínimo del control es 40
+  "boton Crear Cuenta",      // 36px en /signup con el alta abierta
+  "enlace Koda Fidelity",    // 32px, 36 en 1440
+  "enlace Más información",  // 18px
+  "enlace Solicitar acceso", // 36px, /signup con el alta cerrada
+  "enlace Iniciar Sesión",   // 20px
+]
+
+// El servidor de pruebas arranca con INVITE_ONLY=false, así que /signup se ve
+// con el formulario abierto. Con la bandera puesta enseña la otra cara, y por
+// eso la lista lleva los destinos de las dos.
 
 async function desborda(page: Page): Promise<boolean> {
   return page.evaluate(
@@ -54,24 +67,34 @@ for (const ancho of ANCHOS) {
         expect(await desborda(page), `${ruta} desborda en ${ancho.nombre}`).toBe(false)
       })
 
-      test(`${ruta} no suma destinos por debajo de 44px`, async ({ page }) => {
+      test(`${ruta} respeta el área táctil mínima`, async ({ page }) => {
         await page.goto(ruta)
+        // `/dashboard/my-cards` arranca en un estado de carga sin botones y
+        // luego pinta los suyos. Medir al `load` medía ese fotograma, que el
+        // usuario no llega a tocar, y daba verde sin haber medido nada.
+        await expect(page.locator(".animate-spin")).toHaveCount(0)
+
         const pequeños: string[] = []
-        for (const objetivo of await page.getByRole("button").all()) {
-          if (!(await objetivo.isVisible())) continue
-          const caja = await objetivo.boundingBox()
-          if (caja && caja.height < 44) {
+        for (const { rol, minimo } of [
+          { rol: "button" as const, minimo: 40 },
+          { rol: "link" as const, minimo: 44 },
+        ]) {
+          for (const objetivo of await page.getByRole(rol).all()) {
+            if (!(await objetivo.isVisible())) continue
             const nombre =
               (await objetivo.getAttribute("aria-label")) || (await objetivo.innerText()).trim()
             // El overlay de desarrollo de Next no es interfaz de la app.
             if (/next\.js/i.test(nombre)) continue
-            pequeños.push(nombre || "(sin nombre accesible)")
+            const caja = await objetivo.boundingBox()
+            if (caja && caja.height < minimo) {
+              const etiqueta = rol === "button" ? "boton" : "enlace"
+              pequeños.push(`${etiqueta} ${nombre || "(sin nombre accesible)"}`)
+            }
           }
         }
-        // Estas tres rutas son pantallas de acceso de FID-0013 y esta ola tiene
-        // prohibido rediseñarlas, así que sus faltas se documentan en vez de
-        // corregirse. La aserción es de subconjunto: arreglarlas la deja en
-        // verde, y una nueva la rompe.
+
+        // Aserción de subconjunto: arreglar los conocidos la deja en verde, y
+        // uno nuevo la rompe.
         expect(pequeños.sort(), `en ${ruta} a ${ancho.width}px`).toEqual(
           pequeños.filter((t) => CONOCIDOS_FID_0013.includes(t)).sort(),
         )
