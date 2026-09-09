@@ -32,12 +32,13 @@ function asMilestones(value: unknown): MilestoneRewardData[] {
 }
 
 async function withSerializableRetry<T>(operation: () => Promise<T>): Promise<T> {
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt < 5; attempt++) {
     try {
       return await operation()
     } catch (error) {
       const retryable = error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034"
-      if (!retryable || attempt === 2) throw error
+      if (!retryable || attempt === 4) throw error
+      await new Promise((resolve) => setTimeout(resolve, 10 * (attempt + 1)))
     }
   }
   throw new Error("Serializable transaction retry exhausted")
