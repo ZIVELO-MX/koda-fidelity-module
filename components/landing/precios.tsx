@@ -121,17 +121,19 @@ export function Precios() {
                 ))}
               </ul>
 
-              <Button asChild size="lg" className="mt-8 min-h-11 w-full">
-                <Link href="/signup">Empezar Gratis</Link>
-              </Button>
             </div>
           )
         })}
       </div>
 
-      <p className="text-center text-sm text-muted-foreground">
-        Crear tu cuenta y diseñar tu tarjeta no cuesta. El plan se contrata cuando la publicas.
-      </p>
+      <div className="space-y-3 text-center">
+        <Button asChild size="lg" className="min-h-11 px-8">
+          <Link href="/signup">Empieza por solo $149 al mes</Link>
+        </Button>
+        <p className="text-sm text-muted-foreground">
+          Crear tu cuenta y diseñar tu tarjeta no cuesta. El plan se contrata cuando la publicas.
+        </p>
+      </div>
     </div>
   )
 }

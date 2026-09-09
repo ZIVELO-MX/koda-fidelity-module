@@ -110,7 +110,7 @@ export function LandingMobileNav() {
   }, [])
 
   return (
-    <div className="relative md:hidden" data-mobile-menu="">
+    <div className="relative lg:hidden" data-mobile-menu="">
       <Drawer open={open} onOpenChange={setOpen} shouldScaleBackground={false}>
         <DrawerTrigger asChild>
           <button
@@ -189,7 +189,7 @@ export function LandingMobileNav() {
                 className="w-full"
               >
                 <Button className="w-full h-10 active:scale-[0.97] transition-transform">
-                  Empezar Gratis
+                  Empieza por solo $149 al mes
                 </Button>
               </Link>
             </DrawerClose>

@@ -13,6 +13,9 @@ const ANCHOS = [
 
 // Lo que el producto no ofrece, no se promete. Sale de la decisión de precios
 // confirmados: no hay prueba gratuita ni cobro sin tarjeta.
+// La misma intención, el alta de un negocio, se llama igual en toda la página.
+const ETIQUETA = "Empieza por solo $149 al mes"
+
 const PROMESAS_SIN_RESPALDO = [
   /14 d[ií]as/i,
   /catorce d[ií]as/i,
@@ -20,6 +23,8 @@ const PROMESAS_SIN_RESPALDO = [
   /sin tarjeta de cr[eé]dito/i,
   /pr[oó]ximamente/i,
   /por definir/i,
+  // Empezar no es gratis: publicar la tarjeta requiere contratar un plan.
+  /empezar gratis/i,
 ]
 
 async function desborda(page: Page): Promise<boolean> {
@@ -59,7 +64,7 @@ test.describe("ola 4, landing pública", () => {
 
       test("el hero cabe en el primer viewport, con su botón a la vista", async ({ page }) => {
         await page.goto("/")
-        const principal = page.getByRole("link", { name: "Empezar Gratis" }).first()
+        const principal = page.getByRole("link", { name: ETIQUETA }).first()
         await expect(principal).toBeVisible()
         const caja = await principal.boundingBox()
         expect(caja, "el botón principal del hero no tiene caja").not.toBeNull()

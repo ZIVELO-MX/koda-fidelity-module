@@ -113,7 +113,7 @@ export const siteConfig = {
     title: "¿Listo para construir lealtad?",
     description:
       "Crea tu primera tarjeta de lealtad digital en minutos.",
-    cta: "Empezar Gratis",
+    cta: "Empieza por solo $149 al mes",
     href: "/signup",
   },
 

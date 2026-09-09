@@ -85,9 +85,9 @@ export default async function LandingPage({
                 height={36}
                 className="size-9 shrink-0"
               />
-              <span className="font-semibold text-lg text-foreground">Koda Fidelity</span>
+              <span className="whitespace-nowrap font-semibold text-lg text-foreground">Koda Fidelity</span>
             </Link>
-            <div className="hidden md:flex items-center gap-8">
+            <div className="hidden lg:flex items-center gap-8">
               <SmoothNavLink href="#features" className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Funciones
               </SmoothNavLink>
@@ -98,7 +98,7 @@ export default async function LandingPage({
                 Precios
               </SmoothNavLink>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 sm:gap-3">
               <Button asChild variant="ghost" className="hidden min-h-11 md:inline-flex">
                 <Link href="/login">
                   Iniciar Sesión
@@ -106,7 +106,7 @@ export default async function LandingPage({
               </Button>
               <Button asChild size="sm" className="hidden min-h-11 md:inline-flex active:scale-[0.97] transition-transform">
                 <Link href="/signup">
-                  Empezar Gratis
+                  Empieza por solo $149 al mes
                 </Link>
               </Button>
               <LandingMobileNav />
@@ -138,7 +138,7 @@ export default async function LandingPage({
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button asChild size="lg" className="min-h-11 group w-full sm:w-auto text-base px-8 active:scale-[0.97] transition-transform">
                   <Link href="/signup">
-                    Empezar Gratis
+                    Empieza por solo $149 al mes
                     <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-150 group-hover:translate-x-1" />
                   </Link>
                 </Button>
