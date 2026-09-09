@@ -26,44 +26,249 @@ enum LoyaltyOperationType {
   redeem
 }
 
+enum OnboardingStep {
+  INTRO
+  BUSINESS
+  CARD
+  ACQUISITION
+  PAYWALL
+}
+
+enum OnboardingStatus {
+  IN_PROGRESS
+  AWAITING_PAYMENT
+  ACTIVE
+}
+
+enum BillingInterval {
+  MONTHLY
+  ANNUAL
+}
+
+enum SubscriptionPlan {
+  LITE
+  PRO
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+enum ClosureStatus {
+  SCHEDULED
+  CANCELED
+  COMPLETED
+}
+
+enum CleanupStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum CardStatus {
+  DRAFT
+  ACTIVE
+  LOCKED_BY_PLAN
+  ARCHIVED
+}
+
+enum ThemePlan {
+  LITE
+  PRO
+}
+
 model Business {
-  id                String             @id @default(cuid())
-  name              String
-  brandColor        String             @default("#ff6b35")
-  logoUrl           String?
-  iconName          String?
-  stampIconName     String?
-  email             String             @unique
-  nickname          String?
-  businessType      String?
-  address           String?
-  phone             String?
-  website           String?
-  instagram         String?
-  timezone          String             @default("America/Mexico_City")
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  loyaltyCards      LoyaltyCard[]
-  users             User[]
-  invitations       TeamInvitation[]
-  stampLogs         StampLog[]
-  loyaltyOperations LoyaltyOperation[]
+  id                   String                @id @default(cuid())
+  name                 String
+  brandColor           String                @default("#ff6b35")
+  logoUrl              String?
+  iconName             String?
+  stampIconName        String?
+  email                String                @unique
+  nickname             String?
+  businessType         String?
+  address              String?
+  phone                String?
+  website              String?
+  instagram            String?
+  timezone             String                @default("America/Mexico_City")
+  categoryId           String?
+  category             BusinessCategory?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  loyaltyCards         LoyaltyCard[]
+  users                User[]
+  invitations          TeamInvitation[]
+  stampLogs            StampLog[]
+  loyaltyOperations    LoyaltyOperation[]
+  subscriptions        Subscription[]
+  accountClosures      AccountClosure[]
+  avatarAssets         BusinessAvatarAsset[]
+  billingAudits        BillingAuditEvent[]
+  onboardingProgresses OnboardingProgress[]
+
+  @@index([categoryId])
 }
 
 model User {
-  id                    String           @id @default(cuid())
-  email                 String           @unique
+  id                    String              @id @default(cuid())
+  email                 String              @unique
   name                  String
-  role                  Role             @default(admin)
-  businessId            String
-  business              Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
-  authUserId            String?          @unique @db.Uuid
-  passwordSetupRequired Boolean          @default(false)
-  invitationsSent       TeamInvitation[] @relation("InvitationSender")
+  role                  Role                @default(admin)
+  businessId            String?
+  business              Business?           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  authUserId            String?             @unique @db.Uuid
+  passwordSetupRequired Boolean             @default(false)
+  invitationsSent       TeamInvitation[]    @relation("InvitationSender")
+  onboardingProgress    OnboardingProgress?
 
   @@index([businessId])
+}
+
+model BusinessCategory {
+  id         String     @id @default(cuid())
+  name       String     @unique
+  isActive   Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  businesses Business[]
+}
+
+model OnboardingProgress {
+  id                      String           @id @default(cuid())
+  userId                  String           @unique
+  user                    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessId              String?
+  business                Business?        @relation(fields: [businessId], references: [id], onDelete: SetNull)
+  firstCardId             String?
+  firstCard               LoyaltyCard?     @relation(fields: [firstCardId], references: [id], onDelete: SetNull)
+  step                    OnboardingStep   @default(INTRO)
+  status                  OnboardingStatus @default(IN_PROGRESS)
+  draftVersion            Int              @default(0)
+  businessDraft           Json?
+  cardDraft               Json?
+  acquisitionSource       String?
+  selectedBillingInterval BillingInterval?
+  introSkippedAt          DateTime?
+  acquisitionSkippedAt    DateTime?
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+
+  @@index([businessId, status])
+}
+
+model Subscription {
+  id                String             @id @default(cuid())
+  businessId        String
+  business          Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  plan              SubscriptionPlan   @default(LITE)
+  billingInterval   BillingInterval    @default(MONTHLY)
+  status            SubscriptionStatus @default(ACTIVE)
+  amountMinor       Int                @default(0)
+  currency          String             @default("MXN")
+  activatedAt       DateTime           @default(now())
+  periodStart       DateTime
+  periodEnd         DateTime
+  proTrialEndsAt    DateTime?
+  proAccessGranted  Boolean            @default(false)
+  liteCardId        String?
+  externalReference String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([businessId, status])
+  @@index([periodEnd])
+}
+
+model CustomerProfile {
+  id              String             @id @default(cuid())
+  authUserId      String?            @unique @db.Uuid
+  emailNormalized String             @unique
+  name            String
+  avatarPath      String?
+  avatarRingColor String             @default("#ff6b35")
+  customers       Customer[]
+  avatarJobs      AvatarCleanupJob[]
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+}
+
+model BusinessAvatarAsset {
+  id          String        @id @default(cuid())
+  businessId  String
+  business    Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  storagePath String        @unique
+  status      CleanupStatus @default(PENDING)
+  attempts    Int           @default(0)
+  lastError   String?
+  deletedAt   DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([businessId, status])
+}
+
+model AccountClosure {
+  id           String        @id @default(cuid())
+  businessId   String
+  business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  status       ClosureStatus @default(SCHEDULED)
+  requestedAt  DateTime      @default(now())
+  scheduledFor DateTime
+  canceledAt   DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([businessId, status])
+  @@index([scheduledFor, status])
+}
+
+model BillingAuditEvent {
+  id                String   @id @default(cuid())
+  businessId        String
+  action            String
+  operator          String
+  idempotencyKey    String   @unique
+  externalReference String?
+  metadata          Json?
+  createdAt         DateTime @default(now())
+  business          Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, createdAt])
+}
+
+model LoyaltyTheme {
+  id             String        @id @default(cuid())
+  code           String        @unique
+  plan           ThemePlan     @default(LITE)
+  isActive       Boolean       @default(true)
+  selectedCards  LoyaltyCard[]
+  effectiveCards LoyaltyCard[] @relation("EffectiveCardTheme")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model AvatarCleanupJob {
+  id          String          @id @default(cuid())
+  profileId   String
+  bucket      String
+  storagePath String
+  status      CleanupStatus   @default(PENDING)
+  attempts    Int             @default(0)
+  lastError   String?
+  deletedAt   DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  profile     CustomerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([profileId, status])
 }
 
 model SignupIntent {
@@ -111,26 +316,33 @@ model AuthRateLimit {
 }
 
 model LoyaltyCard {
-  id               String              @id @default(cuid())
-  businessId       String
-  business         Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  name             String
-  reward           String
-  stampsRequired   Int                 @default(10)
-  brandColor       String              @default("#ff6b35")
-  iconName         String?
-  stampIconName    String?
-  isActive         Boolean             @default(true)
-  expiresAt        DateTime?
-  description      String?
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
-  customers        Customer[]
-  milestoneRewards MilestoneReward[]
-  configurations   CardConfiguration[]
-  loyaltyCycles    LoyaltyCycle[]
-  stampOperations  LoyaltyOperation[]
-  stampLogs        StampLog[]
+  id                  String               @id @default(cuid())
+  businessId          String
+  business            Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name                String
+  reward              String
+  stampsRequired      Int                  @default(10)
+  brandColor          String               @default("#ff6b35")
+  iconName            String?
+  stampIconName       String?
+  isActive            Boolean              @default(true)
+  isLite              Boolean              @default(false)
+  status              CardStatus           @default(ACTIVE)
+  selectedThemeId     String?
+  effectiveThemeId    String?
+  expiresAt           DateTime?
+  description         String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  customers           Customer[]
+  milestoneRewards    MilestoneReward[]
+  configurations      CardConfiguration[]
+  loyaltyCycles       LoyaltyCycle[]
+  stampOperations     LoyaltyOperation[]
+  stampLogs           StampLog[]
+  onboardingFirstCard OnboardingProgress[]
+  selectedTheme       LoyaltyTheme?        @relation(fields: [selectedThemeId], references: [id], onDelete: SetNull)
+  effectiveTheme      LoyaltyTheme?        @relation("EffectiveCardTheme", fields: [effectiveThemeId], references: [id], onDelete: SetNull)
 
   @@index([businessId])
 }
@@ -147,6 +359,8 @@ model Customer {
   googlePassId    String?
   createdAt       DateTime                 @default(now())
   updatedAt       DateTime                 @updatedAt
+  profileId       String?
+  profile         CustomerProfile?         @relation(fields: [profileId], references: [id], onDelete: Cascade)
   stampsLog       StampLog[]
   milestoneClaims CustomerMilestoneClaim[]
   operations      LoyaltyOperation[]
@@ -154,6 +368,7 @@ model Customer {
   currentCycleId  String?
   currentCycle    LoyaltyCycle?            @relation("CurrentCustomerCycle", fields: [currentCycleId], references: [id], onDelete: SetNull)
 
+  @@unique([cardId, profileId])
   @@index([currentCycleId])
   @@index([cardId, isActive])
   @@index([email])

@@ -337,7 +337,7 @@ export async function DELETE(
     if (permanent) {
       await prisma.loyaltyCard.delete({ where: { id } })
     } else {
-      await prisma.loyaltyCard.update({ where: { id }, data: { isActive: false } })
+      await prisma.loyaltyCard.update({ where: { id }, data: { isActive: false, status: "ARCHIVED" } })
     }
 
     return NextResponse.json({ success: true })

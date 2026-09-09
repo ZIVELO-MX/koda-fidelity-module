@@ -29,7 +29,7 @@ export default async function EditCardPage({
     },
   })
 
-  if (!userRecord || userRecord.role !== "admin") {
+  if (!userRecord || !userRecord.business || userRecord.role !== "admin") {
     redirect("/dashboard/forbidden")
   }
 

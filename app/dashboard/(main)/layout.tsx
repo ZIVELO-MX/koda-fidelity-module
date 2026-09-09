@@ -17,7 +17,7 @@ export default async function DashboardLayout({
     include: { business: { select: { name: true, brandColor: true, nickname: true } } },
   })
 
-  if (!userRecord) {
+  if (!userRecord || !userRecord.business) {
     redirect("/dashboard/forbidden")
   }
   if (userRecord.passwordSetupRequired) redirect("/dashboard/update-password")

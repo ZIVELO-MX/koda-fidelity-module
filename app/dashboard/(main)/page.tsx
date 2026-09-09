@@ -40,7 +40,7 @@ export default async function DashboardPage() {
       select: { businessId: true },
     })
 
-    if (!userRecord) {
+    if (!userRecord || !userRecord.businessId) {
       redirect("/login")
     }
 
