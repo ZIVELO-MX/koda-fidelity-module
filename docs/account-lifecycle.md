@@ -22,3 +22,9 @@ activación de planes no dependa todavía de un proveedor de pagos.
 - El ledger se anonimiza (`customerId = null`) antes de un borrado permanente de cliente.
 - El cierre de negocio se agenda a 30 días y su ejecución elimina el negocio en cascada después de la gracia.
 - Las migraciones son expand-only, las tablas nuevas tienen RLS y el entorno de desarrollo se verifica con `DIRECT_URL` de `.env.development.local`.
+
+El seed de desarrollo valida sus contraseñas y resuelve las identidades Auth antes de modificar
+la base de datos. La identidad Auth y las filas Prisma no comparten transacción: si falla la
+transacción Prisma después de crear o actualizar una identidad, una nueva ejecución reutiliza
+esa identidad y vuelve a intentar únicamente la parte de datos. El seed no debe ejecutarse
+contra producción.

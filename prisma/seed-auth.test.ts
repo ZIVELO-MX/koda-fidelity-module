@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest"
-import { ensureSeedAuthUser, seedPassword, seedRoleUsers } from "./seed-auth"
+import { ensureSeedAuthUser, resolveSeedRoleUsers, seedPassword, seedRoleUsers } from "./seed-auth"
 
 describe("development auth seed", () => {
   it("defines one stable user for each supported business role", () => {
@@ -27,5 +27,55 @@ describe("development auth seed", () => {
     await expect(ensureSeedAuthUser(admin, seedRoleUsers[0], "long-enough")).resolves.toBe("auth-existing")
     expect(admin.createUser).toHaveBeenCalledTimes(1)
     expect(admin.updateUserById).toHaveBeenCalledWith("auth-existing", expect.objectContaining({ email_confirm: true }))
+  })
+
+  it("finds an existing user on a later Auth page", async () => {
+    const admin = {
+      listUsers: vi.fn()
+        .mockResolvedValueOnce({ data: { users: Array.from({ length: 1000 }, (_, index) => ({ id: `auth-${index}`, email: `user-${index}@dev.invalid` })) }, error: null })
+        .mockResolvedValueOnce({ data: { users: [{ id: "auth-page-two", email: seedRoleUsers[0].email }] }, error: null }),
+      createUser: vi.fn(),
+      updateUserById: vi.fn().mockResolvedValue({ data: { user: { id: "auth-page-two" } }, error: null }),
+    }
+
+    await expect(ensureSeedAuthUser(admin, seedRoleUsers[0], "long-enough")).resolves.toBe("auth-page-two")
+    expect(admin.listUsers).toHaveBeenNthCalledWith(1, { page: 1, perPage: 1000 })
+    expect(admin.listUsers).toHaveBeenNthCalledWith(2, { page: 2, perPage: 1000 })
+    expect(admin.createUser).not.toHaveBeenCalled()
+  })
+
+  it("does not write Auth users when any seed password is missing", async () => {
+    const admin = {
+      listUsers: vi.fn(),
+      createUser: vi.fn(),
+      updateUserById: vi.fn(),
+    }
+
+    await expect(resolveSeedRoleUsers(admin, { DEV_SEED_ADMIN_PASSWORD: "long-enough" })).rejects.toThrow("DEV_SEED_SELLADOR_PASSWORD")
+    expect(admin.listUsers).not.toHaveBeenCalled()
+    expect(admin.createUser).not.toHaveBeenCalled()
+    expect(admin.updateUserById).not.toHaveBeenCalled()
+  })
+
+  it("stops on Auth listing errors without creating a replacement", async () => {
+    const admin = {
+      listUsers: vi.fn().mockResolvedValue({ data: null, error: { message: "provider unavailable" } }),
+      createUser: vi.fn(),
+      updateUserById: vi.fn(),
+    }
+
+    await expect(ensureSeedAuthUser(admin, seedRoleUsers[0], "long-enough")).rejects.toThrow("provider unavailable")
+    expect(admin.createUser).not.toHaveBeenCalled()
+  })
+
+  it("stops when updating an existing Auth user fails", async () => {
+    const admin = {
+      listUsers: vi.fn().mockResolvedValue({ data: { users: [{ id: "auth-existing", email: seedRoleUsers[0].email }] }, error: null }),
+      createUser: vi.fn(),
+      updateUserById: vi.fn().mockResolvedValue({ data: null, error: { message: "update denied" } }),
+    }
+
+    await expect(ensureSeedAuthUser(admin, seedRoleUsers[0], "long-enough")).rejects.toThrow("update denied")
+    expect(admin.createUser).not.toHaveBeenCalled()
   })
 })

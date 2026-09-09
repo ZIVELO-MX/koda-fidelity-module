@@ -24,8 +24,10 @@ export const seedRoleUsers: readonly SeedRoleUser[] = [
 
 type AdminUser = { id: string; email?: string | null }
 
+const AUTH_PAGE_SIZE = 1000
+
 type SeedAuthAdmin = {
-  listUsers: () => Promise<{ data: { users: AdminUser[] } | null; error: { message: string } | null }>
+  listUsers: (params?: { page?: number; perPage?: number }) => Promise<{ data: { users: AdminUser[] } | null; error: { message: string } | null }>
   createUser: (input: { email: string; password: string; email_confirm: boolean; user_metadata: { name: string } }) => Promise<{ data: { user: AdminUser | null } | null; error: { message: string } | null }>
   updateUserById: (id: string, input: { password: string; email_confirm: boolean; user_metadata: { name: string } }) => Promise<{ data: { user: AdminUser | null } | null; error: { message: string } | null }>
 }
@@ -38,19 +40,35 @@ export function seedPassword(env: Record<string, string | undefined>, user: Seed
   return password
 }
 
-export async function ensureSeedAuthUser(admin: SeedAuthAdmin, user: SeedRoleUser, password: string): Promise<string> {
-  const listed = await admin.listUsers()
-  if (listed.error) throw new Error(`Unable to list Supabase seed users: ${listed.error.message}`)
+export async function resolveSeedRoleUsers(
+  admin: SeedAuthAdmin,
+  env: Record<string, string | undefined>,
+): Promise<Array<SeedRoleUser & { authUserId: string }>> {
+  const usersWithPasswords = seedRoleUsers.map(user => ({ user, password: seedPassword(env, user) }))
+  return Promise.all(usersWithPasswords.map(async ({ user, password }) => ({
+    ...user,
+    authUserId: await ensureSeedAuthUser(admin, user, password),
+  })))
+}
 
-  const existing = listed.data?.users.find((candidate) => candidate.email?.toLowerCase() === user.email)
-  if (existing) {
-    const updated = await admin.updateUserById(existing.id, {
-      password,
-      email_confirm: true,
-      user_metadata: { name: user.name },
-    })
-    if (updated.error) throw new Error(`Unable to update Supabase seed user: ${updated.error.message}`)
-    return existing.id
+export async function ensureSeedAuthUser(admin: SeedAuthAdmin, user: SeedRoleUser, password: string): Promise<string> {
+  for (let page = 1; ; page += 1) {
+    const listed = await admin.listUsers({ page, perPage: AUTH_PAGE_SIZE })
+    if (listed.error) throw new Error(`Unable to list Supabase seed users: ${listed.error.message}`)
+    if (!listed.data) throw new Error("Unable to list Supabase seed users: response contained no data")
+
+    const existing = listed.data.users.find((candidate) => candidate.email?.toLowerCase() === user.email)
+    if (existing) {
+      const updated = await admin.updateUserById(existing.id, {
+        password,
+        email_confirm: true,
+        user_metadata: { name: user.name },
+      })
+      if (updated.error) throw new Error(`Unable to update Supabase seed user: ${updated.error.message}`)
+      return existing.id
+    }
+
+    if (listed.data.users.length < AUTH_PAGE_SIZE) break
   }
 
   const created = await admin.createUser({
