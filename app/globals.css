@@ -182,6 +182,10 @@
     top: -100%;
     left: 1rem;
     z-index: 9999;
+    display: inline-flex;
+    align-items: center;
+    /* 44px: es un destino de navegación y medía 37. */
+    min-height: 44px;
     padding: 0.5rem 1rem;
     background: var(--primary);
     color: var(--primary-foreground);

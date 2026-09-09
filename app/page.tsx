@@ -9,6 +9,7 @@ import { LandingMobileNav } from "@/components/landing-mobile-nav"
 import { SmoothNavLink } from "@/components/smooth-nav-link"
 import { RevealGrid } from "@/components/reveal-grid"
 import { MarqueeBand } from "@/components/marquee-band"
+import { Precios } from "@/components/landing/precios"
 import { siteConfig } from "@/lib/site-config"
 
 export const metadata: Metadata = {
@@ -76,7 +77,7 @@ export default async function LandingPage({
       <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-2">
+            <Link href="/" className="inline-flex min-h-11 items-center gap-2">
               <Image
                 src="/short-logo.svg"
                 alt={siteConfig.shortName}
@@ -87,23 +88,23 @@ export default async function LandingPage({
               <span className="font-semibold text-lg text-foreground">Koda Fidelity</span>
             </Link>
             <div className="hidden md:flex items-center gap-8">
-              <SmoothNavLink href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <SmoothNavLink href="#features" className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Funciones
               </SmoothNavLink>
-              <SmoothNavLink href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <SmoothNavLink href="#how-it-works" className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Cómo Funciona
               </SmoothNavLink>
-              <SmoothNavLink href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <SmoothNavLink href="#pricing" className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Precios
               </SmoothNavLink>
             </div>
             <div className="flex items-center gap-2">
-              <Button asChild variant="ghost" className="hidden md:inline-flex">
+              <Button asChild variant="ghost" className="hidden min-h-11 md:inline-flex">
                 <Link href="/login">
                   Iniciar Sesión
                 </Link>
               </Button>
-              <Button asChild size="sm" className="hidden md:inline-flex active:scale-[0.97] transition-transform">
+              <Button asChild size="sm" className="hidden min-h-11 md:inline-flex active:scale-[0.97] transition-transform">
                 <Link href="/signup">
                   Empezar Gratis
                 </Link>
@@ -135,25 +136,17 @@ export default async function LandingPage({
                 {siteConfig.hero.subtitle}
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button asChild size="lg" className="group w-full sm:w-auto text-base px-8 active:scale-[0.97] transition-transform">
+                <Button asChild size="lg" className="min-h-11 group w-full sm:w-auto text-base px-8 active:scale-[0.97] transition-transform">
                   <Link href="/signup">
                     Empezar Gratis
                     <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-150 group-hover:translate-x-1" />
                   </Link>
                 </Button>
-                <Button asChild size="lg" variant="outline" className="w-full sm:w-auto text-base px-8 active:scale-[0.97] transition-transform">
+                <Button asChild size="lg" variant="outline" className="min-h-11 w-full sm:w-auto text-base px-8 active:scale-[0.97] transition-transform">
                   <SmoothNavLink href="#how-it-works">
                     Ver Cómo Funciona
                   </SmoothNavLink>
                 </Button>
-              </div>
-              <div className="flex flex-wrap gap-x-5 gap-y-2 pt-1">
-                {["Sin tarjeta de crédito", "Setup en 2 minutos", "Cancela cuando quieras"].map((text) => (
-                  <div key={text} className="flex items-center gap-1.5">
-                    <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-                    <span className="text-sm text-muted-foreground">{text}</span>
-                  </div>
-                ))}
               </div>
             </div>
             <div className="relative lg:pl-8">
@@ -211,27 +204,25 @@ export default async function LandingPage({
               Tu programa de lealtad digital funcionando en minutos, no en días.
             </p>
           </div>
-          <RevealGrid className="grid md:grid-cols-3 gap-8">
-            {siteConfig.howItWorks.map((item, index) => {
-              const Icon = iconMap[item.icon]
-              return (
-                <div
-                  key={`how-${item.step}`}
-                  className="relative bg-card rounded-2xl p-8 border border-border shadow-sm hover:shadow-lg hover:-translate-y-1 transition-[box-shadow,transform] duration-200 group"
-                >
-                  <div className="absolute -top-4 -left-4 w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold shadow-lg">
-                    {item.step}
-                  </div>
-                  <div className="pt-4">
-                    <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 transition-colors">
-                      {Icon && <Icon className="h-7 w-7 text-primary" />}
+          {/* Lista secuencial, no tres columnas iguales. Y sin numerar: el verbo
+              ya nombra el paso, "Crea tu tarjeta" se entiende sin un 01 delante. */}
+          <RevealGrid className="mx-auto max-w-2xl">
+            <ol className="divide-y divide-border">
+              {siteConfig.howItWorks.map((item) => {
+                const Icon = iconMap[item.icon]
+                return (
+                  <li key={item.title} className="flex gap-5 py-8 first:pt-0 last:pb-0">
+                    <div className="h-12 w-12 shrink-0 rounded-xl bg-primary/10 flex items-center justify-center">
+                      {Icon && <Icon className="h-6 w-6 text-primary" />}
                     </div>
-                    <h3 className="text-xl font-semibold text-foreground mb-3">{item.title}</h3>
-                    <p className="text-muted-foreground leading-relaxed">{item.description}</p>
-                  </div>
-                </div>
-              )
-            })}
+                    <div className="min-w-0">
+                      <h3 className="text-xl font-semibold text-foreground">{item.title}</h3>
+                      <p className="mt-2 text-muted-foreground leading-relaxed">{item.description}</p>
+                    </div>
+                  </li>
+                )
+              })}
+            </ol>
           </RevealGrid>
         </div>
       </section>
@@ -296,23 +287,16 @@ export default async function LandingPage({
       {/* Pricing */}
       <section id="pricing" className="scroll-mt-16 py-20 lg:py-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-2xl mx-auto text-center bg-card rounded-3xl p-6 sm:p-12 border border-border shadow-sm">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-medium mb-6">
-              <Zap className="h-3.5 w-3.5" />
-              Acceso Anticipado
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-10">
+              <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+                {siteConfig.pricing.title}
+              </h2>
+              <p className="text-lg text-muted-foreground">
+                {siteConfig.pricing.description}
+              </p>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Precios accesibles para negocios locales
-            </h2>
-            <p className="text-lg text-muted-foreground mb-8">
-              {siteConfig.pricing.description}
-            </p>
-            <Button asChild size="lg" className="group text-base px-8 active:scale-[0.97] transition-transform">
-              <Link href="/signup">
-                Obtener Acceso Anticipado
-                <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-150 group-hover:translate-x-1" />
-              </Link>
-            </Button>
+            <Precios />
           </div>
         </div>
       </section>
@@ -327,7 +311,7 @@ export default async function LandingPage({
             <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
             Accede a todas tus tarjetas, revisa tu progreso y canjea tus recompensas desde un solo lugar.
             </p>
-            <Button asChild size="lg" className="group text-base px-10 active:scale-[0.97] transition-transform">
+            <Button asChild size="lg" className="min-h-11 group text-base px-10 active:scale-[0.97] transition-transform">
               <Link href="/my-cards">
                 Ir a Mis Tarjetas
                 <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-150 group-hover:translate-x-1" />
@@ -347,7 +331,7 @@ export default async function LandingPage({
             <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
               {siteConfig.cta.description}
             </p>
-            <Button asChild size="lg" className="group text-base px-10 active:scale-[0.97] transition-transform">
+            <Button asChild size="lg" className="min-h-11 group text-base px-10 active:scale-[0.97] transition-transform">
               <Link href={siteConfig.cta.href}>
                 {siteConfig.cta.cta}
                 <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-150 group-hover:translate-x-1" />
@@ -361,7 +345,7 @@ export default async function LandingPage({
       <footer className="py-12 border-t border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <Link href="/" className="flex items-center gap-2">
+            <Link href="/" className="inline-flex min-h-11 items-center gap-2">
               <Image
                 src="/short-logo.svg"
                 alt={siteConfig.shortName}
@@ -379,7 +363,7 @@ export default async function LandingPage({
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {link.label}
                 </Link>

@@ -40,21 +40,18 @@ export const siteConfig = {
   howItWorks: [
     {
       icon: "QrCode",
-      step: "01",
       title: "Crea tu Tarjeta",
       description:
         "Diseña una tarjeta de lealtad con tus colores y logo. Define tu recompensa y la cantidad de sellos.",
     },
     {
       icon: "Smartphone",
-      step: "02",
       title: "Clientes Reciben su Tarjeta",
       description:
         "Escanean el QR y reciben un enlace seguro por correo electrónico para acceder a su tarjeta digital.",
     },
     {
       icon: "Wallet",
-      step: "03",
       title: "Recompensa la Lealtad",
       description:
         "Escanea las tarjetas de clientes para agregar sellos. Cuando alcanzan la meta, canjean su recompensa.",
@@ -108,14 +105,14 @@ export const siteConfig = {
   ],
 
   pricing: {
-    title: "Precios por definir",
-    description: "Nuestra oferta comercial se publicará próximamente. Mientras tanto, puedes iniciar sesión si ya tienes acceso.",
+    title: "Precios claros para negocios locales",
+    description: "Dos planes, sin permanencia. Pagas por año y recibes dos meses.",
   },
 
   cta: {
     title: "¿Listo para construir lealtad?",
     description:
-      "Crea tu primera tarjeta de lealtad digital en minutos. Sin tarjeta de crédito, sin complicaciones.",
+      "Crea tu primera tarjeta de lealtad digital en minutos.",
     cta: "Empezar Gratis",
     href: "/signup",
   },

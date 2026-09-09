@@ -1,0 +1,123 @@
+import { test, expect, type Page } from "@playwright/test"
+
+// Recorrido de la ola 4: landing pública y alta por QR.
+//
+// Se escribe antes que la implementación, como en la ola 3. No necesita sesión:
+// las dos superficies son públicas.
+
+const ANCHOS = [
+  { nombre: "movil", width: 375, height: 812 },
+  { nombre: "tableta", width: 768, height: 1024 },
+  { nombre: "escritorio", width: 1440, height: 900 },
+]
+
+// Lo que el producto no ofrece, no se promete. Sale de la decisión de precios
+// confirmados: no hay prueba gratuita ni cobro sin tarjeta.
+const PROMESAS_SIN_RESPALDO = [
+  /14 d[ií]as/i,
+  /catorce d[ií]as/i,
+  /prueba gratuita/i,
+  /sin tarjeta de cr[eé]dito/i,
+  /pr[oó]ximamente/i,
+  /por definir/i,
+]
+
+async function desborda(page: Page): Promise<boolean> {
+  return page.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+  )
+}
+
+test.describe("ola 4, landing pública", () => {
+  for (const ancho of ANCHOS) {
+    test.describe(`${ancho.nombre} (${ancho.width}px)`, () => {
+      test.use({ viewport: { width: ancho.width, height: ancho.height } })
+
+      test("no desborda y respeta el área táctil", async ({ page }) => {
+        await page.goto("/")
+        expect(await desborda(page), `la landing desborda en ${ancho.nombre}`).toBe(false)
+
+        for (const { rol, minimo } of [
+          { rol: "button" as const, minimo: 40 },
+          { rol: "link" as const, minimo: 44 },
+        ]) {
+          for (const objetivo of await page.getByRole(rol).all()) {
+            if (!(await objetivo.isVisible())) continue
+            const nombre =
+              (await objetivo.getAttribute("aria-label")) || (await objetivo.innerText()).trim()
+            if (/next\.js/i.test(nombre)) continue
+            const caja = await objetivo.boundingBox()
+            if (caja) {
+              expect(
+                caja.height,
+                `${rol} "${nombre}" en ${ancho.nombre}`,
+              ).toBeGreaterThanOrEqual(minimo)
+            }
+          }
+        }
+      })
+
+      test("el hero cabe en el primer viewport, con su botón a la vista", async ({ page }) => {
+        await page.goto("/")
+        const principal = page.getByRole("link", { name: "Empezar Gratis" }).first()
+        await expect(principal).toBeVisible()
+        const caja = await principal.boundingBox()
+        expect(caja, "el botón principal del hero no tiene caja").not.toBeNull()
+        expect(
+          caja!.y + caja!.height,
+          `el botón del hero cae fuera del primer viewport en ${ancho.nombre}`,
+        ).toBeLessThanOrEqual(ancho.height)
+      })
+    })
+  }
+
+  test.describe("lo que dice la página", () => {
+    test.use({ viewport: { width: 1440, height: 900 } })
+
+    test("publica los precios confirmados", async ({ page }) => {
+      await page.goto("/")
+      const precios = page.locator("#pricing")
+      await expect(precios).toContainText("149")
+      await expect(precios).toContainText("299")
+      await expect(precios).toContainText("1,490")
+      await expect(precios).toContainText("2,990")
+    })
+
+    test("no promete lo que el producto no ofrece", async ({ page }) => {
+      await page.goto("/")
+      const texto = await page.locator("body").innerText()
+      for (const promesa of PROMESAS_SIN_RESPALDO) {
+        expect(texto, `la landing promete ${promesa}`).not.toMatch(promesa)
+      }
+    })
+
+    test("cero em dash en el texto visible", async ({ page }) => {
+      await page.goto("/")
+      const texto = await page.locator("body").innerText()
+      expect(texto).not.toContain("—")
+      expect(texto).not.toContain("–")
+    })
+
+    test("una sola etiqueta por intención", async ({ page }) => {
+      await page.goto("/")
+      // Empezar el alta de un negocio es una intención. Todos los destinos a
+      // /signup tienen que llamarla igual.
+      const etiquetas = new Set<string>()
+      for (const enlace of await page.locator('a[href="/signup"]').all()) {
+        if (await enlace.isVisible()) etiquetas.add((await enlace.innerText()).trim())
+      }
+      expect(
+        [...etiquetas],
+        "el alta de negocio se llama de más de una forma",
+      ).toHaveLength(1)
+    })
+
+    test("los pasos no se numeran, el verbo ya los nombra", async ({ page }) => {
+      await page.goto("/")
+      const comoFunciona = page.locator("#how-it-works")
+      await expect(comoFunciona).not.toContainText("01")
+      await expect(comoFunciona).not.toContainText("02")
+      await expect(comoFunciona).not.toContainText("03")
+    })
+  })
+})
