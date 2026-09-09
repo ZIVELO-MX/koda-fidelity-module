@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import {
   UserPlus, UserMinus, UsersRound, Shield, Stamp,
-  Check, X, Share2, ChevronRight, Loader2, Lock, Clock,
+  Check, X, Share2, ChevronRight, Loader2, Lock, Clock, Mail,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -46,7 +46,7 @@ type TeamUser = {
   hasLoggedIn?: boolean
 }
 
-type InviteStep = "form" | "credentials"
+type InviteStep = "form" | "resultado"
 
 interface TeamClientProps {
   currentUserId: string
@@ -87,6 +87,13 @@ const ROLE_CONFIG: Record<Role, {
  * tarjeta del selector y otra vez al pie. Ahora existe una sola, detras de un
  * boton, y el selector solo dice que rol esta elegido.
  */
+/** "16 de septiembre", sin la hora, que a quien invita no le dice nada. */
+function formatearCaducidad(iso: string): string {
+  const fecha = new Date(iso)
+  if (Number.isNaN(fecha.getTime())) return "pronto"
+  return fecha.toLocaleDateString("es-MX", { day: "numeric", month: "long" })
+}
+
 function ComparacionDeRoles() {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
@@ -133,7 +140,15 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
   const [inviteRole, setInviteRole] = useState<Role>("sellador")
   const [inviteLoading, setInviteLoading] = useState(false)
   const [inviteError, setInviteError] = useState<string | null>(null)
-  const [invitedUser, setInvitedUser] = useState<{ name: string; email: string; password: string } | null>(null)
+  // `password` es el flujo de hoy. `expiraEn` es el del backend 1.2.0, que ya
+  // no crea la cuenta al invitar: manda un enlace de un uso por correo y nunca
+  // devuelve el token, así que aquí no hay nada que compartir a mano.
+  const [invitedUser, setInvitedUser] = useState<{
+    name: string
+    email: string
+    password?: string
+    expiraEn?: string
+  } | null>(null)
   const [copiado, setCopiado] = useState(false)
 
   // Comparacion de permisos, a peticion
@@ -153,7 +168,7 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
     ? `${baseUrl}/invite?email=${encodeURIComponent(invitedUser.email)}&business=${encodeURIComponent(businessName)}&name=${encodeURIComponent(invitedUser.name)}`
     : ""
 
-  const mensajeInvitacion = invitedUser
+  const mensajeInvitacion = invitedUser?.password
     ? `Hola ${invitedUser.name}, te invitamos a unirte al equipo de ${businessName} en Koda Fidelity.\n\n` +
       `Correo: ${invitedUser.email}\n` +
       `Contraseña temporal: ${invitedUser.password}\n\n` +
@@ -205,9 +220,16 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
         setInviteError(data.error ?? "No fue posible invitar al usuario")
         return
       }
-      setUsers((prev) => [...prev, data.user])
-      setInvitedUser({ name: inviteName, email: inviteEmail, password: data.temporaryPassword })
-      setInviteStep("credentials")
+      // Con el flujo de invitación por correo la fila todavía no existe: la
+      // persona entra al equipo cuando acepta el enlace.
+      if (data.user) setUsers((prev) => [...prev, data.user])
+      setInvitedUser({
+        name: inviteName,
+        email: inviteEmail,
+        password: data.temporaryPassword,
+        expiraEn: data.invitation?.expiresAt,
+      })
+      setInviteStep("resultado")
     } catch {
       setInviteError("Error de red. Intenta de nuevo.")
     } finally {
@@ -510,47 +532,82 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
           ) : (
             <div className="flex flex-col gap-4 min-h-0">
               <DialogHeader>
-                <DialogTitle>Cuenta creada ✓</DialogTitle>
+                <DialogTitle>
+                  {invitedUser?.password ? "Cuenta creada" : "Invitación enviada"}
+                </DialogTitle>
                 <DialogDescription className="break-words">
-                  Comparte las credenciales con{" "}
-                  <strong className="text-foreground">{invitedUser?.name}</strong>{" "}
-                  para que pueda acceder.
+                  {invitedUser?.password ? (
+                    <>
+                      Comparte las credenciales con{" "}
+                      <strong className="text-foreground">{invitedUser.name}</strong>{" "}
+                      para que pueda acceder.
+                    </>
+                  ) : (
+                    <>
+                      Le mandamos un enlace de un uso a{" "}
+                      <strong className="text-foreground">{invitedUser?.email}</strong>.
+                      Aparecerá en la lista cuando lo acepte.
+                    </>
+                  )}
                 </DialogDescription>
               </DialogHeader>
 
               {/* Cuerpo con scroll: el encabezado y los botones no se mueven */}
-              <div className="space-y-4 overflow-y-auto">
-                <div className="rounded-xl bg-muted/50 border border-border p-4 space-y-3">
-                  <div className="min-w-0">
-                    <p className="text-xs text-muted-foreground mb-0.5">Correo</p>
-                    <p className="text-sm font-mono font-medium text-foreground truncate">{invitedUser?.email}</p>
+              {invitedUser?.password ? (
+                <>
+                  <div className="space-y-4 overflow-y-auto">
+                    <div className="rounded-xl bg-muted/50 border border-border p-4 space-y-3">
+                      <div className="min-w-0">
+                        <p className="text-xs text-muted-foreground mb-0.5">Correo</p>
+                        <p className="text-sm font-mono font-medium text-foreground truncate">{invitedUser.email}</p>
+                      </div>
+                      <Separator />
+                      <div className="min-w-0">
+                        <p className="text-xs text-muted-foreground mb-0.5">Contraseña temporal</p>
+                        <p className="text-sm font-mono font-medium text-foreground">{invitedUser.password}</p>
+                      </div>
+                      <Separator />
+                      <div className="space-y-1.5">
+                        <p className="text-xs text-muted-foreground">Link de acceso</p>
+                        <div className="overflow-x-auto rounded-md bg-background border border-border px-2.5 py-1.5">
+                          <p className="text-xs font-mono text-muted-foreground whitespace-nowrap">{loginUrl}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground">
+                      La contraseña solo se muestra ahora. Compartela antes de cerrar.
+                    </p>
                   </div>
-                  <Separator />
-                  <div className="min-w-0">
-                    <p className="text-xs text-muted-foreground mb-0.5">Contraseña temporal</p>
-                    <p className="text-sm font-mono font-medium text-foreground">{invitedUser?.password}</p>
-                  </div>
-                  <Separator />
-                  <div className="space-y-1.5">
-                    <p className="text-xs text-muted-foreground">Link de acceso</p>
-                    <div className="overflow-x-auto rounded-md bg-background border border-border px-2.5 py-1.5">
-                      <p className="text-xs font-mono text-muted-foreground whitespace-nowrap">{loginUrl}</p>
+
+                  <Button onClick={compartirInvitacion} className="min-h-11 w-full gap-2">
+                    {copiado ? (
+                      <><Check className="h-4 w-4" aria-hidden="true" />Copiado</>
+                    ) : (
+                      <><Share2 className="h-4 w-4" aria-hidden="true" />Compartir invitación</>
+                    )}
+                  </Button>
+                </>
+              ) : (
+                <div className="space-y-4 overflow-y-auto">
+                  <div className="flex items-start gap-3 rounded-xl border border-border bg-muted/50 p-4">
+                    <Mail className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                    <div className="min-w-0 space-y-1">
+                      <p className="truncate text-sm font-medium text-foreground">{invitedUser?.email}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {invitedUser?.expiraEn
+                          ? `El enlace caduca el ${formatearCaducidad(invitedUser.expiraEn)}.`
+                          : "El enlace sirve una sola vez."}
+                      </p>
                     </div>
                   </div>
+
+                  <p className="text-xs text-muted-foreground">
+                    No hay contraseña que compartir: el enlace va en el correo y solo funciona una
+                    vez. Si no llega, invítalo de nuevo y el anterior deja de servir.
+                  </p>
                 </div>
-
-                <p className="text-xs text-muted-foreground">
-                  La contraseña solo se muestra ahora. Compartela antes de cerrar.
-                </p>
-              </div>
-
-              <Button onClick={compartirInvitacion} className="min-h-11 w-full gap-2">
-                {copiado ? (
-                  <><Check className="h-4 w-4" aria-hidden="true" />Copiado</>
-                ) : (
-                  <><Share2 className="h-4 w-4" aria-hidden="true" />Compartir invitación</>
-                )}
-              </Button>
+              )}
 
               <Button
                 variant="outline"

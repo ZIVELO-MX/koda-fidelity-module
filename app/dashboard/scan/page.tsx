@@ -22,17 +22,9 @@ import {
 } from "lucide-react"
 import { daysUntilExpiry } from "@/lib/card-utils"
 import { getCardIcon } from "@/lib/card-icons"
+import { normalizarClientes, type ClienteBuscado } from "@/lib/clientes-buscados"
 
-interface SearchCustomer {
-  id: string
-  name: string
-  stamps: number
-  maxStamps: number
-  cardName: string
-  cardReward: string
-  cardBrandColor: string
-  cardExpiresAt: string | null
-}
+type SearchCustomer = ClienteBuscado
 
 type ScanState = "idle" | "scanning" | "found" | "stamped" | "redeemed"
 
@@ -63,8 +55,9 @@ function ScanPageInner() {
         const params = new URLSearchParams({ q: searchQuery })
         if (cardIdFilter) params.set("cardId", cardIdFilter)
         const res = await fetch(`/api/customers?${params}`)
-        const data = await res.json()
-        setSearchResults(data.customers || [])
+        // El backend de la 1.2.0 responde `items` en vez de `customers`. El
+        // adaptador entiende las dos formas. Ver lib/clientes-buscados.ts.
+        setSearchResults(normalizarClientes(await res.json()))
       } catch {
         setSearchResults([])
       } finally {
