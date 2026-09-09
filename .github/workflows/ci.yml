@@ -56,3 +56,36 @@ jobs:
 
       - name: Tests
         run: CI=true pnpm test
+
+  browser-smoke:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fidelity_ci
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/fidelity_ci
+      NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
+      NEXT_PUBLIC_BASE_URL: http://localhost:3000
+      INVITE_ONLY: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run authentication browser smoke tests
+        run: pnpm exec playwright test e2e/auth-errors.spec.ts
