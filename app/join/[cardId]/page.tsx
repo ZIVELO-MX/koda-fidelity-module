@@ -6,6 +6,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { JoinCardLayout, type JoinCardData } from "@/components/join/join-card-layout"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
+import { RedesNegocio } from "@/components/join/redes-negocio"
 import { Check, Mail, Loader2 } from "lucide-react"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
 import { getFriendlySendError } from "@/lib/auth-errors"
@@ -26,7 +27,16 @@ interface JoinCustomer {
     isActive: boolean
     expiresAt: string | null
     expired: boolean
-    business: { name: string; brandColor: string; logoUrl: string | null; iconName: string | null }
+    business: {
+      name: string
+      brandColor: string
+      logoUrl: string | null
+      iconName: string | null
+      // Opcionales del contrato FID-C1 v1. Hasta que la consulta pública los
+      // mande llegan indefinidos y no se pinta nada.
+      website?: string | null
+      instagram?: string | null
+    }
   }
 }
 
@@ -294,6 +304,8 @@ export default function JoinCardPage() {
                 qrValue={customer.id}
               />
             </div>
+
+            <RedesNegocio negocio={customer.card.business} />
 
             <div className="space-y-3">
               <Button

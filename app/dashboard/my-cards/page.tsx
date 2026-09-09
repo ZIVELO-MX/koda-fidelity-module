@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
+import { RedesNegocio } from "@/components/join/redes-negocio"
 import { GoogleButton } from "@/components/auth/google-button"
 import {
   ArrowLeft, Mail, Loader2, Smartphone, ChevronDown, LogOut,
@@ -53,7 +54,15 @@ interface MyCard {
     stampIconName: string | null
     isActive: boolean
     expiresAt: string | null
-    business: { name: string; brandColor: string; logoUrl: string | null }
+    business: {
+      name: string
+      brandColor: string
+      logoUrl: string | null
+      // Opcionales del contrato FID-C1 v1. Hasta que la consulta pública los
+      // mande llegan indefinidos y no se pinta nada.
+      website?: string | null
+      instagram?: string | null
+    }
   }
 }
 
@@ -508,6 +517,8 @@ export default function DashboardMyCardsPage() {
                             <p className="text-xs text-muted-foreground text-center">
                               Muestra este código QR en el negocio para acumular sellos
                             </p>
+
+                            <RedesNegocio negocio={c.card.business} className="pt-1" />
                           </div>
                         </div>
                       )
