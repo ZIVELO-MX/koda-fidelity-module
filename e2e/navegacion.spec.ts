@@ -1,4 +1,5 @@
-import { test, expect, type Page } from "@playwright/test"
+import { test, expect } from "@playwright/test"
+import { entrar } from "./sesion"
 
 // Fluidez de la navegación: se recorre haciendo clic, no con goto, que es como
 // la usa una persona. Cada destino tiene que llegar, anunciarse como activo y no
@@ -25,18 +26,6 @@ const DESTINOS = [
   { grupo: "Operación", nombre: "Panel", url: "/dashboard", titulo: "Panel" },
 ]
 
-async function entrar(page: Page) {
-  await page.goto("/login")
-  await page.getByLabel("Correo electrónico").fill(CORREO!)
-  await page.getByRole("button", { name: "Continuar", exact: true }).click()
-  const contraseña = page.locator("#password")
-  await expect(contraseña.or(page.getByText("Revisa tu correo")).first()).toBeVisible({
-    timeout: 60000,
-  })
-  await contraseña.fill(CLAVE!)
-  await page.getByRole("button", { name: "Iniciar Sesión" }).click()
-  await page.waitForURL("**/dashboard", { timeout: 60000 })
-}
 
 test.describe("fluidez de la navegación", () => {
   test.skip(!HAY_SUPABASE, "Requiere NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY")
@@ -46,7 +35,7 @@ test.describe("fluidez de la navegación", () => {
     test.use({ viewport: { width: 1440, height: 900 } })
 
     test("recorre los destinos del aside sin perderse", async ({ page }) => {
-      await entrar(page)
+      await entrar(page, CORREO!, CLAVE!)
       const aside = page.locator("aside")
 
       for (const destino of DESTINOS) {
@@ -74,7 +63,7 @@ test.describe("fluidez de la navegación", () => {
     })
 
     test("se navega con teclado, con el foco a la vista", async ({ page }) => {
-      await entrar(page)
+      await entrar(page, CORREO!, CLAVE!)
 
       // Con Tab de verdad, no con focus(): `:focus-visible` solo se aplica
       // cuando el foco llegó por teclado, y es justo eso lo que se mide.
@@ -102,7 +91,7 @@ test.describe("fluidez de la navegación", () => {
     })
 
     test("el aside se colapsa y se recupera sin perder los destinos", async ({ page }) => {
-      await entrar(page)
+      await entrar(page, CORREO!, CLAVE!)
       const aside = page.locator("aside")
 
       await page.getByRole("button", { name: "Colapsar barra lateral" }).click()
@@ -117,7 +106,7 @@ test.describe("fluidez de la navegación", () => {
     test.use({ viewport: { width: 375, height: 812 } })
 
     test("la barra inferior lleva al escáner y de vuelta", async ({ page }) => {
-      await entrar(page)
+      await entrar(page, CORREO!, CLAVE!)
 
       await page.getByRole("link", { name: "Abrir escáner" }).click()
       await page.waitForURL("**/dashboard/scan", { timeout: MARGEN_MS })
@@ -130,7 +119,7 @@ test.describe("fluidez de la navegación", () => {
     })
 
     test("el menú abre el resto de destinos del rol", async ({ page }) => {
-      await entrar(page)
+      await entrar(page, CORREO!, CLAVE!)
       await page.getByRole("button", { name: "Abrir menú" }).click()
       // Por visibilidad: a 375px el aside sigue en el DOM pero oculto, así que
       // lo visible con ese nombre es lo que abrió el menú.
@@ -143,7 +132,7 @@ test.describe("fluidez de la navegación", () => {
     })
 
     test("la ayuda no se busca en el menú: está en el encabezado", async ({ page }) => {
-      await entrar(page)
+      await entrar(page, CORREO!, CLAVE!)
       // Documentación dejó de ser un destino de navegación. La ayuda de cada
       // pantalla se abre desde el encabezado, en los dos anchos.
       await expect(page.getByRole("link", { name: "Documentación", exact: true })).toHaveCount(0)

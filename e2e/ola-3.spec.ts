@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test"
+import { entrar } from "./sesion"
 
 // Recorrido de la ola 3: Marca, Configuración, Equipo y Documentación.
 //
@@ -25,18 +26,6 @@ const SUPERFICIES = [
   { nombre: "Documentación", url: "/dashboard/docs", titulo: "Documentación" },
 ]
 
-async function entrar(page: Page) {
-  await page.goto("/login")
-  await page.getByLabel("Correo electrónico").fill(CORREO!)
-  await page.getByRole("button", { name: "Continuar", exact: true }).click()
-  const contraseña = page.locator("#password")
-  await expect(contraseña.or(page.getByText("Revisa tu correo")).first()).toBeVisible({
-    timeout: 60000,
-  })
-  await contraseña.fill(CLAVE!)
-  await page.getByRole("button", { name: "Iniciar Sesión" }).click()
-  await page.waitForURL("**/dashboard", { timeout: 60000 })
-}
 
 async function desborda(page: Page): Promise<boolean> {
   return page.evaluate(
@@ -72,7 +61,7 @@ test.describe("ola 3, administración del negocio", () => {
       test.use({ viewport: { width: ancho.width, height: ancho.height } })
 
       test("las cuatro superficies caben y se pueden tocar", async ({ page }) => {
-        await entrar(page)
+        await entrar(page, CORREO!, CLAVE!)
         for (const s of SUPERFICIES) {
           await page.goto(s.url)
           await expect(
@@ -90,7 +79,7 @@ test.describe("ola 3, administración del negocio", () => {
     test.use({ viewport: { width: 1440, height: 900 } })
 
     test("el nombre del negocio solo se edita en Marca", async ({ page }) => {
-      await entrar(page)
+      await entrar(page, CORREO!, CLAVE!)
 
       await page.goto("/dashboard/branding")
       await expect(page.locator("#businessName")).toBeVisible()
@@ -104,13 +93,13 @@ test.describe("ola 3, administración del negocio", () => {
     })
 
     test("Marca guarda desde una sola barra", async ({ page }) => {
-      await entrar(page)
+      await entrar(page, CORREO!, CLAVE!)
       await page.goto("/dashboard/branding")
       await expect(page.getByRole("button", { name: /Guardar cambios/i })).toHaveCount(1)
     })
 
     test("la ayuda del encabezado habla de la pantalla que tienes delante", async ({ page }) => {
-      await entrar(page)
+      await entrar(page, CORREO!, CLAVE!)
 
       await page.goto("/dashboard/team")
       await page.getByRole("button", { name: "Ayuda de Equipo" }).click()
@@ -125,7 +114,7 @@ test.describe("ola 3, administración del negocio", () => {
     })
 
     test("Equipo explica los permisos una sola vez, a peticion", async ({ page }) => {
-      await entrar(page)
+      await entrar(page, CORREO!, CLAVE!)
       await page.goto("/dashboard/team")
 
       // La comparacion no se muestra sin pedirla: antes estaba al pie y otra vez

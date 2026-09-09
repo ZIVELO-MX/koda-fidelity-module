@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test"
+import { entrar } from "./sesion"
 
 // Recorrido de la ola 2: publicar una tarjeta, verla en el listado y en su
 // detalle, y llegar a su código. Se omite entero sin credenciales.
@@ -16,18 +17,6 @@ const ANCHOS = [
   { nombre: "escritorio", width: 1440, height: 900 },
 ]
 
-async function entrar(page: Page) {
-  await page.goto("/login")
-  await page.getByLabel("Correo electrónico").fill(CORREO!)
-  await page.getByRole("button", { name: "Continuar", exact: true }).click()
-  const contraseña = page.locator("#password")
-  await expect(contraseña.or(page.getByText("Revisa tu correo")).first()).toBeVisible({
-    timeout: 60000,
-  })
-  await contraseña.fill(CLAVE!)
-  await page.getByRole("button", { name: "Iniciar Sesión" }).click()
-  await page.waitForURL("**/dashboard", { timeout: 60000 })
-}
 
 async function desborda(page: Page): Promise<boolean> {
   return page.evaluate(
@@ -44,7 +33,7 @@ test.describe("ola 2, tarjetas y códigos", () => {
       test.use({ viewport: { width: ancho.width, height: ancho.height } })
 
       test("publicar son tres decisiones y termina en el código", async ({ page }) => {
-        await entrar(page)
+        await entrar(page, CORREO!, CLAVE!)
         const nombre = `Recorrido ${ancho.nombre} ${Date.now()}`
         let enviado: Record<string, unknown> | null = null
         page.on("request", (r) => {

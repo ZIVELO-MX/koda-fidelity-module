@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test"
+import { entrar } from "./sesion"
 
 // Recorrido de las superficies de la ola 1 que viven detrás del login.
 //
@@ -26,32 +27,6 @@ const ANCHOS = [
 // creando la cuenta si no existe. Por eso `E2E_EMAIL` tiene que ser la cuenta de
 // un negocio, y por eso esto falla de inmediato en vez de reintentar: repetirlo
 // quema la cuota de correo del proyecto de Supabase.
-async function entrar(page: Page) {
-  await page.goto("/login")
-  await page.getByLabel("Correo electrónico").fill(CORREO!)
-  await page.getByRole("button", { name: "Continuar", exact: true }).click()
-
-  // Se espera a que el primer paso se resuelva hacia uno de sus dos destinos. La
-  // espera es amplia a propósito: en desarrollo la ruta se compila al primer
-  // pedido. Solo se culpa al enlace mágico si esa pantalla apareció de verdad.
-  // Por id: el botón de mostrar u ocultar lleva "contraseña" en su aria-label y
-  // haría ambigua una búsqueda por etiqueta.
-  const contraseña = page.locator("#password")
-  const enlaceEnviado = page.getByText("Revisa tu correo")
-  await expect(contraseña.or(enlaceEnviado).first()).toBeVisible({ timeout: 60000 })
-
-  if (await enlaceEnviado.isVisible()) {
-    throw new Error(
-      `E2E_EMAIL (${CORREO}) no es la cuenta de un negocio en esta base de datos: la app lo ` +
-        "tomó como cliente y le mandó un enlace mágico por correo. Usa la cuenta de un negocio " +
-        "con rol admin antes de volver a correr esto.",
-    )
-  }
-
-  await contraseña.fill(CLAVE!)
-  await page.getByRole("button", { name: "Iniciar Sesión" }).click()
-  await page.waitForURL("**/dashboard")
-}
 
 async function desborda(page: Page): Promise<boolean> {
   return page.evaluate(
@@ -90,7 +65,7 @@ test.describe("superficies de la ola 1, con sesión", () => {
       test.use({ viewport: { width: ancho.width, height: ancho.height } })
 
       test.beforeEach(async ({ page }) => {
-        await entrar(page)
+        await entrar(page, CORREO!, CLAVE!)
       })
 
       test("el panel muestra el día y deja la tendencia vacía con su razón", async ({ page }) => {
@@ -146,7 +121,7 @@ test.describe("superficies de la ola 1, con sesión", () => {
     test.use({ viewport: { width: 1440, height: 900 } })
 
     test("agrupa en Operación, Programa y Negocio, sin escáner", async ({ page }) => {
-      await entrar(page)
+      await entrar(page, CORREO!, CLAVE!)
       const aside = page.locator("aside")
       // Por rol y exacto: el nombre del negocio en el perfil también contiene
       // "Negocio", y haría ambigua una búsqueda por texto suelto.
