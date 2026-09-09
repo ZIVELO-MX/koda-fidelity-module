@@ -135,7 +135,7 @@ jobs:
       E2E_REQUIRED_PASSWORD: ci-required-password-2
       MAILPIT_URL: http://127.0.0.1:55434
       SMTP_HOST: 127.0.0.1
-      SMTP_PORT: "55434"
+      SMTP_PORT: "55435"
       SMTP_SECURE: "false"
       SMTP_USER: ci-mailpit@dev.invalid
       SMTP_PASS: ci-mailpit
