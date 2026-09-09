@@ -56,6 +56,13 @@ async function apiJson(page: Page, url: string, init: RequestInit) {
   }, { url, init })
 }
 
+async function logout(page: Page) {
+  await page.getByRole("button", { name: /Fidelity Seed|Fidelity Auth/ }).click()
+  await page.getByRole("menuitem", { name: "Cerrar Sesión" }).click()
+  await page.getByRole("button", { name: "Cerrar sesión" }).last().click()
+  await page.waitForURL("**/login")
+}
+
 test.describe("FID-0016 development authentication", () => {
   test("admin login, session reload and invalid password", async ({ page }) => {
     await login(page, ADMIN_EMAIL, ADMIN_PASSWORD)
@@ -64,8 +71,7 @@ test.describe("FID-0016 development authentication", () => {
     await page.reload()
     await expect(page.getByRole("heading", { name: "Panel" })).toBeVisible()
 
-    await page.getByRole("button", { name: "Cerrar Sesión" }).click()
-    await page.waitForURL("**/login")
+    await logout(page)
     await page.goto("/dashboard")
     await page.waitForURL("**/login")
 
@@ -134,8 +140,7 @@ test.describe("FID-0016 development authentication", () => {
     await page.getByRole("button", { name: "Guardar y continuar" }).click()
     await expect(page.getByRole("heading", { name: "Panel" })).toBeVisible({ timeout: 15000 })
 
-    await page.getByRole("button", { name: "Cerrar Sesión" }).click()
-    await page.waitForURL("**/login")
+    await logout(page)
     await login(page, ADMIN_EMAIL, "ci-recovered-password-2")
   })
 })

@@ -128,6 +128,8 @@ jobs:
       AUTH_SECURITY_SECRET: ci-auth-security-secret-32-bytes-minimum
       DEV_SEED_ADMIN_PASSWORD: ci-admin-password-2
       DEV_SEED_SELLADOR_PASSWORD: ci-sellador-password-2
+      E2E_ADMIN_PASSWORD: ci-admin-password-2
+      E2E_SELLADOR_PASSWORD: ci-sellador-password-2
       E2E_REQUIRED_EMAIL: fidelity.seed.required@dev.invalid
       E2E_REQUIRED_PASSWORD: ci-required-password-2
       MAILPIT_URL: http://127.0.0.1:55434
