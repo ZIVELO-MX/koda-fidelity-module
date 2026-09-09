@@ -55,4 +55,59 @@ jobs:
         run: pnpm typecheck
 
       - name: Tests
-        run: pnpm test
+        run: CI=true pnpm test
+
+  browser-smoke:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: fidelity_browser_ci
+        ports: [5432:5432]
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fidelity_browser_ci
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/fidelity_browser_ci
+      NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
+      NEXT_PUBLIC_BASE_URL: http://localhost:3000
+      INVITE_ONLY: "false"
+      AUTH_SECURITY_SECRET: ci-auth-security-secret-32-bytes-minimum
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Prepare browser smoke database
+        run: |
+          psql "$DIRECT_URL" -c 'CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN;'
+          pnpm exec prisma migrate deploy
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install chromium
+
+      - name: Run authentication browser smoke tests
+        run: >-
+          pnpm exec playwright test
+          e2e/auth-errors.spec.ts
+          e2e/auth-ui.spec.ts
+          e2e/update-password.spec.ts

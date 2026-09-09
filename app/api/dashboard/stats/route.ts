@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getBusinessFromSession, handleApiError, withRequestId } from "@/lib/api-utils"
+import { getBusinessFromSession, handleApiError, requestIdFrom, withRequestId } from "@/lib/api-utils"
 import { statsQuerySchema } from "@/lib/dashboard-contracts"
 
 /**
@@ -19,7 +19,7 @@ import { statsQuerySchema } from "@/lib/dashboard-contracts"
  *       400: { description: Invalid query, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
  */
 export async function GET(request: NextRequest) {
-  const requestId = crypto.randomUUID()
+  const requestId = requestIdFrom(request)
   try {
     const { business } = await getBusinessFromSession()
     const parsed = statsQuerySchema.safeParse(Object.fromEntries(new URL(request.url).searchParams))

@@ -10,6 +10,7 @@ const integration = describe.skipIf(process.env.CI !== "true")
 integration("account lifecycle PostgreSQL integration", () => {
   let businessId = ""
   let userId = ""
+  let profileId = ""
 
   beforeEach(async () => {
     const business = await prisma.business.create({ data: { name: "Lifecycle Test", email: `lifecycle-${Date.now()}-${Math.random()}@test.invalid` } })
@@ -22,9 +23,11 @@ integration("account lifecycle PostgreSQL integration", () => {
 
   afterAll(async () => { await prisma.$disconnect() })
   afterEach(async () => {
+    if (profileId) await prisma.customerProfile.delete({ where: { id: profileId } })
     if (businessId) await prisma.business.delete({ where: { id: businessId } })
     businessId = ""
     userId = ""
+    profileId = ""
   })
 
   it("rejects a stale draft and allows only one concurrent writer", async () => {
@@ -43,8 +46,10 @@ integration("account lifecycle PostgreSQL integration", () => {
     const trial = await activateManualSubscription(prisma, { businessId, plan: "LITE", billingInterval: "MONTHLY" })
     expect((await getEntitlements(prisma, businessId)).plan).toBe("PRO")
     expect(trial.proTrialEndsAt).toBeNull()
-    await expect(createCustomerProfile(prisma, { email: "person@example.com", name: "Person", authUserId: randomUUID() })).resolves.toBeTruthy()
-    await expect(createCustomerProfile(prisma, { email: "PERSON@example.com", name: "Other", authUserId: randomUUID() })).rejects.toBeInstanceOf(ConflictError)
+    const email = `person-${businessId}@example.com`
+    const profile = await createCustomerProfile(prisma, { email, name: "Person", authUserId: randomUUID() })
+    profileId = profile.id
+    await expect(createCustomerProfile(prisma, { email: email.toUpperCase(), name: "Other", authUserId: randomUUID() })).rejects.toBeInstanceOf(ConflictError)
     await activateManualSubscription(prisma, { businessId, plan: "LITE", proAccessGranted: false, idempotencyKey: randomUUID() })
     expect((await prisma.loyaltyCard.findMany({ where: { businessId, isActive: true } }))).toHaveLength(1)
     const closure = await scheduleClosure(prisma, businessId, new Date("2026-01-31T00:00:00.000Z"))

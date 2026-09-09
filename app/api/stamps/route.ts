@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getBusinessFromSession, handleApiError, ValidationError } from "@/lib/api-utils"
+import { getBusinessFromSession, handleApiError, requestIdFrom, ValidationError, withRequestId } from "@/lib/api-utils"
 import { executeLoyaltyOperation } from "@/lib/loyalty-engine"
 
 /**
@@ -68,6 +68,7 @@ import { executeLoyaltyOperation } from "@/lib/loyalty-engine"
  *               $ref: '#/components/schemas/Error'
  */
 export async function POST(request: NextRequest) {
+  const requestId = requestIdFrom(request)
   try {
     const { business } = await getBusinessFromSession()
 
@@ -87,8 +88,8 @@ export async function POST(request: NextRequest) {
       type: body.type,
       idempotencyKey: idempotencyKey ?? "",
     })
-    return NextResponse.json(result)
+    return withRequestId(NextResponse.json(result), requestId)
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }
