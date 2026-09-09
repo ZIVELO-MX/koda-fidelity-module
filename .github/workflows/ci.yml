@@ -85,7 +85,7 @@ jobs:
         run: pnpm db:generate
 
       - name: Install Playwright browser
-        run: pnpm exec playwright install --with-deps chromium
+        run: pnpm exec playwright install chromium
 
       - name: Run authentication browser smoke tests
         run: pnpm exec playwright test e2e/auth-errors.spec.ts
