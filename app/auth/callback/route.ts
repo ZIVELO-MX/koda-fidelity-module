@@ -21,7 +21,8 @@ export async function GET(request: NextRequest) {
         await provisionSignup(authUser.id)
         const member = await prisma.user.findUnique({ where: { authUserId: authUser.id }, select: { id: true } })
         if (member) {
-          const bizResponse = NextResponse.redirect(`${origin}/dashboard`)
+          const destination = next === "/dashboard/update-password" ? next : "/dashboard"
+          const bizResponse = NextResponse.redirect(`${origin}${destination}`)
           response.headers.getSetCookie().forEach((c) => bizResponse.headers.append("Set-Cookie", c))
           return bizResponse
         }

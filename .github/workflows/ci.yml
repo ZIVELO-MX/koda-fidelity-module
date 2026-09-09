@@ -111,3 +111,87 @@ jobs:
           e2e/auth-errors.spec.ts
           e2e/auth-ui.spec.ts
           e2e/update-password.spec.ts
+
+  auth-e2e:
+    name: auth-e2e (Supabase local + Mailpit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: fid-0016-auth-e2e-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+      DIRECT_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_BASE_URL: http://localhost:3000
+      INVITE_ONLY: "false"
+      AUTH_SECURITY_SECRET: ci-auth-security-secret-32-bytes-minimum
+      DEV_SEED_ADMIN_PASSWORD: ci-admin-password-2
+      DEV_SEED_SELLADOR_PASSWORD: ci-sellador-password-2
+      E2E_REQUIRED_EMAIL: fidelity.seed.required@dev.invalid
+      E2E_REQUIRED_PASSWORD: ci-required-password-2
+      MAILPIT_URL: http://127.0.0.1:54324
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.108.0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Start local Supabase and Mailpit
+        shell: bash
+        run: |
+          set -euo pipefail
+          start_log="$RUNNER_TEMP/supabase-start.log"
+          if ! supabase start > "$start_log" 2>&1; then
+            cat "$start_log"
+            exit 1
+          fi
+
+      - name: Export local Supabase keys
+        shell: bash
+        run: |
+          set -euo pipefail
+          status_file="$RUNNER_TEMP/supabase.env"
+          supabase status -o env > "$status_file"
+          set -a
+          source "$status_file"
+          set +a
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
+          echo "::add-mask::$ANON_KEY"
+          echo "::add-mask::$SERVICE_ROLE_KEY"
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Apply application migrations and development fixtures
+        run: |
+          pnpm exec prisma migrate deploy
+          pnpm db:seed
+          pnpm tsx scripts/prepare-auth-e2e.ts
+
+      - name: Build application
+        run: pnpm build
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install chromium
+
+      - name: Run FID-0016 authentication tests
+        run: pnpm exec playwright test --config=playwright.auth.config.ts e2e/auth-development.spec.ts
+
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop
