@@ -14,7 +14,7 @@ async function login(page: Page, email: string, password: string) {
   await page.getByRole("button", { name: "Continuar", exact: true }).click()
   await page.locator('input[name="password"]').fill(password)
   await page.getByRole("button", { name: "Iniciar Sesión" }).click()
-  await page.waitForURL(/\/dashboard\/?$/, { timeout: 15000 })
+  await page.waitForURL(url => url.pathname === "/dashboard", { timeout: 15000 })
 }
 
 async function loginExpectingPasswordSetup(page: Page, email: string, password: string) {
@@ -114,7 +114,7 @@ test.describe("FID-0016 development authentication", () => {
     await page.getByLabel("Nueva contraseña").fill("ci-new-password-2")
     await page.getByLabel("Confirmar contraseña").fill("ci-new-password-2")
     await page.getByRole("button", { name: "Guardar y continuar" }).click()
-    await page.waitForURL(/\/dashboard\/?$/, { timeout: 15000 })
+    await page.waitForURL(url => url.pathname === "/dashboard", { timeout: 15000 })
     await expect(page.getByRole("heading", { name: "Panel" })).toBeVisible()
   })
 
@@ -132,7 +132,7 @@ test.describe("FID-0016 development authentication", () => {
     await page.getByLabel("Nueva contraseña").fill("ci-recovered-password-2")
     await page.getByLabel("Confirmar contraseña").fill("ci-recovered-password-2")
     await page.getByRole("button", { name: "Guardar y continuar" }).click()
-    await page.waitForURL(/\/dashboard\/?$/, { timeout: 15000 })
+    await page.waitForURL(url => url.pathname === "/dashboard", { timeout: 15000 })
 
     await page.getByRole("button", { name: "Cerrar Sesión" }).click()
     await page.waitForURL("**/login")
