@@ -22,6 +22,13 @@ test.describe("Auth UI", () => {
   })
 
   test("login with invalid credentials shows error", async ({ page }) => {
+    await page.route("https://ci-placeholder.supabase.co/auth/v1/token**", async (route) => {
+      await route.fulfill({
+        status: 400,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "invalid_grant", error_description: "Invalid login credentials" }),
+      })
+    })
     await page.goto("/login")
     await page.getByLabel("Correo electrónico").fill("wrong@email.com")
     await page.getByRole("button", { name: "Continuar", exact: true }).click()
