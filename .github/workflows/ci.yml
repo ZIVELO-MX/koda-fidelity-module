@@ -88,4 +88,8 @@ jobs:
         run: pnpm exec playwright install chromium
 
       - name: Run authentication browser smoke tests
-        run: pnpm exec playwright test e2e/auth-errors.spec.ts
+        run: >-
+          pnpm exec playwright test
+          e2e/auth-errors.spec.ts
+          e2e/auth-ui.spec.ts
+          e2e/update-password.spec.ts
