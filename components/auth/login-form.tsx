@@ -4,15 +4,13 @@ import { useState, useActionState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { sendLoginMagicLink, login, type AuthResult } from "@/lib/actions/auth"
+import { sendLoginMagicLink, sendPasswordReset, login, type AuthResult } from "@/lib/actions/auth"
 import { GoogleButton } from "@/components/auth/google-button"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Mail, Loader2, ArrowLeft, MessageCircle, Eye, EyeOff } from "lucide-react"
-
-const SUPPORT_WA = "5213921107274"
+import { Mail, Loader2, ArrowLeft, Eye, EyeOff } from "lucide-react"
 
 type LoginStep = "email" | "password" | "sent" | "recover"
 
@@ -29,13 +27,7 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [loginState, loginAction, loginPending] = useActionState(login, initialState)
-
-  function waRecoverLink(address: string) {
-    const text = address
-      ? `Hola, quisiera restablecer mi contraseña en Koda Fidelity. Correo: ${address}`
-      : "Hola, quisiera restablecer mi contraseña en Koda Fidelity."
-    return `https://wa.me/${SUPPORT_WA}?text=${encodeURIComponent(text)}`
-  }
+  const [recoveryState, recoveryAction, recoveryPending] = useActionState(sendPasswordReset, initialState)
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -81,6 +73,31 @@ export function LoginForm() {
   }
 
   if (step === "recover") {
+    if (recoveryState?.success) {
+      return (
+        <Card className="w-full max-w-md auth-card-enter shadow-lg border-border/50">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <Image src="/short-logo.svg" alt="Koda" width={48} height={48} className="size-12" />
+            </div>
+            <CardTitle className="text-2xl">Revisa tu correo</CardTitle>
+            <CardDescription>
+              Si el correo existe, recibirás un enlace para recuperar tu contraseña.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter className="flex-col gap-2 text-sm text-muted-foreground">
+            <button
+              onClick={() => { setStep("email"); setError(null) }}
+              className="inline-flex items-center gap-1 text-primary hover:underline"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Volver al inicio de sesión
+            </button>
+          </CardFooter>
+        </Card>
+      )
+    }
+
     return (
       <Card className="w-full max-w-md auth-card-enter shadow-lg border-border/50">
         <CardHeader className="text-center">
@@ -89,32 +106,35 @@ export function LoginForm() {
           </div>
           <CardTitle className="text-2xl">Recuperar contraseña</CardTitle>
           <CardDescription>
-            Confirma tu correo y escríbenos por WhatsApp para restablecer tu acceso
+            Te enviaremos un enlace seguro para restablecer tu acceso
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="recover-email">Correo electrónico</Label>
-            <Input
-              id="recover-email"
-              type="email"
-              placeholder="tu@correo.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              autoFocus
-              className="[&:user-invalid]:border-destructive [&:user-valid]:border-primary transition-colors"
-            />
-          </div>
-          <Button
-            asChild
-            className="w-full active:scale-[0.97] transition-transform bg-[#25D366] hover:bg-[#1ebe5d] text-white"
-          >
-            <a href={waRecoverLink(email)} target="_blank" rel="noopener noreferrer">
-              <MessageCircle className="mr-2 h-4 w-4" />
-              Solicitar por WhatsApp
-            </a>
-          </Button>
+          {recoveryState?.error && (
+            <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
+              {recoveryState.error}
+            </div>
+          )}
+          <form action={recoveryAction} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="recover-email">Correo electrónico</Label>
+              <Input
+                id="recover-email"
+                name="email"
+                type="email"
+                placeholder="tu@correo.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                autoFocus
+                required
+                className="[&:user-invalid]:border-destructive [&:user-valid]:border-primary transition-colors"
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={recoveryPending}>
+              {recoveryPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviar correo de recuperación"}
+            </Button>
+          </form>
         </CardContent>
         <CardFooter className="flex-col gap-2 text-sm text-muted-foreground">
           <button
