@@ -62,6 +62,32 @@ test.describe("ola 4, landing pública", () => {
         }
       })
 
+      test("el alta pública cabe y explica un enlace roto", async ({ page }) => {
+        await page.goto("/join/esta-tarjeta-no-existe")
+        await expect(
+          page.getByRole("heading", { name: "Este enlace no lleva a ninguna tarjeta" }),
+        ).toBeVisible({ timeout: 30000 })
+        expect(await desborda(page), `el alta desborda en ${ancho.nombre}`).toBe(false)
+
+        for (const { rol, minimo } of [
+          { rol: "button" as const, minimo: 40 },
+          { rol: "link" as const, minimo: 44 },
+        ]) {
+          for (const objetivo of await page.getByRole(rol).all()) {
+            if (!(await objetivo.isVisible())) continue
+            const nombre =
+              (await objetivo.getAttribute("aria-label")) || (await objetivo.innerText()).trim()
+            if (/next\.js/i.test(nombre)) continue
+            const caja = await objetivo.boundingBox()
+            if (caja) {
+              expect(caja.height, `${rol} "${nombre}" en ${ancho.nombre}`).toBeGreaterThanOrEqual(
+                minimo,
+              )
+            }
+          }
+        }
+      })
+
       test("el hero cabe en el primer viewport, con su botón a la vista", async ({ page }) => {
         await page.goto("/")
         const principal = page.getByRole("link", { name: ETIQUETA }).first()
