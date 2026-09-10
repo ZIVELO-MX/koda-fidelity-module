@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { getBusinessFromSession, handleApiError, ValidationError, requireRole, requestIdFrom, withRequestId } from "@/lib/api-utils"
 import { getEntitlements } from "@/lib/account-lifecycle"
 import { resolveTheme } from "@/lib/card-themes"
+import type { CardSummary } from "@/lib/fidelity-contracts"
 
 /**
  * @openapi
@@ -106,7 +107,7 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     })
 
-    const result = cards.map((card) => ({
+    const result: CardSummary[] = cards.map((card) => ({
       id: card.id,
       name: card.name,
       description: card.description,
@@ -114,6 +115,7 @@ export async function GET(request: NextRequest) {
       stampsRequired: card.stampsRequired,
       brandColor: card.brandColor,
       iconName: card.iconName,
+      isActive: card.isActive,
       status: card.status,
       selectedThemeId: card.selectedThemeId,
       effectiveThemeId: card.effectiveThemeId,

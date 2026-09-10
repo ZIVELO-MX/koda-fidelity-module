@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import type { Role } from "@prisma/client"
 import { randomUUID } from "node:crypto"
+import type { ApiErrorBody } from "@/lib/fidelity-contracts"
 
 export class UnauthorizedError extends Error {
   constructor() {
@@ -162,7 +163,7 @@ export function requireRole(user: Pick<SessionBusiness["user"], "role">, ...allo
   }
 }
 
-export function handleApiError(error: unknown, requestId: string = randomUUID()) {
+export function handleApiError(error: unknown, requestId: string = randomUUID()): NextResponse<ApiErrorBody> {
   if (error instanceof AppError) {
     return NextResponse.json({
       error: error.message,
