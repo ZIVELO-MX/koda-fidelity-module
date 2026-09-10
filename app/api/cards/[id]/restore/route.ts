@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { applyEntitlements } from "@/lib/account-lifecycle"
 import { getBusinessFromSession, handleApiError, NotFoundError, requireRole, requestIdFrom, withRequestId } from "@/lib/api-utils"
 
 /**
@@ -27,7 +28,21 @@ export async function POST(
       throw new NotFoundError("Loyalty card not found")
     }
 
-    await prisma.loyaltyCard.update({ where: { id }, data: { isActive: true, status: "ACTIVE" } })
+    await prisma.$transaction(async (tx) => {
+      await tx.loyaltyCard.update({ where: { id }, data: { isActive: true, status: "ACTIVE" } })
+      const subscription = await tx.subscription.findFirst({
+        where: { businessId: business.id, status: "ACTIVE" },
+        orderBy: { createdAt: "desc" },
+      })
+      const plan = subscription?.proAccessGranted ? "PRO" : (subscription?.plan ?? "LITE")
+      const entitledCards = await applyEntitlements(tx, business.id, plan)
+      if (subscription) {
+        await tx.subscription.update({
+          where: { id: subscription.id },
+          data: { liteCardId: plan === "LITE" ? (entitledCards[0]?.id ?? null) : null },
+        })
+      }
+    })
 
     return withRequestId(NextResponse.json({ success: true }), requestId)
   } catch (error) {

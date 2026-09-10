@@ -28,12 +28,15 @@ describe("OpenAPI spec", () => {
       "/api/account/deletion-impact",
       "/api/business",
       "/api/business/avatar",
+      "/api/business/closure",
       "/api/cards",
       "/api/cards/{id}",
       "/api/cards/{id}/restore",
+      "/api/billing/status",
       "/api/cron/account-closures",
       "/api/customer-profile",
       "/api/customer/profile/avatar",
+      "/api/customer/profile",
       "/api/customers",
       "/api/customers/{id}",
       "/api/dashboard/activity",
@@ -48,7 +51,7 @@ describe("OpenAPI spec", () => {
       "/api/subscription",
       "/api/users",
       "/api/users/{id}",
-    ])
+    ].sort())
   })
 
   it("has correct HTTP methods for each path", () => {

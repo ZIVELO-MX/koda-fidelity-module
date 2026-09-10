@@ -57,6 +57,25 @@ integration("account lifecycle PostgreSQL integration", () => {
     expect(card).toHaveLength(2)
   })
 
+  it("keeps a Pro theme selected while applying a Lite fallback and card limit", async () => {
+    const liteTheme = await prisma.loyaltyTheme.findFirstOrThrow({ where: { plan: "LITE", isActive: true } })
+    const proTheme = await prisma.loyaltyTheme.create({ data: { code: `integration-pro-${Date.now()}`, plan: "PRO" } })
+    const cards = await prisma.loyaltyCard.createManyAndReturn({ data: [
+      { businessId, name: "Themed one", reward: "R1", selectedThemeId: proTheme.id, effectiveThemeId: proTheme.id },
+      { businessId, name: "Themed two", reward: "R2", selectedThemeId: liteTheme.id, effectiveThemeId: liteTheme.id },
+    ] })
+
+    await activateManualSubscription(prisma, { businessId, plan: "PRO", idempotencyKey: randomUUID() })
+    expect((await prisma.loyaltyCard.findUniqueOrThrow({ where: { id: cards[0].id } })).effectiveThemeId).toBe(proTheme.id)
+
+    const lite = await activateManualSubscription(prisma, { businessId, plan: "LITE", proAccessGranted: false, idempotencyKey: randomUUID() })
+    const refreshed = await prisma.loyaltyCard.findMany({ where: { businessId }, orderBy: { createdAt: "asc" } })
+    expect(lite.liteCardId).toBeTruthy()
+    expect(refreshed.filter((card) => card.status === "ACTIVE")).toHaveLength(1)
+    expect(refreshed.find((card) => card.selectedThemeId === proTheme.id)?.effectiveThemeId).toBe(liteTheme.id)
+    expect(refreshed.find((card) => card.selectedThemeId === proTheme.id)?.status).toBe("LOCKED_BY_PLAN")
+  })
+
   it("creates resumable onboarding state with the exact persisted version", async () => {
     const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } })
     const state = await getOnboarding(prisma, user.authUserId!)
