@@ -90,7 +90,7 @@ test.describe("FID-0016 development authentication", () => {
     await expect(page.getByRole("heading", { name: "Panel" })).toBeVisible()
   })
 
-  test("admin can invite a member and sellador receives 403", async ({ page, context }) => {
+  test("admin can invite a member and sellador receives 403", async ({ page, browser }) => {
     await login(page, ADMIN_EMAIL, ADMIN_PASSWORD)
     const adminResponse = await apiJson(page, "/api/users", {
       method: "POST",
@@ -99,7 +99,8 @@ test.describe("FID-0016 development authentication", () => {
     })
     expect(adminResponse.status, JSON.stringify(adminResponse.body)).toBe(202)
 
-    const selladorPage = await context.newPage()
+    const selladorContext = await browser.newContext()
+    const selladorPage = await selladorContext.newPage()
     await login(selladorPage, SELLADOR_EMAIL, SELLADOR_PASSWORD)
     const selladorResponse = await apiJson(selladorPage, "/api/users", {
       method: "POST",
@@ -107,7 +108,7 @@ test.describe("FID-0016 development authentication", () => {
       body: JSON.stringify({ email: "fidelity.e2e.denied@dev.invalid", name: "Denied", role: "admin" }),
     })
     expect(selladorResponse.status).toBe(403)
-    await selladorPage.close()
+    await selladorContext.close()
   })
 
   test("required-password user is redirected and must confirm the new password", async ({ page }) => {
