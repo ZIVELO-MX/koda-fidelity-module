@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getAccountPrincipal, handleApiError, ValidationError } from "@/lib/api-utils"
+import { getAccountPrincipal, handleApiError, ValidationError, requestIdFrom, withRequestId } from "@/lib/api-utils"
 import { advanceSchema, onboardingDraftSchema } from "@/lib/onboarding-contracts"
 import { advanceOnboarding, ensureCategories, getOnboarding, saveDraft } from "@/lib/onboarding-service"
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const requestId = requestIdFrom(request)
   try {
     const principal = await getAccountPrincipal()
     await ensureCategories(prisma)
     const onboarding = await getOnboarding(prisma, principal.id)
     const categories = await prisma.businessCategory.findMany({ where: { isActive: true }, orderBy: { name: "asc" } })
-    return NextResponse.json({ onboarding, categories })
-  } catch (error) { return handleApiError(error) }
+    return withRequestId(NextResponse.json({ onboarding, categories }), requestId)
+  } catch (error) { return withRequestId(handleApiError(error, requestId), requestId) }
 }
 
 export async function PATCH(request: NextRequest) {

@@ -24,4 +24,7 @@ export const manualSubscriptionSchema = z.object({
   periodStart: z.coerce.date().optional(),
   periodEnd: z.coerce.date().optional(),
   proTrialEndsAt: z.coerce.date().nullable().optional(),
+  // La activación es manual en esta versión. Este campo permite al operador
+  // conceder o retirar Pro explícitamente al cambiar el plan.
+  proAccessGranted: z.boolean().optional(),
 })

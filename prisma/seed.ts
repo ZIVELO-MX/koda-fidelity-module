@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client"
 import { mockData } from "./mock-data"
 import { createAdminClient } from "../lib/supabase-admin"
-import { resolveSeedRoleUsers } from "./seed-auth"
+import { ensureSeedAuthUser, resolveSeedRoleUsers } from "./seed-auth"
 
 const prisma = new PrismaClient()
 
@@ -10,13 +10,22 @@ async function main() {
     throw new Error("Refusing destructive seed in production. Set ALLOW_DESTRUCTIVE_SEED=true explicitly.")
   }
   const roleUserIds = await resolveSeedRoleUsers(createAdminClient().auth.admin, process.env)
+  const genericPassword = process.env.DEV_SEED_GENERIC_PASSWORD || "Koda1234!"
+  if (genericPassword.length < 8) throw new Error("DEV_SEED_GENERIC_PASSWORD must have at least 8 characters")
+  const developmentAccounts = [
+    { email: "rulaxx@zivelo.dev", name: "Rulaxx", businessId: "biz-fidelity-rulaxx" },
+    { email: "benrod@zivelo.dev", name: "Benrod", businessId: "biz-fidelity-benrod" },
+  ] as const
+  const preservedBusinessIds = developmentAccounts.map(account => account.businessId)
+  const admin = createAdminClient().auth.admin
+  const developmentAuthUsers = await Promise.all(developmentAccounts.map(account => ensureSeedAuthUser(admin, { ...account, role: "admin", passwordEnv: "DEV_SEED_GENERIC_PASSWORD" }, genericPassword, true, true)))
   console.log("Seeding database...")
 
   const roleBusiness = await prisma.$transaction(async tx => {
-    await tx.stampLog.deleteMany()
-    await tx.customer.deleteMany()
-    await tx.loyaltyCard.deleteMany()
-    await tx.business.deleteMany()
+    await tx.stampLog.deleteMany({ where: { businessId: { notIn: preservedBusinessIds } } })
+    await tx.customer.deleteMany({ where: { card: { businessId: { notIn: preservedBusinessIds } } } })
+    await tx.loyaltyCard.deleteMany({ where: { businessId: { notIn: preservedBusinessIds } } })
+    await tx.business.deleteMany({ where: { id: { notIn: preservedBusinessIds } } })
 
     for (const biz of mockData.businesses) {
       await tx.business.create({ data: biz })
@@ -26,6 +35,19 @@ async function main() {
     for (const cust of mockData.customers) {
       await tx.customer.create({ data: cust })
       console.log(`  ✓ Customer: ${cust.name} (${cust.stamps}/${cust.cardId})`)
+    }
+    for (const [index, account] of developmentAccounts.entries()) {
+      await tx.business.upsert({
+        where: { id: account.businessId },
+        create: {
+          id: account.businessId,
+          name: `${account.name} Fidelity Dev`,
+          email: account.email,
+          businessType: "Development Fixture",
+        },
+        update: { email: account.email, name: `${account.name} Fidelity Dev` },
+      })
+      await tx.user.upsert({ where: { authUserId: developmentAuthUsers[index] }, create: { authUserId: developmentAuthUsers[index], email: account.email, name: account.name, role: "admin", businessId: account.businessId, passwordSetupRequired: true }, update: { businessId: account.businessId, email: account.email, name: account.name } })
     }
     return tx.business.create({
       data: {

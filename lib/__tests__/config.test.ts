@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest"
 
 function isInviteOnly() {
-  return process.env.INVITE_ONLY !== "false"
+  return process.env.INVITE_ONLY === "true"
 }
 
 describe("invite-only logic", () => {
@@ -9,8 +9,8 @@ describe("invite-only logic", () => {
     delete process.env.INVITE_ONLY
   })
 
-  it("defaults to true when env is not set", () => {
-    expect(isInviteOnly()).toBe(true)
+  it("defaults to open registration when env is not set", () => {
+    expect(isInviteOnly()).toBe(false)
   })
 
   it("returns false when env is set to false", () => {
@@ -23,12 +23,12 @@ describe("invite-only logic", () => {
     expect(isInviteOnly()).toBe(true)
   })
 
-  it("returns true when env is any non-false value", () => {
+  it("only enables invite-only mode for explicit true", () => {
     process.env.INVITE_ONLY = "0"
-    expect(isInviteOnly()).toBe(true)
+    expect(isInviteOnly()).toBe(false)
     process.env.INVITE_ONLY = "yes"
-    expect(isInviteOnly()).toBe(true)
+    expect(isInviteOnly()).toBe(false)
     process.env.INVITE_ONLY = ""
-    expect(isInviteOnly()).toBe(true)
+    expect(isInviteOnly()).toBe(false)
   })
 })

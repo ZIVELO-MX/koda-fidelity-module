@@ -33,7 +33,7 @@ export async function activateManualSubscription(db: Db, input: { businessId: st
   if (previous) return db.subscription.findFirstOrThrow({ where: { businessId: input.businessId, status: "ACTIVE" }, orderBy: { createdAt: "desc" } })
   return db.$transaction(async (tx) => {
     await tx.subscription.updateMany({ where: { businessId: input.businessId, status: "ACTIVE" }, data: { status: "CANCELED" } })
-    const proAccessGranted = input.proAccessGranted ?? true
+    const proAccessGranted = input.proAccessGranted ?? plan === "PRO"
     const subscription = await tx.subscription.create({ data: { businessId: input.businessId, plan, billingInterval, amountMinor: input.amountMinor ?? 0, currency: "MXN", activatedAt: periodStart, periodStart, periodEnd, externalReference: input.externalReference, proAccessGranted } })
     await applyEntitlements(tx, input.businessId, subscription.proAccessGranted ? "PRO" : "LITE")
     await tx.onboardingProgress.updateMany({ where: { businessId: input.businessId }, data: { status: "ACTIVE", step: "PAYWALL" } })

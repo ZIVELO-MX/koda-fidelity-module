@@ -134,7 +134,7 @@ const customerInclude = {
       stampIconName: true,
       isActive: true,
       expiresAt: true,
-      business: { select: { name: true, brandColor: true, logoUrl: true, iconName: true } },
+      business: { select: { name: true, brandColor: true, logoUrl: true, iconName: true, website: true, instagram: true } },
       milestoneRewards: { select: { stampNumber: true, iconName: true, label: true } },
     },
   },

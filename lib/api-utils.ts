@@ -42,6 +42,8 @@ export class ForbiddenError extends Error {
 export type ApiErrorCode =
   | "KF-AUTH-001" | "KF-ACCOUNT-001" | "KF-ACCESS-001" | "KF-CARD-001"
   | "KF-CARD-004" | "KF-CUSTOMER-001" | "KF-REQUEST-001" | "KF-SYS-001"
+  | "KF-ONBOARDING-001" | "KF-ONBOARDING-002" | "KF-BILLING-001" | "KF-BILLING-002"
+  | "KF-BILLING-003" | "KF-BILLING-004" | "KF-PROFILE-001"
 
 export class AppError extends Error {
   constructor(

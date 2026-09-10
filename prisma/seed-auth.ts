@@ -4,7 +4,7 @@ export type SeedRoleUser = {
   email: string
   name: string
   role: SeedRole
-  passwordEnv: "DEV_SEED_ADMIN_PASSWORD" | "DEV_SEED_SELLADOR_PASSWORD"
+  passwordEnv: "DEV_SEED_ADMIN_PASSWORD" | "DEV_SEED_SELLADOR_PASSWORD" | "DEV_SEED_GENERIC_PASSWORD"
 }
 
 export const seedRoleUsers: readonly SeedRoleUser[] = [
@@ -28,8 +28,8 @@ const AUTH_PAGE_SIZE = 1000
 
 type SeedAuthAdmin = {
   listUsers: (params?: { page?: number; perPage?: number }) => Promise<{ data: { users: AdminUser[] } | null; error: { message: string } | null }>
-  createUser: (input: { email: string; password: string; email_confirm: boolean; user_metadata: { name: string } }) => Promise<{ data: { user: AdminUser | null } | null; error: { message: string } | null }>
-  updateUserById: (id: string, input: { password: string; email_confirm: boolean; user_metadata: { name: string } }) => Promise<{ data: { user: AdminUser | null } | null; error: { message: string } | null }>
+  createUser: (input: { email: string; password: string; email_confirm: boolean; user_metadata: { name: string; must_change_password?: boolean } }) => Promise<{ data: { user: AdminUser | null } | null; error: { message: string } | null }>
+  updateUserById: (id: string, input: { password?: string; email_confirm: boolean; user_metadata: { name: string; must_change_password?: boolean } }) => Promise<{ data: { user: AdminUser | null } | null; error: { message: string } | null }>
 }
 
 export function seedPassword(env: Record<string, string | undefined>, user: SeedRoleUser): string {
@@ -51,7 +51,7 @@ export async function resolveSeedRoleUsers(
   })))
 }
 
-export async function ensureSeedAuthUser(admin: SeedAuthAdmin, user: SeedRoleUser, password: string): Promise<string> {
+export async function ensureSeedAuthUser(admin: SeedAuthAdmin, user: SeedRoleUser, password: string, mustChangePassword = false, preserveExistingPassword = false): Promise<string> {
   for (let page = 1; ; page += 1) {
     const listed = await admin.listUsers({ page, perPage: AUTH_PAGE_SIZE })
     if (listed.error) throw new Error(`Unable to list Supabase seed users: ${listed.error.message}`)
@@ -59,10 +59,11 @@ export async function ensureSeedAuthUser(admin: SeedAuthAdmin, user: SeedRoleUse
 
     const existing = listed.data.users.find((candidate) => candidate.email?.toLowerCase() === user.email)
     if (existing) {
+      if (preserveExistingPassword) return existing.id
       const updated = await admin.updateUserById(existing.id, {
-        password,
+        ...(preserveExistingPassword ? {} : { password }),
         email_confirm: true,
-        user_metadata: { name: user.name },
+        user_metadata: { name: user.name, must_change_password: mustChangePassword },
       })
       if (updated.error) throw new Error(`Unable to update Supabase seed user: ${updated.error.message}`)
       return existing.id
@@ -75,7 +76,7 @@ export async function ensureSeedAuthUser(admin: SeedAuthAdmin, user: SeedRoleUse
     email: user.email,
     password,
     email_confirm: true,
-    user_metadata: { name: user.name },
+    user_metadata: { name: user.name, must_change_password: mustChangePassword },
   })
   if (created.error) throw new Error(`Unable to create Supabase seed user: ${created.error.message}`)
   if (!created.data?.user?.id) throw new Error("Supabase seed user was created without an id")
