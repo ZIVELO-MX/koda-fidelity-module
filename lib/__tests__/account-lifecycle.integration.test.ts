@@ -44,7 +44,7 @@ integration("account lifecycle PostgreSQL integration", () => {
       { businessId, name: "Two", reward: "R2", isActive: false, isLite: false },
     ] })
     const trial = await activateManualSubscription(prisma, { businessId, plan: "LITE", billingInterval: "MONTHLY" })
-    expect((await getEntitlements(prisma, businessId)).plan).toBe("PRO")
+    expect((await getEntitlements(prisma, businessId)).plan).toBe("LITE")
     expect(trial.proTrialEndsAt).toBeNull()
     const email = `person-${businessId}@example.com`
     const profile = await createCustomerProfile(prisma, { email, name: "Person", authUserId: randomUUID() })
