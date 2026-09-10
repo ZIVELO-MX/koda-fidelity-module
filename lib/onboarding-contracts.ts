@@ -3,7 +3,7 @@ import { z } from "zod"
 export const onboardingDraftSchema = z.object({
   draftVersion: z.number().int().min(0),
   business: z.object({ name: z.string().trim().min(1).max(120).optional(), categoryId: z.string().trim().min(1).optional() }).optional(),
-  card: z.object({ name: z.string().trim().min(1).max(120).optional(), reward: z.string().trim().min(1).max(240).optional(), stampsRequired: z.number().int().min(1).max(100).optional(), brandColor: z.string().regex(/^#[0-9a-f]{6}$/i).optional() }).optional(),
+  card: z.object({ name: z.string().trim().min(1).max(120).optional(), reward: z.string().trim().min(1).max(240).optional(), stampsRequired: z.number().int().min(1).max(100).optional(), brandColor: z.string().regex(/^#[0-9a-f]{6}$/i).optional(), themeId: z.string().trim().min(1).optional() }).optional(),
   acquisitionSource: z.enum(["KODA_POS", "REFERRAL", "SOCIAL", "SEARCH", "EVENT", "OTHER"]).nullable().optional(),
   selectedBillingInterval: z.enum(["MONTHLY", "ANNUAL"]).nullable().optional(),
 })

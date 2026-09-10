@@ -18,11 +18,14 @@ export type CardSummary = {
   expiresAt?: string | Date | null
   customers?: number
   totalStamps?: number
+  selectedTheme?: { id: string; code: string; plan: "LITE" | "PRO" } | null
+  effectiveTheme?: { id: string; code: string; plan: "LITE" | "PRO" } | null
+  themeLocked?: boolean
 }
 
 export type AccountContext = {
   user: { id: string; email: string; name: string; role: string }
-  business: BusinessPublic & { id: string }
+  business: (BusinessPublic & { id: string }) | null
   onboardingStatus?: "IN_PROGRESS" | "AWAITING_PAYMENT" | "COMPLETED" | "ACTIVE"
   plan?: "LITE" | "PRO"
 }

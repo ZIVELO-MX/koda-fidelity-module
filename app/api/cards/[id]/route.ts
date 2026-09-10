@@ -204,6 +204,7 @@ export async function GET(
         status: card.status,
         selectedTheme: card.selectedTheme,
         effectiveTheme: card.effectiveTheme,
+        themeLocked: Boolean(card.selectedTheme && card.selectedTheme.plan === "PRO" && card.selectedThemeId !== card.effectiveThemeId),
         stampIconName: card.stampIconName,
         expiresAt: card.expiresAt,
         expired: isExpired(card.expiresAt),
@@ -332,7 +333,7 @@ export async function PUT(
       return updatedCard
     })
 
-    return withRequestId(NextResponse.json({ card, milestoneRewards: card.milestoneRewards }), requestId)
+    return withRequestId(NextResponse.json({ card: { ...card, themeLocked: Boolean(theme.selectedThemeId && theme.selectedThemeId !== theme.effectiveThemeId) }, milestoneRewards: card.milestoneRewards }), requestId)
   } catch (error) {
     return withRequestId(handleApiError(error, requestId), requestId)
   }

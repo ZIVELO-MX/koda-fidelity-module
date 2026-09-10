@@ -7,14 +7,15 @@ function dbWith(theme: unknown) {
 
 describe("card theme contract", () => {
   it("returns no theme when the card leaves it unset", async () => {
-    await expect(resolveTheme(dbWith(null), undefined, "LITE")).resolves.toEqual({ selectedThemeId: null, effectiveThemeId: null })
+    await expect(resolveTheme(dbWith(null), undefined, "LITE")).resolves.toEqual({ selectedThemeId: null, effectiveThemeId: null, themeLocked: false })
   })
 
   it("resolves a theme by stable code", async () => {
-    await expect(resolveTheme(dbWith({ id: "theme-cafe", code: "cafeteria", plan: "LITE", isActive: true }), "cafeteria", "LITE")).resolves.toEqual({ selectedThemeId: "theme-cafe", effectiveThemeId: "theme-cafe" })
+    await expect(resolveTheme(dbWith({ id: "theme-cafe", code: "cafeteria", plan: "LITE", isActive: true }), "cafeteria", "LITE")).resolves.toEqual({ selectedThemeId: "theme-cafe", effectiveThemeId: "theme-cafe", themeLocked: false })
   })
 
   it("rejects a Pro-only theme for Lite", async () => {
-    await expect(resolveTheme(dbWith({ id: "theme-pro", code: "pro", plan: "PRO", isActive: true }), "pro", "LITE")).rejects.toThrow("requiere plan Pro")
+    const db = { loyaltyTheme: { findFirst: vi.fn().mockResolvedValueOnce({ id: "theme-pro", code: "pro", plan: "PRO", isActive: true }).mockResolvedValueOnce({ id: "theme-lite", code: "cafeteria", plan: "LITE", isActive: true }) } } as never
+    await expect(resolveTheme(db, "pro", "LITE")).resolves.toEqual({ selectedThemeId: "theme-pro", effectiveThemeId: "theme-lite", themeLocked: true })
   })
 })

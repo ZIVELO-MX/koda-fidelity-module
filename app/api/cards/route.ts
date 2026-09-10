@@ -103,6 +103,8 @@ export async function GET(request: NextRequest) {
       include: {
         _count: { select: { customers: true } },
         customers: { select: { stamps: true } },
+        selectedTheme: { select: { id: true, code: true, plan: true } },
+        effectiveTheme: { select: { id: true, code: true, plan: true } },
       },
       orderBy: { createdAt: "desc" },
     })
@@ -119,6 +121,9 @@ export async function GET(request: NextRequest) {
       status: card.status,
       selectedThemeId: card.selectedThemeId,
       effectiveThemeId: card.effectiveThemeId,
+      selectedTheme: card.selectedTheme,
+      effectiveTheme: card.effectiveTheme,
+      themeLocked: Boolean(card.selectedTheme && card.selectedTheme.plan === "PRO" && card.selectedThemeId !== card.effectiveThemeId),
       expiresAt: card.expiresAt,
       createdAt: card.createdAt,
       updatedAt: card.updatedAt,
@@ -207,7 +212,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return withRequestId(NextResponse.json({ card, milestoneRewards: card.milestoneRewards }, { status: 201 }), requestId)
+    return withRequestId(NextResponse.json({ card: { ...card, themeLocked: theme.themeLocked }, milestoneRewards: card.milestoneRewards }, { status: 201 }), requestId)
   } catch (error) {
     return withRequestId(handleApiError(error, requestId), requestId)
   }

@@ -11,11 +11,13 @@ export async function resolveTheme(
   themeId: string | undefined,
   plan: "LITE" | "PRO",
 ) {
-  if (!themeId) return { selectedThemeId: null, effectiveThemeId: null }
+  if (!themeId) return { selectedThemeId: null, effectiveThemeId: null, themeLocked: false }
   const theme = await db.loyaltyTheme.findFirst({ where: { isActive: true, OR: [{ id: themeId }, { code: themeId }] } })
   if (!theme) throw new NotFoundError("Tema de tarjeta no encontrado")
-  if (theme.plan === ThemePlan.PRO && plan !== "PRO") {
-    throw new ValidationError("El tema seleccionado requiere plan Pro")
+  if (theme.plan !== ThemePlan.PRO || plan === "PRO") {
+    return { selectedThemeId: theme.id, effectiveThemeId: theme.id, themeLocked: false }
   }
-  return { selectedThemeId: theme.id, effectiveThemeId: theme.id }
+  const fallback = await db.loyaltyTheme.findFirst({ where: { isActive: true, plan: ThemePlan.LITE }, orderBy: { code: "asc" } })
+  if (!fallback) throw new ValidationError("No hay un tema Lite disponible para fallback")
+  return { selectedThemeId: theme.id, effectiveThemeId: fallback.id, themeLocked: true }
 }
