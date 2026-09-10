@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getBusinessFromSession, handleApiError, NotFoundError, requireRole } from "@/lib/api-utils"
+import { getBusinessFromSession, handleApiError, NotFoundError, requireRole, requestIdFrom, withRequestId } from "@/lib/api-utils"
 
 /**
  * @openapi
@@ -16,6 +16,7 @@ export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const requestId = requestIdFrom(_request)
   try {
     const { business, user } = await getBusinessFromSession()
     requireRole(user, "admin")
@@ -26,10 +27,10 @@ export async function POST(
       throw new NotFoundError("Loyalty card not found")
     }
 
-    await prisma.loyaltyCard.update({ where: { id }, data: { isActive: true } })
+    await prisma.loyaltyCard.update({ where: { id }, data: { isActive: true, status: "ACTIVE" } })
 
-    return NextResponse.json({ success: true })
+    return withRequestId(NextResponse.json({ success: true }), requestId)
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }

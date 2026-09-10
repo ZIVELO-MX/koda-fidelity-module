@@ -7,6 +7,8 @@ import {
   NotFoundError,
   ForbiddenError,
   requireRole,
+  requestIdFrom,
+  withRequestId,
 } from "@/lib/api-utils"
 
 /**
@@ -28,6 +30,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const requestId = requestIdFrom(request)
   try {
     const { business, user } = await getBusinessFromSession()
     requireRole(user, "admin")
@@ -55,9 +58,9 @@ export async function PUT(
       select: { id: true, email: true, name: true, role: true, createdAt: true },
     })
 
-    return NextResponse.json({ user: updated })
+    return withRequestId(NextResponse.json({ user: updated }), requestId)
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }
 
@@ -65,6 +68,7 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const requestId = requestIdFrom(_request)
   try {
     const { business, user } = await getBusinessFromSession()
     requireRole(user, "admin")
@@ -81,8 +85,8 @@ export async function DELETE(
 
     await prisma.user.delete({ where: { id } })
 
-    return NextResponse.json({ success: true })
+    return withRequestId(NextResponse.json({ success: true }), requestId)
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }

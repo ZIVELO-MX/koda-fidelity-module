@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
-import { handleApiError, NotFoundError, ValidationError, UnauthorizedError } from "@/lib/api-utils"
+import { handleApiError, NotFoundError, ValidationError, UnauthorizedError, requestIdFrom, withRequestId } from "@/lib/api-utils"
 
 /**
  * @openapi
@@ -17,6 +17,7 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ customerId: string }> },
 ) {
+  const requestId = requestIdFrom(_request)
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -37,8 +38,8 @@ export async function DELETE(
 
     await prisma.customer.delete({ where: { id: customerId } })
 
-    return NextResponse.json({ success: true })
+    return withRequestId(NextResponse.json({ success: true }), requestId)
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }

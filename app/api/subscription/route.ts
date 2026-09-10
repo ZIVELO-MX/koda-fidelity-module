@@ -1,17 +1,33 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getBusinessFromSession, handleApiError, ValidationError } from "@/lib/api-utils"
+import { getBusinessFromSession, handleApiError, ValidationError, requestIdFrom, withRequestId } from "@/lib/api-utils"
 import { activateManualSubscription, getEntitlements } from "@/lib/account-lifecycle"
 import { manualSubscriptionSchema } from "@/lib/onboarding-contracts"
 
-export async function GET() {
+/**
+ * @openapi
+ * /api/subscription:
+ *   get:
+ *     tags: [Billing]
+ *     summary: Get current manual subscription entitlements
+ *     security: [{ cookieAuth: [] }]
+ *     responses: { 200: { description: Subscription entitlements } }
+ *   post:
+ *     tags: [Billing]
+ *     summary: Apply an internal manual subscription action
+ *     responses: { 201: { description: Subscription updated } }
+ */
+
+export async function GET(request: NextRequest) {
+  const requestId = requestIdFrom(request)
   try {
     const { business } = await getBusinessFromSession()
-    return NextResponse.json({ entitlements: await getEntitlements(prisma, business.id) })
-  } catch (error) { return handleApiError(error) }
+    return withRequestId(NextResponse.json({ entitlements: await getEntitlements(prisma, business.id) }), requestId)
+  } catch (error) { return withRequestId(handleApiError(error, requestId), requestId) }
 }
 
 export async function POST(request: NextRequest) {
+  const requestId = requestIdFrom(request)
   try {
     const expected = process.env.BILLING_INTERNAL_SECRET
     if (!expected || request.headers.get("x-billing-internal-secret") !== expected) throw new ValidationError("Operación interna requerida")
@@ -21,13 +37,13 @@ export async function POST(request: NextRequest) {
     const businessId = parsed.data.businessId
     if (parsed.data.action === "cancel") {
       const canceled = await prisma.subscription.updateMany({ where: { businessId, status: "ACTIVE" }, data: { status: "CANCELED" } })
-      return NextResponse.json({ canceled: canceled.count })
+      return withRequestId(NextResponse.json({ canceled: canceled.count }), requestId)
     }
     if (parsed.data.action === "past_due") {
       const updated = await prisma.subscription.updateMany({ where: { businessId, status: "ACTIVE" }, data: { status: "PAST_DUE" } })
-      return NextResponse.json({ updated: updated.count })
+      return withRequestId(NextResponse.json({ updated: updated.count }), requestId)
     }
     const subscription = await activateManualSubscription(prisma, { ...parsed.data, operator: request.headers.get("x-operator") ?? "internal", idempotencyKey: request.headers.get("idempotency-key") ?? undefined })
-    return NextResponse.json({ subscription, entitlements: await getEntitlements(prisma, businessId) }, { status: 201 })
-  } catch (error) { return handleApiError(error) }
+    return withRequestId(NextResponse.json({ subscription, entitlements: await getEntitlements(prisma, businessId) }, { status: 201 }), requestId)
+  } catch (error) { return withRequestId(handleApiError(error, requestId), requestId) }
 }

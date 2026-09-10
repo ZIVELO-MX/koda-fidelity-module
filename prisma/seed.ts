@@ -2,12 +2,13 @@ import { PrismaClient } from "@prisma/client"
 import { mockData } from "./mock-data"
 import { createAdminClient } from "../lib/supabase-admin"
 import { ensureSeedAuthUser, resolveSeedRoleUsers } from "./seed-auth"
+import { fidelityThemeCodes } from "../lib/card-themes"
 
 const prisma = new PrismaClient()
 
 async function main() {
-  if (process.env.NODE_ENV === "production" && process.env.ALLOW_DESTRUCTIVE_SEED !== "true") {
-    throw new Error("Refusing destructive seed in production. Set ALLOW_DESTRUCTIVE_SEED=true explicitly.")
+  if (process.env.ALLOW_DESTRUCTIVE_SEED !== "true") {
+    throw new Error("Refusing destructive seed. Set ALLOW_DESTRUCTIVE_SEED=true explicitly for an isolated development or CI database.")
   }
   const roleUserIds = await resolveSeedRoleUsers(createAdminClient().auth.admin, process.env)
   const genericPassword = process.env.DEV_SEED_GENERIC_PASSWORD || "Koda1234!"
@@ -22,6 +23,9 @@ async function main() {
   console.log("Seeding database...")
 
   const roleBusiness = await prisma.$transaction(async tx => {
+    for (const code of fidelityThemeCodes) {
+      await tx.loyaltyTheme.upsert({ where: { code }, create: { code, plan: "LITE" }, update: { isActive: true } })
+    }
     await tx.stampLog.deleteMany({ where: { businessId: { notIn: preservedBusinessIds } } })
     await tx.customer.deleteMany({ where: { card: { businessId: { notIn: preservedBusinessIds } } } })
     await tx.loyaltyCard.deleteMany({ where: { businessId: { notIn: preservedBusinessIds } } })

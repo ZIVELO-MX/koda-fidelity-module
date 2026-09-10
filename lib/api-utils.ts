@@ -59,7 +59,7 @@ export class AppError extends Error {
 }
 
 export function requestIdFrom(request?: Request) {
-  return request?.headers.get("x-request-id") ?? randomUUID()
+  return request?.headers?.get?.("x-request-id") ?? randomUUID()
 }
 
 export function withRequestId(response: Response, requestId: string = randomUUID()) {

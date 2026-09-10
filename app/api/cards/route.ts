@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getBusinessFromSession, handleApiError, ValidationError, requireRole } from "@/lib/api-utils"
+import { getBusinessFromSession, handleApiError, ValidationError, requireRole, requestIdFrom, withRequestId } from "@/lib/api-utils"
+import { getEntitlements } from "@/lib/account-lifecycle"
+import { resolveTheme } from "@/lib/card-themes"
 
 /**
  * @openapi
@@ -90,7 +92,8 @@ import { getBusinessFromSession, handleApiError, ValidationError, requireRole } 
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const requestId = requestIdFrom(request)
   try {
     const { business } = await getBusinessFromSession()
 
@@ -111,6 +114,9 @@ export async function GET() {
       stampsRequired: card.stampsRequired,
       brandColor: card.brandColor,
       iconName: card.iconName,
+      status: card.status,
+      selectedThemeId: card.selectedThemeId,
+      effectiveThemeId: card.effectiveThemeId,
       expiresAt: card.expiresAt,
       createdAt: card.createdAt,
       updatedAt: card.updatedAt,
@@ -118,13 +124,14 @@ export async function GET() {
       totalStamps: card.customers.reduce((sum, c) => sum + c.stamps, 0),
     }))
 
-    return NextResponse.json({ cards: result })
+    return withRequestId(NextResponse.json({ cards: result }), requestId)
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }
 
 export async function POST(request: NextRequest) {
+  const requestId = requestIdFrom(request)
   try {
     const { business, user } = await getBusinessFromSession()
     requireRole(user, "admin")
@@ -167,6 +174,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const entitlements = await getEntitlements(prisma, business.id)
+    const theme = await resolveTheme(prisma, typeof body.themeId === "string" ? body.themeId : undefined, entitlements.plan as "LITE" | "PRO")
     const card = await prisma.loyaltyCard.create({
       data: {
         businessId: business.id,
@@ -178,6 +187,8 @@ export async function POST(request: NextRequest) {
         stampIconName: body.stampIconName ?? null,
         description: body.description?.trim() || null,
         expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
+        selectedThemeId: theme.selectedThemeId,
+        effectiveThemeId: theme.effectiveThemeId,
         milestoneRewards: body.milestoneRewards
           ? {
               create: body.milestoneRewards.map((m: { stampNumber: number; label: string; iconName?: string | null; probability: number }) => ({
@@ -194,8 +205,8 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({ card, milestoneRewards: card.milestoneRewards }, { status: 201 })
+    return withRequestId(NextResponse.json({ card, milestoneRewards: card.milestoneRewards }, { status: 201 }), requestId)
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }
