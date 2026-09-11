@@ -58,7 +58,7 @@ integration("account lifecycle PostgreSQL integration", () => {
   })
 
   it("keeps a Pro theme selected while applying a Lite fallback and card limit", async () => {
-    const liteTheme = await prisma.loyaltyTheme.findFirstOrThrow({ where: { plan: "LITE", isActive: true } })
+    const liteTheme = await prisma.loyaltyTheme.findFirstOrThrow({ where: { plan: "LITE", isActive: true }, orderBy: { code: "asc" } })
     const proTheme = await prisma.loyaltyTheme.create({ data: { code: `integration-pro-${Date.now()}`, plan: "PRO" } })
     const cards = await prisma.loyaltyCard.createManyAndReturn({ data: [
       { businessId, name: "Themed one", reward: "R1", selectedThemeId: proTheme.id, effectiveThemeId: proTheme.id },
