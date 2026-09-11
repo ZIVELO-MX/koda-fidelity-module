@@ -33,7 +33,7 @@ function Tarjeta({ giro }: { giro: (typeof GIROS)[number] }) {
       className="relative aspect-[0.72] w-[232px] shrink-0 overflow-hidden rounded-2xl shadow-[0_20px_40px_-22px_rgba(30,15,0,.4)]"
       style={{ background: `radial-gradient(120% 120% at 20% 5%, ${giro.de}, ${giro.a})` }}
     >
-      <PatronDeIconos iconos={giro.iconos} opacidad={0.16} mosaicos={6} />
+      <PatronDeIconos iconos={giro.iconos} opacidad={0.16} columnas={2} filas={3} />
       <div className="relative flex h-full flex-col justify-between p-5">
         <Icono className="h-6 w-6 text-white" aria-hidden="true" />
         <div>

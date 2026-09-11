@@ -31,12 +31,15 @@ export function PatronDeIconos({
   iconos,
   opacidad = 0.14,
   color = "#ffffff",
-  mosaicos = 12,
+  columnas = 4,
+  filas = 5,
 }: {
   iconos: LucideIcon[]
   opacidad?: number
   color?: string
-  mosaicos?: number
+  /** Mosaicos a lo ancho y a lo alto. Deben sobrar: lo que asome se recorta. */
+  columnas?: number
+  filas?: number
 }) {
   if (iconos.length === 0) return null
   return (
@@ -45,14 +48,17 @@ export function PatronDeIconos({
       className="pointer-events-none absolute inset-0 overflow-hidden"
       style={{ opacity: opacidad, color }}
     >
+      {/* Rejilla explícita y `max-content`: con `auto-fill` una tarjeta de 232px
+          solo cabía una columna de 150 y el patrón dejaba desnudo el tercio
+          derecho. Aquí sobran mosaicos a propósito y el recorte hace el resto. */}
       <div
-        className="grid"
+        className="grid w-max"
         style={{
-          gridTemplateColumns: `repeat(auto-fill, ${LADO}px)`,
+          gridTemplateColumns: `repeat(${columnas}, ${LADO}px)`,
           gridAutoRows: `${LADO}px`,
         }}
       >
-        {Array.from({ length: mosaicos }).map((_, mosaico) => (
+        {Array.from({ length: columnas * filas }).map((_, mosaico) => (
           <div key={mosaico} className="relative">
             {POSICIONES.map((posicion, i) => {
               const Icono = iconos[i % iconos.length]
