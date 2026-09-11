@@ -3,12 +3,28 @@ import sharp from "sharp"
 import { NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase-admin"
 import { prisma } from "@/lib/prisma"
-import { getAccountPrincipal, handleApiError, NotFoundError, ValidationError } from "@/lib/api-utils"
+import { getAccountPrincipal, handleApiError, NotFoundError, ValidationError, requestIdFrom, withRequestId } from "@/lib/api-utils"
 import { replaceCustomerAvatar } from "@/lib/account-lifecycle"
 
 const MAX_BYTES = 2 * 1024 * 1024
 
+/**
+ * @openapi
+ * /api/customer/profile/avatar:
+ *   put:
+ *     tags: [Customer]
+ *     summary: Upload a customer avatar
+ *     security: [{ cookieAuth: [] }]
+ *     responses: { 200: { description: Updated profile } }
+ *   delete:
+ *     tags: [Customer]
+ *     summary: Remove a customer avatar
+ *     security: [{ cookieAuth: [] }]
+ *     responses: { 200: { description: Updated profile } }
+ */
+
 export async function PUT(request: NextRequest) {
+  const requestId = requestIdFrom(request)
   try {
     const principal = await getAccountPrincipal()
     const profile = await prisma.customerProfile.findUnique({ where: { authUserId: principal.id } })
@@ -26,17 +42,18 @@ export async function PUT(request: NextRequest) {
     const updated = await replaceCustomerAvatar(prisma, profile.id, bucket, path)
     const { data: signed, error: signedError } = await admin.storage.from(bucket).createSignedUrl(path, 3600)
     if (signedError) throw signedError
-    return NextResponse.json({ profile: updated, signedUrl: signed.signedUrl })
-  } catch (error) { return handleApiError(error) }
+    return withRequestId(NextResponse.json({ profile: updated, signedUrl: signed.signedUrl }), requestId)
+  } catch (error) { return withRequestId(handleApiError(error, requestId), requestId) }
 }
 
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
+  const requestId = requestIdFrom(request)
   try {
     const principal = await getAccountPrincipal()
     const profile = await prisma.customerProfile.findUnique({ where: { authUserId: principal.id } })
     if (!profile) throw new NotFoundError("Perfil de cliente no encontrado")
     const updated = await prisma.customerProfile.update({ where: { id: profile.id }, data: { avatarPath: null } })
     if (profile.avatarPath) await prisma.avatarCleanupJob.create({ data: { profileId: profile.id, bucket: process.env.SUPABASE_PRIVATE_AVATAR_BUCKET || "avatars", storagePath: profile.avatarPath } })
-    return NextResponse.json({ profile: updated })
-  } catch (error) { return handleApiError(error) }
+    return withRequestId(NextResponse.json({ profile: updated }), requestId)
+  } catch (error) { return withRequestId(handleApiError(error, requestId), requestId) }
 }

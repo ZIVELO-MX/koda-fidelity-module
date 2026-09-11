@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getBusinessFromSession, handleApiError, ValidationError, requireRole } from "@/lib/api-utils"
+import { getBusinessFromSession, handleApiError, ValidationError, requireRole, requestIdFrom, withRequestId } from "@/lib/api-utils"
 
 /**
  * @openapi
@@ -20,7 +20,8 @@ import { createAdminClient } from "@/lib/supabase-admin"
 import { createInvitationToken, enforceRateLimit, normalizeEmail } from "@/lib/auth-security"
 import { sendSecureInviteEmail } from "@/lib/invite-email"
 
-export async function GET() {
+export async function GET(request?: NextRequest) {
+  const requestId = requestIdFrom(request)
   try {
     const { business, user } = await getBusinessFromSession()
     requireRole(user, "admin")
@@ -41,13 +42,14 @@ export async function GET() {
       select: { id: true, email: true, name: true, role: true, status: true, expiresAt: true, createdAt: true },
     })
 
-    return NextResponse.json({ users, invitations })
+    return withRequestId(NextResponse.json({ users, invitations }), requestId)
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }
 
 export async function POST(request: NextRequest) {
+  const requestId = requestIdFrom(request)
   try {
     const { business, user } = await getBusinessFromSession()
     requireRole(user, "admin")
@@ -104,8 +106,8 @@ export async function POST(request: NextRequest) {
         throw new Error(authError.message)
       }
     }
-    return NextResponse.json({ invitation }, { status: 202 })
+    return withRequestId(NextResponse.json({ invitation }, { status: 202 }), requestId)
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }

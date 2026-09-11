@@ -24,23 +24,34 @@ describe("OpenAPI spec", () => {
   it("documents all expected API paths", () => {
     const paths = Object.keys(spec.paths).sort()
     expect(paths).toEqual([
+      "/api/account/closure",
+      "/api/account/deletion-impact",
       "/api/business",
+      "/api/business/avatar",
+      "/api/business/closure",
       "/api/cards",
       "/api/cards/{id}",
       "/api/cards/{id}/restore",
+      "/api/billing/status",
+      "/api/cron/account-closures",
+      "/api/customer-profile",
+      "/api/customer/profile/avatar",
+      "/api/customer/profile",
       "/api/customers",
       "/api/customers/{id}",
       "/api/dashboard/activity",
       "/api/dashboard/stats",
       "/api/join",
       "/api/my-cards/{customerId}",
+      "/api/onboarding",
       "/api/openapi",
       "/api/passes/apple/{cardId}",
       "/api/passes/google/{cardId}",
       "/api/stamps",
+      "/api/subscription",
       "/api/users",
       "/api/users/{id}",
-    ])
+    ].sort())
   })
 
   it("has correct HTTP methods for each path", () => {
@@ -71,6 +82,10 @@ describe("OpenAPI spec", () => {
     expect(spec.components.schemas).toHaveProperty("Customer")
     expect(spec.components.schemas).toHaveProperty("DashboardStats")
     expect(spec.components.schemas).toHaveProperty("Error")
+    expect(spec.components.schemas).toHaveProperty("BusinessPublic")
+    expect(spec.components.schemas).toHaveProperty("CardSummary")
+    expect(spec.components.schemas).toHaveProperty("AccountContext")
+    expect(spec.components.schemas).toHaveProperty("ApiErrorBody")
   })
 
   it("has security scheme for cookie auth", () => {

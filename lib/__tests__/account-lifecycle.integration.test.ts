@@ -44,7 +44,7 @@ integration("account lifecycle PostgreSQL integration", () => {
       { businessId, name: "Two", reward: "R2", isActive: false, isLite: false },
     ] })
     const trial = await activateManualSubscription(prisma, { businessId, plan: "LITE", billingInterval: "MONTHLY" })
-    expect((await getEntitlements(prisma, businessId)).plan).toBe("PRO")
+    expect((await getEntitlements(prisma, businessId)).plan).toBe("LITE")
     expect(trial.proTrialEndsAt).toBeNull()
     const email = `person-${businessId}@example.com`
     const profile = await createCustomerProfile(prisma, { email, name: "Person", authUserId: randomUUID() })
@@ -55,6 +55,25 @@ integration("account lifecycle PostgreSQL integration", () => {
     const closure = await scheduleClosure(prisma, businessId, new Date("2026-01-31T00:00:00.000Z"))
     expect(closure.scheduledFor.toISOString()).toBe("2026-03-02T00:00:00.000Z")
     expect(card).toHaveLength(2)
+  })
+
+  it("keeps a Pro theme selected while applying a Lite fallback and card limit", async () => {
+    const liteTheme = await prisma.loyaltyTheme.findFirstOrThrow({ where: { plan: "LITE", isActive: true }, orderBy: { code: "asc" } })
+    const proTheme = await prisma.loyaltyTheme.create({ data: { code: `integration-pro-${Date.now()}`, plan: "PRO" } })
+    const cards = await prisma.loyaltyCard.createManyAndReturn({ data: [
+      { businessId, name: "Themed one", reward: "R1", selectedThemeId: proTheme.id, effectiveThemeId: proTheme.id },
+      { businessId, name: "Themed two", reward: "R2", selectedThemeId: liteTheme.id, effectiveThemeId: liteTheme.id },
+    ] })
+
+    await activateManualSubscription(prisma, { businessId, plan: "PRO", idempotencyKey: randomUUID() })
+    expect((await prisma.loyaltyCard.findUniqueOrThrow({ where: { id: cards[0].id } })).effectiveThemeId).toBe(proTheme.id)
+
+    const lite = await activateManualSubscription(prisma, { businessId, plan: "LITE", proAccessGranted: false, idempotencyKey: randomUUID() })
+    const refreshed = await prisma.loyaltyCard.findMany({ where: { businessId }, orderBy: { createdAt: "asc" } })
+    expect(lite.liteCardId).toBeTruthy()
+    expect(refreshed.filter((card) => card.status === "ACTIVE")).toHaveLength(1)
+    expect(refreshed.find((card) => card.selectedThemeId === proTheme.id)?.effectiveThemeId).toBe(liteTheme.id)
+    expect(refreshed.filter((card) => card.status === "LOCKED_BY_PLAN")).toHaveLength(1)
   })
 
   it("creates resumable onboarding state with the exact persisted version", async () => {

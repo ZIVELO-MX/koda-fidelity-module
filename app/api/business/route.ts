@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getBusinessFromSession, handleApiError, ValidationError, requireRole } from "@/lib/api-utils"
+import { getBusinessFromSession, handleApiError, ValidationError, requireRole, requestIdFrom, withRequestId } from "@/lib/api-utils"
 
 /**
  * @openapi
@@ -75,16 +75,18 @@ import { getBusinessFromSession, handleApiError, ValidationError, requireRole } 
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const requestId = requestIdFrom(request)
   try {
     const { business } = await getBusinessFromSession()
-    return NextResponse.json({ business })
+    return withRequestId(NextResponse.json({ business }), requestId)
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }
 
 export async function PUT(request: NextRequest) {
+  const requestId = requestIdFrom(request)
   try {
     const { business, user } = await getBusinessFromSession()
     requireRole(user, "admin")
@@ -111,8 +113,8 @@ export async function PUT(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({ business: updated })
+    return withRequestId(NextResponse.json({ business: updated }), requestId)
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getBusinessFromSession, handleApiError, NotFoundError, ValidationError, requireRole } from "@/lib/api-utils"
+import { getBusinessFromSession, handleApiError, NotFoundError, ValidationError, requireRole, requestIdFrom, withRequestId } from "@/lib/api-utils"
 import { isExpired } from "@/lib/card-utils"
+import { getEntitlements } from "@/lib/account-lifecycle"
+import { resolveTheme } from "@/lib/card-themes"
 
 /**
  * @openapi
@@ -161,9 +163,10 @@ import { isExpired } from "@/lib/card-utils"
  *               $ref: '#/components/schemas/Error'
  */
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const requestId = requestIdFrom(request)
   try {
     const { id } = await params
 
@@ -171,19 +174,24 @@ export async function GET(
       where: { id },
       include: {
         business: {
-          select: { name: true, brandColor: true, logoUrl: true, iconName: true },
+          select: { name: true, brandColor: true, logoUrl: true, iconName: true, website: true, instagram: true },
         },
         milestoneRewards: {
           orderBy: { stampNumber: "asc" },
         },
+        selectedTheme: { select: { id: true, code: true, plan: true } },
+        effectiveTheme: { select: { id: true, code: true, plan: true } },
       },
     })
 
     if (!card) {
       throw new NotFoundError("Loyalty card not found")
     }
+    if (card.status === "DRAFT") {
+      throw new NotFoundError("Loyalty card not found")
+    }
 
-    return NextResponse.json({
+    return withRequestId(NextResponse.json({
       card: {
         id: card.id,
         name: card.name,
@@ -193,6 +201,10 @@ export async function GET(
         brandColor: card.brandColor,
         iconName: card.iconName,
         isActive: card.isActive,
+        status: card.status,
+        selectedTheme: card.selectedTheme,
+        effectiveTheme: card.effectiveTheme,
+        themeLocked: Boolean(card.selectedTheme && card.selectedTheme.plan === "PRO" && card.selectedThemeId !== card.effectiveThemeId),
         stampIconName: card.stampIconName,
         expiresAt: card.expiresAt,
         expired: isExpired(card.expiresAt),
@@ -200,13 +212,15 @@ export async function GET(
         businessBrandColor: card.business.brandColor,
         businessLogoUrl: card.business.logoUrl,
         businessIconName: card.business.iconName,
+        businessWebsite: card.business.website,
+        businessInstagram: card.business.instagram,
         milestoneRewards: card.milestoneRewards.map(m => ({
           id: m.id, stampNumber: m.stampNumber, label: m.label, iconName: m.iconName, probability: m.probability,
         })),
       },
-    })
+    }), requestId)
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }
 
@@ -214,6 +228,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const requestId = requestIdFrom(request)
   try {
     const { business, user } = await getBusinessFromSession()
     requireRole(user, "admin")
@@ -241,6 +256,10 @@ export async function PUT(
     }
 
     const stampsRequired = body.stampsRequired !== undefined ? Number(body.stampsRequired) : existing.stampsRequired
+    const entitlements = await getEntitlements(prisma, business.id)
+    const theme = body.themeId !== undefined
+      ? await resolveTheme(prisma, typeof body.themeId === "string" ? body.themeId : undefined, entitlements.plan as "LITE" | "PRO")
+      : { selectedThemeId: existing.selectedThemeId, effectiveThemeId: existing.effectiveThemeId }
 
     const card = await prisma.$transaction(async tx => {
       if (body.milestoneRewards !== undefined) {
@@ -298,6 +317,7 @@ export async function PUT(
         ...(body.stampIconName !== undefined && { stampIconName: body.stampIconName || null }),
         ...(body.description !== undefined && { description: body.description?.trim() || null }),
         ...(body.expiresAt !== undefined && { expiresAt: body.expiresAt ? new Date(body.expiresAt) : null }),
+        ...(body.themeId !== undefined && { selectedThemeId: theme.selectedThemeId, effectiveThemeId: theme.effectiveThemeId }),
       },
       include: { milestoneRewards: { orderBy: { stampNumber: "asc" } } },
     })
@@ -313,9 +333,9 @@ export async function PUT(
       return updatedCard
     })
 
-    return NextResponse.json({ card, milestoneRewards: card.milestoneRewards })
+    return withRequestId(NextResponse.json({ card: { ...card, themeLocked: Boolean(theme.selectedThemeId && theme.selectedThemeId !== theme.effectiveThemeId) }, milestoneRewards: card.milestoneRewards }), requestId)
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }
 
@@ -323,6 +343,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const requestId = requestIdFrom(request)
   try {
     const { business, user } = await getBusinessFromSession()
     requireRole(user, "admin")
@@ -340,8 +361,8 @@ export async function DELETE(
       await prisma.loyaltyCard.update({ where: { id }, data: { isActive: false, status: "ARCHIVED" } })
     }
 
-    return NextResponse.json({ success: true })
+    return withRequestId(NextResponse.json({ success: true }), requestId)
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }

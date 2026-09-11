@@ -35,20 +35,37 @@ export async function activateManualSubscription(db: Db, input: { businessId: st
     await tx.subscription.updateMany({ where: { businessId: input.businessId, status: "ACTIVE" }, data: { status: "CANCELED" } })
     const proAccessGranted = input.proAccessGranted ?? plan === "PRO"
     const subscription = await tx.subscription.create({ data: { businessId: input.businessId, plan, billingInterval, amountMinor: input.amountMinor ?? 0, currency: "MXN", activatedAt: periodStart, periodStart, periodEnd, externalReference: input.externalReference, proAccessGranted } })
-    await applyEntitlements(tx, input.businessId, subscription.proAccessGranted ? "PRO" : "LITE")
+    const entitledCards = await applyEntitlements(tx, input.businessId, subscription.proAccessGranted ? "PRO" : "LITE")
+    const updatedSubscription = await tx.subscription.update({ where: { id: subscription.id }, data: { liteCardId: subscription.proAccessGranted ? null : (entitledCards[0]?.id ?? null) } })
     await tx.onboardingProgress.updateMany({ where: { businessId: input.businessId }, data: { status: "ACTIVE", step: "PAYWALL" } })
     await tx.billingAuditEvent.create({ data: { businessId: input.businessId, action: input.action ?? "activate", operator: input.operator ?? "internal", idempotencyKey, externalReference: input.externalReference, metadata: { plan, billingInterval, amountMinor: input.amountMinor ?? 0 } } })
-    return subscription
+    return updatedSubscription
   })
 }
 
 export async function applyEntitlements(db: PrismaClient | Prisma.TransactionClient, businessId: string, plan: SubscriptionPlan) {
   const cards = await db.loyaltyCard.findMany({ where: { businessId }, orderBy: { createdAt: "asc" } })
-  if (plan === "PRO") { await db.loyaltyCard.updateMany({ where: { businessId, status: { not: "ARCHIVED" } }, data: { isActive: true, isLite: false, status: "ACTIVE" } }); return cards }
+  if (plan === "PRO") {
+    for (const card of cards.filter((candidate) => candidate.status !== "ARCHIVED")) {
+      await db.loyaltyCard.update({ where: { id: card.id }, data: { isActive: true, isLite: false, status: "ACTIVE", effectiveThemeId: card.selectedThemeId } })
+    }
+    return cards.filter((candidate) => candidate.status !== "ARCHIVED")
+  }
   const keep = cards.find((card) => card.isLite && card.status !== "ARCHIVED") ?? cards.find((card) => card.status !== "ARCHIVED")
   if (!keep) return cards
-  await db.loyaltyCard.updateMany({ where: { businessId, status: "ACTIVE", id: { not: keep.id } }, data: { isActive: false, isLite: false, status: "LOCKED_BY_PLAN" } })
-  await db.loyaltyCard.update({ where: { id: keep.id }, data: { isActive: true, isLite: true, status: "ACTIVE" } })
+  const liteFallback = await db.loyaltyTheme.findFirst({ where: { isActive: true, plan: "LITE" }, orderBy: { code: "asc" } })
+  for (const card of cards.filter((candidate) => candidate.status !== "ARCHIVED")) {
+    const effectiveThemeId = card.selectedThemeId
+      ? (await db.loyaltyTheme.findUnique({ where: { id: card.selectedThemeId }, select: { plan: true } }))?.plan === "PRO"
+        ? liteFallback?.id ?? null
+        : card.selectedThemeId
+      : null
+    if (card.id === keep.id) {
+      await db.loyaltyCard.update({ where: { id: card.id }, data: { isActive: true, isLite: true, status: "ACTIVE", effectiveThemeId } })
+    } else {
+      await db.loyaltyCard.update({ where: { id: card.id }, data: { isActive: false, isLite: false, status: "LOCKED_BY_PLAN", effectiveThemeId } })
+    }
+  }
   return [keep]
 }
 
@@ -60,7 +77,8 @@ export async function getEntitlements(db: Db, businessId: string, _now = new Dat
 
 export async function syncExpiredEntitlements(db: Db, businessId: string, now = new Date()) {
   const entitlements = await getEntitlements(db, businessId, now)
-  await applyEntitlements(db, businessId, entitlements.plan as SubscriptionPlan)
+  const entitledCards = await applyEntitlements(db, businessId, entitlements.plan as SubscriptionPlan)
+  if (entitlements.subscription) await db.subscription.update({ where: { id: entitlements.subscription.id }, data: { liteCardId: entitlements.plan === "LITE" ? (entitledCards[0]?.id ?? null) : null } })
   return entitlements
 }
 

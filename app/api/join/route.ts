@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
-import { getBusinessFromSession, handleApiError, ValidationError, NotFoundError, UnauthorizedError } from "@/lib/api-utils"
+import { getBusinessFromSession, handleApiError, ValidationError, NotFoundError, UnauthorizedError, requestIdFrom, withRequestId } from "@/lib/api-utils"
 import { isExpired } from "@/lib/card-utils"
 
 /**
@@ -133,6 +133,9 @@ const customerInclude = {
       iconName: true,
       stampIconName: true,
       isActive: true,
+      status: true,
+      selectedThemeId: true,
+      effectiveThemeId: true,
       expiresAt: true,
       business: { select: { name: true, brandColor: true, logoUrl: true, iconName: true, website: true, instagram: true } },
       milestoneRewards: { select: { stampNumber: true, iconName: true, label: true } },
@@ -174,6 +177,7 @@ export function withCurrentCycleMilestoneClaims<
 }
 
 export async function POST(request: NextRequest) {
+  const requestId = requestIdFrom(request)
   try {
     const body = await request.json()
     const { name, email, cardId } = body
@@ -205,7 +209,7 @@ export async function POST(request: NextRequest) {
       where: { email, cardId },
     })
     if (existing) {
-      return NextResponse.json({ existing: true })
+      return withRequestId(NextResponse.json({ existing: true }), requestId)
     }
 
     const customer = await prisma.$transaction(async (tx) => {
@@ -214,13 +218,14 @@ export async function POST(request: NextRequest) {
       return created
     })
 
-    return NextResponse.json({ customerId: customer.id, existing: false })
+    return withRequestId(NextResponse.json({ customerId: customer.id, existing: false }), requestId)
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }
 
 export async function GET(request: NextRequest) {
+  const requestId = requestIdFrom(request)
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get("id")
@@ -244,7 +249,7 @@ export async function GET(request: NextRequest) {
         throw new NotFoundError("Customer not found")
       }
 
-      return NextResponse.json({ customer: withCurrentCycleMilestoneClaims(customer) })
+      return withRequestId(NextResponse.json({ customer: withCurrentCycleMilestoneClaims(customer) }), requestId)
     }
 
     if (email) {
@@ -263,14 +268,13 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: "desc" },
       })
 
-      if (customers.length === 0) throw new NotFoundError("Customer not found")
-      return NextResponse.json({
+      return withRequestId(NextResponse.json({
         customers: customers.map(withCurrentCycleMilestoneClaims),
-      })
+      }), requestId)
     }
 
     throw new ValidationError("Provide either ?id= or ?email=")
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }
