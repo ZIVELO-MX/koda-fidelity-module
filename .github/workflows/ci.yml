@@ -135,6 +135,8 @@ jobs:
       E2E_REQUIRED_PASSWORD: ci-required-password-2
       E2E_PORTAL_EMAIL: fidelity.seed.portal@dev.invalid
       E2E_PORTAL_PASSWORD: ci-portal-password-2
+      E2E_CUSTOMER_EMAIL: fidelity.seed.customer@dev.invalid
+      E2E_CUSTOMER_PASSWORD: ci-customer-password-2
       MAILPIT_URL: http://127.0.0.1:55434
       ALLOW_DESTRUCTIVE_SEED: "true"
     steps:

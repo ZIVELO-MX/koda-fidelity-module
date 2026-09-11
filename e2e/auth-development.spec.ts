@@ -6,8 +6,7 @@ const SELLADOR_EMAIL = process.env.E2E_SELLADOR_EMAIL ?? "fidelity.seed.sellador
 const SELLADOR_PASSWORD = process.env.E2E_SELLADOR_PASSWORD ?? "ci-sellador-password"
 const REQUIRED_EMAIL = process.env.E2E_REQUIRED_EMAIL ?? "fidelity.seed.required@dev.invalid"
 const REQUIRED_PASSWORD = process.env.E2E_REQUIRED_PASSWORD ?? "ci-required-password"
-const PORTAL_EMAIL = process.env.E2E_PORTAL_EMAIL ?? "fidelity.seed.portal@dev.invalid"
-const PORTAL_PASSWORD = process.env.E2E_PORTAL_PASSWORD ?? "ci-portal-password"
+const CUSTOMER_EMAIL = process.env.E2E_CUSTOMER_EMAIL ?? "fidelity.seed.customer@dev.invalid"
 const MAILPIT_URL = process.env.MAILPIT_URL ?? "http://127.0.0.1:54324"
 
 async function login(page: Page, email: string, password: string) {
@@ -49,6 +48,26 @@ async function waitForRecoveryLink(request: APIRequestContext, email: string) {
     await new Promise(resolve => setTimeout(resolve, 250))
   }
   throw new Error("Timed out waiting for the recovery email in Mailpit")
+}
+
+async function waitForMagicLink(request: APIRequestContext, email: string) {
+  const deadline = Date.now() + 15000
+  while (Date.now() < deadline) {
+    const search = await request.get(`${MAILPIT_URL}/api/v1/search`, { params: { query: `to:${email}`, limit: "20" } })
+    expect(search.ok()).toBeTruthy()
+    const result = await search.json() as { messages?: Array<{ ID: string }> }
+    for (const message of result.messages ?? []) {
+      const full = await request.get(`${MAILPIT_URL}/api/v1/message/${message.ID}`)
+      expect(full.ok()).toBeTruthy()
+      const body = await full.json() as { Text?: string; HTML?: string }
+      const content = `${body.Text ?? ""}\n${body.HTML ?? ""}`
+      const link = (content.match(/https?:\/\/[^\s"'<>]+/g) ?? [])
+        .find(candidate => candidate.includes("/auth/v1/verify") && candidate.includes("type=magiclink"))
+      if (link) return link.replaceAll("&amp;", "&")
+    }
+    await new Promise(resolve => setTimeout(resolve, 250))
+  }
+  throw new Error("Timed out waiting for the magic link in Mailpit")
 }
 
 async function apiJson(page: Page, url: string, init: RequestInit) {
@@ -150,9 +169,16 @@ test.describe("FID-0016 development authentication", () => {
     await page.waitForURL("**/auth/error**", { timeout: 15000 })
   })
 
-  test("returns an empty customer collection for an authenticated portal user without cards", async ({ page }) => {
-    await login(page, PORTAL_EMAIL, PORTAL_PASSWORD)
-    const response = await apiJson(page, `/api/join?email=${encodeURIComponent(PORTAL_EMAIL)}`, { method: "GET" })
+  test("auth-only customer reaches the portal with no cards or business", async ({ page, request }) => {
+    await page.goto("/dashboard/my-cards")
+    await page.getByLabel("Correo Electrónico").fill(CUSTOMER_EMAIL)
+    await page.getByRole("button", { name: "Enviar enlace mágico" }).click()
+    await expect(page.getByText(`Te enviamos un enlace mágico a ${CUSTOMER_EMAIL}.`)).toBeVisible()
+    const magicLink = await waitForMagicLink(request, CUSTOMER_EMAIL)
+    await page.goto(magicLink)
+    await page.waitForURL("**/dashboard/my-cards", { timeout: 15000 })
+    await expect(page.getByText("No tienes tarjetas de lealtad")).toBeVisible({ timeout: 15000 })
+    const response = await apiJson(page, `/api/join?email=${encodeURIComponent(CUSTOMER_EMAIL)}`, { method: "GET" })
     expect(response.status).toBe(200)
     expect(response.body).toEqual({ customers: [] })
   })
