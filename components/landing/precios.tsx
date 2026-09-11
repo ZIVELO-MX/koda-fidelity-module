@@ -5,6 +5,7 @@ import { useState } from "react"
 import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { cuentaDelAnual } from "@/lib/precios"
 
 type Modalidad = "anual" | "mensual"
 
@@ -110,6 +111,7 @@ export function Precios() {
           // Los dos planes se veían idénticos, así que la sección no decía cuál
           // es cuál. El de arriba manda, como en el diseño aprobado.
           const destacado = Boolean(plan.insignia)
+          const cuenta = cuentaDelAnual(plan.mensual, plan.anual)
           return (
             <div
               key={plan.id}
@@ -140,11 +142,28 @@ export function Precios() {
                   MXN {periodo}
                 </span>
               </p>
-              <p className={cn("mt-1 text-xs", destacado ? "text-[#FAFAF7]/70" : "text-muted-foreground")}>
-                {modalidad === "anual"
-                  ? `Equivale a $${PESOS.format(plan.mensual)} MXN al mes.`
-                  : "Sin permanencia."}
-              </p>
+              {modalidad === "anual" ? (
+                <>
+                  <p className={cn("mt-2 text-sm font-medium", destacado ? "text-white" : "text-foreground")}>
+                    Te sale en ${PESOS.format(cuenta.porMes)} al mes.
+                  </p>
+                  <p className={cn("mt-1 text-sm", destacado ? "text-[#FAFAF7]/75" : "text-muted-foreground")}>
+                    Mes a mes serían{" "}
+                    <s className={destacado ? "text-[#FAFAF7]/55" : "text-muted-foreground/70"}>
+                      ${PESOS.format(cuenta.doceMeses)}
+                    </s>
+                    , o sea ${PESOS.format(plan.mensual)} al mes. Ahorras ${PESOS.format(cuenta.ahorro)}.
+                  </p>
+                </>
+              ) : (
+                <p className={cn("mt-2 text-sm", destacado ? "text-[#FAFAF7]/75" : "text-muted-foreground")}>
+                  Sin permanencia. Pagando por año baja a{" "}
+                  <span className={cn("font-semibold", destacado ? "text-white" : "text-foreground")}>
+                    ${PESOS.format(cuenta.porMes)} al mes
+                  </span>
+                  .
+                </p>
+              )}
 
               <ul className="mt-7 space-y-3">
                 {plan.incluye.map((linea) => (

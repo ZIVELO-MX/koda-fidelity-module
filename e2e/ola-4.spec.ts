@@ -107,13 +107,23 @@ test.describe("ola 4, landing pública", () => {
   test.describe("lo que dice la página", () => {
     test.use({ viewport: { width: 1440, height: 900 } })
 
-    test("publica los precios confirmados", async ({ page }) => {
+    test("publica los precios confirmados, y el descuento del anual es real", async ({ page }) => {
       await page.goto("/")
       const precios = page.locator("#pricing")
-      await expect(precios).toContainText("149")
-      await expect(precios).toContainText("299")
+
+      // El anual viene preseleccionado.
       await expect(precios).toContainText("1,490")
       await expect(precios).toContainText("2,990")
+      // El tachado tiene que ser el año pagando mes a mes, no un precio
+      // inventado: 149 x 12 y 299 x 12.
+      await expect(precios.locator("s")).toHaveText(["$1,788", "$3,588"])
+      await expect(precios).toContainText("Ahorras $298")
+      await expect(precios).toContainText("Ahorras $598")
+
+      await page.getByRole("radio", { name: /Al mes/ }).click()
+      await expect(precios).toContainText("$149")
+      await expect(precios).toContainText("$299")
+      await expect(precios.locator("s")).toHaveCount(0)
     })
 
     test("no promete lo que el producto no ofrece", async ({ page }) => {
