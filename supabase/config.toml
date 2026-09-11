@@ -47,6 +47,10 @@ enable_signup = true
 enable_confirmations = false
 secure_password_change = false
 max_frequency = "1s"
+otp_expiry = 3600
+
+[auth.email.template.recovery]
+content_path = "./supabase/templates/recovery.html"
 
 [auth.rate_limit]
 email_sent = 30

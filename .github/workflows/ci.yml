@@ -133,6 +133,8 @@ jobs:
       E2E_SELLADOR_PASSWORD: ci-sellador-password-2
       E2E_REQUIRED_EMAIL: fidelity.seed.required@dev.invalid
       E2E_REQUIRED_PASSWORD: ci-required-password-2
+      E2E_PORTAL_EMAIL: fidelity.seed.portal@dev.invalid
+      E2E_PORTAL_PASSWORD: ci-portal-password-2
       MAILPIT_URL: http://127.0.0.1:55434
       ALLOW_DESTRUCTIVE_SEED: "true"
     steps:

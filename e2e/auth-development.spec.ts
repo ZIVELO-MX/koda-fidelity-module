@@ -6,6 +6,8 @@ const SELLADOR_EMAIL = process.env.E2E_SELLADOR_EMAIL ?? "fidelity.seed.sellador
 const SELLADOR_PASSWORD = process.env.E2E_SELLADOR_PASSWORD ?? "ci-sellador-password"
 const REQUIRED_EMAIL = process.env.E2E_REQUIRED_EMAIL ?? "fidelity.seed.required@dev.invalid"
 const REQUIRED_PASSWORD = process.env.E2E_REQUIRED_PASSWORD ?? "ci-required-password"
+const PORTAL_EMAIL = process.env.E2E_PORTAL_EMAIL ?? "fidelity.seed.portal@dev.invalid"
+const PORTAL_PASSWORD = process.env.E2E_PORTAL_PASSWORD ?? "ci-portal-password"
 const MAILPIT_URL = process.env.MAILPIT_URL ?? "http://127.0.0.1:54324"
 
 async function login(page: Page, email: string, password: string) {
@@ -41,7 +43,7 @@ async function waitForRecoveryLink(request: APIRequestContext, email: string) {
       const body = await full.json() as { Text?: string; HTML?: string }
       const content = `${body.Text ?? ""}\n${body.HTML ?? ""}`
       const links = content.match(/https?:\/\/[^\s"'<>]+/g) ?? []
-      const link = links.find(candidate => candidate.includes("/auth/v1/verify")) ?? links[0]
+      const link = links.find(candidate => candidate.includes("/auth/confirm?") && candidate.includes("token_hash=") && candidate.includes("type=recovery"))
       if (link) return link.replaceAll("&amp;", "&")
     }
     await new Promise(resolve => setTimeout(resolve, 250))
@@ -149,8 +151,8 @@ test.describe("FID-0016 development authentication", () => {
   })
 
   test("returns an empty customer collection for an authenticated portal user without cards", async ({ page }) => {
-    await login(page, ADMIN_EMAIL, "ci-recovered-password-2")
-    const response = await apiJson(page, `/api/join?email=${encodeURIComponent(ADMIN_EMAIL)}`, { method: "GET" })
+    await login(page, PORTAL_EMAIL, PORTAL_PASSWORD)
+    const response = await apiJson(page, `/api/join?email=${encodeURIComponent(PORTAL_EMAIL)}`, { method: "GET" })
     expect(response.status).toBe(200)
     expect(response.body).toEqual({ customers: [] })
   })

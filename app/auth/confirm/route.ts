@@ -1,23 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createSupabaseReqResClient } from "@/lib/supabase-req-res"
-
-const AUTH_TYPES = new Set(["magiclink", "signup", "invite", "recovery", "email_change", "email"])
-
-export function resolveAuthRedirect(type: string, requested: string | null, origin: string) {
-  const fallback = type === "recovery" ? "/dashboard/update-password" : "/dashboard/my-cards"
-  if (type === "recovery") return new URL(fallback, origin)
-  if (!requested) return new URL(fallback, origin)
-
-  try {
-    const candidate = new URL(requested, origin)
-    if (candidate.origin !== origin || !candidate.pathname.startsWith("/") || candidate.pathname.startsWith("//")) {
-      return new URL(fallback, origin)
-    }
-    return candidate
-  } catch {
-    return new URL(fallback, origin)
-  }
-}
+import { isSupportedAuthType, resolveAuthRedirect } from "@/lib/auth-redirect"
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -31,7 +14,7 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  if (!AUTH_TYPES.has(type)) {
+  if (!isSupportedAuthType(type)) {
     return NextResponse.redirect(
       new URL("/auth/error?error_code=invalid_type", request.url),
     )

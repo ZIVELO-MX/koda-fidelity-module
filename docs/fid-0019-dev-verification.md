@@ -1,7 +1,7 @@
 # Verificación de FID-0019 en development
 
-Esta comprobación requiere acceso al proyecto Supabase de development y a su buzón SMTP. No se
-deben copiar tokens, enlaces completos ni contraseñas en tickets, commits o evidencias.
+La evidencia automatizada se ejecuta en CI con Supabase local y Mailpit. No se deben copiar tokens,
+enlaces completos ni contraseñas en tickets, commits o evidencias.
 
 ## Recuperación
 
@@ -12,9 +12,9 @@ deben copiar tokens, enlaces completos ni contraseñas en tickets, commits o evi
 5. Abre de nuevo el mismo enlace: debe terminar en `/auth/error`.
 6. Solicita un enlace inválido o vencido: debe terminar en `/auth/error` sin cambiar la sesión.
 
-Registra únicamente fecha, entorno, asunto/remitente y los destinos observados. La vigencia del
-enlace se toma de la configuración efectiva de Supabase Auth (`GOTRUE_MAILER_OTP_EXP`); el template
-no fija una duración propia.
+Registra únicamente fecha, entorno, asunto/remitente y los destinos observados. En CI la vigencia
+está fijada en `supabase/config.toml` (`auth.email.otp_expiry = 3600`, una hora); el template local
+`supabase/templates/recovery.html` no puede ampliar esa vigencia.
 
 ## Portal sin tarjetas
 
@@ -30,5 +30,5 @@ debe responder con el error de autorización correspondiente.
 ## Evidencia
 
 Adjunta a FID-0019 el entorno, fecha, commit de la aplicación y resultado de cada paso. La suite
-aislada de CI ya cubre recuperación, reutilización del enlace y colección vacía; esta ejecución
-confirma que la configuración SMTP compartida coincide con ella.
+aislada de CI cubre recuperación, reutilización del enlace, tipo inválido y colección vacía. El
+test de contrato comprueba que el TTL y el template configurados siguen presentes.

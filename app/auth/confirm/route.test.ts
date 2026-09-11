@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { resolveAuthRedirect } from "./route"
+import { resolveAuthRedirect } from "@/lib/auth-redirect"
 
 describe("auth confirmation redirects", () => {
   const origin = "http://localhost:3000"
