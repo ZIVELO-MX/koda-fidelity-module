@@ -12,6 +12,8 @@ import { MarqueeBand } from "@/components/marquee-band"
 import { Precios } from "@/components/landing/precios"
 import { ComparacionPapel } from "@/components/landing/comparacion-papel"
 import { Testimonios } from "@/components/landing/testimonios"
+import { Preguntas } from "@/components/landing/preguntas"
+import { SolicitarDemo } from "@/components/landing/solicitar-demo"
 import { siteConfig } from "@/lib/site-config"
 
 export const metadata: Metadata = {
@@ -98,6 +100,9 @@ export default async function LandingPage({
               </SmoothNavLink>
               <SmoothNavLink href="#pricing" className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Precios
+              </SmoothNavLink>
+              <SmoothNavLink href="#faq" className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:text-foreground transition-colors">
+                FAQ
               </SmoothNavLink>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
@@ -317,6 +322,23 @@ export default async function LandingPage({
             </div>
             <Precios />
           </div>
+        </div>
+      </section>
+
+      {/* Preguntas frecuentes */}
+      <section id="faq" className="scroll-mt-16 py-20 lg:py-28 bg-muted/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="mb-12 text-center text-3xl sm:text-4xl font-bold text-foreground">
+            Preguntas frecuentes
+          </h2>
+          <Preguntas />
+        </div>
+      </section>
+
+      {/* Solicitud de demo */}
+      <section className="py-20 lg:py-28">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+          <SolicitarDemo />
         </div>
       </section>
 

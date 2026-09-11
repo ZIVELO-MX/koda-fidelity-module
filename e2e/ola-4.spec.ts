@@ -155,6 +155,34 @@ test.describe("ola 4, landing pública", () => {
       await expect(page.getByRole("link", { name: "Ir al inicio" })).toBeVisible()
     })
 
+    test("las preguntas abren sin JavaScript y la primera ya está abierta", async ({ page }) => {
+      await page.goto("/")
+      const preguntas = page.locator("#faq details")
+      await expect(preguntas.first()).toHaveAttribute("open", "")
+      // Acordeón nativo: si alguien lo cambia por una librería, esto avisa.
+      expect(await preguntas.count()).toBeGreaterThan(3)
+    })
+
+    test("cada campo del formulario lleva su etiqueta a la vista", async ({ page }) => {
+      await page.goto("/")
+      for (const etiqueta of ["Nombre", "Negocio", "Giro", "Sucursales", "Contacto"]) {
+        // getByLabel exige una etiqueta de verdad, no un placeholder.
+        await expect(page.getByLabel(etiqueta, { exact: true })).toBeVisible()
+      }
+    })
+
+    test("el contacto se valida al salir del campo", async ({ page }) => {
+      await page.goto("/")
+      const contacto = page.getByLabel("Contacto", { exact: true })
+      await contacto.fill("esto no es un contacto")
+      await contacto.blur()
+      await expect(contacto).toHaveAttribute("aria-invalid", "true")
+
+      await contacto.fill("5512345678")
+      await contacto.blur()
+      await expect(contacto).toHaveAttribute("aria-invalid", "false")
+    })
+
     test("los pasos no se numeran, el verbo ya los nombra", async ({ page }) => {
       await page.goto("/")
       const comoFunciona = page.locator("#how-it-works")

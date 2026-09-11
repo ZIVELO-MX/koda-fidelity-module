@@ -16,6 +16,7 @@ const links = [
   { href: "#features", label: "Funciones" },
   { href: "#how-it-works", label: "Cómo Funciona" },
   { href: "#pricing", label: "Precios" },
+  { href: "#faq", label: "FAQ" },
 ]
 
 function smoothScroll(href: string) {
