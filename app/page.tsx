@@ -191,7 +191,7 @@ export default async function LandingPage({
           Sustituyen a la franja de sellos, a la rejilla de funciones y a la de
           casos de uso, que decían lo mismo tres veces seguidas en tres rejillas
           iguales. */}
-      <section id="claves" className="scroll-mt-16 border-b border-border bg-card py-16">
+      <section id="claves" className="scroll-mt-16 border-b border-border bg-card py-20 lg:py-24">
         <div className="mx-auto grid max-w-5xl gap-10 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
           {[
             { icono: Palette, titulo: "Tu marca", texto: "Color, logo y premio a tu gusto" },
@@ -211,7 +211,7 @@ export default async function LandingPage({
       {/* Diseños por giro. El marquee que se conserva, porque aquí el
           movimiento enseña el producto en vez de decorar. */}
       <section id="disenos" className="scroll-mt-16 py-20 lg:py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
           <Encabezado
             icono={CreditCard}
             etiqueta="Tarjetas de lealtad"
@@ -224,7 +224,7 @@ export default async function LandingPage({
       </section>
 
       <section id="how-it-works" className="scroll-mt-16 border-y border-border bg-card py-20 lg:py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
           <Encabezado
             icono={Workflow}
             etiqueta="Cómo funciona"
@@ -272,8 +272,8 @@ export default async function LandingPage({
 
       {/* Pricing */}
       <section id="pricing" className="scroll-mt-16 border-y border-border bg-card py-20 lg:py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-4xl">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <div>
             <Encabezado icono={Tag} etiqueta="Precios" bajada={siteConfig.pricing.description}>
               Precios claros para <Acento>negocios locales</Acento>
             </Encabezado>

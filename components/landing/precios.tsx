@@ -14,7 +14,15 @@ type Modalidad = "anual" | "mensual"
  * decía "Precios por definir" y "se publicará próximamente", que es prometer sin
  * respaldo, justo lo que esta ola quita de la página.
  */
-const PLANES = [
+const PLANES: {
+  id: string
+  nombre: string
+  resumen: string
+  insignia?: string
+  mensual: number
+  anual: number
+  incluye: string[]
+}[] = [
   {
     id: "lite",
     nombre: "Lite",
@@ -32,6 +40,9 @@ const PLANES = [
     id: "pro",
     nombre: "Pro",
     resumen: "Para varias tarjetas o sucursales",
+    // "Todo incluido" es un hecho: lleva lo de Lite y lo demás. "Más popular"
+    // sería inventarse un dato que no tenemos.
+    insignia: "Todo incluido",
     mensual: 299,
     anual: 2990,
     incluye: [
@@ -70,57 +81,82 @@ export function Precios() {
               aria-checked={modalidad === opcion.valor}
               onClick={() => setModalidad(opcion.valor)}
               className={cn(
-                "min-h-10 rounded-full px-5 text-sm font-medium transition-colors",
+                "inline-flex min-h-10 items-center gap-2 rounded-full px-5 text-sm font-medium transition-colors",
                 modalidad === opcion.valor
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
               {opcion.etiqueta}
+              {opcion.valor === "anual" && (
+                <span
+                  className={cn(
+                    "rounded-full px-2 py-0.5 text-xs font-bold",
+                    modalidad === "anual" ? "bg-white/20" : "bg-primary/15 text-primary",
+                  )}
+                >
+                  2 meses gratis
+                </span>
+              )}
             </button>
           ))}
         </div>
       </div>
 
-      {modalidad === "anual" && (
-        <p className="text-center text-sm font-medium text-primary">
-          Pagas diez meses y recibes doce. Dos meses gratis.
-        </p>
-      )}
-
       <div className="grid gap-6 sm:grid-cols-2">
         {PLANES.map((plan) => {
           const importe = modalidad === "anual" ? plan.anual : plan.mensual
           const periodo = modalidad === "anual" ? "al año" : "al mes"
+          // Los dos planes se veían idénticos, así que la sección no decía cuál
+          // es cuál. El de arriba manda, como en el diseño aprobado.
+          const destacado = Boolean(plan.insignia)
           return (
             <div
               key={plan.id}
-              className="flex flex-col rounded-3xl border border-border bg-card p-6 text-left sm:p-8"
+              className={cn(
+                "relative flex flex-col rounded-3xl p-6 text-left sm:p-8",
+                destacado
+                  ? "bg-[#17130f] text-[#FAFAF7] shadow-[0_30px_60px_-24px_rgba(30,15,0,.6)]"
+                  : "border border-border bg-card",
+              )}
             >
-              <h3 className="text-xl font-semibold text-foreground">{plan.nombre}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{plan.resumen}</p>
+              {plan.insignia && (
+                <span className="absolute -top-3 left-8 rounded-full bg-primary px-3.5 py-1 text-xs font-bold text-primary-foreground">
+                  {plan.insignia}
+                </span>
+              )}
+              <h3 className={cn("text-xl font-semibold", destacado ? "text-white" : "text-foreground")}>
+                {plan.nombre}
+              </h3>
+              <p className={cn("mt-1 text-sm", destacado ? "text-[#FAFAF7]/70" : "text-muted-foreground")}>
+                {plan.resumen}
+              </p>
 
               <p className="mt-6 flex items-baseline gap-1.5">
-                <span className="text-4xl font-bold tracking-tight text-foreground">
+                <span className={cn("text-4xl font-bold tracking-tight", destacado ? "text-white" : "text-foreground")}>
                   ${PESOS.format(importe)}
                 </span>
-                <span className="text-sm text-muted-foreground">MXN {periodo}</span>
+                <span className={cn("text-sm", destacado ? "text-[#FAFAF7]/70" : "text-muted-foreground")}>
+                  MXN {periodo}
+                </span>
               </p>
-              {modalidad === "anual" && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Equivale a ${PESOS.format(plan.mensual)} MXN al mes.
-                </p>
-              )}
+              <p className={cn("mt-1 text-xs", destacado ? "text-[#FAFAF7]/70" : "text-muted-foreground")}>
+                {modalidad === "anual"
+                  ? `Equivale a $${PESOS.format(plan.mensual)} MXN al mes.`
+                  : "Sin permanencia."}
+              </p>
 
-              <ul className="mt-6 space-y-2.5">
+              <ul className="mt-7 space-y-3">
                 {plan.incluye.map((linea) => (
-                  <li key={linea} className="flex items-start gap-2 text-sm text-foreground/80">
+                  <li
+                    key={linea}
+                    className={cn("flex items-start gap-2.5 text-sm", destacado ? "text-[#FAFAF7]/90" : "text-foreground/80")}
+                  >
                     <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
                     {linea}
                   </li>
                 ))}
               </ul>
-
             </div>
           )
         })}

@@ -40,19 +40,19 @@ export const siteConfig = {
   howItWorks: [
     {
       icon: "QrCode",
-      title: "Crea tu Tarjeta",
+      title: "Crea tu tarjeta",
       description:
         "Diseña una tarjeta de lealtad con tus colores y logo. Define tu recompensa y la cantidad de sellos.",
     },
     {
       icon: "Smartphone",
-      title: "Clientes Reciben su Tarjeta",
+      title: "Tu cliente la recibe",
       description:
         "Escanean el QR y reciben un enlace seguro por correo electrónico para acceder a su tarjeta digital.",
     },
     {
       icon: "Wallet",
-      title: "Recompensa la Lealtad",
+      title: "Sella y recompensa",
       description:
         "Escanea las tarjetas de clientes para agregar sellos. Cuando alcanzan la meta, canjean su recompensa.",
     },
