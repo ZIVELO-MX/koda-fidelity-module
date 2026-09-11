@@ -2,7 +2,7 @@ import {
   Beef, Cake, Citrus, Coffee, Cookie, Croissant, CupSoda, Dumbbell, Flame, Gift,
   IceCreamCone, Leaf, Pizza, Scissors,
 } from "lucide-react"
-import { PatronDeIconos } from "./patron-de-iconos"
+import { PatronDeIconos } from "@/components/patron-de-iconos"
 
 /**
  * Los diseños por giro, del diseño aprobado.

@@ -4,10 +4,10 @@ import { redirect } from "next/navigation"
 import type { Metadata } from "next"
 import { Button } from "@/components/ui/button"
 import {
-  ArrowRight, Smartphone, QrCode, Wallet, CheckCircle2, Check, Zap, Shield, BarChart3,
+  Smartphone, QrCode, Wallet, CheckCircle2, Check, Zap, Shield, BarChart3,
   Palette, LineChart, CreditCard, Workflow, Repeat, Tag, CircleQuestionMark,
 } from "lucide-react"
-import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
+import { TarjetaDelHero } from "@/components/landing/tarjeta-del-hero"
 import { LandingMobileNav } from "@/components/landing-mobile-nav"
 import { SmoothNavLink } from "@/components/smooth-nav-link"
 import { MarqueeBand } from "@/components/marquee-band"
@@ -154,10 +154,9 @@ export default async function LandingPage({
                 {siteConfig.hero.subtitle}
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button asChild size="lg" className="min-h-11 group w-full sm:w-auto text-base px-8 active:scale-[0.97] transition-transform">
+                <Button asChild size="lg" className="min-h-11 w-full sm:w-auto text-base px-8 active:scale-[0.97] transition-transform">
                   <Link href="/signup">
                     Empieza por solo $149 al mes
-                    <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-150 group-hover:translate-x-1" />
                   </Link>
                 </Button>
                 <Button asChild size="lg" variant="outline" className="min-h-11 w-full border-white/20 bg-white/5 text-white hover:bg-white/15 hover:text-white sm:w-auto text-base px-8 active:scale-[0.97] transition-transform">
@@ -170,15 +169,7 @@ export default async function LandingPage({
             <div className="relative lg:pl-8">
               <div className="relative">
                 <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 to-primary/5 rounded-[40px] blur-2xl pointer-events-none" />
-                <LoyaltyCardPreview
-                  businessName={siteConfig.hero.demoCard.businessName}
-                  currentStamps={siteConfig.hero.demoCard.currentStamps}
-                  maxStamps={siteConfig.hero.demoCard.maxStamps}
-                  reward={siteConfig.hero.demoCard.reward}
-                  expirationDate="31 dic 2026"
-                  brandColor={siteConfig.hero.demoCard.brandColor}
-                  className="relative"
-                />
+<TarjetaDelHero />
               </div>
             </div>
           </div>
@@ -370,10 +361,9 @@ export default async function LandingPage({
               solo lugar.
             </p>
           </div>
-          <Button asChild size="lg" className="min-h-11 group px-8">
+          <Button asChild size="lg" className="min-h-11 px-8">
             <Link href="/my-cards">
               Ir a mis tarjetas
-              <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-150 group-hover:translate-x-1" />
             </Link>
           </Button>
         </div>

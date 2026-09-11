@@ -114,7 +114,7 @@ export function Precios() {
             <div
               key={plan.id}
               className={cn(
-                "relative flex flex-col rounded-3xl p-6 text-left sm:p-8",
+                "relative flex flex-col rounded-2xl p-6 text-left sm:p-8",
                 destacado
                   ? "bg-[#17130f] text-[#FAFAF7] shadow-[0_30px_60px_-24px_rgba(30,15,0,.6)]"
                   : "border border-border bg-card",

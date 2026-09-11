@@ -32,7 +32,7 @@ const FILAS = [
 export function ComparacionPapel() {
   return (
     <div className="grid gap-6 md:grid-cols-2">
-      <div className="rounded-3xl border border-border bg-card p-6 sm:p-8">
+      <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
         <h3 className="text-lg font-semibold text-foreground">Tarjeta de papel</h3>
         <ul className="mt-6 space-y-4">
           {FILAS.map((fila) => (
@@ -47,7 +47,7 @@ export function ComparacionPapel() {
         </ul>
       </div>
 
-      <div className="rounded-3xl bg-[#1C1B17] p-6 text-[#FAFAF7] sm:p-8">
+      <div className="rounded-2xl bg-[#1C1B17] p-6 text-[#FAFAF7] sm:p-8">
         <h3 className="text-lg font-semibold">Koda Fidelity</h3>
         <ul className="mt-6 space-y-4">
           {FILAS.map((fila) => (

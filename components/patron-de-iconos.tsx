@@ -3,9 +3,9 @@ import type { LucideIcon } from "lucide-react"
 /**
  * El patrón de íconos que convierte un degradado en un tema.
  *
- * Sin él las tarjetas del carrusel se ven como colores sólidos, que es
- * justo lo que el diseño aprobado evita: el patrón es lo que hace que una
- * cafetería se vea de cafetería.
+ * Sin él una tarjeta se ve como un color sólido: el patrón es lo que hace que
+ * una cafetería se vea de cafetería. Lo usan el carrusel de la landing y la
+ * tarjeta del producto, para que enseñen lo mismo.
  *
  * Se repite en mosaicos de 150px con seis íconos por mosaico, en las
  * posiciones, tamaños y giros del diseño. El grosor del trazo se corrige por
