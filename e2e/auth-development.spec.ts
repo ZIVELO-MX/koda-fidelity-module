@@ -11,6 +11,7 @@ const CUSTOMER_EMAIL = process.env.E2E_CUSTOMER_EMAIL ?? "fidelity.seed.customer
 const EXPIRED_EMAIL = process.env.E2E_EXPIRED_EMAIL ?? "fidelity.seed.expired@dev.invalid"
 const EXPIRED_PASSWORD = process.env.E2E_EXPIRED_PASSWORD ?? "ci-expired-password"
 const MAILPIT_URL = process.env.MAILPIT_URL ?? "http://127.0.0.1:54324"
+const LOCAL_E2E_FLAG = "true"
 
 async function login(page: Page, email: string, password: string) {
   await page.goto("/login")
@@ -83,6 +84,16 @@ async function waitForMagicLink(request: APIRequestContext, email: string, previ
 }
 
 async function ageRecoveryToken(email: string) {
+  if (process.env.FID_0019_LOCAL_E2E !== LOCAL_E2E_FLAG) {
+    throw new Error("Refusing to age a recovery token without FID_0019_LOCAL_E2E=true")
+  }
+  const databaseUrl = new URL(process.env.DATABASE_URL ?? "")
+  const supabaseUrl = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "")
+  const loopbackHosts = new Set(["127.0.0.1", "localhost", "::1"])
+  if (!loopbackHosts.has(databaseUrl.hostname) || !loopbackHosts.has(supabaseUrl.hostname)) {
+    throw new Error("Refusing to age a recovery token outside loopback Supabase/Postgres")
+  }
+  if (email !== EXPIRED_EMAIL) throw new Error("Recovery expiry fixture email does not match the dedicated E2E account")
   const prisma = new PrismaClient()
   try {
     const affected = await prisma.$executeRaw`UPDATE auth.users SET recovery_sent_at = now() - interval '2 hours' WHERE email = ${email} AND recovery_token <> ''`

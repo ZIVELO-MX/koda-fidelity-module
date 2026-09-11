@@ -139,6 +139,7 @@ jobs:
       E2E_CUSTOMER_PASSWORD: ci-customer-password-2
       E2E_EXPIRED_EMAIL: fidelity.seed.expired@dev.invalid
       E2E_EXPIRED_PASSWORD: ci-expired-password-2
+      FID_0019_LOCAL_E2E: "true"
       MAILPIT_URL: http://127.0.0.1:55434
       ALLOW_DESTRUCTIVE_SEED: "true"
     steps:
