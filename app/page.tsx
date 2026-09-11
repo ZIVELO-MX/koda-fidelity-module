@@ -351,7 +351,7 @@ export default async function LandingPage({
           juntos a la derecha. Sueltos por todo el ancho dejaban un hueco en el
           que no había nada que mirar. */}
       <footer
-        className="relative overflow-hidden px-4 py-16 sm:px-6 lg:px-8"
+        className="relative overflow-hidden px-4 pt-24 pb-16 sm:px-6 lg:px-8"
         style={{ background: "radial-gradient(120% 140% at 12% 0%, #241d16 0%, #17130f 55%, #0e0b08 100%)" }}
       >
         <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 right-0 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
