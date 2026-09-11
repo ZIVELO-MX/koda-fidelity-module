@@ -20,7 +20,8 @@ Actualizar cuando se tengan los valores reales de producción.
 | Tipo de usuario | Ruta |
 |----------------|------|
 | Administradores (dashboard) | `/dashboard` |
-| Clientes (tarjetas) | `/my-cards` |
+| Clientes (tarjetas) | `/dashboard/my-cards` |
+| Recuperación de contraseña | `/dashboard/update-password` |
 
 ## Templates de Supabase
 
@@ -51,6 +52,10 @@ Se editan en: **Supabase Dashboard → Authentication → Email Templates**
 | SMTP Provider | (default Supabase) |
 | Remitente | `noreply@app.mgzledffujjnunawgymc.supabase.co` |
 | | |
+
+La vigencia del enlace de recuperación la controla Supabase Auth. En el entorno local de CI está
+fijada en `auth.email.otp_expiry = 3600` (una hora); el enlace es de un solo uso y
+`/auth/confirm` rechaza tipos no soportados y destinos externos.
 
 > Nota: Para usar un remitente personalizado (ej. `noreply@koda.app`),
 > configurar SMTP custom en Supabase Dashboard → Authentication → Settings.

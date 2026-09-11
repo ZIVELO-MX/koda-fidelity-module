@@ -60,4 +60,9 @@ test.describe("Auth Error Handling", () => {
     await page.goto("/auth/confirm?type=magiclink")
     await page.waitForURL("**/auth/error?error_code=missing_params")
   })
+
+  test("auth/confirm rejects unsupported token types before verification", async ({ page }) => {
+    await page.goto("/auth/confirm?token_hash=fake&type=unsupported")
+    await page.waitForURL("**/auth/error?error_code=invalid_type")
+  })
 })
