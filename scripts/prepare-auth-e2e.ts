@@ -9,6 +9,8 @@ const portalEmail = process.env.E2E_PORTAL_EMAIL ?? "fidelity.seed.portal@dev.in
 const portalPassword = process.env.E2E_PORTAL_PASSWORD ?? "ci-portal-password"
 const customerEmail = process.env.E2E_CUSTOMER_EMAIL ?? "fidelity.seed.customer@dev.invalid"
 const customerPassword = process.env.E2E_CUSTOMER_PASSWORD ?? "ci-customer-password"
+const expiredEmail = process.env.E2E_EXPIRED_EMAIL ?? "fidelity.seed.expired@dev.invalid"
+const expiredPassword = process.env.E2E_EXPIRED_PASSWORD ?? "ci-expired-password"
 const businessId = "biz-fidelity-auth-roles"
 
 async function main() {
@@ -66,6 +68,16 @@ async function main() {
     : await admin.createUser({ email: customerEmail, password: customerPassword, email_confirm: true, user_metadata: { name: "Fidelity Customer Fixture", must_change_password: false } })
   if (customerResult.error) throw new Error(`Unable to prepare customer fixture: ${customerResult.error.message}`)
   console.log(`Prepared auth-only customer fixture: ${customerEmail}`)
+
+  if (expiredPassword.length < 8) throw new Error("E2E_EXPIRED_PASSWORD must be at least 8 characters")
+  const expiredListed = await admin.listUsers({ page: 1, perPage: 100 })
+  if (expiredListed.error) throw new Error(`Unable to list expired fixture: ${expiredListed.error.message}`)
+  const expiredExisting = expiredListed.data.users.find(user => user.email?.toLowerCase() === expiredEmail.toLowerCase())
+  const expiredResult = expiredExisting
+    ? await admin.updateUserById(expiredExisting.id, { password: expiredPassword, email_confirm: true, user_metadata: { name: "Fidelity Expired Recovery Fixture", must_change_password: false } })
+    : await admin.createUser({ email: expiredEmail, password: expiredPassword, email_confirm: true, user_metadata: { name: "Fidelity Expired Recovery Fixture", must_change_password: false } })
+  if (expiredResult.error) throw new Error(`Unable to prepare expired fixture: ${expiredResult.error.message}`)
+  console.log(`Prepared expired-recovery fixture: ${expiredEmail}`)
 }
 
 main()

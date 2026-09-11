@@ -1,4 +1,5 @@
 import { test, expect, type Page, type APIRequestContext } from "@playwright/test"
+import { PrismaClient } from "@prisma/client"
 
 const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL ?? "fidelity.seed.admin@dev.invalid"
 const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? "ci-admin-password"
@@ -7,6 +8,8 @@ const SELLADOR_PASSWORD = process.env.E2E_SELLADOR_PASSWORD ?? "ci-sellador-pass
 const REQUIRED_EMAIL = process.env.E2E_REQUIRED_EMAIL ?? "fidelity.seed.required@dev.invalid"
 const REQUIRED_PASSWORD = process.env.E2E_REQUIRED_PASSWORD ?? "ci-required-password"
 const CUSTOMER_EMAIL = process.env.E2E_CUSTOMER_EMAIL ?? "fidelity.seed.customer@dev.invalid"
+const EXPIRED_EMAIL = process.env.E2E_EXPIRED_EMAIL ?? "fidelity.seed.expired@dev.invalid"
+const EXPIRED_PASSWORD = process.env.E2E_EXPIRED_PASSWORD ?? "ci-expired-password"
 const MAILPIT_URL = process.env.MAILPIT_URL ?? "http://127.0.0.1:54324"
 
 async function login(page: Page, email: string, password: string) {
@@ -27,7 +30,14 @@ async function loginExpectingPasswordSetup(page: Page, email: string, password: 
   await page.waitForURL("**/dashboard/update-password", { timeout: 15000 })
 }
 
-async function waitForRecoveryLink(request: APIRequestContext, email: string) {
+async function mailpitMessageIds(request: APIRequestContext, email: string) {
+  const search = await request.get(`${MAILPIT_URL}/api/v1/search`, { params: { query: `to:${email}`, limit: "100" } })
+  expect(search.ok()).toBeTruthy()
+  const result = await search.json() as { messages?: Array<{ ID: string }> }
+  return new Set((result.messages ?? []).map(message => message.ID))
+}
+
+async function waitForRecoveryLink(request: APIRequestContext, email: string, previousIds: Set<string>) {
   const deadline = Date.now() + 15000
   while (Date.now() < deadline) {
     const search = await request.get(`${MAILPIT_URL}/api/v1/search`, {
@@ -37,6 +47,7 @@ async function waitForRecoveryLink(request: APIRequestContext, email: string) {
     const result = await search.json() as { messages?: Array<{ ID: string; Subject?: string }> }
 
     for (const message of result.messages ?? []) {
+      if (previousIds.has(message.ID)) continue
       const full = await request.get(`${MAILPIT_URL}/api/v1/message/${message.ID}`)
       expect(full.ok()).toBeTruthy()
       const body = await full.json() as { Text?: string; HTML?: string }
@@ -50,13 +61,14 @@ async function waitForRecoveryLink(request: APIRequestContext, email: string) {
   throw new Error("Timed out waiting for the recovery email in Mailpit")
 }
 
-async function waitForMagicLink(request: APIRequestContext, email: string) {
+async function waitForMagicLink(request: APIRequestContext, email: string, previousIds: Set<string>) {
   const deadline = Date.now() + 15000
   while (Date.now() < deadline) {
     const search = await request.get(`${MAILPIT_URL}/api/v1/search`, { params: { query: `to:${email}`, limit: "20" } })
     expect(search.ok()).toBeTruthy()
     const result = await search.json() as { messages?: Array<{ ID: string }> }
     for (const message of result.messages ?? []) {
+      if (previousIds.has(message.ID)) continue
       const full = await request.get(`${MAILPIT_URL}/api/v1/message/${message.ID}`)
       expect(full.ok()).toBeTruthy()
       const body = await full.json() as { Text?: string; HTML?: string }
@@ -68,6 +80,25 @@ async function waitForMagicLink(request: APIRequestContext, email: string) {
     await new Promise(resolve => setTimeout(resolve, 250))
   }
   throw new Error("Timed out waiting for the magic link in Mailpit")
+}
+
+async function ageRecoveryToken(email: string) {
+  const prisma = new PrismaClient()
+  try {
+    const affected = await prisma.$executeRaw`UPDATE auth.users SET recovery_sent_at = now() - interval '2 hours' WHERE email = ${email} AND recovery_token <> ''`
+    expect(affected).toBe(1)
+  } finally {
+    await prisma.$disconnect()
+  }
+}
+
+async function assertPasswordWorks(request: APIRequestContext, email: string, password: string) {
+  const response = await request.post(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/token`, {
+    params: { grant_type: "password" },
+    headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "" },
+    data: { email, password },
+  })
+  expect(response.ok(), await response.text()).toBeTruthy()
 }
 
 async function apiJson(page: Page, url: string, init: RequestInit) {
@@ -151,10 +182,11 @@ test.describe("FID-0016 development authentication", () => {
     await page.getByLabel("Correo electrónico").fill(ADMIN_EMAIL)
     await page.getByRole("button", { name: "Continuar", exact: true }).click()
     await page.getByRole("button", { name: "¿Olvidaste tu contraseña?" }).click()
+    const previousIds = await mailpitMessageIds(request, ADMIN_EMAIL)
     await page.getByRole("button", { name: "Enviar correo de recuperación" }).click()
     await expect(page.getByText("Si el correo existe, recibirás un enlace para recuperar tu contraseña.")).toBeVisible()
 
-    const recoveryLink = await waitForRecoveryLink(request, ADMIN_EMAIL)
+    const recoveryLink = await waitForRecoveryLink(request, ADMIN_EMAIL, previousIds)
     await page.goto(recoveryLink)
     await page.waitForURL("**/dashboard/update-password", { timeout: 15000 })
     await page.getByLabel("Nueva contraseña").fill("ci-recovered-password-2")
@@ -169,12 +201,28 @@ test.describe("FID-0016 development authentication", () => {
     await page.waitForURL("**/auth/error**", { timeout: 15000 })
   })
 
+  test("rejects an expired recovery link without changing the password", async ({ page, request }) => {
+    await page.goto("/login")
+    await page.getByLabel("Correo electrónico").fill(EXPIRED_EMAIL)
+    await page.getByRole("button", { name: "Continuar", exact: true }).click()
+    await page.getByRole("button", { name: "¿Olvidaste tu contraseña?" }).click()
+    const previousIds = await mailpitMessageIds(request, EXPIRED_EMAIL)
+    await page.getByRole("button", { name: "Enviar correo de recuperación" }).click()
+    await expect(page.getByText("Si el correo existe, recibirás un enlace para recuperar tu contraseña.")).toBeVisible()
+    const recoveryLink = await waitForRecoveryLink(request, EXPIRED_EMAIL, previousIds)
+    await ageRecoveryToken(EXPIRED_EMAIL)
+    await page.goto(recoveryLink)
+    await expect(page.getByText("Enlace Expirado")).toBeVisible({ timeout: 15000 })
+    await assertPasswordWorks(request, EXPIRED_EMAIL, EXPIRED_PASSWORD)
+  })
+
   test("auth-only customer reaches the portal with no cards or business", async ({ page, request }) => {
     await page.goto("/dashboard/my-cards")
     await page.getByLabel("Correo Electrónico").fill(CUSTOMER_EMAIL)
+    const previousIds = await mailpitMessageIds(request, CUSTOMER_EMAIL)
     await page.getByRole("button", { name: "Enviar enlace mágico" }).click()
     await expect(page.getByText(`Te enviamos un enlace mágico a ${CUSTOMER_EMAIL}.`)).toBeVisible()
-    const magicLink = await waitForMagicLink(request, CUSTOMER_EMAIL)
+    const magicLink = await waitForMagicLink(request, CUSTOMER_EMAIL, previousIds)
     await page.goto(magicLink)
     await page.waitForURL("**/dashboard/my-cards", { timeout: 15000 })
     await expect(page.getByText("No tienes tarjetas de lealtad")).toBeVisible({ timeout: 15000 })
