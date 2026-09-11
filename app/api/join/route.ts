@@ -268,7 +268,6 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: "desc" },
       })
 
-      if (customers.length === 0) throw new NotFoundError("Customer not found")
       return withRequestId(NextResponse.json({
         customers: customers.map(withCurrentCycleMilestoneClaims),
       }), requestId)
