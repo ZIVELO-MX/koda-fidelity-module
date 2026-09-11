@@ -58,51 +58,9 @@ export const siteConfig = {
     },
   ],
 
-  features: [
-    {
-      icon: "Smartphone",
-      title: "Portal con Enlace Seguro",
-      description:
-        "Los clientes acceden a su tarjeta digital mediante un enlace mágico enviado por correo electrónico, sin necesidad de contraseña.",
-    },
-    {
-      icon: "QrCode",
-      title: "Flujo con QR",
-      description:
-        "Sin apps necesarias. Los clientes escanean un código QR y reciben su tarjeta al instante.",
-    },
-    {
-      icon: "Zap",
-      title: "Configuración Instantánea",
-      description:
-        "Crea tu primera tarjeta de lealtad en menos de 2 minutos.",
-    },
-    {
-      icon: "Shield",
-      title: "Acceso Seguro",
-      description:
-        "Los datos del cliente están protegidos. El acceso es por correo electrónico mediante un enlace de un solo uso.",
-    },
-    {
-      icon: "BarChart3",
-      title: "Analíticas Simples",
-      description:
-        "Monitorea sellos, canjes y la actividad de tus clientes.",
-    },
-    {
-      icon: "CheckCircle2",
-      title: "Sellado desde el panel",
-      description:
-        "Escanea el QR del cliente y agrega o canjea sellos directamente desde el panel.",
-    },
-  ],
-
-  useCases: [
-    { emoji: "☕", name: "Cafeterías", example: "Compra 9, llévate 1 gratis" },
-    { emoji: "🍕", name: "Restaurantes", example: "Postre gratis después de 5 visitas" },
-    { emoji: "💇", name: "Barberías", example: "10mo corte gratis" },
-    { emoji: "🛒", name: "Tiendas Locales", example: "Acumula puntos en tus compras" },
-  ],
+  // `features` y `useCases` se retiraron con el rediseño de la landing: sus
+  // dos rejillas decían lo mismo que las cuatro claves y que el carrusel de
+  // giros, una detrás de otra. Ver app/page.tsx.
 
   pricing: {
     title: "Precios claros para negocios locales",

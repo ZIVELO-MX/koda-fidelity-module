@@ -3,7 +3,10 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import type { Metadata } from "next"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Smartphone, QrCode, Wallet, CheckCircle2, Check, Zap, Shield, BarChart3 } from "lucide-react"
+import {
+  ArrowRight, Smartphone, QrCode, Wallet, CheckCircle2, Check, Zap, Shield, BarChart3,
+  Palette, LineChart, CreditCard, Workflow, Repeat, Tag, CircleQuestionMark,
+} from "lucide-react"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { LandingMobileNav } from "@/components/landing-mobile-nav"
 import { SmoothNavLink } from "@/components/smooth-nav-link"
@@ -13,6 +16,7 @@ import { Precios } from "@/components/landing/precios"
 import { ComparacionPapel } from "@/components/landing/comparacion-papel"
 import { Testimonios } from "@/components/landing/testimonios"
 import { Preguntas } from "@/components/landing/preguntas"
+import { Encabezado, Acento } from "@/components/landing/seccion"
 import { DisenosPorGiro } from "@/components/landing/disenos-por-giro"
 import { SolicitarDemo } from "@/components/landing/solicitar-demo"
 import { siteConfig } from "@/lib/site-config"
@@ -93,8 +97,8 @@ export default async function LandingPage({
               <span className="whitespace-nowrap font-semibold text-lg text-white">Koda Fidelity</span>
             </Link>
             <div className="hidden lg:flex items-center gap-8">
-              <SmoothNavLink href="#features" className="inline-flex min-h-11 items-center text-sm text-white/70 hover:text-white transition-colors">
-                Funciones
+              <SmoothNavLink href="#disenos" className="inline-flex min-h-11 items-center text-sm text-white/70 hover:text-white transition-colors">
+                Diseños
               </SmoothNavLink>
               <SmoothNavLink href="#how-it-works" className="inline-flex min-h-11 items-center text-sm text-white/70 hover:text-white transition-colors">
                 Cómo Funciona
@@ -182,59 +186,54 @@ export default async function LandingPage({
         </div>
       </section>
 
-      {/* Feature trust strip */}
-      <div className="border-y border-border/60 bg-muted/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
-          <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-3 md:gap-x-14">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Smartphone className="h-4 w-4 text-primary/70 shrink-0" />
-              <span>Sin apps requeridas</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Shield className="h-4 w-4 text-primary/70 shrink-0" />
-              <span>Acceso seguro por email</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Zap className="h-4 w-4 text-primary/70 shrink-0" />
-              <span>Lista en 2 minutos</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <QrCode className="h-4 w-4 text-primary/70 shrink-0" />
-              <span>Flujo 100% con QR</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <MarqueeBand />
 
-      {/* How it Works */}
+      {/* Las cuatro claves del diseño: sin cajas, centradas, separadas por aire.
+          Sustituyen a la franja de sellos, a la rejilla de funciones y a la de
+          casos de uso, que decían lo mismo tres veces seguidas en tres rejillas
+          iguales. */}
+      <section id="claves" className="scroll-mt-16 border-b border-border bg-card py-16">
+        <div className="mx-auto grid max-w-5xl gap-10 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
+          {[
+            { icono: Palette, titulo: "Tu marca", texto: "Color, logo y premio a tu gusto" },
+            { icono: Smartphone, titulo: "En su celular", texto: "Se abre con un enlace, sin apps" },
+            { icono: QrCode, titulo: "Canje verificado", texto: "Sellos que nadie puede falsificar" },
+            { icono: LineChart, titulo: "Sabes quién vuelve", texto: "Visitas y premios en tu panel" },
+          ].map((clave) => (
+            <div key={clave.titulo} className="flex flex-col items-center gap-2 text-center">
+              <clave.icono className="h-6 w-6 text-primary" aria-hidden="true" />
+              <p className="font-bold text-foreground">{clave.titulo}</p>
+              <p className="text-sm leading-relaxed text-muted-foreground">{clave.texto}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Diseños por giro. El marquee que se conserva, porque aquí el
           movimiento enseña el producto en vez de decorar. */}
-      <section id="disenos" className="scroll-mt-16 py-20 lg:py-28">
+      <section id="disenos" className="scroll-mt-16 py-20 lg:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto mb-12 max-w-2xl text-center">
-            <h2 className="mb-4 text-3xl font-bold text-foreground sm:text-4xl">
-              Un tema para cada <span className="landing-acento text-primary">giro</span> de negocio
-            </h2>
-            <p className="text-lg text-muted-foreground">
-              Elige el patrón de tu rubro, cambia el color y listo. Se ve profesional sin diseñador.
-            </p>
-          </div>
+          <Encabezado
+            icono={CreditCard}
+            etiqueta="Tarjetas de lealtad"
+            bajada="Elige el patrón de tu rubro, cambia el color y listo. Se ve profesional sin diseñador."
+          >
+            Un tema para cada <Acento>giro</Acento> de negocio
+          </Encabezado>
         </div>
         <DisenosPorGiro />
       </section>
 
-      <section id="how-it-works" className="scroll-mt-16 py-20 lg:py-28 bg-muted/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Simple para ti. Perfecto para tus clientes.
-            </h2>
-            <p className="text-lg text-muted-foreground">
-              Tu programa de lealtad digital funcionando en minutos, no en días.
-            </p>
-          </div>
+      <section id="how-it-works" className="scroll-mt-16 border-y border-border bg-card py-20 lg:py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <Encabezado
+            icono={Workflow}
+            etiqueta="Cómo funciona"
+            bajada="Simple para ti. Sin fricción para tus clientes."
+          >
+            Tu programa vivo en <Acento>tres pasos</Acento>
+          </Encabezado>
+
           {/* Lista secuencial, no tres columnas iguales. Y sin numerar: el verbo
               ya nombra el paso, "Crea tu tarjeta" se entiende sin un 01 delante. */}
           <RevealGrid className="mx-auto max-w-2xl">
@@ -258,103 +257,52 @@ export default async function LandingPage({
         </div>
       </section>
 
-      {/* Features */}
-      <section id="features" className="scroll-mt-16 py-20 lg:py-28">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Todo lo que necesitas para construir lealtad
-            </h2>
-            <p className="text-lg text-muted-foreground">
-              Funciones diseñadas para pequeños negocios que quieren grandes resultados.
-            </p>
-          </div>
-          {/* Sin cajas. Seis tarjetas idénticas en rejilla es de los patrones más
-              templados que hay, y aquí no aportan nada: el mismo contenido
-              separado por aire y una línea se lee igual y pesa menos. */}
-          <RevealGrid className="grid gap-x-12 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
-            {siteConfig.features.map((feature) => {
-              const Icon = iconMap[feature.icon]
-              return (
-                <div key={feature.title} className="border-t border-border pt-6">
-                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-                    {Icon && <Icon className="h-5 w-5 text-primary" />}
-                  </div>
-                  <h3 className="mb-2 text-lg font-semibold text-foreground">{feature.title}</h3>
-                  <p className="text-sm leading-relaxed text-muted-foreground">{feature.description}</p>
-                </div>
-              )
-            })}
-          </RevealGrid>
-        </div>
-      </section>
-
-      {/* Use Cases */}
-      <section className="py-20 lg:py-28 bg-muted/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Perfecto para negocios locales
-            </h2>
-            <p className="text-lg text-muted-foreground">
-              El mismo programa sirve igual para un café, una barbería o una tienda de barrio.
-            </p>
-          </div>
-          <RevealGrid className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {siteConfig.useCases.map((useCase) => (
-              <div
-                key={useCase.name}
-                className="group bg-card rounded-2xl p-6 border border-border text-center hover:shadow-md hover:-translate-y-0.5 transition-[box-shadow,transform] duration-200"
-              >
-                <div className="text-4xl mb-4 transition-transform duration-150 [@media(hover:hover)]:group-hover:scale-110">{useCase.emoji}</div>
-                <h3 className="font-semibold text-foreground mb-2">{useCase.name}</h3>
-                <p className="text-sm text-muted-foreground">{useCase.example}</p>
-              </div>
-            ))}
-          </RevealGrid>
-        </div>
-      </section>
-
       <Testimonios />
 
       {/* Comparación con la tarjeta de papel */}
-      <section className="py-20 lg:py-28">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Lo mismo que ya haces, sin el <span className="landing-acento text-primary">papel</span>
-            </h2>
-            <p className="text-lg text-muted-foreground">
-              La tarjeta de cartón funciona. Solo que no te deja ver nada de lo que pasa con ella.
-            </p>
-          </div>
+      <section className="py-20 lg:py-24">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <Encabezado
+            icono={Repeat}
+            etiqueta="Antes y ahora"
+            bajada="La tarjeta de cartón funciona. Solo que no te deja ver nada de lo que pasa con ella."
+          >
+            Lo mismo que ya haces, sin el <Acento>papel</Acento>
+          </Encabezado>
           <ComparacionPapel />
         </div>
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="scroll-mt-16 py-20 lg:py-28">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-10">
-              <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-                {siteConfig.pricing.title}
-              </h2>
-              <p className="text-lg text-muted-foreground">
-                {siteConfig.pricing.description}
-              </p>
-            </div>
+      <section id="pricing" className="scroll-mt-16 border-y border-border bg-card py-20 lg:py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-4xl">
+            <Encabezado icono={Tag} etiqueta="Precios" bajada={siteConfig.pricing.description}>
+              Precios claros para <Acento>negocios locales</Acento>
+            </Encabezado>
             <Precios />
           </div>
         </div>
       </section>
 
-      {/* Preguntas frecuentes */}
-      <section id="faq" className="scroll-mt-16 py-20 lg:py-28 bg-muted/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="mb-12 text-center text-3xl sm:text-4xl font-bold text-foreground">
-            Preguntas <span className="landing-acento text-primary">frecuentes</span>
-          </h2>
+      {/* Preguntas frecuentes. El encabezado va a un lado y la salida al otro:
+          si todas las secciones centran lo mismo, la página se lee como
+          diapositivas. */}
+      <section id="faq" className="scroll-mt-16 py-20 lg:py-24">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-10 flex flex-wrap items-end justify-between gap-5">
+            <Encabezado
+              icono={CircleQuestionMark}
+              etiqueta="Dudas"
+              alineado="izquierda"
+              bajada="Todo lo que necesitas saber antes de empezar."
+            >
+              Preguntas <Acento>frecuentes</Acento>
+            </Encabezado>
+            <Button asChild variant="outline" className="min-h-11">
+              <SmoothNavLink href="#demo">¿Otra duda? Escríbenos</SmoothNavLink>
+            </Button>
+          </div>
           <Preguntas />
         </div>
       </section>
@@ -362,7 +310,7 @@ export default async function LandingPage({
       {/* Solicitud de demo. El panel oscuro y las tres promesas son del diseño
           aprobado; el formulario vive encima en blanco, que es donde el
           contraste de placeholder, error y foco se sostiene. */}
-      <section className="py-20 lg:py-28">
+      <section id="demo" className="scroll-mt-16 py-20 lg:py-24">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
           <div className="grid items-center gap-10 rounded-3xl bg-[#1C1B17] p-6 text-[#FAFAF7] sm:p-10 lg:grid-cols-2 lg:gap-14">
             <div>
@@ -384,75 +332,82 @@ export default async function LandingPage({
         </div>
       </section>
 
-      {/* Customer CTA Section */}
-      <section className="py-20 lg:py-28 bg-muted/30">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="bg-card rounded-3xl p-6 sm:p-12 lg:p-16 border border-border shadow-sm">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              ¿Ya tienes tu tarjeta de lealtad?
-            </h2>
-            <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
-            Accede a todas tus tarjetas, revisa tu progreso y canjea tus recompensas desde un solo lugar.
+      {/* La entrada del cliente, que es la otra mitad del público. Era un panel
+          del mismo tamaño que el del negocio, y detrás venía un tercero
+          repitiendo el mismo botón. Tres paneles iguales seguidos es lo que
+          hacía que el final pareciera diapositivas: ahora es una franja. */}
+      <section className="border-y border-border bg-card py-10">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-5 px-4 sm:px-6 lg:px-8">
+          <div>
+            <h2 className="text-xl font-bold text-foreground">¿Ya tienes tu tarjeta?</h2>
+            <p className="mt-1 text-muted-foreground">
+              Entra a tus tarjetas, mira tu progreso y canjea desde un solo lugar.
             </p>
-            <Button asChild size="lg" className="min-h-11 group text-base px-10 active:scale-[0.97] transition-transform">
-              <Link href="/my-cards">
-                Ir a Mis Tarjetas
-                <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-150 group-hover:translate-x-1" />
-              </Link>
-            </Button>
           </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 lg:py-28">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-3xl p-6 sm:p-12 lg:p-16 border border-primary/20">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              {siteConfig.cta.title}
-            </h2>
-            <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
-              {siteConfig.cta.description}
-            </p>
-            <Button asChild size="lg" className="min-h-11 group text-base px-10 active:scale-[0.97] transition-transform">
-              <Link href={siteConfig.cta.href}>
-                {siteConfig.cta.cta}
-                <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-150 group-hover:translate-x-1" />
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="py-12 border-t border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <Link href="/" className="inline-flex min-h-11 items-center gap-2">
-              <Image
-                src="/short-logo.svg"
-                alt={siteConfig.shortName}
-                width={32}
-                height={32}
-                className="size-8 shrink-0"
-              />
-              <span className="font-semibold text-foreground">{siteConfig.name}</span>
+          <Button asChild size="lg" variant="outline" className="min-h-11 group px-8">
+            <Link href="/my-cards">
+              Ir a mis tarjetas
+              <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-150 group-hover:translate-x-1" />
             </Link>
-            <p className="text-sm text-muted-foreground">
-              {siteConfig.footer.tagline}
-            </p>
-            <div className="flex items-center gap-6">
-              {siteConfig.footer.links.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="inline-flex min-h-11 items-center text-sm text-white/70 hover:text-white transition-colors"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
+          </Button>
+        </div>
+      </section>
+
+      {/* Footer de cuatro columnas, como el diseño. Solo lleva enlaces que
+          existen: privacidad, términos y redes no tienen destino todavía, y un
+          enlace muerto es peor que no ponerlo. */}
+      <footer className="bg-[#17130f] px-4 py-14 text-[#9a9184] sm:px-6 lg:px-8">
+        <div className="mx-auto grid max-w-6xl gap-10 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="lg:col-span-2">
+            <Link href="/" className="inline-flex min-h-11 items-center gap-2.5">
+              <Image src="/short-logo.svg" alt={siteConfig.shortName} width={32} height={32} className="size-8 shrink-0" />
+              <span className="font-semibold text-white">{siteConfig.name}</span>
+            </Link>
+            <p className="mt-3 max-w-xs text-sm leading-relaxed">{siteConfig.footer.tagline}</p>
           </div>
+          <div>
+            <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-white">Producto</h3>
+            <ul className="space-y-1">
+              {[
+                { href: "#disenos", texto: "Diseños" },
+                { href: "#how-it-works", texto: "Cómo funciona" },
+                { href: "#pricing", texto: "Precios" },
+                { href: "#faq", texto: "Preguntas frecuentes" },
+              ].map((enlace) => (
+                <li key={enlace.href}>
+                  <SmoothNavLink href={enlace.href} className="inline-flex min-h-11 items-center text-sm hover:text-white transition-colors">
+                    {enlace.texto}
+                  </SmoothNavLink>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-white">Empresa</h3>
+            <ul className="space-y-1">
+              <li>
+                <SmoothNavLink href="#demo" className="inline-flex min-h-11 items-center text-sm hover:text-white transition-colors">
+                  Solicitar demo
+                </SmoothNavLink>
+              </li>
+              {siteConfig.footer.links.map((enlace) => (
+                <li key={enlace.href}>
+                  <Link href={enlace.href} className="inline-flex min-h-11 items-center text-sm hover:text-white transition-colors">
+                    {enlace.label}
+                  </Link>
+                </li>
+              ))}
+              <li>
+                <Link href="/login" className="inline-flex min-h-11 items-center text-sm hover:text-white transition-colors">
+                  Iniciar sesión
+                </Link>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div className="mx-auto mt-10 flex max-w-6xl flex-wrap justify-between gap-3 border-t border-white/10 pt-6 text-sm text-[#7c7367]">
+          <span>© 2026 ZIVELO. Todos los derechos reservados.</span>
+          <span>Hecho en México</span>
         </div>
       </footer>
     </div>
