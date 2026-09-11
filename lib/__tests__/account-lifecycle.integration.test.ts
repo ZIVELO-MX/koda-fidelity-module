@@ -73,7 +73,7 @@ integration("account lifecycle PostgreSQL integration", () => {
     expect(lite.liteCardId).toBeTruthy()
     expect(refreshed.filter((card) => card.status === "ACTIVE")).toHaveLength(1)
     expect(refreshed.find((card) => card.selectedThemeId === proTheme.id)?.effectiveThemeId).toBe(liteTheme.id)
-    expect(refreshed.find((card) => card.selectedThemeId === proTheme.id)?.status).toBe("LOCKED_BY_PLAN")
+    expect(refreshed.filter((card) => card.status === "LOCKED_BY_PLAN")).toHaveLength(1)
   })
 
   it("creates resumable onboarding state with the exact persisted version", async () => {
