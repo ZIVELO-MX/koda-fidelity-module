@@ -165,18 +165,24 @@ test.describe("ola 4, landing pública", () => {
 
     test("cada campo del formulario lleva su etiqueta a la vista", async ({ page }) => {
       await page.goto("/")
-      for (const etiqueta of ["Nombre", "Negocio", "Giro", "Sucursales", "Contacto"]) {
-        // getByLabel exige una etiqueta de verdad, no un placeholder.
-        await expect(page.getByLabel(etiqueta, { exact: true })).toBeVisible()
+      // Los seis campos del diseño aprobado, con sus ids, que no se cambian
+      // porque romperían analítica y autocompletado.
+      for (const id of ["nombre", "negocio", "giro", "sucursales", "contacto", "plan"]) {
+        const campo = page.locator(`#lp-form-${id}`)
+        await expect(campo, `falta el campo ${id}`).toBeVisible()
+        const etiqueta = page.locator(`label[for="lp-form-${id}"]`)
+        // getByLabel no basta: hay que ver la etiqueta, no solo asociarla.
+        await expect(etiqueta, `${id} no tiene etiqueta a la vista`).toBeVisible()
       }
     })
 
     test("el contacto se valida al salir del campo", async ({ page }) => {
       await page.goto("/")
-      const contacto = page.getByLabel("Contacto", { exact: true })
+      const contacto = page.locator("#lp-form-contacto")
       await contacto.fill("esto no es un contacto")
       await contacto.blur()
       await expect(contacto).toHaveAttribute("aria-invalid", "true")
+      await expect(page.getByText("Ingresa un correo o teléfono válido")).toBeVisible()
 
       await contacto.fill("5512345678")
       await contacto.blur()

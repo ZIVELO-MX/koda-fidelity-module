@@ -3,7 +3,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import type { Metadata } from "next"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Smartphone, QrCode, Wallet, CheckCircle2, Zap, Shield, BarChart3 } from "lucide-react"
+import { ArrowRight, Smartphone, QrCode, Wallet, CheckCircle2, Check, Zap, Shield, BarChart3 } from "lucide-react"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { LandingMobileNav } from "@/components/landing-mobile-nav"
 import { SmoothNavLink } from "@/components/smooth-nav-link"
@@ -335,10 +335,28 @@ export default async function LandingPage({
         </div>
       </section>
 
-      {/* Solicitud de demo */}
+      {/* Solicitud de demo. El panel oscuro y las tres promesas son del diseño
+          aprobado; el formulario vive encima en blanco, que es donde el
+          contraste de placeholder, error y foco se sostiene. */}
       <section className="py-20 lg:py-28">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-          <SolicitarDemo />
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <div className="grid items-center gap-10 rounded-3xl bg-[#1C1B17] p-6 text-[#FAFAF7] sm:p-10 lg:grid-cols-2 lg:gap-14">
+            <div>
+              <h2 className="text-2xl font-bold sm:text-3xl">¿Quieres verlo en tu negocio?</h2>
+              <p className="mt-3 text-[#FAFAF7]/75 leading-relaxed">
+                Agenda una demo de 20 minutos. Te ayudamos a dejar tu programa de lealtad listo.
+              </p>
+              <ul className="mt-6 space-y-3">
+                {["Demo en vivo, con tu giro", "Configuramos tu primera tarjeta", "Sin compromiso"].map((punto) => (
+                  <li key={punto} className="flex items-center gap-3 text-sm">
+                    <Check className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                    {punto}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <SolicitarDemo />
+          </div>
         </div>
       </section>
 
