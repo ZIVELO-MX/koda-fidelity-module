@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { JetBrains_Mono } from 'next/font/google'
+import { JetBrains_Mono, Playfair_Display } from 'next/font/google'
 import localFont from 'next/font/local'
 import { Analytics } from '@vercel/analytics/next'
 import { ServiceWorkerRegister } from '@/components/service-worker-register'
@@ -27,6 +27,16 @@ const switzer = localFont({
 const jetbrains = JetBrains_Mono({
   subsets: ['latin'],
   variable: '--font-jetbrains',
+  display: 'swap',
+})
+
+// Playfair en cursiva es el acento del diseño aprobado de la landing. No se
+// usa en el panel: ahí manda Switzer sola.
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  style: ['italic'],
+  weight: ['600', '700'],
+  variable: '--font-playfair',
   display: 'swap',
 })
 
@@ -105,7 +115,7 @@ export default function RootLayout({
   // suave hasta el inicio se ve como un salto raro.
   return (
     <html lang="es" className="bg-background" data-scroll-behavior="smooth" suppressHydrationWarning>
-      <body className={`${switzer.variable} ${jetbrains.variable} font-sans antialiased`}>
+      <body className={`${switzer.variable} ${jetbrains.variable} ${playfair.variable} font-sans antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange>
           {children}
         </ThemeProvider>

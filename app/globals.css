@@ -122,6 +122,46 @@
   --marquee-fade: #111;
 }
 
+/* La landing tiene su propia piel, la del diseño aprobado: crema cálido, tinta
+   casi negra y el naranja de marca. El panel no la usa. Se aplica encima de
+   .forced-light, que fija el esquema claro. */
+.landing {
+  /* La franja de giros va naranja y con el texto en blanco, como el diseño
+     aprobado. En el resto de la aplicación sigue siendo oscura. */
+  --marquee-bg: #ff6b35;
+  --marquee-text: rgba(255, 255, 255, 0.92);
+  --marquee-border: rgba(255, 255, 255, 0.18);
+  --marquee-fade: #ff6b35;
+  --background: #f7f2ea;
+  --foreground: #17130f;
+  --card: #fffdf9;
+  --card-foreground: #17130f;
+  --popover: #fffdf9;
+  --popover-foreground: #17130f;
+  --muted: #f0e9dc;
+  --muted-foreground: #736a5d;
+  --border: #e7ddcd;
+  --input: #e7ddcd;
+  --secondary: #f0e9dc;
+  --secondary-foreground: #17130f;
+  --accent: #f0e9dc;
+  --accent-foreground: #17130f;
+}
+
+/* Tinta del diseño para los bloques oscuros: nav, hero, comparación y
+   formulario. */
+.landing-oscuro {
+  --lp-ink: #17130f;
+  --lp-ink-suave: rgba(255, 255, 255, 0.72);
+}
+
+.landing-acento {
+  font-family: var(--font-playfair), Georgia, serif;
+  font-style: italic;
+  font-weight: 700;
+}
+
+
 @theme inline {
   --font-sans: var(--font-switzer), 'Söhne', -apple-system, BlinkMacSystemFont, 'Segoe UI', ui-sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -403,6 +443,11 @@
   font-weight: 500;
   font-size: 0.85rem;
   letter-spacing: 0.01em;
+}
+
+/* Sobre la franja naranja el acento no puede ser naranja. */
+.landing .marquee-label-brand {
+  color: #fff;
 }
 
 .marquee-label-brand {

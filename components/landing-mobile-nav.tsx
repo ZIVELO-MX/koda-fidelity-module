@@ -117,7 +117,7 @@ export function LandingMobileNav() {
           <button
             ref={buttonRef}
             type="button"
-            className="p-3 -mr-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors duration-150 active:scale-[0.93]"
+            className="p-3 -mr-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors duration-150 active:scale-[0.93]"
             aria-label={open ? "Cerrar menú" : "Abrir menú de navegación"}
           >
             <HamburgerIcon open={open} />

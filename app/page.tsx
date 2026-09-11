@@ -13,6 +13,7 @@ import { Precios } from "@/components/landing/precios"
 import { ComparacionPapel } from "@/components/landing/comparacion-papel"
 import { Testimonios } from "@/components/landing/testimonios"
 import { Preguntas } from "@/components/landing/preguntas"
+import { DisenosPorGiro } from "@/components/landing/disenos-por-giro"
 import { SolicitarDemo } from "@/components/landing/solicitar-demo"
 import { siteConfig } from "@/lib/site-config"
 
@@ -73,12 +74,12 @@ export default async function LandingPage({
     redirect(`/auth/error?${qs.toString()}`)
   }
   return (
-    <div className="min-h-screen bg-background forced-light">
+    <div className="landing min-h-screen bg-background forced-light">
       <a href="#main-content" className="skip-link">
         Saltar al contenido principal
       </a>
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+      <nav className="sticky top-0 z-50 bg-[#17130f]/95 backdrop-blur-md text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="inline-flex min-h-11 items-center gap-2">
@@ -89,29 +90,29 @@ export default async function LandingPage({
                 height={36}
                 className="size-9 shrink-0"
               />
-              <span className="whitespace-nowrap font-semibold text-lg text-foreground">Koda Fidelity</span>
+              <span className="whitespace-nowrap font-semibold text-lg text-white">Koda Fidelity</span>
             </Link>
             <div className="hidden lg:flex items-center gap-8">
-              <SmoothNavLink href="#features" className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <SmoothNavLink href="#features" className="inline-flex min-h-11 items-center text-sm text-white/70 hover:text-white transition-colors">
                 Funciones
               </SmoothNavLink>
-              <SmoothNavLink href="#how-it-works" className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <SmoothNavLink href="#how-it-works" className="inline-flex min-h-11 items-center text-sm text-white/70 hover:text-white transition-colors">
                 Cómo Funciona
               </SmoothNavLink>
-              <SmoothNavLink href="#pricing" className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <SmoothNavLink href="#pricing" className="inline-flex min-h-11 items-center text-sm text-white/70 hover:text-white transition-colors">
                 Precios
               </SmoothNavLink>
-              <SmoothNavLink href="#faq" className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <SmoothNavLink href="#faq" className="inline-flex min-h-11 items-center text-sm text-white/70 hover:text-white transition-colors">
                 FAQ
               </SmoothNavLink>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
-              <Button asChild variant="ghost" className="hidden min-h-11 md:inline-flex">
+              <Button asChild variant="ghost" className="hidden min-h-11 text-white hover:bg-white/10 hover:text-white md:inline-flex">
                 <Link href="/login">
                   Iniciar Sesión
                 </Link>
               </Button>
-              <Button asChild size="sm" className="hidden min-h-11 md:inline-flex active:scale-[0.97] transition-transform">
+              <Button asChild size="sm" className="hidden min-h-11 bg-white text-[#17130f] hover:bg-primary hover:text-primary-foreground md:inline-flex active:scale-[0.97] transition-transform">
                 <Link href="/signup">
                   Empieza por solo $149 al mes
                 </Link>
@@ -123,23 +124,30 @@ export default async function LandingPage({
       </nav>
 
       {/* Hero Section */}
-      <section id="main-content" className="relative overflow-hidden">
+      <section
+        id="main-content"
+        className="relative overflow-hidden text-white"
+        style={{
+          background:
+            "radial-gradient(130% 120% at 82% -10%, #241d16 0%, #17130f 46%, #0e0b08 100%)",
+        }}
+      >
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-40 -right-24 w-[560px] h-[560px] rounded-full bg-primary/10 blur-3xl" />
-          <div className="absolute -bottom-20 -left-20 w-[380px] h-[380px] rounded-full bg-primary/[0.07] blur-3xl" />
+          <div className="absolute -top-40 -right-24 w-[620px] h-[620px] rounded-full bg-primary/25 blur-3xl" />
+          <div className="absolute -bottom-44 -left-28 w-[460px] h-[460px] rounded-full bg-primary/10 blur-3xl" />
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <div className="space-y-8">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-medium">
-                <Zap className="h-4 w-4" />
+              <div className="inline-flex items-center gap-2 self-start rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-white/85">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_10px_var(--primary)]" />
                 {siteConfig.hero.tagline}
               </div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight text-balance">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight text-balance">
                 {siteConfig.hero.title}
-                <span className="text-primary">{siteConfig.hero.titleHighlight}</span>
+                <span className="landing-acento text-primary">{siteConfig.hero.titleHighlight}</span>
               </h1>
-              <p className="text-lg text-muted-foreground max-w-xl leading-relaxed">
+              <p className="text-lg text-white/72 max-w-xl leading-relaxed">
                 {siteConfig.hero.subtitle}
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
@@ -149,7 +157,7 @@ export default async function LandingPage({
                     <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-150 group-hover:translate-x-1" />
                   </Link>
                 </Button>
-                <Button asChild size="lg" variant="outline" className="min-h-11 w-full sm:w-auto text-base px-8 active:scale-[0.97] transition-transform">
+                <Button asChild size="lg" variant="outline" className="min-h-11 w-full border-white/20 bg-white/5 text-white hover:bg-white/15 hover:text-white sm:w-auto text-base px-8 active:scale-[0.97] transition-transform">
                   <SmoothNavLink href="#how-it-works">
                     Ver Cómo Funciona
                   </SmoothNavLink>
@@ -201,6 +209,22 @@ export default async function LandingPage({
       <MarqueeBand />
 
       {/* How it Works */}
+      {/* Diseños por giro. El marquee que se conserva, porque aquí el
+          movimiento enseña el producto en vez de decorar. */}
+      <section id="disenos" className="scroll-mt-16 py-20 lg:py-28">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto mb-12 max-w-2xl text-center">
+            <h2 className="mb-4 text-3xl font-bold text-foreground sm:text-4xl">
+              Un tema para cada <span className="landing-acento text-primary">giro</span> de negocio
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              Elige el patrón de tu rubro, cambia el color y listo. Se ve profesional sin diseñador.
+            </p>
+          </div>
+        </div>
+        <DisenosPorGiro />
+      </section>
+
       <section id="how-it-works" className="scroll-mt-16 py-20 lg:py-28 bg-muted/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-16">
@@ -298,7 +322,7 @@ export default async function LandingPage({
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Lo mismo que ya haces, sin el papel
+              Lo mismo que ya haces, sin el <span className="landing-acento text-primary">papel</span>
             </h2>
             <p className="text-lg text-muted-foreground">
               La tarjeta de cartón funciona. Solo que no te deja ver nada de lo que pasa con ella.
@@ -329,7 +353,7 @@ export default async function LandingPage({
       <section id="faq" className="scroll-mt-16 py-20 lg:py-28 bg-muted/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="mb-12 text-center text-3xl sm:text-4xl font-bold text-foreground">
-            Preguntas frecuentes
+            Preguntas <span className="landing-acento text-primary">frecuentes</span>
           </h2>
           <Preguntas />
         </div>
@@ -422,7 +446,7 @@ export default async function LandingPage({
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  className="inline-flex min-h-11 items-center text-sm text-white/70 hover:text-white transition-colors"
                 >
                   {link.label}
                 </Link>
