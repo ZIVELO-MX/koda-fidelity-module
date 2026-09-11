@@ -378,8 +378,13 @@ export default async function LandingPage({
           </Button>
         </div>
 
-        <div className="relative mx-auto flex max-w-6xl flex-wrap justify-between gap-x-12 gap-y-10">
-          <div className="max-w-xs">
+        {/* Rejilla de cuatro columnas iguales, alineadas arriba.
+            Antes eran dos grupos: la marca a la izquierda y los enlaces
+            apelotonados a la derecha, con 480px de nada en medio y los
+            encabezados arrancando más alto que el logo. Y las columnas iban de
+            cuatro, dos y dos, así que el borde de abajo quedaba dentado. */}
+        <div className="relative mx-auto grid max-w-6xl items-start gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
+          <div>
             <Link href="/" className="inline-flex min-h-11 items-center gap-2.5">
               <Image src="/short-logo.svg" alt={siteConfig.shortName} width={32} height={32} className="size-8 shrink-0" />
               <span className="font-semibold text-white">{siteConfig.name}</span>
@@ -391,54 +396,56 @@ export default async function LandingPage({
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-x-14 gap-y-8">
-            {[
-              {
-                titulo: "Producto",
-                enlaces: [
-                  { href: "#disenos", texto: "Diseños", ancla: true },
-                  { href: "#how-it-works", texto: "Cómo funciona", ancla: true },
-                  { href: "#pricing", texto: "Precios", ancla: true },
-                  { href: "#faq", texto: "Preguntas", ancla: true },
-                ],
-              },
-              {
-                titulo: "Empresa",
-                enlaces: [
-                  { href: "#demo", texto: "Solicitar demo", ancla: true },
-                  ...siteConfig.footer.links.map((e) => ({ href: e.href, texto: e.label, ancla: false })),
-                ],
-              },
-              {
-                titulo: "Acceso",
-                enlaces: [
-                  { href: "/login", texto: "Iniciar sesión", ancla: false },
-                  { href: "/my-cards", texto: "Mis tarjetas", ancla: false },
-                  // Nada de "Crear cuenta": sería un segundo nombre para la
-                  // misma intención que el botón principal.
-                ],
-              },
-            ].map((columna) => (
-              <div key={columna.titulo}>
-                <h3 className="text-xs font-semibold uppercase tracking-[0.08em] text-white">{columna.titulo}</h3>
-                <ul className="mt-1">
-                  {columna.enlaces.map((enlace) => (
-                    <li key={enlace.href + enlace.texto}>
-                      {enlace.ancla ? (
-                        <SmoothNavLink href={enlace.href} className="flex min-h-11 items-center whitespace-nowrap text-sm text-white/70 transition-colors hover:text-white">
-                          {enlace.texto}
-                        </SmoothNavLink>
-                      ) : (
-                        <Link href={enlace.href} className="flex min-h-11 items-center whitespace-nowrap text-sm text-white/70 transition-colors hover:text-white">
-                          {enlace.texto}
-                        </Link>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
+          {[
+            {
+              titulo: "Producto",
+              enlaces: [
+                { href: "#disenos", texto: "Diseños", ancla: true },
+                { href: "#how-it-works", texto: "Cómo funciona", ancla: true },
+                { href: "#pricing", texto: "Precios", ancla: true },
+              ],
+            },
+            {
+              titulo: "Ayuda",
+              enlaces: [
+                { href: "#faq", texto: "Preguntas", ancla: true },
+                { href: "#demo", texto: "Solicitar demo", ancla: true },
+                ...siteConfig.footer.links.map((e) => ({ href: e.href, texto: e.label, ancla: false })),
+              ],
+            },
+            {
+              titulo: "Acceso",
+              enlaces: [
+                { href: "/login", texto: "Iniciar sesión", ancla: false },
+                { href: "/my-cards", texto: "Mis tarjetas", ancla: false },
+                // Nada de "Crear cuenta": sería un segundo nombre para la misma
+                // intención que el botón principal.
+              ],
+            },
+          ].map((columna) => (
+            <div key={columna.titulo}>
+              {/* La misma caja de 44px que el enlace del logo, para que el
+                  título de columna y la marca se lean en la misma línea. */}
+              <h3 className="flex min-h-11 items-center text-xs font-semibold uppercase tracking-[0.08em] text-white">
+                {columna.titulo}
+              </h3>
+              <ul className="mt-1">
+                {columna.enlaces.map((enlace) => (
+                  <li key={enlace.href + enlace.texto}>
+                    {enlace.ancla ? (
+                      <SmoothNavLink href={enlace.href} className="flex min-h-11 items-center text-sm text-white/70 transition-colors hover:text-white">
+                        {enlace.texto}
+                      </SmoothNavLink>
+                    ) : (
+                      <Link href={enlace.href} className="flex min-h-11 items-center text-sm text-white/70 transition-colors hover:text-white">
+                        {enlace.texto}
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
         <div className="relative mx-auto mt-12 flex max-w-6xl flex-wrap justify-between gap-3 border-t border-white/10 pt-6 text-sm text-white/50">
