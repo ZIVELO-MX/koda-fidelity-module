@@ -76,7 +76,8 @@ export const siteConfig = {
   },
 
   footer: {
-    tagline: "Parte del ecosistema Koda POS. Hecho para pequeños negocios.",
+    // El ecosistema se nombra en su propia píldora del pie, así que aquí sobraba.
+    tagline: "Tarjetas de lealtad digitales para negocios de barrio.",
     links: [
       { label: "Contacto", href: "mailto:contacto@zivelo.dev" },
     ],

@@ -5,12 +5,11 @@ import type { Metadata } from "next"
 import { Button } from "@/components/ui/button"
 import {
   ArrowRight, Smartphone, QrCode, Wallet, CheckCircle2, Check, Zap, Shield, BarChart3,
-  Palette, LineChart, CreditCard, Workflow, Repeat, Tag, CircleQuestionMark,
+  Palette, LineChart, CreditCard, Workflow, Repeat, Tag, CircleQuestionMark, Gift, Star,
 } from "lucide-react"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { LandingMobileNav } from "@/components/landing-mobile-nav"
 import { SmoothNavLink } from "@/components/smooth-nav-link"
-import { RevealGrid } from "@/components/reveal-grid"
 import { MarqueeBand } from "@/components/marquee-band"
 import { Precios } from "@/components/landing/precios"
 import { ComparacionPapel } from "@/components/landing/comparacion-papel"
@@ -18,6 +17,7 @@ import { Testimonios } from "@/components/landing/testimonios"
 import { Preguntas } from "@/components/landing/preguntas"
 import { Encabezado, Acento } from "@/components/landing/seccion"
 import { DisenosPorGiro } from "@/components/landing/disenos-por-giro"
+import { PatronDeIconos } from "@/components/landing/patron-de-iconos"
 import { SolicitarDemo } from "@/components/landing/solicitar-demo"
 import { siteConfig } from "@/lib/site-config"
 
@@ -236,8 +236,7 @@ export default async function LandingPage({
 
           {/* Lista secuencial, no tres columnas iguales. Y sin numerar: el verbo
               ya nombra el paso, "Crea tu tarjeta" se entiende sin un 01 delante. */}
-          <RevealGrid className="mx-auto max-w-2xl">
-            <ol className="divide-y divide-border">
+          <ol className="mx-auto max-w-2xl divide-y divide-border">
               {siteConfig.howItWorks.map((item) => {
                 const Icon = iconMap[item.icon]
                 return (
@@ -252,8 +251,7 @@ export default async function LandingPage({
                   </li>
                 )
               })}
-            </ol>
-          </RevealGrid>
+          </ol>
         </div>
       </section>
 
@@ -310,7 +308,7 @@ export default async function LandingPage({
       {/* Solicitud de demo. El panel oscuro y las tres promesas son del diseño
           aprobado; el formulario vive encima en blanco, que es donde el
           contraste de placeholder, error y foco se sostiene. */}
-      <section id="demo" className="scroll-mt-16 py-20 lg:py-24">
+      <section id="demo" className="scroll-mt-16 pt-20 pb-16 lg:pt-24">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
           <div className="grid items-center gap-10 rounded-3xl bg-[#1C1B17] p-6 text-[#FAFAF7] sm:p-10 lg:grid-cols-2 lg:gap-14">
             <div>
@@ -333,18 +331,23 @@ export default async function LandingPage({
       </section>
 
       {/* La entrada del cliente, que es la otra mitad del público. Era un panel
-          del mismo tamaño que el del negocio, y detrás venía un tercero
-          repitiendo el mismo botón. Tres paneles iguales seguidos es lo que
-          hacía que el final pareciera diapositivas: ahora es una franja. */}
-      <section className="border-y border-border bg-card py-10">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-5 px-4 sm:px-6 lg:px-8">
-          <div>
-            <h2 className="text-xl font-bold text-foreground">¿Ya tienes tu tarjeta?</h2>
-            <p className="mt-1 text-muted-foreground">
-              Entra a tus tarjetas, mira tu progreso y canjea desde un solo lugar.
+          del mismo tamaño que el del negocio y detrás venía un tercero
+          repitiendo el botón. Ahora es una franja con peso propio: el patrón de
+          la marca al 5% le da textura para que no quede como un hueco pálido
+          entre dos bloques oscuros. */}
+      <section className="relative overflow-hidden border-y border-border bg-card py-14">
+        <PatronDeIconos iconos={[CreditCard, QrCode, Gift, Star]} opacidad={0.05} color="var(--primary)" columnas={12} filas={2} />
+        <div className="relative mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-md">
+            <h2 className="text-2xl font-bold tracking-tight text-foreground">
+              ¿Ya tienes tu <Acento>tarjeta</Acento>?
+            </h2>
+            <p className="mt-2 text-muted-foreground leading-relaxed">
+              Entra a todas tus tarjetas, mira cuánto te falta para el premio y canjéalo desde un
+              solo lugar.
             </p>
           </div>
-          <Button asChild size="lg" variant="outline" className="min-h-11 group px-8">
+          <Button asChild size="lg" className="min-h-11 group px-8">
             <Link href="/my-cards">
               Ir a mis tarjetas
               <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-150 group-hover:translate-x-1" />
@@ -353,59 +356,78 @@ export default async function LandingPage({
         </div>
       </section>
 
-      {/* Footer de cuatro columnas, como el diseño. Solo lleva enlaces que
-          existen: privacidad, términos y redes no tienen destino todavía, y un
-          enlace muerto es peor que no ponerlo. */}
-      <footer className="bg-[#17130f] px-4 py-14 text-[#9a9184] sm:px-6 lg:px-8">
-        <div className="mx-auto grid max-w-6xl gap-10 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="lg:col-span-2">
+      {/* Pie de cuatro columnas, como el diseño, con el halo naranja que llevan
+          sus bloques oscuros. Solo enlaces que existen: privacidad, términos y
+          redes no tienen destino todavía, y uno muerto es peor que ninguno. */}
+      <footer
+        className="relative overflow-hidden px-4 py-16 text-[#9a9184] sm:px-6 lg:px-8"
+        style={{ background: "radial-gradient(120% 140% at 12% 0%, #241d16 0%, #17130f 55%, #0e0b08 100%)" }}
+      >
+        <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 right-0 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
+        <div className="relative mx-auto grid max-w-6xl gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr]">
+          <div>
             <Link href="/" className="inline-flex min-h-11 items-center gap-2.5">
               <Image src="/short-logo.svg" alt={siteConfig.shortName} width={32} height={32} className="size-8 shrink-0" />
               <span className="font-semibold text-white">{siteConfig.name}</span>
             </Link>
-            <p className="mt-3 max-w-xs text-sm leading-relaxed">{siteConfig.footer.tagline}</p>
+            <p className="mt-3 max-w-[30ch] text-sm leading-relaxed">{siteConfig.footer.tagline}</p>
+            <p className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/12 px-3 py-1.5 text-xs text-white/70">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              Parte del ecosistema Koda POS
+            </p>
           </div>
-          <div>
-            <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-white">Producto</h3>
-            <ul className="space-y-1">
-              {[
-                { href: "#disenos", texto: "Diseños" },
-                { href: "#how-it-works", texto: "Cómo funciona" },
-                { href: "#pricing", texto: "Precios" },
-                { href: "#faq", texto: "Preguntas frecuentes" },
-              ].map((enlace) => (
-                <li key={enlace.href}>
-                  <SmoothNavLink href={enlace.href} className="inline-flex min-h-11 items-center text-sm hover:text-white transition-colors">
-                    {enlace.texto}
-                  </SmoothNavLink>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-white">Empresa</h3>
-            <ul className="space-y-1">
-              <li>
-                <SmoothNavLink href="#demo" className="inline-flex min-h-11 items-center text-sm hover:text-white transition-colors">
-                  Solicitar demo
-                </SmoothNavLink>
-              </li>
-              {siteConfig.footer.links.map((enlace) => (
-                <li key={enlace.href}>
-                  <Link href={enlace.href} className="inline-flex min-h-11 items-center text-sm hover:text-white transition-colors">
-                    {enlace.label}
-                  </Link>
-                </li>
-              ))}
-              <li>
-                <Link href="/login" className="inline-flex min-h-11 items-center text-sm hover:text-white transition-colors">
-                  Iniciar sesión
-                </Link>
-              </li>
-            </ul>
-          </div>
+
+          {[
+            {
+              titulo: "Producto",
+              enlaces: [
+                { href: "#disenos", texto: "Diseños", ancla: true },
+                { href: "#how-it-works", texto: "Cómo funciona", ancla: true },
+                { href: "#pricing", texto: "Precios", ancla: true },
+                { href: "#faq", texto: "Preguntas frecuentes", ancla: true },
+              ],
+            },
+            {
+              titulo: "Empresa",
+              enlaces: [
+                { href: "#demo", texto: "Solicitar demo", ancla: true },
+                ...siteConfig.footer.links.map((e) => ({ href: e.href, texto: e.label, ancla: false })),
+              ],
+            },
+            {
+              titulo: "Acceso",
+              enlaces: [
+                { href: "/login", texto: "Iniciar sesión", ancla: false },
+                { href: "/my-cards", texto: "Mis tarjetas", ancla: false },
+                // Nada de "Crear cuenta" aquí: sería un segundo nombre para la
+                // misma intención que ya lleva el botón de arriba, y el
+                // recorrido de la ola lo prohíbe. La página ya tiene tres
+                // entradas al alta.
+              ],
+            },
+          ].map((columna) => (
+            <div key={columna.titulo}>
+              <h3 className="text-xs font-semibold uppercase tracking-[0.08em] text-white">{columna.titulo}</h3>
+              <ul className="mt-2">
+                {columna.enlaces.map((enlace) => (
+                  <li key={enlace.href + enlace.texto}>
+                    {enlace.ancla ? (
+                      <SmoothNavLink href={enlace.href} className="flex min-h-11 items-center text-sm transition-colors hover:text-white">
+                        {enlace.texto}
+                      </SmoothNavLink>
+                    ) : (
+                      <Link href={enlace.href} className="flex min-h-11 items-center text-sm transition-colors hover:text-white">
+                        {enlace.texto}
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
-        <div className="mx-auto mt-10 flex max-w-6xl flex-wrap justify-between gap-3 border-t border-white/10 pt-6 text-sm text-[#7c7367]">
+
+        <div className="relative mx-auto mt-12 flex max-w-6xl flex-wrap justify-between gap-3 border-t border-white/10 pt-6 text-sm text-[#7c7367]">
           <span>© 2026 ZIVELO. Todos los derechos reservados.</span>
           <span>Hecho en México</span>
         </div>
