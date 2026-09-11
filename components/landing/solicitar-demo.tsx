@@ -134,23 +134,23 @@ export function SolicitarDemo() {
   return (
     <form ref={formulario} onSubmit={enviar} noValidate className="rounded-2xl bg-white p-6 sm:p-8">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Texto id="nombre" etiqueta="Nombre completo" placeholder="Tu nombre" autoComplete="name"
+        <Texto id="nombre" etiqueta="Nombre completo" placeholder="María García" autoComplete="name"
           valores={valores} setValores={setValores} setTocados={setTocados} error={errorDe("nombre")} />
-        <Texto id="negocio" etiqueta="Negocio" placeholder="Nombre de tu negocio" autoComplete="organization"
+        <Texto id="negocio" etiqueta="Negocio" placeholder="Café Aurora" autoComplete="organization"
           valores={valores} setValores={setValores} setTocados={setTocados} error={errorDe("negocio")} />
         <Lista id="giro" etiqueta="Giro de negocio" opciones={GIROS}
           valores={valores} setValores={setValores} setTocados={setTocados} error={errorDe("giro")} />
         <Lista id="sucursales" etiqueta="Sucursales" opciones={SUCURSALES}
           valores={valores} setValores={setValores} setTocados={setTocados} error={errorDe("sucursales")} />
         <div className="sm:col-span-2">
-          <Texto id="contacto" etiqueta="Correo o WhatsApp" placeholder="tu@correo.com o 55 1234 5678"
+          <Texto id="contacto" etiqueta="Correo o WhatsApp" placeholder="tu@correo.com o 5512345678"
             autoComplete="email" valores={valores} setValores={setValores} setTocados={setTocados}
             error={errorDe("contacto")} />
         </div>
         <div className="sm:col-span-2">
           <Lista id="plan" etiqueta="Plan de interés" opcional
             opciones={PLANES.map((p) => ({ valor: p, etiqueta: p }))}
-            vacio="No estoy seguro, quiero una recomendación"
+            vacio="Aún no lo sé"
             valores={valores} setValores={setValores} setTocados={setTocados} />
         </div>
       </div>

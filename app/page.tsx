@@ -307,22 +307,34 @@ export default async function LandingPage({
       {/* Solicitud de demo. El panel oscuro y las tres promesas son del diseño
           aprobado; el formulario vive encima en blanco, que es donde el
           contraste de placeholder, error y foco se sostiene. */}
-      <section id="demo" className="scroll-mt-16 pt-20 pb-16 lg:pt-24">
+      <section id="demo" className="scroll-mt-16 pt-20 pb-14 lg:pt-24">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
           <div className="grid items-center gap-10 rounded-3xl bg-[#1C1B17] p-6 text-[#FAFAF7] sm:p-10 lg:grid-cols-2 lg:gap-14">
             <div>
-              <h2 className="text-2xl font-bold sm:text-3xl">¿Quieres verlo en tu negocio?</h2>
-              <p className="mt-3 text-[#FAFAF7]/75 leading-relaxed">
-                Agenda una demo de 20 minutos. Te ayudamos a dejar tu programa de lealtad listo.
+              <h2 className="text-3xl font-bold leading-tight sm:text-4xl">
+                ¿Quieres verlo en tu <Acento>negocio</Acento>?
+              </h2>
+              <p className="mt-4 text-[#FAFAF7]/75 leading-relaxed">
+                Agenda una demo de 20 minutos. Te ayudamos a dejar tu programa de lealtad listo,
+                con tu diseño y tu premio.
               </p>
-              <ul className="mt-6 space-y-3">
-                {["Demo en vivo, con tu giro", "Configuramos tu primera tarjeta", "Sin compromiso"].map((punto) => (
+              <ul className="mt-7 space-y-3.5">
+                {["Demo en vivo, con tu giro", "Configuramos tu primera tarjeta", "Te queda lista para publicar", "Sin compromiso"].map((punto) => (
                   <li key={punto} className="flex items-center gap-3 text-sm">
                     <Check className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
                     {punto}
                   </li>
                 ))}
               </ul>
+              {/* En renglón aparte y no dentro de la frase: como enlace en línea
+                  medía 18px de alto, y un destino de navegación pide 44. */}
+              <p className="mt-7 text-sm text-[#FAFAF7]/60">¿Prefieres escribir?</p>
+              <a
+                href={siteConfig.footer.links[0]?.href ?? "mailto:contacto@zivelo.dev"}
+                className="inline-flex min-h-11 items-center text-sm font-medium text-white underline underline-offset-4 hover:text-primary"
+              >
+                {(siteConfig.footer.links[0]?.href ?? "mailto:contacto@zivelo.dev").replace("mailto:", "")}
+              </a>
             </div>
             <SolicitarDemo />
           </div>
@@ -334,17 +346,21 @@ export default async function LandingPage({
           distancia, y un patrón estirado que a ese tamaño se veía a papel
           tapiz. Ahora es una tarjeta contenida: el texto y su salida caben en
           la misma mirada. */}
-      <section className="px-4 py-16 sm:px-6 lg:px-8">
+      <section className="px-4 pb-20 sm:px-6 lg:px-8">
         <div className="relative mx-auto max-w-3xl overflow-hidden rounded-3xl border border-border bg-card p-8 sm:p-10">
           <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
           <div className="relative flex flex-wrap items-center justify-between gap-6">
-            <div className="max-w-sm">
-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-                <CreditCard className="h-5 w-5 text-primary" aria-hidden="true" />
-              </span>
-              <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
-                ¿Ya tienes tu <Acento>tarjeta</Acento>?
-              </h2>
+            <div className="max-w-md">
+              {/* El ícono va fuera del h2: dentro, el `gap` del flex metía aire
+                  entre las palabras del propio titular. */}
+              <div className="flex items-center gap-3">
+                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                  <CreditCard className="h-5 w-5 text-primary" aria-hidden="true" />
+                </span>
+                <h2 className="text-2xl font-bold tracking-tight text-foreground">
+                  ¿Ya tienes tu <Acento>tarjeta</Acento>?
+                </h2>
+              </div>
               <p className="mt-2 leading-relaxed text-muted-foreground">
                 Entra a todas tus tarjetas, mira cuánto te falta para el premio y canjéalo desde un
                 solo lugar.
