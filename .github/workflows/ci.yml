@@ -125,7 +125,7 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
       NEXT_PUBLIC_BASE_URL: http://localhost:3000
       INVITE_ONLY: "false"
-      TEAM_MEMBER_LIMIT: "4"
+      TEAM_MEMBER_LIMIT: "20"
       AUTH_SECURITY_SECRET: ci-auth-security-secret-32-bytes-minimum
       DEV_SEED_ADMIN_PASSWORD: ci-admin-password-2
       DEV_SEED_SELLADOR_PASSWORD: ci-sellador-password-2
