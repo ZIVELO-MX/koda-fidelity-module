@@ -143,5 +143,15 @@ test.describe("FID-0016 development authentication", () => {
 
     await logout(page)
     await login(page, ADMIN_EMAIL, "ci-recovered-password-2")
+
+    await page.goto(recoveryLink)
+    await page.waitForURL("**/auth/error**", { timeout: 15000 })
+  })
+
+  test("returns an empty customer collection for an authenticated portal user without cards", async ({ page }) => {
+    await login(page, ADMIN_EMAIL, "ci-recovered-password-2")
+    const response = await apiJson(page, `/api/join?email=${encodeURIComponent(ADMIN_EMAIL)}`, { method: "GET" })
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual({ customers: [] })
   })
 })
