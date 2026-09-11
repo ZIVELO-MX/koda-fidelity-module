@@ -46,6 +46,13 @@ async function main() {
     ? await admin.updateUserById(portalExisting.id, { password: portalPassword, email_confirm: true, user_metadata: { name: "Fidelity Portal Fixture", must_change_password: false } })
     : await admin.createUser({ email: portalEmail, password: portalPassword, email_confirm: true, user_metadata: { name: "Fidelity Portal Fixture", must_change_password: false } })
   if (portalResult.error) throw new Error(`Unable to prepare portal fixture: ${portalResult.error.message}`)
+  const portalAuthUserId = portalResult.data.user?.id
+  if (!portalAuthUserId) throw new Error("Portal fixture was prepared without an id")
+  await prisma.user.upsert({
+    where: { email: portalEmail },
+    create: { email: portalEmail, name: "Fidelity Portal Fixture", role: "sellador", businessId, authUserId: portalAuthUserId, passwordSetupRequired: false },
+    update: { name: "Fidelity Portal Fixture", role: "sellador", businessId, authUserId: portalAuthUserId, passwordSetupRequired: false },
+  })
   console.log(`Prepared portal fixture: ${portalEmail}`)
 }
 
