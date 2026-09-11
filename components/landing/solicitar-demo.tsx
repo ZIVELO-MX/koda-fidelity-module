@@ -67,7 +67,7 @@ export function validarSolicitud(valores: Record<Campo, string>): Partial<Record
 }
 
 const CLASE_CAMPO =
-  "min-h-11 w-full rounded-xl border bg-white px-3.5 text-[#17130f] outline-none transition-colors placeholder:text-[#8a8478] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+  "min-h-11 w-full rounded-xl border bg-white px-3.5 text-[#17130f] outline-none transition-colors placeholder:text-[#6b6558] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
 
 export function SolicitarDemo() {
   const [valores, setValores] = useState<Record<Campo, string>>({
@@ -178,7 +178,7 @@ function Etiqueta({ id, children, opcional }: { id: Campo; children: React.React
   return (
     <label htmlFor={`lp-form-${id}`} className="mb-1.5 block text-sm font-semibold text-[#17130f]">
       {children}
-      {opcional && <span className="ml-1 font-normal text-[#8a8478]">(opcional)</span>}
+      {opcional && <span className="ml-1 font-normal text-[#6b6558]">(opcional)</span>}
     </label>
   )
 }

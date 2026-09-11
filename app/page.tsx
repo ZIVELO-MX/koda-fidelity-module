@@ -304,84 +304,45 @@ export default async function LandingPage({
         </div>
       </section>
 
-      {/* Solicitud de demo, a sangre.
-          Era una tarjeta oscura flotando sobre crema, justo encima de otra
-          tarjeta clara flotando sobre crema. Dos veces la misma figura seguidas
-          es lo que hacía que el final se leyera como fichas, por mucho que
-          entre ellas hubiera 160px. Ahora ocupa el ancho completo y el
-          formulario se monta encima: el contraste separa las dos sin depender
-          del aire. */}
-      <section
-        id="demo"
-        className="relative scroll-mt-16 overflow-hidden px-4 py-20 text-[#FAFAF7] sm:px-6 lg:px-8 lg:py-24"
-        style={{
-          background:
-            "radial-gradient(120% 130% at 85% 0%, #241d16 0%, #17130f 55%, #0e0b08 100%)",
-        }}
-      >
-        <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 -right-24 h-[420px] w-[420px] rounded-full bg-primary/20 blur-3xl" />
-        <div className="relative mx-auto grid max-w-5xl items-center gap-10 lg:grid-cols-2 lg:gap-16">
-          <div>
-            <h2 className="text-3xl font-bold leading-tight sm:text-4xl">
-              ¿Quieres verlo en tu <Acento>negocio</Acento>?
-            </h2>
-            <p className="mt-4 text-[#FAFAF7]/75 leading-relaxed">
-              Agenda una demo de 20 minutos. Te ayudamos a dejar tu programa de lealtad listo,
-              con tu diseño y tu premio.
-            </p>
-            <ul className="mt-7 space-y-3.5">
-              {["Demo en vivo, con tu giro", "Configuramos tu primera tarjeta", "Te queda lista para publicar", "Sin compromiso"].map((punto) => (
-                <li key={punto} className="flex items-center gap-3 text-sm">
-                  <Check className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-                  {punto}
-                </li>
-              ))}
-            </ul>
-            {/* En renglón aparte y no dentro de la frase: como enlace en línea
-                medía 18px de alto, y un destino de navegación pide 44. */}
-            <p className="mt-7 text-sm text-[#FAFAF7]/60">¿Prefieres escribir?</p>
-            <a
-              href={siteConfig.footer.links[0]?.href ?? "mailto:contacto@zivelo.dev"}
-              className="inline-flex min-h-11 items-center text-sm font-medium text-white underline underline-offset-4 hover:text-primary"
-            >
-              {(siteConfig.footer.links[0]?.href ?? "mailto:contacto@zivelo.dev").replace("mailto:", "")}
-            </a>
-          </div>
-          <SolicitarDemo />
-        </div>
-      </section>
-
-      {/* La entrada del cliente, la otra mitad del público.
-          Iba a todo lo ancho, con el texto a un lado y el botón a 500px de
-          distancia, y un patrón estirado que a ese tamaño se veía a papel
-          tapiz. Ahora es una tarjeta contenida: el texto y su salida caben en
-          la misma mirada. */}
-      <section className="px-4 pt-16 pb-24 sm:px-6 lg:pt-20 lg:pb-28 lg:px-8">
-        <div className="relative mx-auto max-w-3xl overflow-hidden rounded-3xl border border-border bg-card p-8 sm:p-10">
-          <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
-          <div className="relative flex flex-wrap items-center justify-between gap-6">
-            <div className="max-w-md">
-              {/* El ícono va fuera del h2: dentro, el `gap` del flex metía aire
-                  entre las palabras del propio titular. */}
-              <div className="flex items-center gap-3">
-                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                  <CreditCard className="h-5 w-5 text-primary" aria-hidden="true" />
-                </span>
-                <h2 className="text-2xl font-bold tracking-tight text-foreground">
-                  ¿Ya tienes tu <Acento>tarjeta</Acento>?
-                </h2>
-              </div>
-              <p className="mt-2 leading-relaxed text-muted-foreground">
-                Entra a todas tus tarjetas, mira cuánto te falta para el premio y canjéalo desde un
-                solo lugar.
+      {/* Solicitud de demo: panel contenido sobre crema, como el diseño
+          aprobado, que es donde vive esta sección. */}
+      <section id="demo" className="scroll-mt-16 px-4 py-20 sm:px-6 lg:px-8 lg:py-24">
+        <div
+          className="relative mx-auto max-w-5xl overflow-hidden rounded-3xl p-8 text-[#FAFAF7] sm:p-12"
+          style={{
+            background:
+              "radial-gradient(120% 130% at 85% 0%, #241d16 0%, #17130f 55%, #0e0b08 100%)",
+          }}
+        >
+          <div aria-hidden="true" className="pointer-events-none absolute -bottom-28 -right-20 h-96 w-96 rounded-full bg-primary/20 blur-3xl" />
+          <div className="relative grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
+            <div>
+              <h2 className="text-3xl font-bold leading-tight sm:text-4xl">
+                ¿Quieres verlo en tu <Acento>negocio</Acento>?
+              </h2>
+              <p className="mt-4 text-[#FAFAF7]/75 leading-relaxed">
+                Agenda una demo de 20 minutos. Te ayudamos a dejar tu programa de lealtad listo,
+                con tu diseño y tu premio.
               </p>
+              <ul className="mt-7 space-y-3.5">
+                {["Demo en vivo, con tu giro", "Configuramos tu primera tarjeta", "Te queda lista para publicar", "Sin compromiso"].map((punto) => (
+                  <li key={punto} className="flex items-center gap-3 text-sm">
+                    <Check className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                    {punto}
+                  </li>
+                ))}
+              </ul>
+              {/* En renglón aparte y no dentro de la frase: como enlace en línea
+                  medía 18px de alto, y un destino de navegación pide 44. */}
+              <p className="mt-7 text-sm text-[#FAFAF7]/60">¿Prefieres escribir?</p>
+              <a
+                href={siteConfig.footer.links[0]?.href ?? "mailto:contacto@zivelo.dev"}
+                className="inline-flex min-h-11 items-center text-sm font-medium text-white underline underline-offset-4 hover:text-primary"
+              >
+                {(siteConfig.footer.links[0]?.href ?? "mailto:contacto@zivelo.dev").replace("mailto:", "")}
+              </a>
             </div>
-            <Button asChild size="lg" className="min-h-11 group w-full px-8 sm:w-auto">
-              <Link href="/my-cards">
-                Ir a mis tarjetas
-                <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-150 group-hover:translate-x-1" />
-              </Link>
-            </Button>
+            <SolicitarDemo />
           </div>
         </div>
       </section>
@@ -394,6 +355,29 @@ export default async function LandingPage({
         style={{ background: "radial-gradient(120% 140% at 12% 0%, #241d16 0%, #17130f 55%, #0e0b08 100%)" }}
       >
         <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 right-0 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
+        {/* La entrada del cliente vive aquí, no en una sección propia. El
+            diseño aprobado no tiene ese bloque: puesta en medio quedaba como
+            una tarjeta suelta en un hueco de crema entre dos bloques oscuros.
+            Arriba del pie hace de cierre y le da peso a un pie que estaba
+            flaco. */}
+        <div className="relative mx-auto mb-12 flex max-w-6xl flex-wrap items-center justify-between gap-6 border-b border-white/10 pb-12">
+          <div className="max-w-md">
+            <h2 className="text-2xl font-bold tracking-tight text-white">
+              ¿Ya tienes tu <Acento>tarjeta</Acento>?
+            </h2>
+            <p className="mt-2 leading-relaxed text-white/70">
+              Entra a todas tus tarjetas, mira cuánto te falta para el premio y canjéalo desde un
+              solo lugar.
+            </p>
+          </div>
+          <Button asChild size="lg" className="min-h-11 group px-8">
+            <Link href="/my-cards">
+              Ir a mis tarjetas
+              <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-150 group-hover:translate-x-1" />
+            </Link>
+          </Button>
+        </div>
+
         <div className="relative mx-auto flex max-w-6xl flex-wrap justify-between gap-x-12 gap-y-10">
           <div className="max-w-xs">
             <Link href="/" className="inline-flex min-h-11 items-center gap-2.5">
