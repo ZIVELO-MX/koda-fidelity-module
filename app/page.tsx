@@ -5,7 +5,7 @@ import type { Metadata } from "next"
 import { Button } from "@/components/ui/button"
 import {
   ArrowRight, Smartphone, QrCode, Wallet, CheckCircle2, Check, Zap, Shield, BarChart3,
-  Palette, LineChart, CreditCard, Workflow, Repeat, Tag, CircleQuestionMark, Gift, Star,
+  Palette, LineChart, CreditCard, Workflow, Repeat, Tag, CircleQuestionMark,
 } from "lucide-react"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { LandingMobileNav } from "@/components/landing-mobile-nav"
@@ -17,7 +17,6 @@ import { Testimonios } from "@/components/landing/testimonios"
 import { Preguntas } from "@/components/landing/preguntas"
 import { Encabezado, Acento } from "@/components/landing/seccion"
 import { DisenosPorGiro } from "@/components/landing/disenos-por-giro"
-import { PatronDeIconos } from "@/components/landing/patron-de-iconos"
 import { SolicitarDemo } from "@/components/landing/solicitar-demo"
 import { siteConfig } from "@/lib/site-config"
 
@@ -330,104 +329,109 @@ export default async function LandingPage({
         </div>
       </section>
 
-      {/* La entrada del cliente, que es la otra mitad del público. Era un panel
-          del mismo tamaño que el del negocio y detrás venía un tercero
-          repitiendo el botón. Ahora es una franja con peso propio: el patrón de
-          la marca al 5% le da textura para que no quede como un hueco pálido
-          entre dos bloques oscuros. */}
-      <section className="relative overflow-hidden border-y border-border bg-card py-14">
-        <PatronDeIconos iconos={[CreditCard, QrCode, Gift, Star]} opacidad={0.05} color="var(--primary)" columnas={12} filas={2} />
-        <div className="relative mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-md">
-            <h2 className="text-2xl font-bold tracking-tight text-foreground">
-              ¿Ya tienes tu <Acento>tarjeta</Acento>?
-            </h2>
-            <p className="mt-2 text-muted-foreground leading-relaxed">
-              Entra a todas tus tarjetas, mira cuánto te falta para el premio y canjéalo desde un
-              solo lugar.
-            </p>
+      {/* La entrada del cliente, la otra mitad del público.
+          Iba a todo lo ancho, con el texto a un lado y el botón a 500px de
+          distancia, y un patrón estirado que a ese tamaño se veía a papel
+          tapiz. Ahora es una tarjeta contenida: el texto y su salida caben en
+          la misma mirada. */}
+      <section className="px-4 py-16 sm:px-6 lg:px-8">
+        <div className="relative mx-auto max-w-3xl overflow-hidden rounded-3xl border border-border bg-card p-8 sm:p-10">
+          <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
+          <div className="relative flex flex-wrap items-center justify-between gap-6">
+            <div className="max-w-sm">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                <CreditCard className="h-5 w-5 text-primary" aria-hidden="true" />
+              </span>
+              <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
+                ¿Ya tienes tu <Acento>tarjeta</Acento>?
+              </h2>
+              <p className="mt-2 leading-relaxed text-muted-foreground">
+                Entra a todas tus tarjetas, mira cuánto te falta para el premio y canjéalo desde un
+                solo lugar.
+              </p>
+            </div>
+            <Button asChild size="lg" className="min-h-11 group w-full px-8 sm:w-auto">
+              <Link href="/my-cards">
+                Ir a mis tarjetas
+                <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-150 group-hover:translate-x-1" />
+              </Link>
+            </Button>
           </div>
-          <Button asChild size="lg" className="min-h-11 group px-8">
-            <Link href="/my-cards">
-              Ir a mis tarjetas
-              <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-150 group-hover:translate-x-1" />
-            </Link>
-          </Button>
         </div>
       </section>
 
-      {/* Pie de cuatro columnas, como el diseño, con el halo naranja que llevan
-          sus bloques oscuros. Solo enlaces que existen: privacidad, términos y
-          redes no tienen destino todavía, y uno muerto es peor que ninguno. */}
+      {/* Pie del diseño: marca a la izquierda y los tres bloques de enlaces
+          juntos a la derecha. Sueltos por todo el ancho dejaban un hueco en el
+          que no había nada que mirar. */}
       <footer
-        className="relative overflow-hidden px-4 py-16 text-[#9a9184] sm:px-6 lg:px-8"
+        className="relative overflow-hidden px-4 py-16 sm:px-6 lg:px-8"
         style={{ background: "radial-gradient(120% 140% at 12% 0%, #241d16 0%, #17130f 55%, #0e0b08 100%)" }}
       >
         <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 right-0 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
-        <div className="relative mx-auto grid max-w-6xl gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr]">
-          <div>
+        <div className="relative mx-auto flex max-w-6xl flex-wrap justify-between gap-x-12 gap-y-10">
+          <div className="max-w-xs">
             <Link href="/" className="inline-flex min-h-11 items-center gap-2.5">
               <Image src="/short-logo.svg" alt={siteConfig.shortName} width={32} height={32} className="size-8 shrink-0" />
               <span className="font-semibold text-white">{siteConfig.name}</span>
             </Link>
-            <p className="mt-3 max-w-[30ch] text-sm leading-relaxed">{siteConfig.footer.tagline}</p>
-            <p className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/12 px-3 py-1.5 text-xs text-white/70">
+            <p className="mt-3 text-sm leading-relaxed text-white/70">{siteConfig.footer.tagline}</p>
+            <p className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/15 px-3 py-1.5 text-xs text-white/70">
               <span className="h-1.5 w-1.5 rounded-full bg-primary" />
               Parte del ecosistema Koda POS
             </p>
           </div>
 
-          {[
-            {
-              titulo: "Producto",
-              enlaces: [
-                { href: "#disenos", texto: "Diseños", ancla: true },
-                { href: "#how-it-works", texto: "Cómo funciona", ancla: true },
-                { href: "#pricing", texto: "Precios", ancla: true },
-                { href: "#faq", texto: "Preguntas frecuentes", ancla: true },
-              ],
-            },
-            {
-              titulo: "Empresa",
-              enlaces: [
-                { href: "#demo", texto: "Solicitar demo", ancla: true },
-                ...siteConfig.footer.links.map((e) => ({ href: e.href, texto: e.label, ancla: false })),
-              ],
-            },
-            {
-              titulo: "Acceso",
-              enlaces: [
-                { href: "/login", texto: "Iniciar sesión", ancla: false },
-                { href: "/my-cards", texto: "Mis tarjetas", ancla: false },
-                // Nada de "Crear cuenta" aquí: sería un segundo nombre para la
-                // misma intención que ya lleva el botón de arriba, y el
-                // recorrido de la ola lo prohíbe. La página ya tiene tres
-                // entradas al alta.
-              ],
-            },
-          ].map((columna) => (
-            <div key={columna.titulo}>
-              <h3 className="text-xs font-semibold uppercase tracking-[0.08em] text-white">{columna.titulo}</h3>
-              <ul className="mt-2">
-                {columna.enlaces.map((enlace) => (
-                  <li key={enlace.href + enlace.texto}>
-                    {enlace.ancla ? (
-                      <SmoothNavLink href={enlace.href} className="flex min-h-11 items-center text-sm transition-colors hover:text-white">
-                        {enlace.texto}
-                      </SmoothNavLink>
-                    ) : (
-                      <Link href={enlace.href} className="flex min-h-11 items-center text-sm transition-colors hover:text-white">
-                        {enlace.texto}
-                      </Link>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          <div className="flex flex-wrap gap-x-14 gap-y-8">
+            {[
+              {
+                titulo: "Producto",
+                enlaces: [
+                  { href: "#disenos", texto: "Diseños", ancla: true },
+                  { href: "#how-it-works", texto: "Cómo funciona", ancla: true },
+                  { href: "#pricing", texto: "Precios", ancla: true },
+                  { href: "#faq", texto: "Preguntas", ancla: true },
+                ],
+              },
+              {
+                titulo: "Empresa",
+                enlaces: [
+                  { href: "#demo", texto: "Solicitar demo", ancla: true },
+                  ...siteConfig.footer.links.map((e) => ({ href: e.href, texto: e.label, ancla: false })),
+                ],
+              },
+              {
+                titulo: "Acceso",
+                enlaces: [
+                  { href: "/login", texto: "Iniciar sesión", ancla: false },
+                  { href: "/my-cards", texto: "Mis tarjetas", ancla: false },
+                  // Nada de "Crear cuenta": sería un segundo nombre para la
+                  // misma intención que el botón principal.
+                ],
+              },
+            ].map((columna) => (
+              <div key={columna.titulo}>
+                <h3 className="text-xs font-semibold uppercase tracking-[0.08em] text-white">{columna.titulo}</h3>
+                <ul className="mt-1">
+                  {columna.enlaces.map((enlace) => (
+                    <li key={enlace.href + enlace.texto}>
+                      {enlace.ancla ? (
+                        <SmoothNavLink href={enlace.href} className="flex min-h-11 items-center whitespace-nowrap text-sm text-white/70 transition-colors hover:text-white">
+                          {enlace.texto}
+                        </SmoothNavLink>
+                      ) : (
+                        <Link href={enlace.href} className="flex min-h-11 items-center whitespace-nowrap text-sm text-white/70 transition-colors hover:text-white">
+                          {enlace.texto}
+                        </Link>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div className="relative mx-auto mt-12 flex max-w-6xl flex-wrap justify-between gap-3 border-t border-white/10 pt-6 text-sm text-[#7c7367]">
+        <div className="relative mx-auto mt-12 flex max-w-6xl flex-wrap justify-between gap-3 border-t border-white/10 pt-6 text-sm text-white/50">
           <span>© 2026 ZIVELO. Todos los derechos reservados.</span>
           <span>Hecho en México</span>
         </div>
