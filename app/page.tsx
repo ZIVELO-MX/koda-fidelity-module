@@ -304,40 +304,50 @@ export default async function LandingPage({
         </div>
       </section>
 
-      {/* Solicitud de demo. El panel oscuro y las tres promesas son del diseño
-          aprobado; el formulario vive encima en blanco, que es donde el
-          contraste de placeholder, error y foco se sostiene. */}
-      <section id="demo" className="scroll-mt-16 border-y border-border bg-card pt-20 pb-16 lg:pt-24 lg:pb-20">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-          <div className="grid items-center gap-10 rounded-3xl bg-[#1C1B17] p-6 text-[#FAFAF7] sm:p-10 lg:grid-cols-2 lg:gap-14">
-            <div>
-              <h2 className="text-3xl font-bold leading-tight sm:text-4xl">
-                ¿Quieres verlo en tu <Acento>negocio</Acento>?
-              </h2>
-              <p className="mt-4 text-[#FAFAF7]/75 leading-relaxed">
-                Agenda una demo de 20 minutos. Te ayudamos a dejar tu programa de lealtad listo,
-                con tu diseño y tu premio.
-              </p>
-              <ul className="mt-7 space-y-3.5">
-                {["Demo en vivo, con tu giro", "Configuramos tu primera tarjeta", "Te queda lista para publicar", "Sin compromiso"].map((punto) => (
-                  <li key={punto} className="flex items-center gap-3 text-sm">
-                    <Check className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-                    {punto}
-                  </li>
-                ))}
-              </ul>
-              {/* En renglón aparte y no dentro de la frase: como enlace en línea
-                  medía 18px de alto, y un destino de navegación pide 44. */}
-              <p className="mt-7 text-sm text-[#FAFAF7]/60">¿Prefieres escribir?</p>
-              <a
-                href={siteConfig.footer.links[0]?.href ?? "mailto:contacto@zivelo.dev"}
-                className="inline-flex min-h-11 items-center text-sm font-medium text-white underline underline-offset-4 hover:text-primary"
-              >
-                {(siteConfig.footer.links[0]?.href ?? "mailto:contacto@zivelo.dev").replace("mailto:", "")}
-              </a>
-            </div>
-            <SolicitarDemo />
+      {/* Solicitud de demo, a sangre.
+          Era una tarjeta oscura flotando sobre crema, justo encima de otra
+          tarjeta clara flotando sobre crema. Dos veces la misma figura seguidas
+          es lo que hacía que el final se leyera como fichas, por mucho que
+          entre ellas hubiera 160px. Ahora ocupa el ancho completo y el
+          formulario se monta encima: el contraste separa las dos sin depender
+          del aire. */}
+      <section
+        id="demo"
+        className="relative scroll-mt-16 overflow-hidden px-4 py-20 text-[#FAFAF7] sm:px-6 lg:px-8 lg:py-24"
+        style={{
+          background:
+            "radial-gradient(120% 130% at 85% 0%, #241d16 0%, #17130f 55%, #0e0b08 100%)",
+        }}
+      >
+        <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 -right-24 h-[420px] w-[420px] rounded-full bg-primary/20 blur-3xl" />
+        <div className="relative mx-auto grid max-w-5xl items-center gap-10 lg:grid-cols-2 lg:gap-16">
+          <div>
+            <h2 className="text-3xl font-bold leading-tight sm:text-4xl">
+              ¿Quieres verlo en tu <Acento>negocio</Acento>?
+            </h2>
+            <p className="mt-4 text-[#FAFAF7]/75 leading-relaxed">
+              Agenda una demo de 20 minutos. Te ayudamos a dejar tu programa de lealtad listo,
+              con tu diseño y tu premio.
+            </p>
+            <ul className="mt-7 space-y-3.5">
+              {["Demo en vivo, con tu giro", "Configuramos tu primera tarjeta", "Te queda lista para publicar", "Sin compromiso"].map((punto) => (
+                <li key={punto} className="flex items-center gap-3 text-sm">
+                  <Check className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                  {punto}
+                </li>
+              ))}
+            </ul>
+            {/* En renglón aparte y no dentro de la frase: como enlace en línea
+                medía 18px de alto, y un destino de navegación pide 44. */}
+            <p className="mt-7 text-sm text-[#FAFAF7]/60">¿Prefieres escribir?</p>
+            <a
+              href={siteConfig.footer.links[0]?.href ?? "mailto:contacto@zivelo.dev"}
+              className="inline-flex min-h-11 items-center text-sm font-medium text-white underline underline-offset-4 hover:text-primary"
+            >
+              {(siteConfig.footer.links[0]?.href ?? "mailto:contacto@zivelo.dev").replace("mailto:", "")}
+            </a>
           </div>
+          <SolicitarDemo />
         </div>
       </section>
 

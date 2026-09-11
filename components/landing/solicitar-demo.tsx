@@ -132,7 +132,7 @@ export function SolicitarDemo() {
   }
 
   return (
-    <form ref={formulario} onSubmit={enviar} noValidate className="rounded-2xl bg-white p-6 sm:p-8">
+    <form ref={formulario} onSubmit={enviar} noValidate className="rounded-2xl bg-white p-6 shadow-[0_30px_60px_-24px_rgba(0,0,0,.55)] sm:p-8">
       <div className="grid gap-4 sm:grid-cols-2">
         <Texto id="nombre" etiqueta="Nombre completo" placeholder="María García" autoComplete="name"
           valores={valores} setValores={setValores} setTocados={setTocados} error={errorDe("nombre")} />
