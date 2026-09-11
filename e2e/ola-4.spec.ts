@@ -25,6 +25,8 @@ const PROMESAS_SIN_RESPALDO = [
   /por definir/i,
   // Empezar no es gratis: publicar la tarjeta requiere contratar un plan.
   /empezar gratis/i,
+  // El producto no tiene cientos de negocios: está antes de su lanzamiento.
+  /cientos de/i,
 ]
 
 async function desborda(page: Page): Promise<boolean> {

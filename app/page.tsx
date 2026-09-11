@@ -10,6 +10,8 @@ import { SmoothNavLink } from "@/components/smooth-nav-link"
 import { RevealGrid } from "@/components/reveal-grid"
 import { MarqueeBand } from "@/components/marquee-band"
 import { Precios } from "@/components/landing/precios"
+import { ComparacionPapel } from "@/components/landing/comparacion-papel"
+import { Testimonios } from "@/components/landing/testimonios"
 import { siteConfig } from "@/lib/site-config"
 
 export const metadata: Metadata = {
@@ -266,7 +268,7 @@ export default async function LandingPage({
               Perfecto para negocios locales
             </h2>
             <p className="text-lg text-muted-foreground">
-              Únete a cientos de pequeños negocios que ya usan Koda Fidelity.
+              El mismo programa sirve igual para un café, una barbería o una tienda de barrio.
             </p>
           </div>
           <RevealGrid className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -281,6 +283,23 @@ export default async function LandingPage({
               </div>
             ))}
           </RevealGrid>
+        </div>
+      </section>
+
+      <Testimonios />
+
+      {/* Comparación con la tarjeta de papel */}
+      <section className="py-20 lg:py-28">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+              Lo mismo que ya haces, sin el papel
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              La tarjeta de cartón funciona. Solo que no te deja ver nada de lo que pasa con ella.
+            </p>
+          </div>
+          <ComparacionPapel />
         </div>
       </section>
 
