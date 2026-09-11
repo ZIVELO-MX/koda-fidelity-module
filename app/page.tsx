@@ -307,7 +307,7 @@ export default async function LandingPage({
       {/* Solicitud de demo. El panel oscuro y las tres promesas son del diseño
           aprobado; el formulario vive encima en blanco, que es donde el
           contraste de placeholder, error y foco se sostiene. */}
-      <section id="demo" className="scroll-mt-16 pt-20 pb-14 lg:pt-24">
+      <section id="demo" className="scroll-mt-16 pt-20 pb-16 lg:pt-24 lg:pb-20">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
           <div className="grid items-center gap-10 rounded-3xl bg-[#1C1B17] p-6 text-[#FAFAF7] sm:p-10 lg:grid-cols-2 lg:gap-14">
             <div>
@@ -346,7 +346,7 @@ export default async function LandingPage({
           distancia, y un patrón estirado que a ese tamaño se veía a papel
           tapiz. Ahora es una tarjeta contenida: el texto y su salida caben en
           la misma mirada. */}
-      <section className="px-4 pb-20 sm:px-6 lg:px-8">
+      <section className="px-4 pt-16 pb-20 sm:px-6 lg:pt-20 lg:px-8">
         <div className="relative mx-auto max-w-3xl overflow-hidden rounded-3xl border border-border bg-card p-8 sm:p-10">
           <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
           <div className="relative flex flex-wrap items-center justify-between gap-6">
