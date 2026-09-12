@@ -56,7 +56,14 @@ export async function advanceOnboarding(db: Db, authUserId: string, action: stri
   if (action === "complete_card") {
     const category = await db.businessCategory.findUnique({ where: { id: String(businessDraft.categoryId) } })
     if (!category || !category.isActive) throw new ValidationError("Categoría inválida")
-    if (progress.firstCardId) return getOnboarding(db, authUserId)
+    if (progress.firstCardId) {
+      const updated = await db.onboardingProgress.updateMany({
+        where: { id: progress.id, draftVersion },
+        data: { ...next, draftVersion: { increment: 1 } },
+      })
+      if (updated.count !== 1) throw new ConflictError("El borrador cambió; recarga el onboarding")
+      return getOnboarding(db, authUserId)
+    }
     const name = String(businessDraft.name)
     const stampsRequired = Number(cardDraft.stampsRequired)
     if (!Number.isInteger(stampsRequired) || stampsRequired < 1 || stampsRequired > 100) throw new ValidationError("La tarjeta debe tener entre 1 y 100 sellos")

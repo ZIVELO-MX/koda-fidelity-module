@@ -2,12 +2,14 @@ import "dotenv/config"
 import { Prisma, PrismaClient } from "@prisma/client"
 import { createAdminClient } from "../lib/supabase-admin"
 import { randomUUID } from "node:crypto"
+import { config } from "../lib/config"
 
 const prisma = new PrismaClient()
-const [action, email] = process.argv.slice(2)
+const args = process.argv.slice(2).filter((arg) => arg !== "--")
+const [action, email] = args
 const fail = (message: string): never => { throw new Error(`[requestId:${randomUUID()}] ${message}`) }
 
-if (!process.env.FID_DEBUG_AUTH || process.env.FID_DEBUG_AUTH !== "true" || process.env.VERCEL_ENV === "production") {
+if (!config.isDebugAuthEnabled) {
   fail("Onboarding debug commands require FID_DEBUG_AUTH=true outside production")
 }
 if (!email || !email.toLowerCase().endsWith("@invalid.dev")) {
@@ -20,9 +22,16 @@ const targetEmail = email
 const command = action as "status" | "enable" | "reset"
 
 async function main() {
-  const listed = await createAdminClient().auth.admin.listUsers({ page: 1, perPage: 1000 })
-  if (listed.error) fail(`Auth lookup failed: ${listed.error.message}`)
-  const authUser = listed.data.users.find((user) => user.email?.toLowerCase() === targetEmail.toLowerCase())
+  const admin = createAdminClient().auth.admin
+  let page = 1
+  let authUser: Awaited<ReturnType<typeof admin.listUsers>>["data"]["users"][number] | undefined
+  while (!authUser) {
+    const listed = await admin.listUsers({ page, perPage: 1000 })
+    if (listed.error) fail(`Auth lookup failed: ${listed.error.message}`)
+    authUser = listed.data.users.find((user) => user.email?.toLowerCase() === targetEmail.toLowerCase())
+    if (listed.data.users.length < 1000) break
+    page += 1
+  }
   const authId = authUser?.id ?? fail(`Auth user not found: ${targetEmail}`)
   const user = await prisma.user.findUnique({ where: { authUserId: authId }, include: { onboardingProgress: true } })
   const account = user ?? fail(`Application user not found: ${targetEmail}`)
@@ -43,4 +52,8 @@ async function main() {
   console.log(JSON.stringify(progress, null, 2))
 }
 
-main().finally(() => prisma.$disconnect())
+main().catch((error) => {
+  const message = error instanceof Error ? error.message : "Unexpected onboarding debug error"
+  console.error(message.includes("requestId:") ? message : `[requestId:${randomUUID()}] ${message}`)
+  process.exitCode = 1
+}).finally(() => prisma.$disconnect())

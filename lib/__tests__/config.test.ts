@@ -55,4 +55,11 @@ describe("debug auth config", () => {
     process.env.VERCEL_ENV = "production"
     expect(config.isDebugEmail("tester@invalid.dev")).toBe(false)
   })
+
+  it("rejects production even when Vercel environment is absent", () => {
+    process.env.FID_DEBUG_AUTH = "true"
+    vi.stubEnv("NODE_ENV", "production")
+    delete process.env.VERCEL_ENV
+    expect(config.isDebugEmail("tester@invalid.dev")).toBe(false)
+  })
 })

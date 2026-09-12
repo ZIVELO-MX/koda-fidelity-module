@@ -136,6 +136,13 @@ export async function signup(_prev: AuthResult, formData: FormData): Promise<Aut
 
 async function createDebugUser(email: string, password: string, name: string) {
   const admin = createAdminClient().auth.admin
+  for (let page = 1; ; page += 1) {
+    const listed = await admin.listUsers({ page, perPage: 1000 })
+    if (listed.error) return { data: { user: null, session: null }, error: listed.error }
+    const existing = listed.data.users.find((user) => user.email?.toLowerCase() === email.toLowerCase())
+    if (existing) return { data: { user: existing, session: null }, error: null }
+    if (listed.data.users.length < 1000) break
+  }
   const created = await admin.createUser({ email, password, email_confirm: true, user_metadata: { name } })
   return { data: { user: created.data.user, session: null }, error: created.error }
 }
