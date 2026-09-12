@@ -15,7 +15,7 @@ describe("repeating onboarding with an existing first card", () => {
       user: { findUnique: vi.fn().mockResolvedValueOnce(user).mockResolvedValueOnce(user) },
       businessCategory: { findUnique: vi.fn().mockResolvedValue({ id: "category-1", isActive: true }) },
       onboardingProgress: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
-    } as never
+    } as any
 
     const result = await advanceOnboarding(db, "auth-1", "complete_card", 3)
 
