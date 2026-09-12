@@ -40,25 +40,6 @@ export class ForbiddenError extends Error {
   }
 }
 
-export type ApiErrorCode =
-  | "KF-AUTH-001" | "KF-ACCOUNT-001" | "KF-ACCESS-001" | "KF-CARD-001"
-  | "KF-CARD-004" | "KF-CUSTOMER-001" | "KF-REQUEST-001" | "KF-SYS-001"
-  | "KF-ONBOARDING-001" | "KF-ONBOARDING-002" | "KF-BILLING-001" | "KF-BILLING-002"
-  | "KF-BILLING-003" | "KF-BILLING-004" | "KF-PROFILE-001"
-
-export class AppError extends Error {
-  constructor(
-    public readonly code: ApiErrorCode,
-    message: string,
-    public readonly status = 400,
-    public readonly retryable = false,
-    public readonly action = "Revisa la solicitud e inténtalo de nuevo.",
-  ) {
-    super(message)
-    this.name = "AppError"
-  }
-}
-
 export function requestIdFrom(request?: Request) {
   return request?.headers?.get?.("x-request-id") ?? randomUUID()
 }
@@ -69,10 +50,11 @@ export function withRequestId(response: Response, requestId: string = randomUUID
 }
 
 export function withApiContext(
+  request: Request,
   handler: (requestId: string) => Promise<Response>,
 ) {
   return async () => {
-    const requestId = randomUUID()
+    const requestId = requestIdFrom(request)
     try {
       return withRequestId(await handler(requestId), requestId)
     } catch (error) {
@@ -164,15 +146,6 @@ export function requireRole(user: Pick<SessionBusiness["user"], "role">, ...allo
 }
 
 export function handleApiError(error: unknown, requestId: string = randomUUID()): NextResponse<ApiErrorBody> {
-  if (error instanceof AppError) {
-    return NextResponse.json({
-      error: error.message,
-      code: error.code,
-      action: error.action,
-      requestId,
-      retryable: error.retryable,
-    }, { status: error.status, headers: { "x-request-id": requestId } })
-  }
   if (error instanceof UnauthorizedError) {
     return NextResponse.json({ error: error.message, code: "KF-AUTH-001", action: "Inicia sesión de nuevo.", requestId, retryable: false }, { status: 401, headers: { "x-request-id": requestId } })
   }
