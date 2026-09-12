@@ -27,6 +27,13 @@ El build informó un warning de trazado NFT de Turbopack en `lib/passes/google.t
 esperado de raíz por lockfiles del worktree. No bloquean esta validación, pero deben revisarse
 antes de una integración definitiva.
 
+## Fixtures de administradores
+
+El seed de desarrollo crea y enlaza como administradores a `benjamin.rodriguez@zivelo.dev`
+(`biz-fidelity-benrod`) y `raul.mendez@zivelo.dev` (`biz-fidelity-rulaxx`). Ambos usan
+`DEV_SEED_GENERIC_PASSWORD` y exigen cambio de contraseña. Si ya existen en Supabase Auth, el
+seed conserva la contraseña y actualiza igualmente sus metadatos y el indicador de cambio.
+
 ## No ejecutado en esta fase
 
 - Supabase local/Mailpit y migraciones sobre una base desechable.
