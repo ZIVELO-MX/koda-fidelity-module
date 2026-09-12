@@ -1,6 +1,6 @@
 "use client"
 
-import { ThemeToggle } from "@/components/theme-toggle"
+import Link from "next/link"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -47,8 +47,9 @@ export default function SettingsPage() {
       const res = await fetch("/api/business", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
+        // Sin `name`: lo posee Marca. El PUT es parcial, así que omitirlo lo
+        // deja intacto en vez de borrarlo.
         body: JSON.stringify({
-          name: businessName,
           nickname,
           businessType,
           address,
@@ -107,15 +108,22 @@ export default function SettingsPage() {
           </div>
         </div>
         <div className="space-y-4">
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="businessName">Nombre del Negocio</Label>
-              <Input id="businessName" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
+          {/* El nombre lo posee Marca, que es donde se ve sobre la tarjeta. Se
+              editaba en las dos pantallas, cada una con su guardado, y el último
+              que guardabas pisaba al otro. */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted/30 p-4">
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground">Nombre del negocio</p>
+              <p className="truncate font-medium text-foreground">{businessName || "Sin nombre"}</p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="businessType">Tipo de Negocio</Label>
-              <Input id="businessType" value={businessType} onChange={(e) => setBusinessType(e.target.value)} />
-            </div>
+            <Button asChild variant="outline" className="min-h-11">
+              <Link href="/dashboard/branding">Cambiar en Marca</Link>
+            </Button>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="businessType">Tipo de Negocio</Label>
+            <Input id="businessType" value={businessType} onChange={(e) => setBusinessType(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="nickname">Apodo (visible en el panel)</Label>
@@ -138,38 +146,16 @@ export default function SettingsPage() {
             <Label htmlFor="phone">Teléfono</Label>
             <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
           </div>
-        </div>
-      </div>
 
-      <div className="bg-card rounded-2xl p-6 border border-border">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Mail className="h-5 w-5 text-primary" />
+          {/* El correo no se edita, así que era una tarjeta entera para mostrar
+              un dato. Como fila dice lo mismo ocupando lo que le corresponde. */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted/30 p-4">
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground">Correo de la cuenta</p>
+              <p className="truncate font-medium text-foreground">{email}</p>
+            </div>
+            <Mail className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
           </div>
-          <div>
-            <h2 className="font-semibold text-foreground">Correo electrónico de contacto</h2>
-            <p className="text-sm text-muted-foreground">Donde enviamos actualizaciones importantes</p>
-          </div>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="email">Correo Electrónico</Label>
-          <Input id="email" type="email" value={email} disabled />
-        </div>
-      </div>
-
-      <div className="bg-card rounded-2xl p-6 border border-border">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <ThemeToggle className="text-foreground" />
-          </div>
-          <div>
-            <h2 className="font-semibold text-foreground">Apariencia</h2>
-            <p className="text-sm text-muted-foreground">Cambia entre modo claro y oscuro</p>
-          </div>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Activar modo oscuro</span>
-          <ThemeToggle />
         </div>
       </div>
 
@@ -179,13 +165,17 @@ export default function SettingsPage() {
             <Globe className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h2 className="font-semibold text-foreground">Sitio Web y Redes</h2>
-            <p className="text-sm text-muted-foreground">Tu presencia en línea</p>
+            <h2 className="font-semibold text-foreground">Presencia digital</h2>
+            {/* Sin promesas: hoy no llegan al cliente, y decir que "pronto"
+                aparecerán es exactamente lo que la ola 1 quitó de la app. */}
+            <p className="text-sm text-muted-foreground">
+              Todavía no se muestran a tus clientes.
+            </p>
           </div>
         </div>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="website">Sitio Web</Label>
+            <Label htmlFor="website">Sitio web</Label>
             <Input id="website" value={website} onChange={(e) => setWebsite(e.target.value)} />
           </div>
           <div className="space-y-2">
@@ -200,7 +190,7 @@ export default function SettingsPage() {
         {saveError && (
           <p className="text-sm text-red-500 text-right">{saveError}</p>
         )}
-        <Button onClick={handleSave} className="px-8" disabled={saving}>
+        <Button onClick={handleSave} className="min-h-11 px-8" disabled={saving}>
           {saved ? (
             <>
               <Check className="h-4 w-4 mr-2" />

@@ -59,7 +59,6 @@ export async function ensureSeedAuthUser(admin: SeedAuthAdmin, user: SeedRoleUse
 
     const existing = listed.data.users.find((candidate) => candidate.email?.toLowerCase() === user.email)
     if (existing) {
-      if (preserveExistingPassword) return existing.id
       const updated = await admin.updateUserById(existing.id, {
         ...(preserveExistingPassword ? {} : { password }),
         email_confirm: true,

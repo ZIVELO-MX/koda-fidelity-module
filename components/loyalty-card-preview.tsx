@@ -4,7 +4,19 @@ import { QRCodeSVG } from "qrcode.react"
 import { Stamp } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getCardIcon } from "@/lib/card-icons"
+import { PatronDeIconos } from "@/components/patron-de-iconos"
 
+
+/** Aclara u oscurece un hex hacia un tono, para los dos extremos del degradado. */
+function mezclar(hex: string, hacia: number, cantidad: number): string {
+  const limpio = hex.replace("#", "")
+  if (limpio.length !== 6) return hex
+  const canal = (i: number) => {
+    const v = parseInt(limpio.slice(i, i + 2), 16)
+    return Math.round(v + (hacia - v) * cantidad)
+  }
+  return `rgb(${canal(0)}, ${canal(2)}, ${canal(4)})`
+}
 
 interface LoyaltyCardPreviewProps {
   businessName: string
@@ -44,6 +56,10 @@ export function LoyaltyCardPreview({
   const stamps = Array.from({ length: maxStamps }, (_, i) => i < currentStamps)
   const milestonePositions = new Map(milestoneClaims.map(c => [c.stampNumber, c]))
 
+  // El ícono del negocio hace de textura. Si no hay, la tarjeta va limpia.
+  const iconoDelNegocio = getCardIcon(iconName)?.Icon
+  const patron = iconoDelNegocio ? [iconoDelNegocio] : null
+
   const fg = "#ffffff"
   const fgMuted = "rgba(255,255,255,0.6)"
   const fgMuted2 = "rgba(255,255,255,0.7)"
@@ -59,8 +75,17 @@ export function LoyaltyCardPreview({
         "relative w-full max-w-sm mx-auto rounded-3xl overflow-hidden shadow-xl dark:ring-1 dark:ring-white/10",
         className,
       )}
-      style={{ backgroundColor: brandColor }}
+      style={{
+        // Degradado en vez de plano: es lo que distingue una tarjeta de un
+        // rectángulo de color, y es lo que ya usan los temas por giro.
+        backgroundImage: `radial-gradient(120% 130% at 18% 4%, ${mezclar(brandColor, 255, 0.16)}, ${mezclar(brandColor, 0, 0.22)})`,
+        backgroundColor: brandColor,
+      }}
     >
+      {/* El patrón del ícono del negocio. Sin él la tarjeta es un color plano,
+          y era la pieza que separaba la landing del producto. */}
+      {patron && <PatronDeIconos iconos={patron} opacidad={0.12} columnas={4} filas={5} />}
+
       {/* Hero section */}
       <div className="relative px-6 pt-6 pb-4">
         <div className="flex items-center gap-3 mb-4">
@@ -144,11 +169,14 @@ export function LoyaltyCardPreview({
                     const MilestoneIconComp = milestoneIcon?.Icon ?? Stamp
                     return <MilestoneIconComp className="w-5 h-5" style={{ color: "#ffffff" }} strokeWidth={2} />
                   }
-                  const effectiveStampIcon = stampIconName ?? iconName
-                  if (effectiveStampIcon === "logo" && businessLogo) {
+                  // El sello no hereda el ícono de la tarjeta: son dos decisiones
+                  // distintas, y heredarlo hacía que elegir el ícono de la
+                  // tarjeta cambiara los sellos sin pedirlo. Sin elección propia,
+                  // un sello es un sello.
+                  if (stampIconName === "logo" && businessLogo) {
                     return <img src={businessLogo} alt="" className="w-5 h-5 object-contain rounded" />
                   }
-                  const cardIcon = getCardIcon(effectiveStampIcon)
+                  const cardIcon = getCardIcon(stampIconName)
                   const StampIcon = cardIcon?.Icon ?? Stamp
                   return <StampIcon className="w-5 h-5" style={{ color: brandColor }} strokeWidth={2} />
                 })()}

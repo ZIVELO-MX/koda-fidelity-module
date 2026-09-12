@@ -4,7 +4,8 @@ import { createAdminClient } from "@/lib/supabase-admin"
 import { redirect } from "next/navigation"
 import { TeamClient } from "./team-client"
 
-export const metadata = { title: "Equipo — Koda Fidelity" }
+// El sufijo lo pone la plantilla de app/layout.tsx.
+export const metadata = { title: "Equipo" }
 
 export default async function TeamPage() {
   const supabase = await createClient()

@@ -14,8 +14,8 @@ async function main() {
   const genericPassword = process.env.DEV_SEED_GENERIC_PASSWORD || "Koda1234!"
   if (genericPassword.length < 8) throw new Error("DEV_SEED_GENERIC_PASSWORD must have at least 8 characters")
   const developmentAccounts = [
-    { email: "rulaxx@zivelo.dev", name: "Rulaxx", businessId: "biz-fidelity-rulaxx" },
-    { email: "benrod@zivelo.dev", name: "Benrod", businessId: "biz-fidelity-benrod" },
+    { email: "benjamin.rodriguez@zivelo.dev", name: "Benjamin Rodríguez", businessId: "biz-fidelity-benrod" },
+    { email: "raul.mendez@zivelo.dev", name: "Raúl Méndez", businessId: "biz-fidelity-rulaxx" },
   ] as const
   const preservedBusinessIds = developmentAccounts.map(account => account.businessId)
   const admin = createAdminClient().auth.admin
