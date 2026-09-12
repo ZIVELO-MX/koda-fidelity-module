@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { getFriendlySendError } from "@/lib/auth-errors"
 import { createClient } from "@/lib/supabase-server"
+import { createAdminClient } from "@/lib/supabase-admin"
 import { enforceRateLimit, normalizeEmail } from "@/lib/auth-security"
 import { provisionSignup } from "@/lib/signup-provisioning"
 import { headers } from "next/headers"
@@ -112,7 +113,9 @@ export async function signup(_prev: AuthResult, formData: FormData): Promise<Aut
   await enforceRateLimit("signup-ip", requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown", 5, 60 * 60 * 1000)
   await prisma.signupIntent.upsert({ where: { email: normalizedEmail }, create: { email: normalizedEmail, name: name.trim() }, update: { name: name.trim(), status: "pending" } })
   const supabase = await createClient()
-  const { data, error } = await supabase.auth.signUp({ email: normalizedEmail, password, options: { data: { name: name.trim() } } })
+  const { data, error } = config.isDebugEmail(normalizedEmail)
+    ? await createDebugUser(normalizedEmail, password, name.trim())
+    : await supabase.auth.signUp({ email: normalizedEmail, password, options: { data: { name: name.trim() } } })
   if (error || !data.user) return { error: "No fue posible crear la cuenta. Revisa tus datos." }
   await prisma.signupIntent.update({ where: { email: normalizedEmail }, data: { authUserId: data.user.id } })
   if (data.session) {
@@ -122,6 +125,12 @@ export async function signup(_prev: AuthResult, formData: FormData): Promise<Aut
   }
 
   return { success: true }
+}
+
+async function createDebugUser(email: string, password: string, name: string) {
+  const admin = createAdminClient().auth.admin
+  const created = await admin.createUser({ email, password, email_confirm: true, user_metadata: { name } })
+  return { data: { user: created.data.user, session: null }, error: created.error }
 }
 
 export async function sendLoginMagicLink(email: string): Promise<AuthResult> {

@@ -25,7 +25,8 @@
     "send:invite": "pnpm tsx scripts/send-invite.ts",
     "generate:pass-images": "tsx scripts/generate-pass-images.ts",
     "auth:backfill": "tsx scripts/backfill-auth-user-ids.ts",
-    "billing:set-plan": "tsx scripts/billing-set-plan.ts"
+    "billing:set-plan": "tsx scripts/billing-set-plan.ts",
+    "onboarding:debug": "tsx scripts/onboarding-debug.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
