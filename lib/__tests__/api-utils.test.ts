@@ -15,6 +15,7 @@ import {
   ValidationError,
   ForbiddenError,
   handleApiError,
+  withApiContext,
 } from "../api-utils"
 
 describe("api-utils error classes", () => {
@@ -72,5 +73,31 @@ describe("handleApiError", () => {
   it("returns 500 for unknown errors", () => {
     const response = handleApiError(new Error("Unexpected"))
     expect(response.status).toBe(500)
+  })
+})
+
+describe("withApiContext", () => {
+  it("preserves an incoming request id", async () => {
+    const response = await withApiContext(
+      new Request("http://localhost", { headers: { "x-request-id": "req-client-1" } }),
+      async () => new Response("ok"),
+    )()
+    expect(response.headers.get("x-request-id")).toBe("req-client-1")
+    expect(await response.text()).toBe("ok")
+  })
+
+  it("generates a request id when the client did not send one", async () => {
+    const response = await withApiContext(new Request("http://localhost"), async () => new Response("ok"))()
+    expect(response.headers.get("x-request-id")).toMatch(/^[0-9a-f-]{36}$/)
+  })
+
+  it("maps handler errors and keeps the same request id", async () => {
+    const response = await withApiContext(
+      new Request("http://localhost", { headers: { "x-request-id": "req-error-1" } }),
+      async () => { throw new UnauthorizedError() },
+    )()
+    expect(response.status).toBe(401)
+    expect(response.headers.get("x-request-id")).toBe("req-error-1")
+    expect(await response.json()).toMatchObject({ requestId: "req-error-1" })
   })
 })

@@ -69,10 +69,11 @@ export function withRequestId(response: Response, requestId: string = randomUUID
 }
 
 export function withApiContext(
+  request: Request,
   handler: (requestId: string) => Promise<Response>,
 ) {
   return async () => {
-    const requestId = randomUUID()
+    const requestId = requestIdFrom(request)
     try {
       return withRequestId(await handler(requestId), requestId)
     } catch (error) {
