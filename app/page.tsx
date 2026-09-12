@@ -3,12 +3,21 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import type { Metadata } from "next"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Smartphone, QrCode, Wallet, CheckCircle2, Zap, Shield, BarChart3 } from "lucide-react"
-import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
+import {
+  Smartphone, QrCode, Wallet, CheckCircle2, Check, Zap, Shield, BarChart3,
+  Palette, LineChart, CreditCard, Workflow, Repeat, Tag, CircleQuestionMark,
+} from "lucide-react"
+import { TarjetaDelHero } from "@/components/landing/tarjeta-del-hero"
 import { LandingMobileNav } from "@/components/landing-mobile-nav"
 import { SmoothNavLink } from "@/components/smooth-nav-link"
-import { RevealGrid } from "@/components/reveal-grid"
 import { MarqueeBand } from "@/components/marquee-band"
+import { Precios } from "@/components/landing/precios"
+import { ComparacionPapel } from "@/components/landing/comparacion-papel"
+import { Testimonios } from "@/components/landing/testimonios"
+import { Preguntas } from "@/components/landing/preguntas"
+import { Encabezado, Acento } from "@/components/landing/seccion"
+import { DisenosPorGiro } from "@/components/landing/disenos-por-giro"
+import { SolicitarDemo } from "@/components/landing/solicitar-demo"
 import { siteConfig } from "@/lib/site-config"
 
 export const metadata: Metadata = {
@@ -68,15 +77,15 @@ export default async function LandingPage({
     redirect(`/auth/error?${qs.toString()}`)
   }
   return (
-    <div className="min-h-screen bg-background forced-light">
+    <div className="landing min-h-screen bg-background forced-light">
       <a href="#main-content" className="skip-link">
         Saltar al contenido principal
       </a>
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+      <nav className="sticky top-0 z-50 bg-[#17130f]/95 backdrop-blur-md text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-2">
+            <Link href="/" className="inline-flex min-h-11 items-center gap-2">
               <Image
                 src="/short-logo.svg"
                 alt={siteConfig.shortName}
@@ -84,28 +93,31 @@ export default async function LandingPage({
                 height={36}
                 className="size-9 shrink-0"
               />
-              <span className="font-semibold text-lg text-foreground">Koda Fidelity</span>
+              <span className="whitespace-nowrap font-semibold text-lg text-white">Koda Fidelity</span>
             </Link>
-            <div className="hidden md:flex items-center gap-8">
-              <SmoothNavLink href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Funciones
+            <div className="hidden lg:flex items-center gap-8">
+              <SmoothNavLink href="#disenos" className="inline-flex min-h-11 items-center text-sm text-white/70 hover:text-white transition-colors">
+                Diseños
               </SmoothNavLink>
-              <SmoothNavLink href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <SmoothNavLink href="#how-it-works" className="inline-flex min-h-11 items-center text-sm text-white/70 hover:text-white transition-colors">
                 Cómo Funciona
               </SmoothNavLink>
-              <SmoothNavLink href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <SmoothNavLink href="#pricing" className="inline-flex min-h-11 items-center text-sm text-white/70 hover:text-white transition-colors">
                 Precios
               </SmoothNavLink>
+              <SmoothNavLink href="#faq" className="inline-flex min-h-11 items-center text-sm text-white/70 hover:text-white transition-colors">
+                FAQ
+              </SmoothNavLink>
             </div>
-            <div className="flex items-center gap-2">
-              <Button asChild variant="ghost" className="hidden md:inline-flex">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Button asChild variant="ghost" className="hidden min-h-11 text-white hover:bg-white/10 hover:text-white md:inline-flex">
                 <Link href="/login">
                   Iniciar Sesión
                 </Link>
               </Button>
-              <Button asChild size="sm" className="hidden md:inline-flex active:scale-[0.97] transition-transform">
+              <Button asChild size="sm" className="hidden min-h-11 bg-white text-[#17130f] hover:bg-primary hover:text-primary-foreground md:inline-flex active:scale-[0.97] transition-transform">
                 <Link href="/signup">
-                  Empezar Gratis
+                  Empieza por solo $149 al mes
                 </Link>
               </Button>
               <LandingMobileNav />
@@ -115,277 +127,320 @@ export default async function LandingPage({
       </nav>
 
       {/* Hero Section */}
-      <section id="main-content" className="relative overflow-hidden">
+      <section
+        id="main-content"
+        className="relative overflow-hidden text-white"
+        style={{
+          background:
+            "radial-gradient(130% 120% at 82% -10%, #241d16 0%, #17130f 46%, #0e0b08 100%)",
+        }}
+      >
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-40 -right-24 w-[560px] h-[560px] rounded-full bg-primary/10 blur-3xl" />
-          <div className="absolute -bottom-20 -left-20 w-[380px] h-[380px] rounded-full bg-primary/[0.07] blur-3xl" />
+          <div className="absolute -top-40 -right-24 w-[620px] h-[620px] rounded-full bg-primary/25 blur-3xl" />
+          <div className="absolute -bottom-44 -left-28 w-[460px] h-[460px] rounded-full bg-primary/10 blur-3xl" />
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <div className="space-y-8">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-medium">
-                <Zap className="h-4 w-4" />
+              <div className="inline-flex items-center gap-2 self-start rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-white/85">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_10px_var(--primary)]" />
                 {siteConfig.hero.tagline}
               </div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight text-balance">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight text-balance">
                 {siteConfig.hero.title}
-                <span className="text-primary">{siteConfig.hero.titleHighlight}</span>
+                <span className="landing-acento text-primary">{siteConfig.hero.titleHighlight}</span>
               </h1>
-              <p className="text-lg text-muted-foreground max-w-xl leading-relaxed">
+              <p className="text-lg text-white/72 max-w-xl leading-relaxed">
                 {siteConfig.hero.subtitle}
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button asChild size="lg" className="group w-full sm:w-auto text-base px-8 active:scale-[0.97] transition-transform">
+                <Button asChild size="lg" className="min-h-11 w-full sm:w-auto text-base px-8 active:scale-[0.97] transition-transform">
                   <Link href="/signup">
-                    Empezar Gratis
-                    <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-150 group-hover:translate-x-1" />
+                    Empieza por solo $149 al mes
                   </Link>
                 </Button>
-                <Button asChild size="lg" variant="outline" className="w-full sm:w-auto text-base px-8 active:scale-[0.97] transition-transform">
+                <Button asChild size="lg" variant="outline" className="min-h-11 w-full border-white/20 bg-white/5 text-white hover:bg-white/15 hover:text-white sm:w-auto text-base px-8 active:scale-[0.97] transition-transform">
                   <SmoothNavLink href="#how-it-works">
                     Ver Cómo Funciona
                   </SmoothNavLink>
                 </Button>
               </div>
-              <div className="flex flex-wrap gap-x-5 gap-y-2 pt-1">
-                {["Sin tarjeta de crédito", "Setup en 2 minutos", "Cancela cuando quieras"].map((text) => (
-                  <div key={text} className="flex items-center gap-1.5">
-                    <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-                    <span className="text-sm text-muted-foreground">{text}</span>
-                  </div>
-                ))}
-              </div>
             </div>
             <div className="relative lg:pl-8">
               <div className="relative">
                 <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 to-primary/5 rounded-[40px] blur-2xl pointer-events-none" />
-                <LoyaltyCardPreview
-                  businessName={siteConfig.hero.demoCard.businessName}
-                  currentStamps={siteConfig.hero.demoCard.currentStamps}
-                  maxStamps={siteConfig.hero.demoCard.maxStamps}
-                  reward={siteConfig.hero.demoCard.reward}
-                  expirationDate="31 dic 2026"
-                  brandColor={siteConfig.hero.demoCard.brandColor}
-                  className="relative"
-                />
+<TarjetaDelHero />
               </div>
             </div>
           </div>
         </div>
       </section>
-
-      {/* Feature trust strip */}
-      <div className="border-y border-border/60 bg-muted/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
-          <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-3 md:gap-x-14">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Smartphone className="h-4 w-4 text-primary/70 shrink-0" />
-              <span>Sin apps requeridas</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Shield className="h-4 w-4 text-primary/70 shrink-0" />
-              <span>Acceso seguro por email</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Zap className="h-4 w-4 text-primary/70 shrink-0" />
-              <span>Lista en 2 minutos</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <QrCode className="h-4 w-4 text-primary/70 shrink-0" />
-              <span>Flujo 100% con QR</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <MarqueeBand />
 
-      {/* How it Works */}
-      <section id="how-it-works" className="scroll-mt-16 py-20 lg:py-28 bg-muted/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Simple para ti. Perfecto para tus clientes.
-            </h2>
-            <p className="text-lg text-muted-foreground">
-              Tu programa de lealtad digital funcionando en minutos, no en días.
-            </p>
-          </div>
-          <RevealGrid className="grid md:grid-cols-3 gap-8">
-            {siteConfig.howItWorks.map((item, index) => {
-              const Icon = iconMap[item.icon]
-              return (
-                <div
-                  key={`how-${item.step}`}
-                  className="relative bg-card rounded-2xl p-8 border border-border shadow-sm hover:shadow-lg hover:-translate-y-1 transition-[box-shadow,transform] duration-200 group"
-                >
-                  <div className="absolute -top-4 -left-4 w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold shadow-lg">
-                    {item.step}
-                  </div>
-                  <div className="pt-4">
-                    <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 transition-colors">
-                      {Icon && <Icon className="h-7 w-7 text-primary" />}
+      {/* Las cuatro claves del diseño: sin cajas, centradas, separadas por aire.
+          Sustituyen a la franja de sellos, a la rejilla de funciones y a la de
+          casos de uso, que decían lo mismo tres veces seguidas en tres rejillas
+          iguales. */}
+      <section id="claves" className="scroll-mt-16 border-b border-border bg-card py-20 lg:py-24">
+        <div className="mx-auto grid max-w-5xl gap-10 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
+          {[
+            { icono: Palette, titulo: "Tu marca", texto: "Color, logo y premio a tu gusto" },
+            { icono: Smartphone, titulo: "En su celular", texto: "Se abre con un enlace, sin apps" },
+            { icono: QrCode, titulo: "Canje verificado", texto: "Sellos que nadie puede falsificar" },
+            { icono: LineChart, titulo: "Sabes quién vuelve", texto: "Visitas y premios en tu panel" },
+          ].map((clave) => (
+            <div key={clave.titulo} className="flex flex-col items-center gap-2 text-center">
+              <clave.icono className="h-6 w-6 text-primary" aria-hidden="true" />
+              <p className="font-bold text-foreground">{clave.titulo}</p>
+              <p className="text-sm leading-relaxed text-muted-foreground">{clave.texto}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Diseños por giro. El marquee que se conserva, porque aquí el
+          movimiento enseña el producto en vez de decorar. */}
+      <section id="disenos" className="scroll-mt-16 py-20 lg:py-24">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <Encabezado
+            icono={CreditCard}
+            etiqueta="Tarjetas de lealtad"
+            bajada="Elige el patrón de tu rubro, cambia el color y listo. Se ve profesional sin diseñador."
+          >
+            Un tema para cada <Acento>giro</Acento> de negocio
+          </Encabezado>
+        </div>
+        <DisenosPorGiro />
+      </section>
+
+      <section id="how-it-works" className="scroll-mt-16 border-y border-border bg-card py-20 lg:py-24">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <Encabezado
+            icono={Workflow}
+            etiqueta="Cómo funciona"
+            bajada="Simple para ti. Sin fricción para tus clientes."
+          >
+            Tu programa vivo en <Acento>tres pasos</Acento>
+          </Encabezado>
+
+          {/* Lista secuencial, no tres columnas iguales. Y sin numerar: el verbo
+              ya nombra el paso, "Crea tu tarjeta" se entiende sin un 01 delante. */}
+          <ol className="mx-auto max-w-2xl divide-y divide-border">
+              {siteConfig.howItWorks.map((item) => {
+                const Icon = iconMap[item.icon]
+                return (
+                  <li key={item.title} className="flex gap-5 py-8 first:pt-0 last:pb-0">
+                    <div className="h-12 w-12 shrink-0 rounded-xl bg-primary/10 flex items-center justify-center">
+                      {Icon && <Icon className="h-6 w-6 text-primary" />}
                     </div>
-                    <h3 className="text-xl font-semibold text-foreground mb-3">{item.title}</h3>
-                    <p className="text-muted-foreground leading-relaxed">{item.description}</p>
-                  </div>
-                </div>
-              )
-            })}
-          </RevealGrid>
+                    <div className="min-w-0">
+                      <h3 className="text-xl font-semibold text-foreground">{item.title}</h3>
+                      <p className="mt-2 text-muted-foreground leading-relaxed">{item.description}</p>
+                    </div>
+                  </li>
+                )
+              })}
+          </ol>
         </div>
       </section>
 
-      {/* Features */}
-      <section id="features" className="scroll-mt-16 py-20 lg:py-28">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Todo lo que necesitas para construir lealtad
-            </h2>
-            <p className="text-lg text-muted-foreground">
-              Funciones diseñadas para pequeños negocios que quieren grandes resultados.
-            </p>
-          </div>
-          <RevealGrid className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {siteConfig.features.map((feature) => {
-              const Icon = iconMap[feature.icon]
-              return (
-                <div
-                  key={feature.title}
-                  className="bg-card rounded-2xl p-6 border border-border hover:border-primary/30 hover:-translate-y-0.5 transition-[border-color,transform] duration-200 group"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/15 transition-colors">
-                    {Icon && <Icon className="h-6 w-6 text-primary" />}
-                  </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
-                </div>
-              )
-            })}
-          </RevealGrid>
-        </div>
-      </section>
+      <Testimonios />
 
-      {/* Use Cases */}
-      <section className="py-20 lg:py-28 bg-muted/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Perfecto para negocios locales
-            </h2>
-            <p className="text-lg text-muted-foreground">
-              Únete a cientos de pequeños negocios que ya usan Koda Fidelity.
-            </p>
-          </div>
-          <RevealGrid className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {siteConfig.useCases.map((useCase) => (
-              <div
-                key={useCase.name}
-                className="group bg-card rounded-2xl p-6 border border-border text-center hover:shadow-md hover:-translate-y-0.5 transition-[box-shadow,transform] duration-200"
-              >
-                <div className="text-4xl mb-4 transition-transform duration-150 [@media(hover:hover)]:group-hover:scale-110">{useCase.emoji}</div>
-                <h3 className="font-semibold text-foreground mb-2">{useCase.name}</h3>
-                <p className="text-sm text-muted-foreground">{useCase.example}</p>
-              </div>
-            ))}
-          </RevealGrid>
+      {/* Comparación con la tarjeta de papel */}
+      <section className="py-20 lg:py-24">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <Encabezado
+            icono={Repeat}
+            etiqueta="Antes y ahora"
+            bajada="La tarjeta de cartón funciona. Solo que no te deja ver nada de lo que pasa con ella."
+          >
+            Lo mismo que ya haces, sin el <Acento>papel</Acento>
+          </Encabezado>
+          <ComparacionPapel />
         </div>
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="scroll-mt-16 py-20 lg:py-28">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-2xl mx-auto text-center bg-card rounded-3xl p-6 sm:p-12 border border-border shadow-sm">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-medium mb-6">
-              <Zap className="h-3.5 w-3.5" />
-              Acceso Anticipado
+      <section id="pricing" className="scroll-mt-16 border-y border-border bg-card py-20 lg:py-24">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <div>
+            <Encabezado icono={Tag} etiqueta="Precios" bajada={siteConfig.pricing.description}>
+              Precios claros para <Acento>negocios locales</Acento>
+            </Encabezado>
+            <Precios />
+          </div>
+        </div>
+      </section>
+
+      {/* Preguntas frecuentes. El encabezado va a un lado y la salida al otro:
+          si todas las secciones centran lo mismo, la página se lee como
+          diapositivas. */}
+      <section id="faq" className="scroll-mt-16 py-20 lg:py-24">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-10 flex flex-wrap items-end justify-between gap-5">
+            <Encabezado
+              icono={CircleQuestionMark}
+              etiqueta="Dudas"
+              alineado="izquierda"
+              bajada="Todo lo que necesitas saber antes de empezar."
+            >
+              Preguntas <Acento>frecuentes</Acento>
+            </Encabezado>
+            <Button asChild variant="outline" className="min-h-11">
+              <SmoothNavLink href="#demo">¿Otra duda? Escríbenos</SmoothNavLink>
+            </Button>
+          </div>
+          <Preguntas />
+        </div>
+      </section>
+
+      {/* Solicitud de demo: panel contenido sobre crema, como el diseño
+          aprobado, que es donde vive esta sección. */}
+      <section id="demo" className="scroll-mt-16 px-4 py-20 sm:px-6 lg:px-8 lg:py-24">
+        <div
+          className="relative mx-auto max-w-5xl overflow-hidden rounded-3xl p-8 text-[#FAFAF7] sm:p-12"
+          style={{
+            background:
+              "radial-gradient(120% 130% at 85% 0%, #241d16 0%, #17130f 55%, #0e0b08 100%)",
+          }}
+        >
+          <div aria-hidden="true" className="pointer-events-none absolute -bottom-28 -right-20 h-96 w-96 rounded-full bg-primary/20 blur-3xl" />
+          <div className="relative grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
+            <div>
+              <h2 className="text-3xl font-bold leading-tight sm:text-4xl">
+                ¿Quieres verlo en tu <Acento>negocio</Acento>?
+              </h2>
+              <p className="mt-4 text-[#FAFAF7]/75 leading-relaxed">
+                Agenda una demo de 20 minutos. Te ayudamos a dejar tu programa de lealtad listo,
+                con tu diseño y tu premio.
+              </p>
+              <ul className="mt-7 space-y-3.5">
+                {["Demo en vivo, con tu giro", "Configuramos tu primera tarjeta", "Te queda lista para publicar", "Sin compromiso"].map((punto) => (
+                  <li key={punto} className="flex items-center gap-3 text-sm">
+                    <Check className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                    {punto}
+                  </li>
+                ))}
+              </ul>
+              {/* En renglón aparte y no dentro de la frase: como enlace en línea
+                  medía 18px de alto, y un destino de navegación pide 44. */}
+              <p className="mt-7 text-sm text-[#FAFAF7]/60">¿Prefieres escribir?</p>
+              <a
+                href={siteConfig.footer.links[0]?.href ?? "mailto:contacto@zivelo.dev"}
+                className="inline-flex min-h-11 items-center text-sm font-medium text-white underline underline-offset-4 hover:text-primary"
+              >
+                {(siteConfig.footer.links[0]?.href ?? "mailto:contacto@zivelo.dev").replace("mailto:", "")}
+              </a>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Precios accesibles para negocios locales
-            </h2>
-            <p className="text-lg text-muted-foreground mb-8">
-              {siteConfig.pricing.description}
-            </p>
-            <Button asChild size="lg" className="group text-base px-8 active:scale-[0.97] transition-transform">
-              <Link href="/signup">
-                Obtener Acceso Anticipado
-                <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-150 group-hover:translate-x-1" />
-              </Link>
-            </Button>
+            <SolicitarDemo />
           </div>
         </div>
       </section>
 
-      {/* Customer CTA Section */}
-      <section className="py-20 lg:py-28 bg-muted/30">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="bg-card rounded-3xl p-6 sm:p-12 lg:p-16 border border-border shadow-sm">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              ¿Ya tienes tu tarjeta de lealtad?
+      {/* Pie del diseño: marca a la izquierda y los tres bloques de enlaces
+          juntos a la derecha. Sueltos por todo el ancho dejaban un hueco en el
+          que no había nada que mirar. */}
+      <footer
+        className="relative overflow-hidden px-4 pt-28 pb-16 sm:px-6 lg:pt-32 lg:px-8"
+        style={{ background: "radial-gradient(120% 140% at 12% 0%, #241d16 0%, #17130f 55%, #0e0b08 100%)" }}
+      >
+        <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 right-0 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
+        {/* La entrada del cliente vive aquí, no en una sección propia. El
+            diseño aprobado no tiene ese bloque: puesta en medio quedaba como
+            una tarjeta suelta en un hueco de crema entre dos bloques oscuros.
+            Arriba del pie hace de cierre y le da peso a un pie que estaba
+            flaco. */}
+        <div className="relative mx-auto mb-14 flex max-w-6xl flex-wrap items-center justify-between gap-6 border-b border-white/10 pb-14">
+          <div className="max-w-md">
+            <h2 className="text-2xl font-bold tracking-tight text-white">
+              ¿Ya tienes tu <Acento>tarjeta</Acento>?
             </h2>
-            <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
-            Accede a todas tus tarjetas, revisa tu progreso y canjea tus recompensas desde un solo lugar.
+            <p className="mt-2 leading-relaxed text-white/70">
+              Entra a todas tus tarjetas, mira cuánto te falta para el premio y canjéalo desde un
+              solo lugar.
             </p>
-            <Button asChild size="lg" className="group text-base px-10 active:scale-[0.97] transition-transform">
-              <Link href="/my-cards">
-                Ir a Mis Tarjetas
-                <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-150 group-hover:translate-x-1" />
-              </Link>
-            </Button>
           </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 lg:py-28">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-3xl p-6 sm:p-12 lg:p-16 border border-primary/20">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              {siteConfig.cta.title}
-            </h2>
-            <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
-              {siteConfig.cta.description}
-            </p>
-            <Button asChild size="lg" className="group text-base px-10 active:scale-[0.97] transition-transform">
-              <Link href={siteConfig.cta.href}>
-                {siteConfig.cta.cta}
-                <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-150 group-hover:translate-x-1" />
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="py-12 border-t border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <Link href="/" className="flex items-center gap-2">
-              <Image
-                src="/short-logo.svg"
-                alt={siteConfig.shortName}
-                width={32}
-                height={32}
-                className="size-8 shrink-0"
-              />
-              <span className="font-semibold text-foreground">{siteConfig.name}</span>
+          <Button asChild size="lg" className="min-h-11 px-8">
+            <Link href="/my-cards">
+              Ir a mis tarjetas
             </Link>
-            <p className="text-sm text-muted-foreground">
-              {siteConfig.footer.tagline}
+          </Button>
+        </div>
+
+        {/* Rejilla de cuatro columnas iguales, alineadas arriba.
+            Antes eran dos grupos: la marca a la izquierda y los enlaces
+            apelotonados a la derecha, con 480px de nada en medio y los
+            encabezados arrancando más alto que el logo. Y las columnas iban de
+            cuatro, dos y dos, así que el borde de abajo quedaba dentado. */}
+        <div className="relative mx-auto grid max-w-6xl items-start gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <Link href="/" className="inline-flex min-h-11 items-center gap-2.5">
+              <Image src="/short-logo.svg" alt={siteConfig.shortName} width={32} height={32} className="size-8 shrink-0" />
+              <span className="font-semibold text-white">{siteConfig.name}</span>
+            </Link>
+            <p className="mt-3 text-sm leading-relaxed text-white/70">{siteConfig.footer.tagline}</p>
+            <p className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/15 px-3 py-1.5 text-xs text-white/70">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              Parte del ecosistema Koda POS
             </p>
-            <div className="flex items-center gap-6">
-              {siteConfig.footer.links.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
           </div>
+
+          {[
+            {
+              titulo: "Producto",
+              enlaces: [
+                { href: "#disenos", texto: "Diseños", ancla: true },
+                { href: "#how-it-works", texto: "Cómo funciona", ancla: true },
+                { href: "#pricing", texto: "Precios", ancla: true },
+              ],
+            },
+            {
+              titulo: "Ayuda",
+              enlaces: [
+                { href: "#faq", texto: "Preguntas", ancla: true },
+                { href: "#demo", texto: "Solicitar demo", ancla: true },
+                ...siteConfig.footer.links.map((e) => ({ href: e.href, texto: e.label, ancla: false })),
+              ],
+            },
+            {
+              titulo: "Acceso",
+              enlaces: [
+                { href: "/login", texto: "Iniciar sesión", ancla: false },
+                { href: "/my-cards", texto: "Mis tarjetas", ancla: false },
+                // Nada de "Crear cuenta": sería un segundo nombre para la misma
+                // intención que el botón principal.
+              ],
+            },
+          ].map((columna) => (
+            <div key={columna.titulo}>
+              {/* La misma caja de 44px que el enlace del logo, para que el
+                  título de columna y la marca se lean en la misma línea. */}
+              <h3 className="flex min-h-11 items-center text-xs font-semibold uppercase tracking-[0.08em] text-white">
+                {columna.titulo}
+              </h3>
+              <ul className="mt-1">
+                {columna.enlaces.map((enlace) => (
+                  <li key={enlace.href + enlace.texto}>
+                    {enlace.ancla ? (
+                      <SmoothNavLink href={enlace.href} className="flex min-h-11 items-center text-sm text-white/70 transition-colors hover:text-white">
+                        {enlace.texto}
+                      </SmoothNavLink>
+                    ) : (
+                      <Link href={enlace.href} className="flex min-h-11 items-center text-sm text-white/70 transition-colors hover:text-white">
+                        {enlace.texto}
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        <div className="relative mx-auto mt-12 flex max-w-6xl flex-wrap justify-between gap-3 border-t border-white/10 pt-6 text-sm text-white/50">
+          <span>© 2026 ZIVELO. Todos los derechos reservados.</span>
+          <span>Hecho en México</span>
         </div>
       </footer>
     </div>
