@@ -3,23 +3,18 @@ import { Prisma, PrismaClient } from "@prisma/client"
 import { createAdminClient } from "../lib/supabase-admin"
 import { randomUUID } from "node:crypto"
 import { config } from "../lib/config"
+import { parseDebugArgs } from "./onboarding-debug-args"
 
 const prisma = new PrismaClient()
-const args = process.argv.slice(2).filter((arg) => arg !== "--")
-const [action, email] = args
 const fail = (message: string): never => { throw new Error(`[requestId:${randomUUID()}] ${message}`) }
 
 if (!config.isDebugAuthEnabled) {
   fail("Onboarding debug commands require FID_DEBUG_AUTH=true outside production")
 }
-if (!email || !email.toLowerCase().endsWith("@invalid.dev")) {
-  fail("Only @invalid.dev test accounts are supported")
-}
-if (!new Set(["status", "enable", "reset"]).has(action)) {
-  fail("Usage: pnpm onboarding:debug -- <status|enable|reset> <email>")
-}
-const targetEmail = email
-const command = action as "status" | "enable" | "reset"
+let parsed: ReturnType<typeof parseDebugArgs>
+try { parsed = parseDebugArgs(process.argv.slice(2)) } catch (error) { fail(error instanceof Error ? error.message : "Invalid arguments") }
+const targetEmail = parsed.email
+const command = parsed.command
 
 async function main() {
   const admin = createAdminClient().auth.admin
