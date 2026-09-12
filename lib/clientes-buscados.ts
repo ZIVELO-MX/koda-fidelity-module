@@ -25,12 +25,12 @@ function one(raw: Crudo): ClienteBuscado {
   }
 }
 
-/** Parse both pre-C1 and C1 customer payloads without hiding contract failures. */
+/** Parse the canonical C1 customer payload without hiding contract failures. */
 export function parseClientesResponse(response: unknown): ClientesPage {
   if (!response || typeof response !== "object") throw new Error("Invalid customer response")
   const body = response as Crudo
   if (typeof body.error === "string") throw new Error(body.error)
-  const rawItems = Array.isArray(body.items) ? body.items : Array.isArray(body.customers) ? body.customers : null
+  const rawItems = Array.isArray(body.items) ? body.items : null
   if (!rawItems) throw new Error("Invalid customer response: items is required")
   const items = rawItems.map((item) => {
     if (!item || typeof item !== "object") throw new Error("Invalid customer response: item is required")

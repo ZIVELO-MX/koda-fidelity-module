@@ -35,5 +35,5 @@ del contrato nuevo. La aceptación usa el token de un solo uso enviado por corre
 ## Versionado
 
 Cambios incompatibles requieren actualizar este documento y el contrato TypeScript/OpenAPI
-en el mismo cambio. Los adaptadores legacy se eliminan después de verificar la forma nueva
-en la rama integrada.
+en el mismo cambio. Una vez verificada la forma nueva, el consumidor integrado usa solo
+`items`/`goal`; no mantiene una ruta silenciosa para la forma legacy.
