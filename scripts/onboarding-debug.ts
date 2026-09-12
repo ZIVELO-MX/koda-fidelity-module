@@ -11,8 +11,10 @@ const fail = (message: string): never => { throw new Error(`[requestId:${randomU
 if (!config.isDebugAuthEnabled) {
   fail("Onboarding debug commands require FID_DEBUG_AUTH=true outside production")
 }
-let parsed: ReturnType<typeof parseDebugArgs>
-try { parsed = parseDebugArgs(process.argv.slice(2)) } catch (error) { fail(error instanceof Error ? error.message : "Invalid arguments") }
+const parsed = (() => {
+  try { return parseDebugArgs(process.argv.slice(2)) }
+  catch (error) { return fail(error instanceof Error ? error.message : "Invalid arguments") }
+})()
 const targetEmail = parsed.email
 const command = parsed.command
 
