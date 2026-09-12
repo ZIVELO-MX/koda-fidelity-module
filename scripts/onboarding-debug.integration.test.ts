@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest"
 import { spawnSync } from "node:child_process"
 import { resolve } from "node:path"
-import { fileURLToPath } from "node:url"
 
-const script = resolve(fileURLToPath(new URL(".", import.meta.url)), "onboarding-debug.ts")
+const script = resolve(process.cwd(), "scripts/onboarding-debug.ts")
 
 function run(args: string[], env: NodeJS.ProcessEnv) {
   return spawnSync(process.execPath, ["--import", "tsx", script, ...args], { env: { ...process.env, ...env }, encoding: "utf8" })
