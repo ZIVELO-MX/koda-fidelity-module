@@ -40,88 +40,44 @@ export const siteConfig = {
   howItWorks: [
     {
       icon: "QrCode",
-      step: "01",
-      title: "Crea tu Tarjeta",
+      title: "Crea tu tarjeta",
       description:
         "Diseña una tarjeta de lealtad con tus colores y logo. Define tu recompensa y la cantidad de sellos.",
     },
     {
       icon: "Smartphone",
-      step: "02",
-      title: "Clientes Reciben su Tarjeta",
+      title: "Tu cliente la recibe",
       description:
         "Escanean el QR y reciben un enlace seguro por correo electrónico para acceder a su tarjeta digital.",
     },
     {
       icon: "Wallet",
-      step: "03",
-      title: "Recompensa la Lealtad",
+      title: "Sella y recompensa",
       description:
         "Escanea las tarjetas de clientes para agregar sellos. Cuando alcanzan la meta, canjean su recompensa.",
     },
   ],
 
-  features: [
-    {
-      icon: "Smartphone",
-      title: "Portal con Enlace Seguro",
-      description:
-        "Los clientes acceden a su tarjeta digital mediante un enlace mágico enviado por correo electrónico, sin necesidad de contraseña.",
-    },
-    {
-      icon: "QrCode",
-      title: "Flujo con QR",
-      description:
-        "Sin apps necesarias. Los clientes escanean un código QR y reciben su tarjeta al instante.",
-    },
-    {
-      icon: "Zap",
-      title: "Configuración Instantánea",
-      description:
-        "Crea tu primera tarjeta de lealtad en menos de 2 minutos.",
-    },
-    {
-      icon: "Shield",
-      title: "Acceso Seguro",
-      description:
-        "Los datos del cliente están protegidos. El acceso es por correo electrónico mediante un enlace de un solo uso.",
-    },
-    {
-      icon: "BarChart3",
-      title: "Analíticas Simples",
-      description:
-        "Monitorea sellos, canjes y la actividad de tus clientes.",
-    },
-    {
-      icon: "CheckCircle2",
-      title: "Sellado desde el panel",
-      description:
-        "Escanea el QR del cliente y agrega o canjea sellos directamente desde el panel.",
-    },
-  ],
-
-  useCases: [
-    { emoji: "☕", name: "Cafeterías", example: "Compra 9, llévate 1 gratis" },
-    { emoji: "🍕", name: "Restaurantes", example: "Postre gratis después de 5 visitas" },
-    { emoji: "💇", name: "Barberías", example: "10mo corte gratis" },
-    { emoji: "🛒", name: "Tiendas Locales", example: "Acumula puntos en tus compras" },
-  ],
+  // `features` y `useCases` se retiraron con el rediseño de la landing: sus
+  // dos rejillas decían lo mismo que las cuatro claves y que el carrusel de
+  // giros, una detrás de otra. Ver app/page.tsx.
 
   pricing: {
-    title: "Precios por definir",
-    description: "Nuestra oferta comercial se publicará próximamente. Mientras tanto, puedes iniciar sesión si ya tienes acceso.",
+    title: "Precios claros para negocios locales",
+    description: "Dos planes, sin permanencia. Pagas por año y recibes dos meses.",
   },
 
   cta: {
     title: "¿Listo para construir lealtad?",
     description:
-      "Crea tu primera tarjeta de lealtad digital en minutos. Sin tarjeta de crédito, sin complicaciones.",
-    cta: "Empezar Gratis",
+      "Crea tu primera tarjeta de lealtad digital en minutos.",
+    cta: "Empieza por solo $149 al mes",
     href: "/signup",
   },
 
   footer: {
-    tagline: "Parte del ecosistema Koda POS. Hecho para pequeños negocios.",
+    // El ecosistema se nombra en su propia píldora del pie, así que aquí sobraba.
+    tagline: "Tarjetas de lealtad digitales para negocios de barrio.",
     links: [
       { label: "Contacto", href: "mailto:contacto@zivelo.dev" },
     ],

@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#efece5;font-family:'Geist',system-ui,sans-serif}
+  [data-lucide]{width:1em;height:1em;display:inline-block;vertical-align:middle}
+  @keyframes kf-hue{0%{filter:hue-rotate(0deg)}50%{filter:hue-rotate(18deg)}100%{filter:hue-rotate(0deg)}}
+  @keyframes kf-shimmer{0%{transform:translateX(-140%) rotate(12deg)}100%{transform:translateX(140%) rotate(12deg)}}
+  @keyframes kf-float1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(18px,-14px) scale(1.08)}}
+  @keyframes kf-float2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-16px,12px) scale(1.05)}}
+  @keyframes kf-scan{0%{background-position:0 0}100%{background-position:0 64px}}
+  .dv-turn{padding:44px 44px 36px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+  .dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 8px}
+  .dv-tid{font:700 11px ui-monospace,Menlo,monospace;padding:3px 8px;background:#161513;color:#fff;border-radius:5px;text-decoration:none}
+  .dv-tname{font:700 22px/1.2 'Geist',sans-serif;color:#161513;letter-spacing:-0.01em}
+  .dv-tsub{font:400 15px/1.5 'Geist',sans-serif;color:#77726a;margin:6px 0 28px;max-width:680px}
+  .dv-opts{display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start}
+  .dv-opt{flex:none;display:flex;flex-direction:column;gap:11px;scroll-margin-top:16px}
+  .dv-oid{font:700 11px ui-monospace,Menlo,monospace;padding:3px 8px;background:#f97316;color:#fff;border-radius:5px;text-decoration:none}
+  .dv-olabel{display:flex;align-items:baseline;gap:9px;font:400 12.5px/1.3 'Geist',sans-serif;color:#4a463f}
+  .dv-oname{font-weight:700;color:#161513;font-size:14px}
+  .dv-odesc{font-size:12.5px;color:#8a8577;max-width:340px;margin:2px 0 0;line-height:1.5}
+  .dv-card{max-width:100%}
+  .dv-next{margin:30px 0 0;font:13px/1.6 'Geist',sans-serif;color:#8a8577}
+  .pat-grid{display:flex;flex-wrap:wrap;gap:30px}
+  .pat-cell{flex:none;width:300px;display:flex;flex-direction:column;gap:12px}
+  .pat-cap{display:flex;align-items:baseline;gap:8px;font:400 12px 'Geist',sans-serif;color:#8a8577}
+  .pat-cap b{font-weight:700;color:#161513;font-size:14px}
+  .pcard{position:relative;width:300px;border-radius:22px;overflow:hidden;background:#fff;border:1px solid #eae5dd;box-shadow:0 18px 40px -24px rgba(0,0,0,.3)}
+  .pat-swatch{position:relative;width:300px;height:118px;border-radius:16px;overflow:hidden;background:#fff;border:1px solid #eae5dd}
+  .pat-swatch .lbl{position:absolute;left:12px;bottom:9px;font:600 10px ui-monospace,Menlo,monospace;color:#a8a29a;background:rgba(255,255,255,.72);padding:2px 7px;border-radius:5px}
+  .big-grid{display:flex;flex-wrap:wrap;gap:34px}
+  .big-cell{flex:none;display:flex;flex-direction:column;gap:12px}
+  .big-cap{font:700 14px 'Geist',sans-serif;color:#161513}
+  .kcard{position:relative;width:340px;border-radius:28px;overflow:hidden}
+  .khead{padding:24px 24px 12px}
+  .kicon{width:56px;height:56px;border-radius:17px;display:flex;align-items:center;justify-content:center;font-size:24px}
+  .kmember{border-radius:13px;padding:11px 16px}
+  .kstamps{padding:0 24px 14px}
+  .kgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  .kstamp{aspect-ratio:1;border-radius:11px;display:flex;align-items:center;justify-content:center}
+  .kreward{padding:0 24px 14px}
+  .kqrwrap{display:flex;justify-content:center;padding-bottom:14px}
+  .kqr{border-radius:13px;padding:9px;display:grid;grid-template-columns:repeat(5,9px);grid-template-rows:repeat(5,9px);gap:2px}
+  .kfoot{display:flex;justify-content:space-between;padding:12px 24px;font-size:11px}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t3">
+  <div class="dv-thd"><a class="dv-tid" href="#t3">3</a><span class="dv-tname">Tarjetas grandes con patrón de fondo</span></div>
+  <p class="dv-tsub">Las tarjetas a tamaño real con su patrón temático de fondo. Usa el panel de <b>Tweaks</b> (arriba a la derecha) para cambiar el color de marca de todas las tarjetas, la intensidad del patrón y el radio de las esquinas — como lo haría un negocio al personalizar la suya.</p>
+  <div id="big-grid" class="big-grid"></div>
+</section>
+
+<section class="dv-turn" id="t2">
+  <div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Patrones de Fondo</span></div>
+  <p class="dv-tsub">Sistema de texturas monocromáticas basado en iconografía simple, del mismo grosor, escala y densidad — un solo lenguaje visual que crece con nuevas categorías. Cada patrón es seamless: se muestra aplicado a baja opacidad sobre una tarjeta y como textura repetida abajo.</p>
+  <div id="patterns-grid" class="pat-grid"></div>
+  <p class="dv-next">Prueba: "sube la densidad de los patrones" · "haz el patrón de <b>Cafetería</b> en dorado" · "agrega categoría Florería"</p>
+</section>
+
+<section class="dv-turn" id="t1">
+  <div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Tarjeta de lealtad — direcciones innovadoras</span></div>
+  <p class="dv-tsub">Mismos datos (negocio, sellos, premio, QR, vencimiento) — solo cambia la piel visual. Las primeras 4 exploran movimiento y acabados premium; <a class="dv-oid" href="#1e">1e</a>–<a class="dv-oid" href="#1g">1g</a> muestran el sistema adaptado a distintos giros de negocio, sin animación.</p>
+  <div class="dv-opts">
+
+    <!-- 1a Gradiente Vivo -->
+    <div class="dv-opt" id="1a">
+      <div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a><span class="dv-oname">Gradiente Vivo</span></div>
+      <p class="dv-odesc">Malla de gradiente animada con respiración de tono y brillo que recorre la tarjeta.</p>
+      <div class="dv-card">
+        <div class="kcard" style="box-shadow:0 30px 60px -20px rgba(20,10,0,.45);animation:kf-hue 9s ease-in-out infinite">
+          <div style="position:absolute;inset:0;background:linear-gradient(135deg,#fb923c 0%,#f97316 38%,#c2410c 100%)"></div>
+          <div style="position:absolute;top:-90px;right:-60px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.35),transparent 70%);animation:kf-float1 7s ease-in-out infinite"></div>
+          <div style="position:absolute;bottom:-70px;left:-50px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,196,150,.35),transparent 70%);animation:kf-float2 8s ease-in-out infinite"></div>
+          <div style="position:absolute;top:0;left:0;width:70%;height:100%;background:linear-gradient(75deg,transparent 40%,rgba(255,255,255,.22) 50%,transparent 60%);animation:kf-shimmer 4.5s ease-in-out infinite;pointer-events:none"></div>
+          <div style="position:relative">
+            <div class="khead">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+                <div class="kicon" style="background:rgba(255,255,255,.22);color:#fff;backdrop-filter:blur(4px)"><i data-lucide="coffee"></i></div>
+                <div><p style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.75);margin:0">Tarjeta de Lealtad</p><h3 style="font-size:19px;font-weight:700;color:#fff;margin:2px 0 0;letter-spacing:-0.01em">Café Aurora</h3></div>
+              </div>
+              <div class="kmember" style="background:rgba(255,255,255,.16);backdrop-filter:blur(6px)"><p style="font-size:11px;color:rgba(255,255,255,.7);margin:0">Miembro</p><p style="font-weight:600;color:#fff;margin:2px 0 0">María González</p></div>
+            </div>
+            <div class="kstamps">
+              <div style="display:flex;justify-content:space-between;margin-bottom:11px"><p style="font-size:14px;font-weight:600;color:#fff;margin:0">Tu Progreso</p><p style="font-size:14px;color:rgba(255,255,255,.75);margin:0">6/10</p></div>
+              <div class="kgrid">
+                <div class="kstamp" style="background:rgba(255,255,255,.95);color:#f97316;box-shadow:0 3px 8px rgba(0,0,0,.15)"><i data-lucide="coffee"></i></div>
+                <div class="kstamp" style="background:rgba(255,255,255,.95);color:#f97316;box-shadow:0 3px 8px rgba(0,0,0,.15)"><i data-lucide="coffee"></i></div>
+                <div class="kstamp" style="background:rgba(255,255,255,.95);color:#f97316;box-shadow:0 3px 8px rgba(0,0,0,.15)"><i data-lucide="coffee"></i></div>
+                <div class="kstamp" style="background:rgba(255,255,255,.95);color:#f97316;box-shadow:0 3px 8px rgba(0,0,0,.15)"><i data-lucide="coffee"></i></div>
+                <div class="kstamp" style="background:rgba(255,255,255,.95);color:#f97316;box-shadow:0 3px 8px rgba(0,0,0,.15)"><i data-lucide="coffee"></i></div>
+                <div class="kstamp" style="background:rgba(255,255,255,.95);color:#f97316;box-shadow:0 3px 8px rgba(0,0,0,.15)"><i data-lucide="coffee"></i></div>
+                <div class="kstamp" style="border:2px dashed rgba(255,255,255,.4)"></div>
+                <div class="kstamp" style="border:2px dashed rgba(255,255,255,.4)"></div>
+                <div class="kstamp" style="border:2px dashed rgba(255,255,255,.4)"></div>
+                <div class="kstamp" style="border:2px dashed rgba(255,255,255,.4)"></div>
+              </div>
+            </div>
+            <div class="kreward"><div class="kmember" style="background:rgba(255,255,255,.16);text-align:center;backdrop-filter:blur(6px)"><p style="font-size:11px;color:rgba(255,255,255,.7);margin:0">Premio</p><p style="font-weight:700;color:#fff;margin:2px 0 0">Café Gratis</p></div></div>
+            <div class="kqrwrap"><div class="kqr" style="background:rgba(255,255,255,.97)">
+              <div style="background:#f97316"></div><div></div><div style="background:#f97316"></div><div style="background:#f97316"></div><div></div>
+              <div></div><div style="background:#f97316"></div><div></div><div></div><div style="background:#f97316"></div>
+              <div style="background:#f97316"></div><div></div><div style="background:#f97316"></div><div></div><div style="background:#f97316"></div>
+              <div style="background:#f97316"></div><div style="background:#f97316"></div><div></div><div style="background:#f97316"></div><div></div>
+              <div></div><div style="background:#f97316"></div><div style="background:#f97316"></div><div></div><div style="background:#f97316"></div>
+            </div></div>
+            <div class="kfoot" style="background:rgba(0,0,0,.14)"><span style="color:rgba(255,255,255,.7)">Vence: 31 dic 2026</span><span style="color:rgba(255,255,255,.7)">Con tecnología de Koda</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1b Foil Holográfico -->
+    <div class="dv-opt" id="1b">
+      <div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a><span class="dv-oname">Foil Holográfico</span></div>
+      <p class="dv-odesc">Base oscura premium con lámina holográfica que barre la tarjeta — sensación de membresía exclusiva/coleccionable.</p>
+      <div class="dv-card">
+        <div class="kcard" style="background:#141212;box-shadow:0 30px 60px -20px rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.08)">
+          <div style="position:absolute;inset:0;background:conic-gradient(from 200deg at 30% 20%, rgba(249,115,22,.5), rgba(255,196,120,.25), rgba(120,60,255,.2), rgba(249,115,22,.5));opacity:.55;mix-blend-mode:screen"></div>
+          <div style="position:absolute;top:0;left:0;width:55%;height:100%;background:linear-gradient(75deg,transparent 30%,rgba(255,255,255,.5) 48%,rgba(255,196,150,.3) 52%,transparent 70%);animation:kf-shimmer 3.2s ease-in-out infinite;mix-blend-mode:overlay"></div>
+          <div style="position:relative">
+            <div class="khead">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+                <div class="kicon" style="background:radial-gradient(circle at 35% 30%,#ffb877,#f97316 55%,#9a3412);color:#fff;box-shadow:inset 0 1px 2px rgba(255,255,255,.5),0 4px 12px rgba(249,115,22,.4)"><i data-lucide="coffee"></i></div>
+                <div><p style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#f0b98a;margin:0">Membresía Exclusiva</p><h3 style="font-size:19px;font-weight:700;color:#fff;margin:2px 0 0;letter-spacing:-0.01em">Café Aurora</h3></div>
+              </div>
+              <div class="kmember" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)"><p style="font-size:11px;color:#a89e91;margin:0">Miembro</p><p style="font-weight:600;color:#fff;margin:2px 0 0">María González</p></div>
+            </div>
+            <div class="kstamps">
+              <div style="display:flex;justify-content:space-between;margin-bottom:11px"><p style="font-size:14px;font-weight:600;color:#fff;margin:0">Tu Progreso</p><p style="font-size:14px;color:#f0b98a;margin:0">6/10</p></div>
+              <div class="kgrid">
+                <div class="kstamp" style="background:linear-gradient(150deg,#ffcf9e,#f97316);color:#fff;box-shadow:0 3px 10px rgba(249,115,22,.5)"><i data-lucide="coffee"></i></div>
+                <div class="kstamp" style="background:linear-gradient(150deg,#ffcf9e,#f97316);color:#fff;box-shadow:0 3px 10px rgba(249,115,22,.5)"><i data-lucide="coffee"></i></div>
+                <div class="kstamp" style="background:linear-gradient(150deg,#ffcf9e,#f97316);color:#fff;box-shadow:0 3px 10px rgba(249,115,22,.5)"><i data-lucide="coffee"></i></div>
+                <div class="kstamp" style="background:linear-gradient(150deg,#ffcf9e,#f97316);color:#fff;box-shadow:0 3px 10px rgba(249,115,22,.5)"><i data-lucide="coffee"></i></div>
+                <div class="kstamp" style="background:linear-gradient(150deg,#ffcf9e,#f97316);color:#fff;box-shadow:0 3px 10px rgba(249,115,22,.5)"><i data-lucide="coffee"></i></div>
+                <div class="kstamp" style="background:linear-gradient(150deg,#ffcf9e,#f97316);color:#fff;box-shadow:0 3px 10px rgba(249,115,22,.5)"><i data-lucide="coffee"></i></div>
+                <div class="kstamp" style="border:2px dashed rgba(255,255,255,.18)"></div>
+                <div class="kstamp" style="border:2px dashed rgba(255,255,255,.18)"></div>
+                <div class="kstamp" style="border:2px dashed rgba(255,255,255,.18)"></div>
+                <div class="kstamp" style="border:2px dashed rgba(255,255,255,.18)"></div>
+              </div>
+            </div>
+            <div class="kreward"><div class="kmember" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);text-align:center"><p style="font-size:11px;color:#a89e91;margin:0">Premio</p><p style="font-weight:700;color:#fff;margin:2px 0 0">Café Gratis</p></div></div>
+            <div class="kqrwrap"><div class="kqr" style="background:#fff">
+              <div style="background:#141212"></div><div></div><div style="background:#141212"></div><div style="background:#141212"></div><div></div>
+              <div></div><div style="background:#141212"></div><div></div><div></div><div style="background:#141212"></div>
+              <div style="background:#141212"></div><div></div><div style="background:#141212"></div><div></div><div style="background:#141212"></div>
+              <div style="background:#141212"></div><div style="background:#141212"></div><div></div><div style="background:#141212"></div><div></div>
+              <div></div><div style="background:#141212"></div><div style="background:#141212"></div><div></div><div style="background:#141212"></div>
+            </div></div>
+            <div class="kfoot" style="background:rgba(255,255,255,.04);border-top:1px solid rgba(255,255,255,.06)"><span style="color:#8a8378">Vence: 31 dic 2026</span><span style="color:#8a8378">Con tecnología de Koda</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1c Patrón Cinético -->
+    <div class="dv-opt" id="1c">
+      <div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a><span class="dv-oname">Patrón Cinético</span></div>
+      <p class="dv-odesc">Duotono de marca con textura geométrica en movimiento lento — se siente artesanal e impresa, no genérica.</p>
+      <div class="dv-card">
+        <div class="kcard" style="background:#9a3412;box-shadow:0 30px 60px -20px rgba(30,10,0,.5)">
+          <div style="position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.14) 2px,transparent 2.5px);background-size:22px 22px;animation:kf-scan 6s linear infinite"></div>
+          <div style="position:absolute;inset:0;background:linear-gradient(160deg,rgba(249,115,22,.9),rgba(154,52,18,.2) 60%)"></div>
+          <div style="position:relative">
+            <div class="khead">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+                <div class="kicon" style="background:#fff;color:#9a3412"><i data-lucide="coffee"></i></div>
+                <div><p style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.75);margin:0">Tarjeta de Lealtad</p><h3 style="font-size:19px;font-weight:700;color:#fff;margin:2px 0 0;letter-spacing:-0.01em">Café Aurora</h3></div>
+              </div>
+              <div class="kmember" style="background:#fff"><p style="font-size:11px;color:#9a3412;margin:0;opacity:.7">Miembro</p><p style="font-weight:700;color:#9a3412;margin:2px 0 0">María González</p></div>
+            </div>
+            <div class="kstamps">
+              <div style="display:flex;justify-content:space-between;margin-bottom:11px"><p style="font-size:14px;font-weight:600;color:#fff;margin:0">Tu Progreso</p><p style="font-size:14px;color:rgba(255,255,255,.8);margin:0">6/10</p></div>
+              <div class="kgrid">
+                <div class="kstamp" style="background:#fff;color:#9a3412"><i data-lucide="coffee"></i></div>
+                <div class="kstamp" style="background:#fff;color:#9a3412"><i data-lucide="coffee"></i></div>
+                <div class="kstamp" style="background:#fff;color:#9a3412"><i data-lucide="coffee"></i></div>
+                <div class="kstamp" style="background:#fff;color:#9a3412"><i data-lucide="coffee"></i></div>
+                <div class="kstamp" style="background:#fff;color:#9a3412"><i data-lucide="coffee"></i></div>
+                <div class="kstamp" style="background:#fff;color:#9a3412"><i data-lucide="coffee"></i></div>
+                <div class="kstamp" style="border:2px dashed rgba(255,255,255,.4)"></div>
+                <div class="kstamp" style="border:2px dashed rgba(255,255,255,.4)"></div>
+                <div class="kstamp" style="border:2px dashed rgba(255,255,255,.4)"></div>
+                <div class="kstamp" style="border:2px dashed rgba(255,255,255,.4)"></div>
+              </div>
+            </div>
+            <div class="kreward"><div class="kmember" style="background:#fff;text-align:center"><p style="font-size:11px;color:#9a3412;margin:0;opacity:.7">Premio</p><p style="font-weight:700;color:#9a3412;margin:2px 0 0">Café Gratis</p></div></div>
+            <div class="kqrwrap"><div class="kqr" style="background:#fff">
+              <div style="background:#9a3412"></div><div></div><div style="background:#9a3412"></div><div style="background:#9a3412"></div><div></div>
+              <div></div><div style="background:#9a3412"></div><div></div><div></div><div style="background:#9a3412"></div>
+              <div style="background:#9a3412"></div><div></div><div style="background:#9a3412"></div><div></div><div style="background:#9a3412"></div>
+              <div style="background:#9a3412"></div><div style="background:#9a3412"></div><div></div><div style="background:#9a3412"></div><div></div>
+              <div></div><div style="background:#9a3412"></div><div style="background:#9a3412"></div><div></div><div style="background:#9a3412"></div>
+            </div></div>
+            <div class="kfoot" style="background:rgba(0,0,0,.16)"><span style="color:rgba(255,255,255,.75)">Vence: 31 dic 2026</span><span style="color:rgba(255,255,255,.75)">Con tecnología de Koda</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1d Vidrio Premium -->
+    <div class="dv-opt" id="1d">
+      <div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a><span class="dv-oname">Vidrio Premium</span></div>
+      <p class="dv-odesc">Manchas de color flotando detrás de un vidrio esmerilado — profundidad real, se siente como una app nativa moderna.</p>
+      <div class="dv-card">
+        <div class="kcard" style="background:#1a1a1a;box-shadow:0 30px 60px -20px rgba(0,0,0,.55)">
+          <div style="position:absolute;top:-60px;left:-40px;width:220px;height:220px;border-radius:50%;background:#f97316;filter:blur(50px);opacity:.65;animation:kf-float1 8s ease-in-out infinite"></div>
+          <div style="position:absolute;bottom:-70px;right:-50px;width:240px;height:240px;border-radius:50%;background:#7c3aed;filter:blur(55px);opacity:.5;animation:kf-float2 9s ease-in-out infinite"></div>
+          <div style="position:absolute;top:40%;right:-30px;width:160px;height:160px;border-radius:50%;background:#22d3ee;filter:blur(50px);opacity:.35;animation:kf-float1 10s ease-in-out infinite"></div>
+          <div style="position:relative;backdrop-filter:blur(22px);background:rgba(20,20,20,.38);border:1px solid rgba(255,255,255,.12)">
+            <div class="khead">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+                <div class="kicon" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);color:#fff"><i data-lucide="coffee"></i></div>
+                <div><p style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.6);margin:0">Tarjeta de Lealtad</p><h3 style="font-size:19px;font-weight:700;color:#fff;margin:2px 0 0;letter-spacing:-0.01em">Café Aurora</h3></div>
+              </div>
+              <div class="kmember" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1)"><p style="font-size:11px;color:rgba(255,255,255,.55);margin:0">Miembro</p><p style="font-weight:600;color:#fff;margin:2px 0 0">María González</p></div>
+            </div>
+            <div class="kstamps">
+              <div style="display:flex;justify-content:space-between;margin-bottom:11px"><p style="font-size:14px;font-weight:600;color:#fff;margin:0">Tu Progreso</p><p style="font-size:14px;color:rgba(255,255,255,.6);margin:0">6/10</p></div>
+              <div class="kgrid">
+                <div class="kstamp" style="background:rgba(255,255,255,.92);color:#f97316"><i data-lucide="coffee"></i></div>
+                <div class="kstamp" style="background:rgba(255,255,255,.92);color:#f97316"><i data-lucide="coffee"></i></div>
+                <div class="kstamp" style="background:rgba(255,255,255,.92);color:#f97316"><i data-lucide="coffee"></i></div>
+                <div class="kstamp" style="background:rgba(255,255,255,.92);color:#f97316"><i data-lucide="coffee"></i></div>
+                <div class="kstamp" style="background:rgba(255,255,255,.92);color:#f97316"><i data-lucide="coffee"></i></div>
+                <div class="kstamp" style="background:rgba(255,255,255,.92);color:#f97316"><i data-lucide="coffee"></i></div>
+                <div class="kstamp" style="border:2px dashed rgba(255,255,255,.2)"></div>
+                <div class="kstamp" style="border:2px dashed rgba(255,255,255,.2)"></div>
+                <div class="kstamp" style="border:2px dashed rgba(255,255,255,.2)"></div>
+                <div class="kstamp" style="border:2px dashed rgba(255,255,255,.2)"></div>
+              </div>
+            </div>
+            <div class="kreward"><div class="kmember" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);text-align:center"><p style="font-size:11px;color:rgba(255,255,255,.55);margin:0">Premio</p><p style="font-weight:700;color:#fff;margin:2px 0 0">Café Gratis</p></div></div>
+            <div class="kqrwrap"><div class="kqr" style="background:#fff">
+              <div style="background:#1a1a1a"></div><div></div><div style="background:#1a1a1a"></div><div style="background:#1a1a1a"></div><div></div>
+              <div></div><div style="background:#1a1a1a"></div><div></div><div></div><div style="background:#1a1a1a"></div>
+              <div style="background:#1a1a1a"></div><div></div><div style="background:#1a1a1a"></div><div></div><div style="background:#1a1a1a"></div>
+              <div style="background:#1a1a1a"></div><div style="background:#1a1a1a"></div><div></div><div style="background:#1a1a1a"></div><div></div>
+              <div></div><div style="background:#1a1a1a"></div><div style="background:#1a1a1a"></div><div></div><div style="background:#1a1a1a"></div>
+            </div></div>
+            <div class="kfoot" style="border-top:1px solid rgba(255,255,255,.08)"><span style="color:rgba(255,255,255,.5)">Vence: 31 dic 2026</span><span style="color:rgba(255,255,255,.5)">Con tecnología de Koda</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1e Panadería -->
+    <div class="dv-opt" id="1e">
+      <div class="dv-olabel"><a class="dv-oid" href="#1e">1e</a><span class="dv-oname">Panadería — Pan Dulce</span></div>
+      <p class="dv-odesc">Sin animación. Paleta crema y rosa, borde festoneado tipo caja de pastelería. Muestra cómo el sistema se adapta a otro giro.</p>
+      <div class="dv-card">
+        <div class="kcard" style="background:linear-gradient(160deg,#fbe6c8,#f6cdd6);box-shadow:0 30px 60px -20px rgba(120,60,50,.3)">
+          <div style="height:14px;background-image:radial-gradient(circle at 10px 14px,transparent 9px,#fbe6c8 9px);background-size:20px 20px;background-position:0 -3px"></div>
+          <div class="khead" style="padding-top:12px">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+              <div class="kicon" style="background:#fff;color:#c2477e"><i data-lucide="cake"></i></div>
+              <div><p style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#a06a4a;margin:0">Tarjeta de Lealtad</p><h3 style="font-size:19px;font-weight:700;color:#6b3d2a;margin:2px 0 0;letter-spacing:-0.01em">Pastelería Dulce Aroma</h3></div>
+            </div>
+            <div class="kmember" style="background:rgba(255,255,255,.65)"><p style="font-size:11px;color:#a06a4a;margin:0">Miembro</p><p style="font-weight:600;color:#6b3d2a;margin:2px 0 0">María González</p></div>
+          </div>
+          <div class="kstamps">
+            <div style="display:flex;justify-content:space-between;margin-bottom:11px"><p style="font-size:14px;font-weight:600;color:#6b3d2a;margin:0">Tu Progreso</p><p style="font-size:14px;color:#a06a4a;margin:0">6/10</p></div>
+            <div class="kgrid">
+              <div class="kstamp" style="background:#fff;color:#c2477e"><i data-lucide="cake"></i></div>
+              <div class="kstamp" style="background:#fff;color:#c2477e"><i data-lucide="cake"></i></div>
+              <div class="kstamp" style="background:#fff;color:#c2477e"><i data-lucide="cake"></i></div>
+              <div class="kstamp" style="background:#fff;color:#c2477e"><i data-lucide="cake"></i></div>
+              <div class="kstamp" style="background:#fff;color:#c2477e"><i data-lucide="cake"></i></div>
+              <div class="kstamp" style="background:#fff;color:#c2477e"><i data-lucide="cake"></i></div>
+              <div class="kstamp" style="border:2px dashed rgba(107,61,42,.25)"></div>
+              <div class="kstamp" style="border:2px dashed rgba(107,61,42,.25)"></div>
+              <div class="kstamp" style="border:2px dashed rgba(107,61,42,.25)"></div>
+              <div class="kstamp" style="border:2px dashed rgba(107,61,42,.25)"></div>
+            </div>
+          </div>
+          <div class="kreward"><div class="kmember" style="background:rgba(255,255,255,.65);text-align:center"><p style="font-size:11px;color:#a06a4a;margin:0">Premio</p><p style="font-weight:700;color:#6b3d2a;margin:2px 0 0">Pastel de Cumpleaños Gratis</p></div></div>
+          <div class="kqrwrap"><div class="kqr" style="background:#fff">
+            <div style="background:#c2477e"></div><div></div><div style="background:#c2477e"></div><div style="background:#c2477e"></div><div></div>
+            <div></div><div style="background:#c2477e"></div><div></div><div></div><div style="background:#c2477e"></div>
+            <div style="background:#c2477e"></div><div></div><div style="background:#c2477e"></div><div></div><div style="background:#c2477e"></div>
+            <div style="background:#c2477e"></div><div style="background:#c2477e"></div><div></div><div style="background:#c2477e"></div><div></div>
+            <div></div><div style="background:#c2477e"></div><div style="background:#c2477e"></div><div></div><div style="background:#c2477e"></div>
+          </div></div>
+          <div class="kfoot" style="background:rgba(107,61,42,.08)"><span style="color:#8a5c42">Vence: 31 dic 2026</span><span style="color:#8a5c42">Con tecnología de Koda</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1f Fútbol -->
+    <div class="dv-opt" id="1f">
+      <div class="dv-olabel"><a class="dv-oid" href="#1f">1f</a><span class="dv-oname">Fútbol Total</span></div>
+      <p class="dv-odesc">Sin animación. Franjas de cancha y línea de círculo central — lenguaje deportivo directo para clubes y escuelas de fútbol.</p>
+      <div class="dv-card">
+        <div class="kcard" style="background:repeating-linear-gradient(90deg,#2f7d32,#2f7d32 34px,#276b2b 34px,#276b2b 68px);box-shadow:0 30px 60px -20px rgba(10,40,10,.4)">
+          <div style="position:absolute;top:50%;left:50%;width:220px;height:220px;border:3px solid rgba(255,255,255,.18);border-radius:50%;transform:translate(-50%,-50%)"></div>
+          <div style="position:relative">
+            <div class="khead">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+                <div class="kicon" style="background:#fff;color:#276b2b"><i data-lucide="trophy"></i></div>
+                <div><p style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.75);margin:0">Tarjeta de Lealtad</p><h3 style="font-size:19px;font-weight:700;color:#fff;margin:2px 0 0;letter-spacing:-0.01em">Fútbol Total</h3></div>
+              </div>
+              <div class="kmember" style="background:rgba(255,255,255,.16)"><p style="font-size:11px;color:rgba(255,255,255,.7);margin:0">Miembro</p><p style="font-weight:600;color:#fff;margin:2px 0 0">María González</p></div>
+            </div>
+            <div class="kstamps">
+              <div style="display:flex;justify-content:space-between;margin-bottom:11px"><p style="font-size:14px;font-weight:600;color:#fff;margin:0">Tu Progreso</p><p style="font-size:14px;color:rgba(255,255,255,.75);margin:0">6/10</p></div>
+              <div class="kgrid">
+                <div class="kstamp" style="background:#fff;color:#276b2b"><i data-lucide="trophy"></i></div>
+                <div class="kstamp" style="background:#fff;color:#276b2b"><i data-lucide="trophy"></i></div>
+                <div class="kstamp" style="background:#fff;color:#276b2b"><i data-lucide="trophy"></i></div>
+                <div class="kstamp" style="background:#fff;color:#276b2b"><i data-lucide="trophy"></i></div>
+                <div class="kstamp" style="background:#fff;color:#276b2b"><i data-lucide="trophy"></i></div>
+                <div class="kstamp" style="background:#fff;color:#276b2b"><i data-lucide="trophy"></i></div>
+                <div class="kstamp" style="border:2px dashed rgba(255,255,255,.35)"></div>
+                <div class="kstamp" style="border:2px dashed rgba(255,255,255,.35)"></div>
+                <div class="kstamp" style="border:2px dashed rgba(255,255,255,.35)"></div>
+                <div class="kstamp" style="border:2px dashed rgba(255,255,255,.35)"></div>
+              </div>
+            </div>
+            <div class="kreward"><div class="kmember" style="background:rgba(255,255,255,.16);text-align:center"><p style="font-size:11px;color:rgba(255,255,255,.7);margin:0">Premio</p><p style="font-weight:700;color:#fff;margin:2px 0 0">Playera del Equipo Gratis</p></div></div>
+            <div class="kqrwrap"><div class="kqr" style="background:#fff">
+              <div style="background:#276b2b"></div><div></div><div style="background:#276b2b"></div><div style="background:#276b2b"></div><div></div>
+              <div></div><div style="background:#276b2b"></div><div></div><div></div><div style="background:#276b2b"></div>
+              <div style="background:#276b2b"></div><div></div><div style="background:#276b2b"></div><div></div><div style="background:#276b2b"></div>
+              <div style="background:#276b2b"></div><div style="background:#276b2b"></div><div></div><div style="background:#276b2b"></div><div></div>
+              <div></div><div style="background:#276b2b"></div><div style="background:#276b2b"></div><div></div><div style="background:#276b2b"></div>
+            </div></div>
+            <div class="kfoot" style="background:rgba(0,0,0,.18)"><span style="color:rgba(255,255,255,.75)">Vence: 31 dic 2026</span><span style="color:rgba(255,255,255,.75)">Con tecnología de Koda</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1g Tacos -->
+    <div class="dv-opt" id="1g">
+      <div class="dv-olabel"><a class="dv-oid" href="#1g">1g</a><span class="dv-oname">Taquería El Fogón</span></div>
+      <p class="dv-odesc">Sin animación. Gradiente picante y textura de semillas — cálido, apetitoso y directo al grano.</p>
+      <div class="dv-card">
+        <div class="kcard" style="background:linear-gradient(150deg,#f97316,#d92b2b 75%);box-shadow:0 30px 60px -20px rgba(90,20,10,.45)">
+          <div style="position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.16) 1.5px,transparent 2px);background-size:16px 16px"></div>
+          <div style="position:relative">
+            <div class="khead">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+                <div class="kicon" style="background:#fff4e0;color:#d92b2b"><i data-lucide="flame"></i></div>
+                <div><p style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.8);margin:0">Tarjeta de Lealtad</p><h3 style="font-size:19px;font-weight:700;color:#fff;margin:2px 0 0;letter-spacing:-0.01em">Tacos El Fogón</h3></div>
+              </div>
+              <div class="kmember" style="background:rgba(255,255,255,.18)"><p style="font-size:11px;color:rgba(255,255,255,.75);margin:0">Miembro</p><p style="font-weight:600;color:#fff;margin:2px 0 0">María González</p></div>
+            </div>
+            <div class="kstamps">
+              <div style="display:flex;justify-content:space-between;margin-bottom:11px"><p style="font-size:14px;font-weight:600;color:#fff;margin:0">Tu Progreso</p><p style="font-size:14px;color:rgba(255,255,255,.8);margin:0">6/10</p></div>
+              <div class="kgrid">
+                <div class="kstamp" style="background:#fff4e0;color:#d92b2b"><i data-lucide="flame"></i></div>
+                <div class="kstamp" style="background:#fff4e0;color:#d92b2b"><i data-lucide="flame"></i></div>
+                <div class="kstamp" style="background:#fff4e0;color:#d92b2b"><i data-lucide="flame"></i></div>
+                <div class="kstamp" style="background:#fff4e0;color:#d92b2b"><i data-lucide="flame"></i></div>
+                <div class="kstamp" style="background:#fff4e0;color:#d92b2b"><i data-lucide="flame"></i></div>
+                <div class="kstamp" style="background:#fff4e0;color:#d92b2b"><i data-lucide="flame"></i></div>
+                <div class="kstamp" style="border:2px dashed rgba(255,255,255,.4)"></div>
+                <div class="kstamp" style="border:2px dashed rgba(255,255,255,.4)"></div>
+                <div class="kstamp" style="border:2px dashed rgba(255,255,255,.4)"></div>
+                <div class="kstamp" style="border:2px dashed rgba(255,255,255,.4)"></div>
+              </div>
+            </div>
+            <div class="kreward"><div class="kmember" style="background:rgba(255,255,255,.18);text-align:center"><p style="font-size:11px;color:rgba(255,255,255,.75);margin:0">Premio</p><p style="font-weight:700;color:#fff;margin:2px 0 0">Taco Gratis en tu Próxima Visita</p></div></div>
+            <div class="kqrwrap"><div class="kqr" style="background:#fff4e0">
+              <div style="background:#d92b2b"></div><div></div><div style="background:#d92b2b"></div><div style="background:#d92b2b"></div><div></div>
+              <div></div><div style="background:#d92b2b"></div><div></div><div></div><div style="background:#d92b2b"></div>
+              <div style="background:#d92b2b"></div><div></div><div style="background:#d92b2b"></div><div></div><div style="background:#d92b2b"></div>
+              <div style="background:#d92b2b"></div><div style="background:#d92b2b"></div><div></div><div style="background:#d92b2b"></div><div></div>
+              <div></div><div style="background:#d92b2b"></div><div style="background:#d92b2b"></div><div></div><div style="background:#d92b2b"></div>
+            </div></div>
+            <div class="kfoot" style="background:rgba(0,0,0,.16)"><span style="color:rgba(255,255,255,.8)">Vence: 31 dic 2026</span><span style="color:rgba(255,255,255,.8)">Con tecnología de Koda</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Prueba: "aplica el estilo de <a class="dv-oid" href="#1b">1b</a> a la versión de tacos" · "muéstrame <a class="dv-oid" href="#1e">1e</a> en un tono verde menta" · "agrega una versión para barbería"</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: &quot;100%&quot;, &quot;height&quot;: 900 },
+  &quot;brandColor&quot;: {
+    &quot;editor&quot;: &quot;color&quot;,
+    &quot;tsType&quot;: &quot;string&quot;,
+    &quot;default&quot;: &quot;&quot;,
+    &quot;section&quot;: &quot;Tarjetas grandes&quot;,
+    &quot;options&quot;: [&quot;#f97316&quot;, &quot;#dc2626&quot;, &quot;#0f766e&quot;, &quot;#0369a1&quot;, &quot;#7c3aed&quot;, &quot;#be185d&quot;, &quot;#161513&quot;]
+  },
+  &quot;patternStrength&quot;: {
+    &quot;editor&quot;: &quot;range&quot;,
+    &quot;tsType&quot;: &quot;number&quot;,
+    &quot;default&quot;: 22,
+    &quot;min&quot;: 6,
+    &quot;max&quot;: 40,
+    &quot;step&quot;: 1,
+    &quot;unit&quot;: &quot;%&quot;,
+    &quot;section&quot;: &quot;Tarjetas grandes&quot;
+  },
+  &quot;cardRadius&quot;: {
+    &quot;editor&quot;: &quot;range&quot;,
+    &quot;tsType&quot;: &quot;number&quot;,
+    &quot;default&quot;: 28,
+    &quot;min&quot;: 12,
+    &quot;max&quot;: 40,
+    &quot;step&quot;: 2,
+    &quot;unit&quot;: &quot;px&quot;,
+    &quot;section&quot;: &quot;Tarjetas grandes&quot;
+  }
+}">
+class Component extends DCLogic {
+  componentDidMount() {
+    this.tryRender(0);
+  }
+  componentDidUpdate() {
+    if (window.lucide) window.lucide.createIcons();
+  }
+  componentDidUpdate() {
+    if (window.lucide) window.lucide.createIcons();
+    // rebuild large cards when tweaks change
+    if (this._ready) this.buildLarge();
+  }
+  tryRender(n) {
+    if (!window.lucide) { if (n < 50) setTimeout(() => this.tryRender(n + 1), 120); return; }
+    window.lucide.createIcons();
+    if (!this._ready) {
+      this._ready = true;
+      this.prepIcons();
+      this.buildPatterns();
+      this.buildLarge();
+    }
+  }
+  get CATS() {
+    return [
+      { key:'Panadería', name:'Pan de Oro', hdr:'croissant', reward:'Pan gratis', member:'María González', accent:'#b45309', icons:['croissant','wheat','cookie','cake'] },
+      { key:'Taquería', name:'Tacos El Fogón', hdr:'flame', reward:'Taco gratis', member:'María González', accent:'#dc2626', icons:['flame','citrus','leaf','wheat'] },
+      { key:'Cafetería', name:'Café Aurora', hdr:'coffee', reward:'Café gratis', member:'María González', accent:'#6f4e37', icons:['coffee','cookie','croissant','milk'] },
+      { key:'Hamburguesas', name:'Burger House', hdr:'sandwich', reward:'Combo gratis', member:'María González', accent:'#a16207', icons:['sandwich','cup-soda','flame','utensils-crossed'] },
+      { key:'Pizzería', name:'Bella Pizza', hdr:'pizza', reward:'Rebanada gratis', member:'María González', accent:'#b91c1c', icons:['pizza','flame','leaf','utensils-crossed'] },
+      { key:'Barbería', name:'Barbería Clásica', hdr:'scissors', reward:'Corte gratis', member:'Diego Ramírez', accent:'#334155', icons:['scissors','paintbrush','sparkles','star'] },
+      { key:'Salón de Belleza', name:'Studio Bella', hdr:'sparkles', reward:'Manicure gratis', member:'Sofía Vega', accent:'#be185d', icons:['sparkles','flower-2','star','droplet'] },
+      { key:'Gimnasio', name:'Iron Gym', hdr:'dumbbell', reward:'Mes gratis', member:'Carlos Ruiz', accent:'#0f766e', icons:['dumbbell','timer','heart','droplet'] },
+      { key:'Fútbol', name:'Fútbol Total', hdr:'trophy', reward:'Playera gratis', member:'Luis Torres', accent:'#15803d', icons:['trophy','target','medal','flag'] },
+      { key:'Sushi', name:'Sushi Zen', hdr:'fish', reward:'Roll gratis', member:'Ana López', accent:'#0e7490', icons:['fish','utensils-crossed','leaf','droplet'] },
+      { key:'Veterinaria', name:'Pet Care', hdr:'paw-print', reward:'Consulta gratis', member:'Paola Díaz', accent:'#7c3aed', icons:['paw-print','bone','heart','stethoscope'] },
+      { key:'Farmacia', name:'Farmacia Vida', hdr:'cross', reward:'20% de descuento', member:'Jorge Mena', accent:'#0369a1', icons:['pill','cross','syringe','thermometer'] },
+      { key:'Heladería', name:'Nieve Feliz', hdr:'ice-cream-cone', reward:'Cono gratis', member:'Valeria Sol', accent:'#db2777', icons:['ice-cream-cone','ice-cream-bowl','cherry','candy'] },
+    ];
+  }
+  prepIcons() {
+    const names = Array.from(new Set(this.CATS.flatMap(c => c.icons.concat(c.hdr))));
+    const holder = document.createElement('div');
+    holder.style.cssText = 'position:absolute;left:-9999px;top:0;width:0;height:0;overflow:hidden;opacity:0';
+    holder.innerHTML = names.map(n => `<span data-ic="${n}"><i data-lucide="${n}"></i></span>`).join('');
+    document.body.appendChild(holder);
+    window.lucide.createIcons();
+    this._inner = {};
+    names.forEach(n => { const s = holder.querySelector(`[data-ic="${n}"] svg`); if (s) this._inner[n] = s.innerHTML; });
+    holder.remove();
+  }
+  tile(icons, color, big) {
+    const LAYOUT = big ? [
+      { x:52, y:48, s:56, r:-14 },
+      { x:150, y:74, s:40, r:20 },
+      { x:88, y:140, s:48, r:12 },
+      { x:172, y:168, s:34, r:-26 },
+      { x:26, y:158, s:30, r:34 },
+      { x:180, y:26, s:30, r:6 },
+    ] : [
+      { x:40, y:36, s:30, r:-16 },
+      { x:106, y:54, s:22, r:22 },
+      { x:62, y:98, s:27, r:10 },
+      { x:120, y:116, s:19, r:-28 },
+      { x:24, y:122, s:17, r:38 },
+      { x:128, y:24, s:16, r:8 },
+    ];
+    const T = big ? 210 : 150;
+    const baseSw = big ? 2.1 : 1.7;
+    const parts = LAYOUT.map((p, i) => {
+      const nm = icons[i % icons.length];
+      const ic = this._inner[nm]; if (!ic) return '';
+      const sc = p.s / 24;
+      const sw = (baseSw / sc).toFixed(2);
+      return `<g transform="translate(${p.x},${p.y}) rotate(${p.r}) scale(${sc}) translate(-12,-12)" stroke-width="${sw}">${ic}</g>`;
+    }).join('');
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${T}' height='${T}' viewBox='0 0 ${T} ${T}'><g fill='none' stroke='${color}' stroke-linecap='round' stroke-linejoin='round'>${parts}</g></svg>`;
+    return `data:image/svg+xml,${encodeURIComponent(svg).replace(/'/g, '%27')}`;
+  }
+  buildLarge() {
+    const grid = document.getElementById('big-grid');
+    if (!grid) return;
+    const brand = this.props.brandColor || '';        // '' = color por giro
+    const strength = this.props.patternStrength ?? 22; // %
+    const radius = this.props.cardRadius ?? 28;        // px
+    const html = this.CATS.map(c => {
+      const color = brand || c.accent;
+      const uri = this.tile(c.icons, '#ffffff', true);
+      const op = (strength / 100).toFixed(3);
+      const stamps = Array.from({ length: 10 }, (_, i) =>
+        i < 6
+          ? `<div class="kstamp" style="background:#fff;color:${color};box-shadow:0 2px 6px rgba(0,0,0,.12)"><i data-lucide="${c.hdr}"></i></div>`
+          : `<div class="kstamp" style="border:2px dashed rgba(255,255,255,.5)"></div>`
+      ).join('');
+      const qrCells = [1,0,1,1,0, 0,1,0,0,1, 1,0,1,0,1, 1,1,0,1,0, 0,1,1,0,1]
+        .map(v => `<div style="${v ? `background:${color}` : ''}"></div>`).join('');
+      return `<div class="big-cell">
+        <div class="kcard" style="background:${color};border-radius:${radius}px;box-shadow:0 30px 60px -20px ${color}66">
+          <div style="position:absolute;inset:0;background:url('${uri}');background-size:210px 210px;background-repeat:repeat;opacity:${op}"></div>
+          <div style="position:relative">
+            <div class="khead">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+                <div class="kicon" style="background:rgba(255,255,255,.22);color:#fff;backdrop-filter:blur(4px)"><i data-lucide="${c.hdr}"></i></div>
+                <div><p style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.75);margin:0">Tarjeta de Lealtad</p><h3 style="font-size:19px;font-weight:700;color:#fff;margin:2px 0 0;letter-spacing:-0.01em">${c.name}</h3></div>
+              </div>
+              <div class="kmember" style="background:rgba(255,255,255,.16);backdrop-filter:blur(6px)"><p style="font-size:11px;color:rgba(255,255,255,.7);margin:0">Miembro</p><p style="font-weight:600;color:#fff;margin:2px 0 0">${c.member}</p></div>
+            </div>
+            <div class="kstamps">
+              <div style="display:flex;justify-content:space-between;margin-bottom:11px"><p style="font-size:14px;font-weight:600;color:#fff;margin:0">Tu Progreso</p><p style="font-size:14px;color:rgba(255,255,255,.75);margin:0">6/10</p></div>
+              <div class="kgrid">${stamps}</div>
+            </div>
+            <div class="kreward"><div class="kmember" style="background:rgba(255,255,255,.16);text-align:center;backdrop-filter:blur(6px)"><p style="font-size:11px;color:rgba(255,255,255,.7);margin:0">Premio</p><p style="font-weight:700;color:#fff;margin:2px 0 0">${c.reward}</p></div></div>
+            <div class="kqrwrap"><div class="kqr" style="background:rgba(255,255,255,.97)">${qrCells}</div></div>
+            <div class="kfoot" style="background:rgba(0,0,0,.14)"><span style="color:rgba(255,255,255,.7)">Vence: 31 dic 2026</span><span style="color:rgba(255,255,255,.7)">Con tecnología de Koda</span></div>
+          </div>
+        </div>
+        <div class="big-cap">${c.key}</div>
+      </div>`;
+    }).join('');
+    grid.innerHTML = html;
+    window.lucide.createIcons();
+  }
+  buildPatterns() {
+    const CATS = this.CATS;
+    const tile = (icons, color) => this.tile(icons, color);
+    const cells = CATS.map(c => {
+      const uri = tile(c.icons, c.accent);
+      const tint = c.accent + '14';
+      const dots = Array.from({ length: 8 }, (_, i) =>
+        i < 5
+          ? `<div style="width:22px;height:22px;border-radius:7px;background:${c.accent};display:flex;align-items:center;justify-content:center;color:#fff"><i data-lucide="${c.hdr}" style="width:12px;height:12px"></i></div>`
+          : `<div style="width:22px;height:22px;border-radius:7px;border:1.5px dashed ${c.accent}55"></div>`
+      ).join('');
+      return `<div class="pat-cell">
+        <div class="pcard">
+          <div style="position:absolute;inset:0;background:url('${uri}');background-size:150px 150px;background-repeat:repeat;opacity:.1"></div>
+          <div style="position:relative;padding:20px">
+            <div style="display:flex;align-items:center;gap:11px;margin-bottom:16px">
+              <div style="width:46px;height:46px;border-radius:13px;background:${c.accent};color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px"><i data-lucide="${c.hdr}"></i></div>
+              <div><p style="margin:0;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#a8a29a">Tarjeta de Lealtad</p><h3 style="margin:2px 0 0;font-size:16px;font-weight:700;color:#161513">${c.name}</h3></div>
+            </div>
+            <div style="display:flex;gap:7px;margin-bottom:16px">${dots}</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 15px;border-radius:12px;background:${tint}">
+              <span style="font-size:12px;color:#77726a">Premio</span><span style="font-size:13px;font-weight:700;color:${c.accent}">${c.reward}</span>
+            </div>
+            <p style="margin:13px 0 0;font-size:10px;color:#c0bab0;text-align:right">Con tecnología de Koda</p>
+          </div>
+        </div>
+        <div class="pat-swatch"><div style="position:absolute;inset:0;background:url('${uri}');background-size:150px 150px;background-repeat:repeat;opacity:.5"></div><span class="lbl">Textura repetida</span></div>
+        <div class="pat-cap"><b>${c.key}</b></div>
+      </div>`;
+    }).join('');
+
+    const grid = document.getElementById('patterns-grid');
+    if (grid) grid.innerHTML = cells;
+    window.lucide.createIcons();
+  }
+}
+</script>
+</body>
+</html>

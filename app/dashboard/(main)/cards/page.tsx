@@ -1,13 +1,12 @@
 import Link from "next/link"
-import Image from "next/image"
 import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Plus, QrCode, Users, Stamp, Search, Archive } from "lucide-react"
+import { Plus, Search, Archive } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
-import { getCardIcon } from "@/lib/card-icons"
-import { DeleteExpiredCardButton } from "@/components/dashboard/delete-expired-card-button"
+import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
+import { daysUntilExpiry } from "@/lib/card-utils"
 
 const STATUS_OPTIONS = [
   { value: "all", label: "Todas" },
@@ -40,7 +39,6 @@ export default async function CardsPage({
     where,
     include: {
       _count: { select: { customers: { where: { isActive: true } } } },
-      customers: { where: { isActive: true }, select: { stamps: true } },
     },
     orderBy: { createdAt: "desc" },
   })
@@ -127,136 +125,74 @@ export default async function CardsPage({
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {cards.map((card) => (
-            <div
-              key={card.id}
-              className={`bg-card rounded-2xl border overflow-hidden hover:shadow-lg transition-shadow group ${
-                card.expired ? "border-destructive/30 opacity-80" : "border-border"
-              }`}
-            >
-              <div className="h-3" style={{ backgroundColor: card.brandColor }} />
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  {(() => {
-                    const icon = getCardIcon(card.iconName)
-                    const IconComp = icon?.Icon
-                    if (card.iconName === "logo" && business.logoUrl) {
-                      return (
-                        <div
-                          className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shrink-0"
-                          style={{ backgroundColor: card.brandColor }}
-                        >
-                          <Image src={business.logoUrl} alt="" width={32} height={32} className="object-contain" />
-                        </div>
-                      )
-                    }
-                    return (
-                      <div
-                        className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shrink-0"
-                        style={{ backgroundColor: card.brandColor }}
-                      >
-                        {IconComp ? <IconComp className="h-6 w-6" aria-hidden="true" /> : card.name.charAt(0)}
-                      </div>
-                    )
-                  })()}
-                  <div className="flex items-center gap-2">
-                    {card.expired ? (
-                      <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-destructive/10 text-destructive">
-                        Vencida
-                      </span>
-                    ) : (
-                      <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-green-100 text-green-700">
-                        Activa
-                      </span>
-                    )}
-                  </div>
+          {/* La tarjeta se muestra tal como la ve el cliente. Antes era una
+              franja de color con la inicial del nombre, que no dice nada de lo
+              que se publicó. */}
+          {cards.map((card) => {
+            const diasParaVencer = daysUntilExpiry(card.expiresAt)
+            const vencimientoRequiereAtencion =
+              card.expired || (diasParaVencer !== null && diasParaVencer <= 7)
+            return (
+              <div
+                key={card.id}
+                className={`overflow-hidden rounded-2xl border bg-card transition-shadow hover:shadow-lg ${
+                  card.expired ? "border-border opacity-80" : "border-border"
+                }`}
+              >
+                <div className="p-5">
+                  <LoyaltyCardPreview
+                    businessName={business.name}
+                    businessLogo={business.logoUrl ?? undefined}
+                    iconName={card.iconName}
+                    stampIconName={card.stampIconName}
+                    customerName="Tus clientes"
+                    currentStamps={0}
+                    maxStamps={card.stampsRequired}
+                    reward={card.reward}
+                    showQR={false}
+                    brandColor={card.brandColor}
+                  />
                 </div>
 
-                <h3 className="mb-1 line-clamp-2 text-lg font-semibold text-foreground">{card.name}</h3>
-                {card.description && <p className="mb-4 line-clamp-2 text-sm text-muted-foreground">{card.description}</p>}
-
-                <div className="bg-muted/50 rounded-xl p-3 mb-4">
-                  <div className="flex items-center justify-between gap-3 text-sm">
-                    <span className="shrink-0 text-muted-foreground">Recompensa</span>
-                    <span className="min-w-0 break-words text-right font-medium text-foreground">{card.reward}</span>
+                <div className="space-y-3 px-5 pb-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <h3 className="min-w-0 line-clamp-2 font-semibold text-foreground">{card.name}</h3>
+                    <span
+                      className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
+                        card.expired
+                          ? "bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300"
+                          : "bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-300"
+                      }`}
+                    >
+                      {card.expired ? "Vencida" : "Activa"}
+                    </span>
                   </div>
-                  <div className="mt-1 flex items-center justify-between gap-3 text-sm">
-                    <span className="text-muted-foreground">Sellos requeridos</span>
-                    <span className="font-medium text-foreground">{card.stampsRequired}</span>
-                  </div>
-                  {card.expiresAt && (
-                    <div className="flex items-center justify-between text-sm mt-1">
-                      <span className="text-muted-foreground">{card.expired ? "Venció" : "Vence"}</span>
-                      <span className={`font-medium ${card.expired ? "text-destructive" : "text-foreground"}`}>
-                        {card.expiresAt.toLocaleDateString("es-MX")}
-                      </span>
-                    </div>
-                  )}
-                </div>
 
-                {card.expired && (
-                  <div className="bg-destructive/5 border border-destructive/15 rounded-xl p-3 mb-4">
-                    <p className="text-xs text-destructive font-medium">
-                      {card._count.customers} cliente{card._count.customers !== 1 ? "s" : ""} no {card._count.customers !== 1 ? "completaron" : "completó"} sus sellos
+                  <p className="truncate text-sm text-muted-foreground">{card.reward}</p>
+
+                  <p className="text-sm text-muted-foreground">
+                    <span className="font-medium text-foreground">{card._count.customers}</span>{" "}
+                    cliente{card._count.customers !== 1 ? "s" : ""}
+                  </p>
+
+                  {/* El vencimiento solo aparece cuando pide algo. */}
+                  {vencimientoRequiereAtencion && card.expiresAt && (
+                    <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                      {card.expired
+                        ? `Venció el ${card.expiresAt.toLocaleDateString("es-MX")}`
+                        : diasParaVencer === 0
+                        ? "Vence hoy"
+                        : `Vence en ${diasParaVencer} día${diasParaVencer !== 1 ? "s" : ""}`}
                     </p>
-                  </div>
-                )}
-
-                {!card.expired && (
-                  <div className="grid grid-cols-3 gap-3 mb-4">
-                    <div className="rounded-lg bg-muted/30 p-2 text-center">
-                      <Users className="mx-auto mb-1 h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                      <p className="text-sm font-semibold text-foreground">{card._count.customers}</p>
-                      <p className="text-xs text-muted-foreground">Clientes</p>
-                    </div>
-                    <div className="text-center p-2 bg-muted/30 rounded-lg">
-                      <Stamp className="mx-auto mb-1 h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                      <p className="text-sm font-semibold text-foreground">
-                        {card.customers.reduce((s, c) => s + c.stamps, 0)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Sellos</p>
-                    </div>
-                    <div className="text-center p-2 bg-muted/30 rounded-lg">
-                      <QrCode className="mx-auto mb-1 h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                      <p className="text-sm font-semibold text-foreground">1</p>
-                      <p className="text-xs text-muted-foreground">Código QR</p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {card.expired ? (
-                    <>
-                      <Link href={`/dashboard/cards/${card.id}`}>
-                        <Button variant="outline" className="w-full">Ver Detalles</Button>
-                      </Link>
-                      <DeleteExpiredCardButton
-                        cardId={card.id}
-                        cardName={card.name}
-                        affectedCustomers={card._count.customers}
-                      />
-                    </>
-                  ) : (
-                    <>
-                      <Link href={`/dashboard/cards/${card.id}`}>
-                        <Button variant="outline" className="w-full">Ver Detalles</Button>
-                      </Link>
-                      <Link href={`/dashboard/scan?cardId=${card.id}`}>
-                        <Button
-                          variant="default"
-                          className="w-full text-white"
-                          style={{ backgroundColor: card.brandColor }}
-                        >
-                          <Stamp className="h-4 w-4 mr-2" aria-hidden="true" />
-                          Sellar
-                        </Button>
-                      </Link>
-                    </>
                   )}
+
+                  <Button asChild variant="outline" className="min-h-11 w-full">
+                    <Link href={`/dashboard/cards/${card.id}`}>Ver tarjeta</Link>
+                  </Button>
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
 
           {status !== "expired" && (
             <Link

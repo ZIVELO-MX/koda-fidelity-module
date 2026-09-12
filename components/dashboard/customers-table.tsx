@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { CustomerActionsMenu } from "@/components/dashboard/customer-actions-menu"
+import { CustomerRowAction } from "@/components/dashboard/customer-row-action"
 import { Gift, Calendar, Stamp, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 
 export type SortField = "name" | "stamps" | "createdAt"
@@ -124,7 +125,14 @@ export function CustomersTable({
           </thead>
           <tbody className="divide-y divide-border">
             {customers.map((customer) => (
-              <tr key={customer.id} className="hover:bg-muted/30 transition-colors">
+              <tr
+                key={customer.id}
+                className={
+                  customer.stamps >= customer.card.stampsRequired
+                    ? "bg-green-50 transition-colors hover:bg-green-100 dark:bg-green-950/20 dark:hover:bg-green-950/30"
+                    : "transition-colors hover:bg-muted/30"
+                }
+              >
                 <td className="px-6 py-4">
                   <div className="flex min-w-0 items-center gap-3">
                     <Avatar className="h-10 w-10">
@@ -184,15 +192,18 @@ export function CustomersTable({
                     <span className="text-sm text-muted-foreground/50">—</span>
                   )}
                 </td>
-                <td className="px-6 py-4 text-right">
-                  <CustomerActionsMenu
-                    customerId={customer.id}
-                    customerName={customer.name}
-                    currentStamps={customer.stamps}
-                    maxStamps={customer.card.stampsRequired}
-                    reward={customer.card.reward}
-                    brandColor={customer.card.brandColor}
-                  />
+                <td className="px-6 py-4">
+                  <div className="flex items-center justify-end gap-2">
+                    <CustomerRowAction
+                      customerId={customer.id}
+                      currentStamps={customer.stamps}
+                      maxStamps={customer.card.stampsRequired}
+                    />
+                    <CustomerActionsMenu
+                      customerId={customer.id}
+                      customerName={customer.name}
+                    />
+                  </div>
                 </td>
               </tr>
             ))}

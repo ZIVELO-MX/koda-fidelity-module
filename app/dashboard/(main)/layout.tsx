@@ -1,4 +1,5 @@
 import { DashboardLayoutClient } from "@/components/dashboard/dashboard-layout-client"
+import { derivarMarca } from "@/lib/color-marca"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 import { redirect } from "next/navigation"
@@ -27,15 +28,21 @@ export default async function DashboardLayout({
 
   const { business, role } = { business: userRecord.business, role: userRecord.role }
 
+  // El color del negocio no se inyecta crudo: de él se derivan los estados y el
+  // color de texto que sí se lee encima.
+  const marca = derivarMarca(business.brandColor)
+
   return (
     <div
       className="min-h-screen bg-background"
       style={{
-        '--primary': business.brandColor,
-        '--ring': business.brandColor,
-        '--sidebar-primary': business.brandColor,
-        '--sidebar-ring': business.brandColor,
-        '--chart-1': business.brandColor,
+        '--primary': marca.base,
+        '--primary-foreground': marca.texto,
+        '--ring': marca.base,
+        '--sidebar-primary': marca.base,
+        '--sidebar-primary-foreground': marca.texto,
+        '--sidebar-ring': marca.base,
+        '--chart-1': marca.base,
       } as React.CSSProperties}
     >
       <DashboardLayoutClient
