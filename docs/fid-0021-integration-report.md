@@ -25,4 +25,10 @@ En PR #122, SHA `e8547ae`, CI terminó `success` en `verify`, `browser-smoke`,
 Esto es evidencia de compilación y recorridos automatizados del draft, no autorización de
 merge. Falta todavía ejecutar recorridos específicos de sellado/canje, búsqueda paginada,
 invitación/aceptación, aislamiento entre dos negocios y Wallet deshabilitado con aserciones
-de contrato; esos criterios siguen pendientes en FID-0021.
+de contrato.
+
+La rama backend ahora añade `lib/__tests__/fid0021-contracts.integration.test.ts`: en el
+PostgreSQL aislado comprueba sellado, canje, reintento idempotente y aislamiento de clientes.
+La suite de parser comprueba paginación y rechaza errores/formas inválidas; la suite de
+Wallet comprueba `501` y `x-request-id`. La búsqueda HTTP y la aceptación/eliminación de
+invitaciones todavía requieren recorridos de API con sesión en el draft integrado.
