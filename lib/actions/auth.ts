@@ -108,16 +108,23 @@ export async function signup(_prev: AuthResult, formData: FormData): Promise<Aut
   if (!email || !password || !name) return { error: "Todos los campos son requeridos" }
 
   const normalizedEmail = normalizeEmail(email)
+  const debugSignup = config.isDebugEmail(normalizedEmail)
   const requestHeaders = await headers()
   await enforceRateLimit("signup-identity", normalizedEmail, 3, 60 * 60 * 1000)
   await enforceRateLimit("signup-ip", requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown", 5, 60 * 60 * 1000)
   await prisma.signupIntent.upsert({ where: { email: normalizedEmail }, create: { email: normalizedEmail, name: name.trim() }, update: { name: name.trim(), status: "pending" } })
   const supabase = await createClient()
-  const { data, error } = config.isDebugEmail(normalizedEmail)
+  const { data, error } = debugSignup
     ? await createDebugUser(normalizedEmail, password, name.trim())
     : await supabase.auth.signUp({ email: normalizedEmail, password, options: { data: { name: name.trim() } } })
   if (error || !data.user) return { error: "No fue posible crear la cuenta. Revisa tus datos." }
   await prisma.signupIntent.update({ where: { email: normalizedEmail }, data: { authUserId: data.user.id } })
+  if (debugSignup) {
+    await authService.signIn(normalizedEmail, password)
+    await provisionSignup(data.user.id)
+    revalidatePath("/dashboard")
+    redirect("/dashboard")
+  }
   if (data.session) {
     await provisionSignup(data.user.id)
     revalidatePath("/dashboard")
