@@ -9,7 +9,10 @@ import { Plus } from "lucide-react"
  * se pinta explícitamente porque el que hereda el navegador se pierde sobre el
  * fondo claro.
  */
-const PREGUNTAS = [
+// Se exporta porque el JSON-LD de la landing y llms.txt responden con estas
+// mismas preguntas: una sola fuente, para que la respuesta que cita un
+// asistente sea palabra por palabra la que lee el visitante.
+export const PREGUNTAS = [
   {
     pregunta: "¿Mi cliente necesita instalar algo?",
     respuesta:
@@ -36,9 +39,11 @@ const PREGUNTAS = [
       "Sí. El código impreso sigue sirviendo: apunta a la tarjeta, no al diseño. Cambias los colores o el logo y la tarjeta de todos cambia.",
   },
   {
-    pregunta: "¿Cuánto cuesta?",
+    // Nombra el producto en la pregunta y en la respuesta: así la respuesta se
+    // sostiene sola cuando un asistente la cita fuera de la página.
+    pregunta: "¿Cuánto cuesta Koda Fidelity?",
     respuesta:
-      "Lite son 149 pesos al mes o 1,490 al año, y Pro 299 al mes o 2,990 al año. Crear tu cuenta y diseñar tu tarjeta no cuesta: el plan se contrata cuando la publicas.",
+      "Koda Fidelity cuesta 149 pesos al mes en el plan Lite (1,490 al año) y 299 al mes en el plan Pro (2,990 al año). Crear tu cuenta y diseñar tu tarjeta no cuesta: el plan se contrata cuando la publicas.",
   },
 ]
 
@@ -47,12 +52,17 @@ export function Preguntas() {
     <div className="mx-auto max-w-2xl divide-y divide-border border-y border-border">
       {PREGUNTAS.map((entrada, i) => (
         <details key={entrada.pregunta} open={i === 0} className="group py-2">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 rounded-lg py-3 text-left font-medium text-foreground outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary [&::-webkit-details-marker]:hidden">
-            {entrada.pregunta}
-            <Plus
-              className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-45"
-              aria-hidden="true"
-            />
+          {/* La pregunta es un encabezado de verdad, no texto suelto: es lo que
+              deja que un buscador o un asistente la extraiga como pregunta. Va
+              como hijo único del summary, que es lo que permite el estándar. */}
+          <summary className="cursor-pointer list-none rounded-lg outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary [&::-webkit-details-marker]:hidden">
+            <h3 className="flex min-h-11 items-center justify-between gap-4 py-3 text-left font-medium text-foreground">
+              {entrada.pregunta}
+              <Plus
+                className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-45"
+                aria-hidden="true"
+              />
+            </h3>
           </summary>
           <p className="pb-4 pr-8 text-muted-foreground leading-relaxed">{entrada.respuesta}</p>
         </details>

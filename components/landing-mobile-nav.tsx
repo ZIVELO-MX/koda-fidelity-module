@@ -178,7 +178,7 @@ export function LandingMobileNav() {
                 onClick={() => handleNavClick("/login")}
                 className="w-full"
               >
-                <Button variant="outline" className="w-full h-10">
+                <Button variant="outline" className="w-full min-h-11">
                   Iniciar Sesión
                 </Button>
               </Link>
@@ -189,7 +189,7 @@ export function LandingMobileNav() {
                 onClick={() => handleNavClick("/signup")}
                 className="w-full"
               >
-                <Button className="w-full h-10 active:scale-[0.97] transition-transform">
+                <Button className="w-full min-h-11 active:scale-[0.97] transition-transform">
                   Empieza por solo $149 al mes
                 </Button>
               </Link>

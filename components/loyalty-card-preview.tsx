@@ -109,7 +109,7 @@ export function LoyaltyCardPreview({
           })()}
           <div>
             <p className="text-xs uppercase tracking-wide" style={{ color: fgMuted }}>Tarjeta de Lealtad</p>
-            <h3 className="font-semibold text-lg leading-tight" style={{ color: fg }}>{businessName}</h3>
+            <p className="font-semibold text-lg leading-tight" style={{ color: fg }}>{businessName}</p>
           </div>
         </div>
 

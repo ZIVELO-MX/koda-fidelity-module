@@ -6,54 +6,9 @@ import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { cuentaDelAnual } from "@/lib/precios"
+import { PLANES, PRECIOS_VIGENTES_DESDE } from "@/lib/planes"
 
 type Modalidad = "anual" | "mensual"
-
-/**
- * Los importes vienen de la decisión de precios confirmados del ciclo: Lite 149
- * y Pro 299 al mes, y el anual son doce meses pagando diez. Antes esta sección
- * decía "Precios por definir" y "se publicará próximamente", que es prometer sin
- * respaldo, justo lo que esta ola quita de la página.
- */
-const PLANES: {
-  id: string
-  nombre: string
-  resumen: string
-  insignia?: string
-  mensual: number
-  anual: number
-  incluye: string[]
-}[] = [
-  {
-    id: "lite",
-    nombre: "Lite",
-    resumen: "Para empezar con una tarjeta",
-    mensual: 149,
-    anual: 1490,
-    incluye: [
-      "Una tarjeta de lealtad activa",
-      "Altas por QR y por enlace",
-      "Sellado y canje desde el escáner",
-      "El primer mes con todo lo de Pro",
-    ],
-  },
-  {
-    id: "pro",
-    nombre: "Pro",
-    resumen: "Para varias tarjetas o sucursales",
-    // "Todo incluido" es un hecho: lleva lo de Lite y lo demás. "Más popular"
-    // sería inventarse un dato que no tenemos.
-    insignia: "Todo incluido",
-    mensual: 299,
-    anual: 2990,
-    incluye: [
-      "Varias tarjetas activas a la vez",
-      "Todos los diseños de tarjeta",
-      "Altas por QR y por enlace",
-      "Sellado y canje desde el escáner",
-    ],
-  },
-]
 
 const PESOS = new Intl.NumberFormat("es-MX")
 
@@ -187,6 +142,11 @@ export function Precios() {
         </Button>
         <p className="text-sm text-muted-foreground">
           Crear tu cuenta y diseñar tu tarjeta no cuesta. El plan se contrata cuando la publicas.
+        </p>
+        {/* Señal de vigencia: con precios a la vista, saber desde cuándo rigen
+            es la diferencia entre un dato y un dato que igual ya caducó. */}
+        <p className="text-xs text-muted-foreground/80">
+          Precios vigentes desde {PRECIOS_VIGENTES_DESDE}.
         </p>
       </div>
     </div>

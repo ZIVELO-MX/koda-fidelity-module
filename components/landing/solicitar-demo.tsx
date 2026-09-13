@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { siteConfig } from "@/lib/site-config"
@@ -159,7 +160,11 @@ export function SolicitarDemo() {
         Solicitar demo
       </Button>
       <p className="mt-3 text-center text-xs text-[#736a5d]">
-        No compartimos tus datos. Al enviar aceptas nuestra política de privacidad.
+        No compartimos tus datos. Al enviar aceptas nuestro{" "}
+        <Link href="/privacidad" className="underline underline-offset-2 hover:text-[#17130f]">
+          aviso de privacidad
+        </Link>
+        .
       </p>
     </form>
   )

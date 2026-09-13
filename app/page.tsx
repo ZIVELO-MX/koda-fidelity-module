@@ -1,6 +1,5 @@
 import Image from "next/image"
 import Link from "next/link"
-import { redirect } from "next/navigation"
 import type { Metadata } from "next"
 import { Button } from "@/components/ui/button"
 import {
@@ -14,73 +13,170 @@ import { MarqueeBand } from "@/components/marquee-band"
 import { Precios } from "@/components/landing/precios"
 import { ComparacionPapel } from "@/components/landing/comparacion-papel"
 import { Testimonios } from "@/components/landing/testimonios"
-import { Preguntas } from "@/components/landing/preguntas"
+import { Preguntas, PREGUNTAS } from "@/components/landing/preguntas"
 import { Encabezado, Acento } from "@/components/landing/seccion"
 import { DisenosPorGiro } from "@/components/landing/disenos-por-giro"
 import { SolicitarDemo } from "@/components/landing/solicitar-demo"
 import { siteConfig } from "@/lib/site-config"
+import { PLANES } from "@/lib/planes"
 
+/**
+ * Solo lo propio de esta ruta. Open Graph, Twitter y robots se heredan del
+ * layout a propósito: los objetos de metadata no se fusionan campo por campo,
+ * se reemplazan enteros, y repetirlos aquí tiraba sin avisar las directivas
+ * `max-image-preview: large` y `twitter:creator` que el layout sí declara.
+ */
 export const metadata: Metadata = {
-  title: `${siteConfig.name} - Tarjetas de Fidelidad Digitales`,
+  title: siteConfig.metaTitle,
   description: siteConfig.description,
   keywords: siteConfig.keywords,
-  robots: { index: true, follow: true },
   alternates: { canonical: siteConfig.url },
-  openGraph: {
-    title: `${siteConfig.name} - Tarjetas de Fidelidad Digitales`,
-    description: siteConfig.description,
-    url: siteConfig.url,
-    siteName: siteConfig.name,
-    locale: siteConfig.locale,
-    type: "website",
-    images: [
-      {
-        url: siteConfig.ogImage,
-        width: 1200,
-        height: 630,
-        alt: siteConfig.name,
+}
+
+/**
+ * El grafo de datos estructurados de la landing. Sin esto la página no tiene
+ * ninguna definición legible por máquina: ni quién opera el servicio, ni qué
+ * cuesta, ni qué responde a cada pregunta.
+ *
+ * Los precios y las preguntas salen de las mismas constantes que pinta la
+ * página, así que no pueden discrepar de lo que el visitante lee. No hay
+ * `review` ni `aggregateRating`: no tenemos testimonios reales todavía, y
+ * inventarlos sería spam de datos estructurados.
+ */
+const PESOS_JSONLD = PLANES.flatMap((plan) => [plan.mensual, plan.anual])
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://zivelo.dev/#organization",
+      name: "ZIVELO",
+      url: "https://zivelo.dev",
+      sameAs: ["https://zivelo.dev"],
+      logo: {
+        "@type": "ImageObject",
+        url: `${siteConfig.url}/icon-512x512.png`,
+        width: 512,
+        height: 512,
       },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: `${siteConfig.name} - Tarjetas de Fidelidad Digitales`,
-    description: siteConfig.description,
-    images: [siteConfig.ogImage],
-  },
+      contactPoint: {
+        "@type": "ContactPoint",
+        email: "contacto@zivelo.dev",
+        contactType: "customer support",
+        areaServed: "MX",
+        availableLanguage: ["es-MX"],
+      },
+    },
+    {
+      "@type": "Brand",
+      "@id": `${siteConfig.url}/#marca-koda-pos`,
+      name: "Koda POS",
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${siteConfig.url}/#sitio`,
+      url: siteConfig.url,
+      name: siteConfig.name,
+      description: siteConfig.description,
+      inLanguage: "es-MX",
+      publisher: { "@id": "https://zivelo.dev/#organization" },
+    },
+    {
+      "@type": "WebPage",
+      "@id": `${siteConfig.url}/#pagina`,
+      url: siteConfig.url,
+      name: siteConfig.metaTitle,
+      description: siteConfig.description,
+      inLanguage: "es-MX",
+      isPartOf: { "@id": `${siteConfig.url}/#sitio` },
+      about: { "@id": `${siteConfig.url}/#producto` },
+      primaryImageOfPage: {
+        "@type": "ImageObject",
+        url: `${siteConfig.url}${siteConfig.ogImage}`,
+      },
+    },
+    {
+      "@type": ["SoftwareApplication", "Product"],
+      "@id": `${siteConfig.url}/#producto`,
+      name: siteConfig.name,
+      description: siteConfig.description,
+      url: siteConfig.url,
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Web",
+      image: `${siteConfig.url}${siteConfig.ogImage}`,
+      inLanguage: "es-MX",
+      brand: { "@id": `${siteConfig.url}/#marca-koda-pos` },
+      publisher: { "@id": "https://zivelo.dev/#organization" },
+      offers: {
+        "@type": "AggregateOffer",
+        priceCurrency: "MXN",
+        lowPrice: String(Math.min(...PESOS_JSONLD)),
+        highPrice: String(Math.max(...PESOS_JSONLD)),
+        offerCount: PESOS_JSONLD.length,
+        offers: PLANES.flatMap((plan) => [
+          {
+            "@type": "Offer",
+            name: `${plan.nombre} - mensual`,
+            category: plan.nombre,
+            url: `${siteConfig.url}/signup`,
+            price: String(plan.mensual),
+            priceCurrency: "MXN",
+            availability: "https://schema.org/InStock",
+            priceSpecification: {
+              "@type": "UnitPriceSpecification",
+              price: String(plan.mensual),
+              priceCurrency: "MXN",
+              unitCode: "MON",
+              unitText: "mes",
+            },
+          },
+          {
+            "@type": "Offer",
+            name: `${plan.nombre} - anual`,
+            category: plan.nombre,
+            url: `${siteConfig.url}/signup`,
+            price: String(plan.anual),
+            priceCurrency: "MXN",
+            availability: "https://schema.org/InStock",
+            priceSpecification: {
+              "@type": "UnitPriceSpecification",
+              price: String(plan.anual),
+              priceCurrency: "MXN",
+              unitCode: "ANN",
+              unitText: "año",
+            },
+          },
+        ]),
+      },
+    },
+    {
+      "@type": "FAQPage",
+      "@id": `${siteConfig.url}/#preguntas`,
+      inLanguage: "es-MX",
+      mainEntity: PREGUNTAS.map((entrada) => ({
+        "@type": "Question",
+        name: entrada.pregunta,
+        acceptedAnswer: { "@type": "Answer", text: entrada.respuesta },
+      })),
+    },
+  ],
 }
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Wallet, QrCode, Zap, Shield, BarChart3, Smartphone, CheckCircle2,
 }
 
-export default async function LandingPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
-}) {
-  const params = await searchParams
-  const code = typeof params.code === "string" ? params.code : params.code?.[0]
-  const next = typeof params.next === "string" ? params.next : params.next?.[0]
-  const error = typeof params.error === "string" ? params.error : params.error?.[0]
-  const error_code = typeof params.error_code === "string" ? params.error_code : params.error_code?.[0]
-  const error_description = typeof params.error_description === "string" ? params.error_description : params.error_description?.[0]
-
-  if (code) {
-    redirect(`/auth/callback?code=${encodeURIComponent(code)}&next=${encodeURIComponent(next || "/dashboard/my-cards")}`)
-  }
-  if (error || error_code) {
-    const qs = new URLSearchParams()
-    if (error) qs.set("error", error)
-    if (error_code) qs.set("error_code", error_code)
-    if (error_description) qs.set("error_description", error_description)
-    redirect(`/auth/error?${qs.toString()}`)
-  }
+export default function LandingPage() {
   return (
     <div className="landing min-h-screen bg-background forced-light">
       <a href="#main-content" className="skip-link">
         Saltar al contenido principal
       </a>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
+      />
       {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-[#17130f]/95 backdrop-blur-md text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -91,6 +187,7 @@ export default async function LandingPage({
                 alt={siteConfig.shortName}
                 width={36}
                 height={36}
+                priority
                 className="size-9 shrink-0"
               />
               <span className="whitespace-nowrap font-semibold text-lg text-white">Koda Fidelity</span>
@@ -127,8 +224,8 @@ export default async function LandingPage({
       </nav>
 
       {/* Hero Section */}
+      <main id="main-content">
       <section
-        id="main-content"
         className="relative overflow-hidden text-white"
         style={{
           background:
@@ -242,6 +339,15 @@ export default async function LandingPage({
                 )
               })}
           </ol>
+
+          <div className="mt-10 text-center">
+            <SmoothNavLink
+              href="#disenos"
+              className="inline-flex min-h-11 items-center text-sm font-medium text-primary underline underline-offset-4 hover:text-foreground"
+            >
+              Ver cómo se vería tu tarjeta
+            </SmoothNavLink>
+          </div>
         </div>
       </section>
 
@@ -337,6 +443,7 @@ export default async function LandingPage({
           </div>
         </div>
       </section>
+      </main>
 
       {/* Pie del diseño: marca a la izquierda y los tres bloques de enlaces
           juntos a la derecha. Sueltos por todo el ancho dejaban un hueco en el
@@ -380,10 +487,23 @@ export default async function LandingPage({
               <span className="font-semibold text-white">{siteConfig.name}</span>
             </Link>
             <p className="mt-3 text-sm leading-relaxed text-white/70">{siteConfig.footer.tagline}</p>
-            <p className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/15 px-3 py-1.5 text-xs text-white/70">
+            <p className="mt-3 text-sm leading-relaxed text-white/70">
+              {siteConfig.name} es un producto de{" "}
+              <a
+                href="https://zivelo.dev"
+                className="font-medium text-white underline underline-offset-4 hover:text-primary"
+              >
+                ZIVELO
+              </a>
+              .
+            </p>
+            <a
+              href="https://zivelo.dev"
+              className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-full border border-white/15 px-3 py-1.5 text-xs text-white/70 transition-colors hover:border-white/30 hover:text-white"
+            >
               <span className="h-1.5 w-1.5 rounded-full bg-primary" />
               Parte del ecosistema Koda POS
-            </p>
+            </a>
           </div>
 
           {[
@@ -400,6 +520,7 @@ export default async function LandingPage({
               enlaces: [
                 { href: "#faq", texto: "Preguntas", ancla: true },
                 { href: "#demo", texto: "Solicitar demo", ancla: true },
+                { href: "/privacidad", texto: "Aviso de privacidad", ancla: false },
                 ...siteConfig.footer.links.map((e) => ({ href: e.href, texto: e.label, ancla: false })),
               ],
             },
@@ -439,7 +560,7 @@ export default async function LandingPage({
         </div>
 
         <div className="relative mx-auto mt-12 flex max-w-6xl flex-wrap justify-between gap-3 border-t border-white/10 pt-6 text-sm text-white/50">
-          <span>© 2026 ZIVELO. Todos los derechos reservados.</span>
+          <span>© {new Date().getFullYear()} ZIVELO. Todos los derechos reservados.</span>
           <span>Hecho en México</span>
         </div>
       </footer>
