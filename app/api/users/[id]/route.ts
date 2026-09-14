@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import {
   getBusinessFromSession,
+  requireWritableBusinessPrincipal,
   handleApiError,
   ValidationError,
   NotFoundError,
@@ -32,7 +33,7 @@ export async function PUT(
 ) {
   const requestId = requestIdFrom(request)
   try {
-    const { business, user } = await getBusinessFromSession()
+    const { business, user } = await requireWritableBusinessPrincipal()
     requireRole(user, "admin")
     const { id } = await params
 
@@ -70,7 +71,7 @@ export async function DELETE(
 ) {
   const requestId = requestIdFrom(_request)
   try {
-    const { business, user } = await getBusinessFromSession()
+    const { business, user } = await requireWritableBusinessPrincipal()
     requireRole(user, "admin")
     const { id } = await params
 

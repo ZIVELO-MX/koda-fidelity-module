@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     const principal = await getAccountPrincipal()
     const { business, user } = await getBusinessFromSession()
     requireRole(user, "admin")
-    if (!hasRecentSignIn(principal.last_sign_in_at)) throw new ValidationError("Confirma tu identidad iniciando sesión nuevamente antes de cerrar la cuenta")
+    if (!hasRecentSignIn(principal.last_sign_in_at)) throw new ValidationError("Confirma tu identidad iniciando sesión nuevamente antes de cambiar el cierre de la cuenta")
     const body = await request.json().catch(() => ({}))
     if (body.action === "cancel") return withRequestId(NextResponse.json({ closure: await cancelClosure(prisma, business.id) }), requestId)
     return withRequestId(NextResponse.json({ closure: await scheduleClosure(prisma, business.id) }, { status: 201 }), requestId)

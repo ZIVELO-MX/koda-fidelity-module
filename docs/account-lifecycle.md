@@ -21,6 +21,7 @@ activación de planes no dependa todavía de un proveedor de pagos.
 - Un downgrade a Lite requiere una activación manual explícita con `proAccessGranted: false` y conserva una sola tarjeta Lite activa sin borrar las demás.
 - El ledger se anonimiza (`customerId = null`) antes de un borrado permanente de cliente.
 - El cierre de negocio se agenda a 30 días y su ejecución elimina el negocio en cascada después de la gracia.
+- Durante la gracia el negocio queda en sólo lectura. Para ejecutar cierres vencidos temporalmente se invoca manualmente `POST /api/cron/account-closures` con `Authorization: Bearer $CRON_SECRET`; cada ejecución reintenta limpiezas fallidas.
 - Las migraciones son expand-only, las tablas nuevas tienen RLS y el entorno de desarrollo se verifica con `DIRECT_URL` de `.env.development.local`.
 
 El seed de desarrollo valida sus contraseñas y resuelve las identidades Auth antes de modificar

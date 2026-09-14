@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getBusinessFromSession, handleApiError, ValidationError, requireRole, requestIdFrom, withRequestId } from "@/lib/api-utils"
+import { getBusinessFromSession, requireWritableBusinessPrincipal, handleApiError, ValidationError, requireRole, requestIdFrom, withRequestId } from "@/lib/api-utils"
 
 /**
  * @openapi
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
     const supabase = createAdminClient()
     const callbackTarget = `${baseUrl}/auth/callback?next=${encodeURIComponent(`/invite?token=${token}`)}`
-    const { error: authError } = await supabase.auth.admin.inviteUserByEmail(email, {
+    const { data: invitationData, error: authError } = await supabase.auth.admin.inviteUserByEmail(email, {
       redirectTo: callbackTarget,
       data: { name: name.trim() },
     })
@@ -105,6 +105,9 @@ export async function POST(request: NextRequest) {
         await prisma.teamInvitation.update({ where: { id: invitation.id }, data: { status: "delivery_failed" } })
         throw new Error(authError.message)
       }
+    }
+    if (invitationData.user?.id) {
+      await prisma.teamInvitation.update({ where: { id: invitation.id }, data: { authUserId: invitationData.user.id } })
     }
     return withRequestId(NextResponse.json({ invitation }, { status: 202 }), requestId)
   } catch (error) {

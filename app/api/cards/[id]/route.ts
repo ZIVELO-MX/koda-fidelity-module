@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getBusinessFromSession, handleApiError, NotFoundError, ValidationError, requireRole, requestIdFrom, withRequestId } from "@/lib/api-utils"
+import { getBusinessFromSession, requireWritableBusinessPrincipal, handleApiError, NotFoundError, ValidationError, requireRole, requestIdFrom, withRequestId } from "@/lib/api-utils"
 import { isExpired } from "@/lib/card-utils"
 import { getEntitlements } from "@/lib/account-lifecycle"
 import { resolveTheme } from "@/lib/card-themes"
@@ -230,7 +230,7 @@ export async function PUT(
 ) {
   const requestId = requestIdFrom(request)
   try {
-    const { business, user } = await getBusinessFromSession()
+    const { business, user } = await requireWritableBusinessPrincipal()
     requireRole(user, "admin")
     const { id } = await params
 
@@ -345,7 +345,7 @@ export async function DELETE(
 ) {
   const requestId = requestIdFrom(request)
   try {
-    const { business, user } = await getBusinessFromSession()
+    const { business, user } = await requireWritableBusinessPrincipal()
     requireRole(user, "admin")
     const { id } = await params
 

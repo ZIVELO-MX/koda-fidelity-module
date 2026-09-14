@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto"
 import { NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase-admin"
 import { prisma } from "@/lib/prisma"
-import { getBusinessFromSession, handleApiError, ValidationError, requireRole, requestIdFrom, withRequestId } from "@/lib/api-utils"
+import { requireWritableBusinessPrincipal, handleApiError, ValidationError, requireRole, requestIdFrom, withRequestId } from "@/lib/api-utils"
 import { registerBusinessAvatar } from "@/lib/account-lifecycle"
 
 const MAX_BYTES = 2 * 1024 * 1024
@@ -20,7 +20,7 @@ const MAX_BYTES = 2 * 1024 * 1024
 export async function POST(request: NextRequest) {
   const requestId = requestIdFrom(request)
   try {
-    const { business, user } = await getBusinessFromSession()
+    const { business, user } = await requireWritableBusinessPrincipal()
     requireRole(user, "admin")
     const form = await request.formData()
     const file = form.get("file")

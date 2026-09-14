@@ -29,7 +29,3 @@ export async function POST(request: NextRequest) {
     return withRequestId(handleApiError(error, requestId), requestId)
   }
 }
-
-export async function GET(request: NextRequest) {
-  return POST(request)
-}
