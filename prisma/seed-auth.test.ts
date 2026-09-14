@@ -44,6 +44,21 @@ describe("development auth seed", () => {
     expect(admin.createUser).not.toHaveBeenCalled()
   })
 
+  it("updates metadata without replacing an existing password when requested", async () => {
+    const admin = {
+      listUsers: vi.fn().mockResolvedValue({ data: { users: [{ id: "auth-existing", email: seedRoleUsers[0].email }] }, error: null }),
+      createUser: vi.fn(),
+      updateUserById: vi.fn().mockResolvedValue({ data: { user: { id: "auth-existing" } }, error: null }),
+    }
+
+    await expect(ensureSeedAuthUser(admin, seedRoleUsers[0], "long-enough", true, true)).resolves.toBe("auth-existing")
+    expect(admin.updateUserById).toHaveBeenCalledWith("auth-existing", {
+      email_confirm: true,
+      user_metadata: { name: seedRoleUsers[0].name, must_change_password: true },
+    })
+    expect(admin.createUser).not.toHaveBeenCalled()
+  })
+
   it("does not write Auth users when any seed password is missing", async () => {
     const admin = {
       listUsers: vi.fn(),

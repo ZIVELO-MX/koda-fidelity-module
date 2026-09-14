@@ -14,8 +14,8 @@ async function main() {
   const genericPassword = process.env.DEV_SEED_GENERIC_PASSWORD || "Koda1234!"
   if (genericPassword.length < 8) throw new Error("DEV_SEED_GENERIC_PASSWORD must have at least 8 characters")
   const developmentAccounts = [
-    { email: "rulaxx@zivelo.dev", name: "Rulaxx", businessId: "biz-fidelity-rulaxx" },
-    { email: "benrod@zivelo.dev", name: "Benrod", businessId: "biz-fidelity-benrod" },
+    { email: "raul.mendez@zivelo.dev", name: "Raúl Mendez", businessId: "biz-fidelity-rulaxx" },
+    { email: "benjamin.rodriguez@zivelo.dev", name: "Benjamin Rodriguez", businessId: "biz-fidelity-benrod" },
   ] as const
   const preservedBusinessIds = developmentAccounts.map(account => account.businessId)
   const admin = createAdminClient().auth.admin
@@ -51,7 +51,8 @@ async function main() {
         },
         update: { email: account.email, name: `${account.name} Fidelity Dev` },
       })
-      await tx.user.upsert({ where: { authUserId: developmentAuthUsers[index] }, create: { authUserId: developmentAuthUsers[index], email: account.email, name: account.name, role: "admin", businessId: account.businessId, passwordSetupRequired: true }, update: { businessId: account.businessId, email: account.email, name: account.name } })
+      const user = await tx.user.upsert({ where: { authUserId: developmentAuthUsers[index] }, create: { authUserId: developmentAuthUsers[index], email: account.email, name: account.name, role: "admin", businessId: account.businessId, passwordSetupRequired: true }, update: { businessId: account.businessId, email: account.email, name: account.name, role: "admin", passwordSetupRequired: true } })
+      await tx.onboardingProgress.upsert({ where: { userId: user.id }, create: { userId: user.id, businessId: account.businessId }, update: { businessId: account.businessId } })
     }
     return tx.business.create({
       data: {
