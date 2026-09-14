@@ -69,6 +69,12 @@ enum ClosureCleanupKind {
   AUTH_USER
 }
 
+enum ClosureExecutionStatus {
+  PROCESSING
+  FAILED
+  COMPLETED
+}
+
 enum CleanupStatus {
   PENDING
   COMPLETED
@@ -240,7 +246,7 @@ model AccountClosureExecution {
   id          String                @id @default(cuid())
   closureId   String                @unique
   businessId  String
-  status      ClosureStatus         @default(PROCESSING)
+  status      ClosureExecutionStatus @default(PROCESSING)
   attempts    Int                   @default(0)
   lastError   String?
   leaseUntil  DateTime?

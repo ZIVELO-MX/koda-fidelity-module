@@ -1,6 +1,7 @@
 ALTER TYPE "ClosureStatus" ADD VALUE IF NOT EXISTS 'PROCESSING';
 ALTER TYPE "ClosureStatus" ADD VALUE IF NOT EXISTS 'FAILED';
 CREATE TYPE "ClosureCleanupKind" AS ENUM ('BUSINESS_AVATAR', 'AUTH_USER');
+CREATE TYPE "ClosureExecutionStatus" AS ENUM ('PROCESSING', 'FAILED', 'COMPLETED');
 
 ALTER TABLE "TeamInvitation" ADD COLUMN IF NOT EXISTS "authUserId" UUID;
 
@@ -8,7 +9,7 @@ CREATE TABLE "AccountClosureExecution" (
   "id" TEXT NOT NULL,
   "closureId" TEXT NOT NULL,
   "businessId" TEXT NOT NULL,
-  "status" "ClosureStatus" NOT NULL DEFAULT 'PROCESSING',
+  "status" "ClosureExecutionStatus" NOT NULL DEFAULT 'PROCESSING',
   "attempts" INTEGER NOT NULL DEFAULT 0,
   "lastError" TEXT,
   "leaseUntil" TIMESTAMP(3),
