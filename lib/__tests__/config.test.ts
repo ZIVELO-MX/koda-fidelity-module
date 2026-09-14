@@ -63,3 +63,15 @@ describe("debug auth config", () => {
     expect(config.isDebugEmail("tester@invalid.dev")).toBe(false)
   })
 })
+
+describe("wallet feature flag", () => {
+  beforeEach(() => delete process.env.FID_WALLET_ENABLED)
+
+  it("is disabled unless explicitly enabled", () => {
+    expect(config.isWalletEnabled).toBe(false)
+    process.env.FID_WALLET_ENABLED = "true"
+    expect(config.isWalletEnabled).toBe(true)
+    process.env.FID_WALLET_ENABLED = "1"
+    expect(config.isWalletEnabled).toBe(false)
+  })
+})

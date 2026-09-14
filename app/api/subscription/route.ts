@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getBusinessFromSession, handleApiError, ValidationError, requestIdFrom, withRequestId } from "@/lib/api-utils"
+import { getBusinessFromSession, handleApiError, ValidationError, requestIdFrom, withRequestId, withApiContext } from "@/lib/api-utils"
 import { activateManualSubscription, getEntitlements } from "@/lib/account-lifecycle"
 import { manualSubscriptionSchema } from "@/lib/onboarding-contracts"
 
@@ -19,11 +19,10 @@ import { manualSubscriptionSchema } from "@/lib/onboarding-contracts"
  */
 
 export async function GET(request: NextRequest) {
-  const requestId = requestIdFrom(request)
-  try {
+  return withApiContext(request, async (requestId) => {
     const { business } = await getBusinessFromSession()
     return withRequestId(NextResponse.json({ entitlements: await getEntitlements(prisma, business.id) }), requestId)
-  } catch (error) { return withRequestId(handleApiError(error, requestId), requestId) }
+  })()
 }
 
 export async function POST(request: NextRequest) {
