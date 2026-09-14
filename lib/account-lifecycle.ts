@@ -175,15 +175,17 @@ async function prepareExecution(db: Db, closureId: string, businessId: string, n
     create: { closureId, businessId, status: "PROCESSING", attempts: 1, leaseUntil: new Date(now.getTime() + 5 * 60 * 1000) },
     update: { status: "PROCESSING", attempts: { increment: 1 }, lastError: null, leaseUntil: new Date(now.getTime() + 5 * 60 * 1000) },
   })
-  const [assets, users] = await Promise.all([
+  const [assets, users, invitations] = await Promise.all([
     db.businessAvatarAsset.findMany({ where: { businessId }, select: { id: true, storagePath: true } }),
     db.user.findMany({ where: { businessId, authUserId: { not: null } }, select: { authUserId: true } }),
+    db.teamInvitation.findMany({ where: { businessId, authUserId: { not: null } }, select: { authUserId: true } }),
   ])
-  const sharedIds = new Set((await db.customerProfile.findMany({ where: { authUserId: { in: users.flatMap((user) => user.authUserId ? [user.authUserId] : []) } }, select: { authUserId: true } })).flatMap((profile) => profile.authUserId ? [profile.authUserId] : []))
+  const authUserIds = [...new Set([...users, ...invitations].flatMap((record) => record.authUserId ? [record.authUserId] : []))]
+  const sharedIds = new Set((await db.customerProfile.findMany({ where: { authUserId: { in: authUserIds } }, select: { authUserId: true } })).flatMap((profile) => profile.authUserId ? [profile.authUserId] : []))
   await db.accountClosureCleanupTask.createMany({
     data: [
       ...assets.map((asset) => ({ executionId: execution.id, kind: "BUSINESS_AVATAR" as const, subjectId: asset.id, bucket: process.env.SUPABASE_PRIVATE_AVATAR_BUCKET || "avatars", storagePath: asset.storagePath })),
-      ...users.filter((user) => user.authUserId && !sharedIds.has(user.authUserId)).map((user) => ({ executionId: execution.id, kind: "AUTH_USER" as const, subjectId: user.authUserId! })),
+      ...authUserIds.filter((authUserId) => !sharedIds.has(authUserId)).map((subjectId) => ({ executionId: execution.id, kind: "AUTH_USER" as const, subjectId })),
     ],
     skipDuplicates: true,
   })
