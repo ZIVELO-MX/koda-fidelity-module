@@ -2,8 +2,11 @@ import { afterAll, afterEach, describe, expect, it, vi } from "vitest"
 import { randomUUID } from "node:crypto"
 import { prisma } from "@/lib/prisma"
 
-const { getBusinessFromSession } = vi.hoisted(() => ({ getBusinessFromSession: vi.fn() }))
-vi.mock("@/lib/api-utils", async () => ({ ...(await vi.importActual<typeof import("@/lib/api-utils")>("@/lib/api-utils")), getBusinessFromSession }))
+const { requireWritableBusinessPrincipal } = vi.hoisted(() => ({ requireWritableBusinessPrincipal: vi.fn() }))
+vi.mock("@/lib/api-utils", async () => ({
+  ...(await vi.importActual<typeof import("@/lib/api-utils")>("@/lib/api-utils")),
+  requireWritableBusinessPrincipal,
+}))
 
 import { DELETE } from "./route"
 
@@ -19,7 +22,7 @@ integration("DELETE /api/users/:id tenant and role contract", () => {
     businessIds.push(business.id)
     const admin = await prisma.user.create({ data: { businessId: business.id, authUserId: randomUUID(), email: business.email, name: "Admin", role: "admin" } })
     const member = await prisma.user.create({ data: { businessId: business.id, authUserId: randomUUID(), email: `member-${Date.now()}@test.invalid`, name: "Member", role: "sellador" } })
-    getBusinessFromSession.mockResolvedValue({ business, user: { id: admin.id, email: admin.email, name: admin.name, role: admin.role, passwordSetupRequired: false } })
+    requireWritableBusinessPrincipal.mockResolvedValue({ business, user: { id: admin.id, email: admin.email, name: admin.name, role: admin.role, passwordSetupRequired: false } })
     const response = await DELETE(new Request("http://localhost/api/users/member", { headers: { "x-request-id": "delete-1" } }) as never, { params: Promise.resolve({ id: member.id }) })
     expect(response.status).toBe(200)
     expect(await prisma.user.findUnique({ where: { id: member.id } })).toBeNull()
@@ -33,7 +36,7 @@ integration("DELETE /api/users/:id tenant and role contract", () => {
     businessIds.push(first.id, second.id)
     const admin = await prisma.user.create({ data: { businessId: first.id, authUserId: randomUUID(), email: first.email, name: "Admin", role: "admin" } })
     const member = await prisma.user.create({ data: { businessId: second.id, authUserId: randomUUID(), email: `member-b-${Date.now()}@test.invalid`, name: "Member", role: "sellador" } })
-    getBusinessFromSession.mockResolvedValue({ business: first, user: { id: admin.id, email: admin.email, name: admin.name, role: admin.role, passwordSetupRequired: false } })
+    requireWritableBusinessPrincipal.mockResolvedValue({ business: first, user: { id: admin.id, email: admin.email, name: admin.name, role: admin.role, passwordSetupRequired: false } })
     const response = await DELETE(new Request("http://localhost/api/users/member") as never, { params: Promise.resolve({ id: member.id }) })
     expect(response.status).toBe(404)
     expect(await prisma.user.findUnique({ where: { id: member.id } })).not.toBeNull()
