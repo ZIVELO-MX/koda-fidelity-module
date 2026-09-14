@@ -14,7 +14,7 @@ export default async function DashboardLayout({
 
   const userRecord = await prisma.user.findUnique({
     where: { authUserId: user.id },
-    include: { business: { select: { name: true, brandColor: true, nickname: true } } },
+    include: { business: { select: { id: true, name: true, brandColor: true, nickname: true } } },
   })
 
   if (!userRecord || !userRecord.business) {
@@ -22,6 +22,9 @@ export default async function DashboardLayout({
   }
   if (userRecord.passwordSetupRequired) redirect("/dashboard/update-password")
 
+  const [closure] = await Promise.all([
+    prisma.accountClosure.findFirst({ where: { businessId: userRecord.business.id, status: { in: ["SCHEDULED", "PROCESSING", "FAILED"] } }, orderBy: { scheduledFor: "asc" }, select: { scheduledFor: true } }),
+  ])
   const { business, role } = { business: userRecord.business, role: userRecord.role }
 
   return (
@@ -41,6 +44,7 @@ export default async function DashboardLayout({
         brandColor={business.brandColor}
         nickname={business.nickname ?? undefined}
         role={role}
+        closureScheduledFor={closure?.scheduledFor.toISOString()}
       >
         {children}
       </DashboardLayoutClient>

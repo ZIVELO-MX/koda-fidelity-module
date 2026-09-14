@@ -1,4 +1,4 @@
-import { ClosureStatus, Prisma, PrismaClient, SubscriptionPlan } from "@prisma/client"
+import { Prisma, PrismaClient, SubscriptionPlan } from "@prisma/client"
 import { AccountReadOnlyError, ConflictError, NotFoundError, ValidationError } from "@/lib/api-utils"
 import { createAdminClient } from "@/lib/supabase-admin"
 
