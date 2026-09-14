@@ -2,7 +2,7 @@
 
 ## SHA y alcance
 
-- Backend: `benrod/1.2.0` (`027f208`, incluyendo PR #123).
+- Backend: `benrod/1.2.0` (`df4e79c`, incluyendo PR #124 y su base previa).
 - Diseño: `rulaxx/1.2.0` (`8f639878a6e86b52f454aadb4b3605f2f896f869`).
 - Resultado integrado: PR draft #122 (`integration/fid-0014-design-draft`), siempre contra
   `benrod/1.2.0`; no se usa `main` ni una base compartida.
@@ -23,12 +23,14 @@ En PR #122, SHA `e8547ae`, CI terminó `success` en `verify`, `browser-smoke`,
 `pnpm typecheck`, `pnpm test` (392 passed, 7 skipped) y `pnpm build`.
 
 Esto es evidencia de compilación y recorridos automatizados del draft, no autorización de
-merge. Falta todavía ejecutar recorridos específicos de sellado/canje, búsqueda paginada,
-invitación/aceptación, aislamiento entre dos negocios y Wallet deshabilitado con aserciones
-de contrato.
+merge. La evidencia específica añadida en PR #125 cubre sellado/canje, búsqueda paginada,
+invitación/aceptación, aislamiento entre dos negocios y Wallet deshabilitado mediante pruebas
+aisladas y CI con Supabase local y Mailpit.
 
-La rama backend ahora añade `lib/__tests__/fid0021-contracts.integration.test.ts`: en el
-PostgreSQL aislado comprueba sellado, canje, reintento idempotente y aislamiento de clientes.
-La suite de parser comprueba paginación y rechaza errores/formas inválidas; la suite de
-Wallet comprueba `501` y `x-request-id`. La búsqueda HTTP y la aceptación/eliminación de
-invitaciones todavía requieren recorridos de API con sesión en el draft integrado.
+La rama backend añade `lib/__tests__/fid0021-contracts.integration.test.ts`: en el PostgreSQL
+aislado comprueba sellado, canje, reintento idempotente y aislamiento de clientes. La suite de
+parser comprueba paginación y rechaza errores/formas inválidas; la prueba de `GET /api/customers`
+comprueba el envelope, vacío genuino y paginación inválida; y la suite de Wallet comprueba `501`
+y `x-request-id`. Las pruebas de invitaciones cubren respuesta `202`, aceptación de token de un
+solo uso, errores de rol y eliminación con aislamiento de negocio; auth-e2e valida además los
+recorridos de invitación y recuperación con Mailpit.
