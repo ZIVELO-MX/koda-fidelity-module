@@ -33,6 +33,13 @@ export class ConflictError extends Error {
   }
 }
 
+export class AccountReadOnlyError extends Error {
+  constructor(readonly scheduledFor: Date) {
+    super("La cuenta está en periodo de cierre y sólo permite consultas, exportación o cancelación")
+    this.name = "AccountReadOnlyError"
+  }
+}
+
 export class ForbiddenError extends Error {
   constructor(message = "Forbidden") {
     super(message)
@@ -128,6 +135,13 @@ export const getAccountPrincipal = async () => {
 
 export const requireBusinessPrincipal = getBusinessFromSession
 
+export async function requireWritableBusinessPrincipal() {
+  const principal = await getBusinessFromSession()
+  const closure = await prisma.accountClosure.findFirst({ where: { businessId: principal.business.id, status: { in: ["SCHEDULED", "PROCESSING", "FAILED"] } }, orderBy: { scheduledFor: "asc" } })
+  if (closure) throw new AccountReadOnlyError(closure.scheduledFor)
+  return principal
+}
+
 export async function requireReadyBusinessPrincipal() {
   const principal = await getBusinessFromSession()
   if (principal.user.passwordSetupRequired) throw new ForbiddenError("Password setup required")
@@ -146,6 +160,9 @@ export function requireRole(user: Pick<SessionBusiness["user"], "role">, ...allo
 }
 
 export function handleApiError(error: unknown, requestId: string = randomUUID()): NextResponse<ApiErrorBody> {
+  if (error instanceof AccountReadOnlyError) {
+    return NextResponse.json({ error: error.message, code: "KF-ACCOUNT-READONLY", action: `La cuenta se eliminará el ${error.scheduledFor.toISOString()}. Cancela el cierre para volver a editar.`, requestId, retryable: false }, { status: 423, headers: { "x-request-id": requestId } })
+  }
   if (error instanceof UnauthorizedError) {
     return NextResponse.json({ error: error.message, code: "KF-AUTH-001", action: "Inicia sesión de nuevo.", requestId, retryable: false }, { status: 401, headers: { "x-request-id": requestId } })
   }

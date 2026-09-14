@@ -58,7 +58,20 @@ enum SubscriptionStatus {
 
 enum ClosureStatus {
   SCHEDULED
+  PROCESSING
+  FAILED
   CANCELED
+  COMPLETED
+}
+
+enum ClosureCleanupKind {
+  BUSINESS_AVATAR
+  AUTH_USER
+}
+
+enum ClosureExecutionStatus {
+  PROCESSING
+  FAILED
   COMPLETED
 }
 
@@ -229,6 +242,41 @@ model AccountClosure {
   @@index([scheduledFor, status])
 }
 
+model AccountClosureExecution {
+  id          String                @id @default(cuid())
+  closureId   String                @unique
+  businessId  String
+  status      ClosureExecutionStatus @default(PROCESSING)
+  attempts    Int                   @default(0)
+  lastError   String?
+  leaseUntil  DateTime?
+  completedAt DateTime?
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  tasks       AccountClosureCleanupTask[]
+
+  @@index([businessId, status])
+}
+
+model AccountClosureCleanupTask {
+  id          String                   @id @default(cuid())
+  executionId String
+  kind        ClosureCleanupKind
+  subjectId   String
+  bucket      String?
+  storagePath String?
+  status      CleanupStatus            @default(PENDING)
+  attempts    Int                      @default(0)
+  lastError   String?
+  completedAt DateTime?
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+  execution   AccountClosureExecution  @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  @@unique([executionId, kind, subjectId])
+  @@index([executionId, status])
+}
+
 model BillingAuditEvent {
   id                String   @id @default(cuid())
   businessId        String
@@ -290,6 +338,7 @@ model TeamInvitation {
   status      String    @default("pending")
   expiresAt   DateTime
   acceptedAt  DateTime?
+  authUserId  String?   @db.Uuid
   businessId  String
   business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   invitedById String

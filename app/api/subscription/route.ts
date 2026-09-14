@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getBusinessFromSession, handleApiError, ValidationError, requestIdFrom, withRequestId, withApiContext } from "@/lib/api-utils"
-import { activateManualSubscription, getEntitlements } from "@/lib/account-lifecycle"
+import { activateManualSubscription, assertBusinessWritable, getEntitlements } from "@/lib/account-lifecycle"
 import { manualSubscriptionSchema } from "@/lib/onboarding-contracts"
 
 /**
@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
     const parsed = manualSubscriptionSchema.safeParse(body)
     if (!parsed.success) throw new ValidationError("Suscripción manual inválida")
     const businessId = parsed.data.businessId
+    await assertBusinessWritable(prisma, businessId)
     if (parsed.data.action === "cancel") {
       const canceled = await prisma.subscription.updateMany({ where: { businessId, status: "ACTIVE" }, data: { status: "CANCELED" } })
       return withRequestId(NextResponse.json({ canceled: canceled.count }), requestId)

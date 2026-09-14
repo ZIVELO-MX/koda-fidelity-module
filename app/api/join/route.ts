@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 import { getBusinessFromSession, handleApiError, ValidationError, NotFoundError, UnauthorizedError, requestIdFrom, withRequestId } from "@/lib/api-utils"
 import { isExpired } from "@/lib/card-utils"
+import { assertBusinessWritable } from "@/lib/account-lifecycle"
 
 /**
  * @openapi
@@ -196,6 +197,7 @@ export async function POST(request: NextRequest) {
     if (!card) {
       throw new NotFoundError("Loyalty card not found")
     }
+    await assertBusinessWritable(prisma, card.businessId)
 
     if (!card.isActive || (card.status && card.status !== "ACTIVE")) {
       throw new ValidationError("This loyalty card is no longer accepting new members")

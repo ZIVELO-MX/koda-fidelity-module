@@ -1,5 +1,5 @@
 import { Prisma, PrismaClient, SubscriptionPlan } from "@prisma/client"
-import { ConflictError, NotFoundError, ValidationError } from "@/lib/api-utils"
+import { AccountReadOnlyError, ConflictError, NotFoundError, ValidationError } from "@/lib/api-utils"
 import { createAdminClient } from "@/lib/supabase-admin"
 
 type Db = PrismaClient
@@ -94,19 +94,35 @@ export async function createCustomerProfile(db: Db, input: { authUserId: string;
 }
 
 export async function scheduleClosure(db: Db, businessId: string, now = new Date()) {
+  const active = await db.accountClosure.findFirst({ where: { businessId, status: { in: ["PROCESSING", "FAILED"] } } })
+  if (active) throw new ConflictError("El cierre ya está en proceso y no puede reprogramarse")
   const scheduledFor = addGraceDays(now, 30)
   await db.accountClosure.updateMany({ where: { businessId, status: "SCHEDULED" }, data: { status: "CANCELED", canceledAt: now } })
   return db.accountClosure.create({ data: { businessId, scheduledFor } })
 }
 
-export async function cancelClosure(db: Db, businessId: string) { return db.accountClosure.updateMany({ where: { businessId, status: "SCHEDULED" }, data: { status: "CANCELED", canceledAt: new Date() } }) }
+export async function cancelClosure(db: Db, businessId: string, now = new Date()) {
+  const canceled = await db.accountClosure.updateMany({ where: { businessId, status: "SCHEDULED", scheduledFor: { gt: now } }, data: { status: "CANCELED", canceledAt: now } })
+  if (canceled.count !== 1) throw new ConflictError("El cierre ya no puede cancelarse")
+  return canceled
+}
+
+export async function assertBusinessWritable(db: Db, businessId: string) {
+  const closure = await db.accountClosure.findFirst({
+    where: { businessId, status: { in: ["SCHEDULED", "PROCESSING", "FAILED"] } },
+    orderBy: { scheduledFor: "asc" },
+    select: { scheduledFor: true },
+  })
+  if (closure) throw new AccountReadOnlyError(closure.scheduledFor)
+}
+
 
 export async function previewClosure(db: Db, businessId: string) {
   const [business, cards, customers, closure] = await Promise.all([
     db.business.findUnique({ where: { id: businessId }, select: { id: true, name: true } }),
     db.loyaltyCard.count({ where: { businessId } }),
     db.customer.count({ where: { card: { businessId } } }),
-    db.accountClosure.findFirst({ where: { businessId, status: "SCHEDULED" }, orderBy: { scheduledFor: "asc" } }),
+    db.accountClosure.findFirst({ where: { businessId, status: { in: ["SCHEDULED", "PROCESSING", "FAILED"] } }, orderBy: { scheduledFor: "asc" } }),
   ])
   if (!business) throw new NotFoundError("Negocio no encontrado")
   return { business, cards, customers, scheduledClosure: closure }
@@ -144,7 +160,7 @@ export async function cleanupBusinessAvatar(db: Db, assetId: string) {
   const asset = await db.businessAvatarAsset.findUnique({ where: { id: assetId } })
   if (!asset) throw new NotFoundError("Avatar no encontrado")
   try {
-    const bucket = process.env.SUPABASE_STORAGE_BUCKET || "pass-images"
+    const bucket = process.env.SUPABASE_PRIVATE_AVATAR_BUCKET || "avatars"
     const { error } = await createAdminClient().storage.from(bucket).remove([asset.storagePath])
     if (error) throw error
     return db.businessAvatarAsset.update({ where: { id: asset.id }, data: { status: "COMPLETED", attempts: { increment: 1 }, deletedAt: new Date(), lastError: null } })
@@ -153,10 +169,72 @@ export async function cleanupBusinessAvatar(db: Db, assetId: string) {
   }
 }
 
-export async function executeDueClosures(db: Db, now = new Date()) {
-  const due = await db.accountClosure.findMany({ where: { status: "SCHEDULED", scheduledFor: { lte: now } }, select: { id: true, businessId: true } })
-  for (const closure of due) {
-    await db.business.delete({ where: { id: closure.businessId } })
+async function prepareExecution(db: Db, closureId: string, businessId: string, now: Date) {
+  const execution = await db.accountClosureExecution.upsert({
+    where: { closureId },
+    create: { closureId, businessId, status: "PROCESSING", attempts: 1, leaseUntil: new Date(now.getTime() + 5 * 60 * 1000) },
+    update: { status: "PROCESSING", attempts: { increment: 1 }, lastError: null, leaseUntil: new Date(now.getTime() + 5 * 60 * 1000) },
+  })
+  const [assets, users, invitations] = await Promise.all([
+    db.businessAvatarAsset.findMany({ where: { businessId }, select: { id: true, storagePath: true } }),
+    db.user.findMany({ where: { businessId, authUserId: { not: null } }, select: { authUserId: true } }),
+    db.teamInvitation.findMany({ where: { businessId, authUserId: { not: null } }, select: { authUserId: true } }),
+  ])
+  const authUserIds = [...new Set([...users, ...invitations].flatMap((record) => record.authUserId ? [record.authUserId] : []))]
+  const sharedIds = new Set((await db.customerProfile.findMany({ where: { authUserId: { in: authUserIds } }, select: { authUserId: true } })).flatMap((profile) => profile.authUserId ? [profile.authUserId] : []))
+  await db.accountClosureCleanupTask.createMany({
+    data: [
+      ...assets.map((asset) => ({ executionId: execution.id, kind: "BUSINESS_AVATAR" as const, subjectId: asset.id, bucket: process.env.SUPABASE_PRIVATE_AVATAR_BUCKET || "avatars", storagePath: asset.storagePath })),
+      ...authUserIds.filter((authUserId) => !sharedIds.has(authUserId)).map((subjectId) => ({ executionId: execution.id, kind: "AUTH_USER" as const, subjectId })),
+    ],
+    skipDuplicates: true,
+  })
+  return execution
+}
+
+async function runCleanupTask(db: Db, task: { id: string; kind: "BUSINESS_AVATAR" | "AUTH_USER"; subjectId: string; bucket: string | null; storagePath: string | null }) {
+  try {
+    const admin = createAdminClient()
+    if (task.kind === "BUSINESS_AVATAR") {
+      const { error } = await admin.storage.from(task.bucket!).remove([task.storagePath!])
+      if (error) throw error
+    } else {
+      const { error: signOutError } = await admin.auth.admin.signOut(task.subjectId, "global")
+      if (signOutError && !/not found/i.test(signOutError.message)) throw signOutError
+      const { error } = await admin.auth.admin.deleteUser(task.subjectId)
+      if (error && !/not found/i.test(error.message)) throw error
+    }
+    await db.accountClosureCleanupTask.update({ where: { id: task.id }, data: { status: "COMPLETED", attempts: { increment: 1 }, completedAt: new Date(), lastError: null } })
+    return true
+  } catch (error) {
+    await db.accountClosureCleanupTask.update({ where: { id: task.id }, data: { status: "FAILED", attempts: { increment: 1 }, lastError: error instanceof Error ? error.message : "Error de limpieza" } })
+    return false
   }
-  return due.length
+}
+
+export async function executeDueClosures(db: Db, now = new Date()) {
+  const candidates = await db.accountClosure.findMany({
+    where: { OR: [{ status: "SCHEDULED", scheduledFor: { lte: now } }, { status: "FAILED" }, { status: "PROCESSING", updatedAt: { lt: new Date(now.getTime() - 5 * 60 * 1000) } }] },
+    select: { id: true, businessId: true, status: true }, take: 25,
+  })
+  let processed = 0
+  for (const closure of candidates) {
+    const claim = await db.accountClosure.updateMany({ where: { id: closure.id, status: closure.status }, data: { status: "PROCESSING" } })
+    if (claim.count !== 1) continue
+    const execution = await prepareExecution(db, closure.id, closure.businessId, now)
+    const tasks = await db.accountClosureCleanupTask.findMany({ where: { executionId: execution.id, status: { not: "COMPLETED" } } })
+    const results = await Promise.all(tasks.map((task) => runCleanupTask(db, task)))
+    if (results.some((result) => !result)) {
+      await db.accountClosure.update({ where: { id: closure.id }, data: { status: "FAILED" } })
+      await db.accountClosureExecution.update({ where: { id: execution.id }, data: { status: "FAILED", lastError: "Una o más tareas de limpieza fallaron", leaseUntil: null } })
+      continue
+    }
+    await db.$transaction(async (tx) => {
+      await tx.stampLog.updateMany({ where: { businessId: closure.businessId }, data: { businessId: null, cardId: null, customerId: null, cycleId: null } })
+      await tx.business.delete({ where: { id: closure.businessId } })
+      await tx.accountClosureExecution.update({ where: { id: execution.id }, data: { status: "COMPLETED", completedAt: now, leaseUntil: null, lastError: null } })
+    })
+    processed += 1
+  }
+  return processed
 }

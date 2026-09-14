@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getBusinessFromSession, handleApiError, requestIdFrom, ValidationError, withRequestId } from "@/lib/api-utils"
+import { requireWritableBusinessPrincipal, handleApiError, requestIdFrom, ValidationError, withRequestId } from "@/lib/api-utils"
 import { executeLoyaltyOperation } from "@/lib/loyalty-engine"
 
 /**
@@ -70,7 +70,7 @@ import { executeLoyaltyOperation } from "@/lib/loyalty-engine"
 export async function POST(request: NextRequest) {
   const requestId = requestIdFrom(request)
   try {
-    const { business } = await getBusinessFromSession()
+    const { business } = await requireWritableBusinessPrincipal()
 
     const body = await request.json()
 
