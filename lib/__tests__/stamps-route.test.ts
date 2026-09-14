@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 
 const { mockGetUser, mockExecute, mockUserFind } = vi.hoisted(() => ({ mockGetUser: vi.fn(), mockExecute: vi.fn(), mockUserFind: vi.fn() }))
 vi.mock("@/lib/supabase-server", () => ({ createClient: vi.fn(async () => ({ auth: { getUser: mockGetUser } })) }))
-vi.mock("@/lib/prisma", () => ({ prisma: { user: { findUnique: mockUserFind } } }))
+vi.mock("@/lib/prisma", () => ({ prisma: { user: { findUnique: mockUserFind }, accountClosure: { findFirst: vi.fn().mockResolvedValue(null) } } }))
 vi.mock("@/lib/loyalty-engine", () => ({ executeLoyaltyOperation: mockExecute }))
 vi.mock("next/server", () => ({ NextRequest: class {}, NextResponse: { json: (body: unknown, init?: ResponseInit) => new Response(JSON.stringify(body), { status: init?.status ?? 200 }) } }))
 
