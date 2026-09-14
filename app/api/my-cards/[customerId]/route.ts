@@ -12,6 +12,7 @@ import { handleApiError, NotFoundError, ValidationError, UnauthorizedError, requ
  *     responses: { 200: { description: Membership withdrawn } }
  */
 import { isExpired } from "@/lib/card-utils"
+import { assertBusinessWritable } from "@/lib/account-lifecycle"
 
 export async function DELETE(
   _request: NextRequest,
@@ -27,11 +28,12 @@ export async function DELETE(
 
     const customer = await prisma.customer.findUnique({
       where: { id: customerId },
-      include: { card: { select: { expiresAt: true } } },
+      include: { card: { select: { expiresAt: true, businessId: true } } },
     })
 
     if (!customer) throw new NotFoundError("Customer not found")
     if (customer.email !== user.email) throw new NotFoundError("Customer not found")
+    await assertBusinessWritable(prisma, customer.card.businessId)
     if (!isExpired(customer.card.expiresAt)) {
       throw new ValidationError("Only expired cards can be removed")
     }

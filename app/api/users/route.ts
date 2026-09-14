@@ -51,7 +51,7 @@ export async function GET(request?: NextRequest) {
 export async function POST(request: NextRequest) {
   const requestId = requestIdFrom(request)
   try {
-    const { business, user } = await getBusinessFromSession()
+    const { business, user } = await requireWritableBusinessPrincipal()
     requireRole(user, "admin")
 
     const body = await request.json()
