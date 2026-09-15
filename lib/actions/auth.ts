@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { getFriendlySendError } from "@/lib/auth-errors"
 import { createClient } from "@/lib/supabase-server"
+import { reglaQueFalta } from "@/lib/reglas-de-contrasena"
 
 const magicLinkCooldowns = new Map<string, number>()
 const MAGIC_LINK_COOLDOWN_MS = 120_000
@@ -53,7 +54,11 @@ export async function updatePassword(_prev: AuthResult, formData: FormData): Pro
   const confirm = formData.get("confirm") as string
   const nickname = (formData.get("nickname") as string | null)?.trim() || null
 
-  if (!password || password.length < 8) return { error: "La contraseña debe tener al menos 8 caracteres" }
+  // El servidor no se fía de lo que valida el navegador, y aplica las mismas
+  // reglas que el registro: por esta puerta se entraba con una contraseña que
+  // la otra habría rechazado.
+  const falta = reglaQueFalta(password ?? "")
+  if (falta) return { error: `A la contraseña le falta: ${falta.toLowerCase()}` }
   if (password !== confirm) return { error: "Las contraseñas no coinciden" }
 
   const supabase = await createClient()
@@ -157,7 +162,10 @@ export async function sendPasswordReset(_prev: AuthResult, formData: FormData): 
   const email = formData.get("email") as string
   if (!email || !email.includes("@")) return { error: "Ingresa un correo electrónico válido" }
 
-  const redirectTo = `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/auth/callback?next=/dashboard/update-password`
+  // El destino dice a qué viene, para que la pantalla no le pida un apodo a
+  // quien solo va a cambiar su contraseña.
+  const destino = encodeURIComponent("/dashboard/update-password?motivo=recuperacion")
+  const redirectTo = `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/auth/callback?next=${destino}`
 
   try {
     await authService.sendPasswordResetEmail(email.trim(), { redirectTo })

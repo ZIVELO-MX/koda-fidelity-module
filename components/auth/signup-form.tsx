@@ -7,51 +7,18 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Lock, CheckCircle2, Circle, Mail } from "lucide-react"
+import { Lock, Mail } from "lucide-react"
+import { PasswordRequirements } from "@/components/auth/password-requirements"
+import { cumpleLasReglas } from "@/lib/reglas-de-contrasena"
 import { cn } from "@/lib/utils"
 
 const initialState: AuthResult = {}
-
-const passwordRequirements = [
-  { label: "Mínimo 8 caracteres", test: (p: string) => p.length >= 8 },
-  { label: "Una letra mayúscula (A–Z)", test: (p: string) => /[A-Z]/.test(p) },
-  { label: "Un carácter especial (!@#$%...)", test: (p: string) => /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(p) },
-]
-
-function PasswordRequirements({ password }: { password: string }) {
-  return (
-    <div className="space-y-1.5 pt-1">
-      {passwordRequirements.map(({ label, test }, i) => {
-        const met = test(password)
-        return (
-          <div
-            key={label}
-            className="pw-req flex items-center gap-2"
-            style={{ transitionDelay: `${i * 40}ms` }}
-          >
-            {met ? (
-              <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0 transition-colors duration-200" />
-            ) : (
-              <Circle className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0 transition-colors duration-200" />
-            )}
-            <span className={cn(
-              "text-xs transition-colors duration-200",
-              met ? "text-foreground" : "text-muted-foreground"
-            )}>
-              {label}
-            </span>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
 
 export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
   const [state, formAction, pending] = useActionState(signup, initialState)
   const [password, setPassword] = useState("")
 
-  const allRequirementsMet = password.length > 0 && passwordRequirements.every(({ test }) => test(password))
+  const allRequirementsMet = password.length > 0 && cumpleLasReglas(password)
 
   if (isInviteOnly) {
     return (
