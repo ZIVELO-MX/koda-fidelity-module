@@ -1,42 +1,67 @@
 "use client"
 
-import { useActionState } from "react"
-import Image from "next/image"
+import { Suspense, useActionState, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { updatePassword, type AuthResult } from "@/lib/actions/auth"
+import { PasswordRequirements } from "@/components/auth/password-requirements"
+import { cumpleLasReglas } from "@/lib/reglas-de-contrasena"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, KeyRound } from "lucide-react"
+import { Loader2 } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 const initialState: AuthResult = {}
 
-export default function UpdatePasswordPage() {
+/**
+ * A esta pantalla se llega por dos puertas distintas, y hasta ahora solo
+ * hablaba de una:
+ *
+ *   - La invitación, donde alguien estrena su cuenta y de paso puede ponerse un
+ *     apodo para el panel.
+ *   - La recuperación, donde ya tiene cuenta y solo va a cambiar la contraseña.
+ *     Pedirle ahí un apodo es preguntarle algo que no vino a hacer.
+ *
+ * El enlace de recuperación trae `?motivo=recuperacion`, así que la pantalla
+ * sabe por cuál entró.
+ */
+function CambiarContrasena() {
+  const esRecuperacion = useSearchParams().get("motivo") === "recuperacion"
   const [state, action, pending] = useActionState(updatePassword, initialState)
+  const [password, setPassword] = useState("")
+  const [confirm, setConfirm] = useState("")
+
+  const reglasOk = password.length > 0 && cumpleLasReglas(password)
+  const coinciden = confirm.length > 0 && password === confirm
+  const noCoinciden = confirm.length > 0 && password !== confirm
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
+    <div className="landing flex min-h-screen items-center justify-center bg-background p-4 forced-light">
+      <Card className="w-full max-w-md auth-card-enter rounded-[14px] border-border/60 shadow-[0_12px_32px_rgba(28,27,23,0.12),0_2px_4px_rgba(28,27,23,0.04)]">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <Image src="/short-logo.svg" alt="Koda" width={48} height={48} className="size-12" />
-          </div>
-          <div className="flex justify-center mb-2">
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <KeyRound className="h-6 w-6 text-primary" />
-            </div>
-          </div>
-          <CardTitle className="text-2xl">Configura tu cuenta</CardTitle>
+          <CardTitle asChild>
+            <h1 className="text-2xl">
+              {esRecuperacion ? "Crea una contraseña nueva" : "Configura tu cuenta"}
+            </h1>
+          </CardTitle>
           <CardDescription>
-            Elige una contraseña personal. También puedes agregar un apodo para identificarte en el panel.
+            {esRecuperacion
+              ? "La anterior deja de servir en cuanto guardes esta."
+              : "Elige una contraseña personal. El apodo es opcional y lo puedes cambiar después."}
           </CardDescription>
         </CardHeader>
+
         <CardContent>
           {state?.error && (
-            <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive mb-4">
+            <div
+              role="alert"
+              className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+            >
               {state.error}
             </div>
           )}
+
           <form action={action} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="password">Nueva contraseña</Label>
@@ -44,40 +69,65 @@ export default function UpdatePasswordPage() {
                 id="password"
                 name="password"
                 type="password"
-                placeholder="Mínimo 8 caracteres"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="new-password"
                 autoFocus
+                className={cn(password.length > 0 && !reglasOk && "border-destructive/50")}
               />
+              {/* Las reglas a la vista mientras se escribe. Antes solo se
+                  conocían al ser rechazado, y encima eran más flojas que las
+                  del registro. */}
+              <PasswordRequirements password={password} />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="confirm">Confirmar contraseña</Label>
               <Input
                 id="confirm"
                 name="confirm"
                 type="password"
-                placeholder="Repite tu contraseña"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
                 required
                 autoComplete="new-password"
+                aria-invalid={noCoinciden || undefined}
+                className={cn(noCoinciden && "border-destructive", coinciden && "border-primary")}
               />
+              {noCoinciden && (
+                <p className="text-xs text-destructive">Las dos contraseñas no son iguales.</p>
+              )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="nickname">Apodo <span className="text-muted-foreground font-normal">(opcional)</span></Label>
-              <Input
-                id="nickname"
-                name="nickname"
-                type="text"
-                placeholder="Ej. Juan, El Jefe, Administrador..."
-                autoComplete="off"
-                maxLength={40}
-              />
-              <p className="text-xs text-muted-foreground">
-                Se muestra en el panel en lugar de tu correo. Puedes cambiarlo después en Configuración.
-              </p>
-            </div>
-            <Button type="submit" className="w-full" disabled={pending}>
+
+            {!esRecuperacion && (
+              <div className="space-y-2">
+                <Label htmlFor="nickname">
+                  Apodo <span className="font-normal text-muted-foreground">(opcional)</span>
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Se muestra en el panel en lugar de tu correo. Puedes cambiarlo en Configuración.
+                </p>
+                <Input
+                  id="nickname"
+                  name="nickname"
+                  type="text"
+                  placeholder="Ej. Juan, El Jefe, Administrador"
+                  autoComplete="off"
+                  maxLength={40}
+                />
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              className="min-h-11 w-full active:scale-[0.97] transition-transform"
+              disabled={pending || !reglasOk || !coinciden}
+            >
               {pending ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
+              ) : esRecuperacion ? (
+                "Guardar contraseña"
               ) : (
                 "Guardar y continuar"
               )}
@@ -86,5 +136,13 @@ export default function UpdatePasswordPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function UpdatePasswordPage() {
+  return (
+    <Suspense>
+      <CambiarContrasena />
+    </Suspense>
   )
 }

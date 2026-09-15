@@ -64,6 +64,7 @@ export function DashboardLayoutClient({
         <DashboardHeader
           collapsed={sidebarCollapsed}
           onToggleCollapse={toggleCollapse}
+          businessName={businessName}
         />
         <main className="flex-1 p-4 sm:p-6 pt-4 lg:pt-6 pb-20 lg:pb-6">{children}</main>
       </div>

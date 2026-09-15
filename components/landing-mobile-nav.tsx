@@ -13,9 +13,10 @@ import {
 import { siteConfig } from "@/lib/site-config"
 
 const links = [
-  { href: "#features", label: "Funciones" },
+  { href: "#disenos", label: "Diseños" },
   { href: "#how-it-works", label: "Cómo Funciona" },
   { href: "#pricing", label: "Precios" },
+  { href: "#faq", label: "FAQ" },
 ]
 
 function smoothScroll(href: string) {
@@ -110,13 +111,13 @@ export function LandingMobileNav() {
   }, [])
 
   return (
-    <div className="relative md:hidden" data-mobile-menu="">
+    <div className="relative lg:hidden" data-mobile-menu="">
       <Drawer open={open} onOpenChange={setOpen} shouldScaleBackground={false}>
         <DrawerTrigger asChild>
           <button
             ref={buttonRef}
             type="button"
-            className="p-3 -mr-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors duration-150 active:scale-[0.93]"
+            className="p-3 -mr-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors duration-150 active:scale-[0.93]"
             aria-label={open ? "Cerrar menú" : "Abrir menú de navegación"}
           >
             <HamburgerIcon open={open} />
@@ -177,7 +178,7 @@ export function LandingMobileNav() {
                 onClick={() => handleNavClick("/login")}
                 className="w-full"
               >
-                <Button variant="outline" className="w-full h-10">
+                <Button variant="outline" className="w-full min-h-11">
                   Iniciar Sesión
                 </Button>
               </Link>
@@ -188,8 +189,8 @@ export function LandingMobileNav() {
                 onClick={() => handleNavClick("/signup")}
                 className="w-full"
               >
-                <Button className="w-full h-10 active:scale-[0.97] transition-transform">
-                  Empezar Gratis
+                <Button className="w-full min-h-11 active:scale-[0.97] transition-transform">
+                  Empieza por solo $149 al mes
                 </Button>
               </Link>
             </DrawerClose>

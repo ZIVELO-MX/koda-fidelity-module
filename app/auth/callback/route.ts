@@ -6,8 +6,10 @@ export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get("code")
   const rawNext = searchParams.get("next") ?? ""
-  const next =
-    rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/dashboard/my-cards"
+  // Un destino explícito y propio del sitio manda sobre el de por defecto.
+  const destinoPedido =
+    rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : null
+  const next = destinoPedido ?? "/dashboard/my-cards"
 
   if (code) {
     const response = NextResponse.redirect(`${origin}${next}`)
@@ -15,7 +17,11 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error) {
-      const email = data.session?.user?.email
+      // Sin destino pedido, un correo de negocio entra a su panel. Con destino
+      // pedido no: el enlace de recuperación apunta a la pantalla de
+      // contraseña, y mandar al panel dejaba al dueño dentro pero sin poder
+      // cambiarla, que es justo lo que había ido a hacer.
+      const email = destinoPedido ? null : data.session?.user?.email
       if (email) {
         const business = await prisma.business.findUnique({ where: { email }, select: { id: true } })
         if (business) {

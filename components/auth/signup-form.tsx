@@ -1,67 +1,32 @@
 "use client"
 
 import { useState, useActionState } from "react"
-import Image from "next/image"
 import Link from "next/link"
 import { signup, type AuthResult } from "@/lib/actions/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Lock, CheckCircle2, Circle, Mail } from "lucide-react"
+import { Lock, Mail } from "lucide-react"
+import { PasswordRequirements } from "@/components/auth/password-requirements"
+import { cumpleLasReglas } from "@/lib/reglas-de-contrasena"
 import { cn } from "@/lib/utils"
 
 const initialState: AuthResult = {}
-
-const passwordRequirements = [
-  { label: "Mínimo 8 caracteres", test: (p: string) => p.length >= 8 },
-  { label: "Una letra mayúscula (A–Z)", test: (p: string) => /[A-Z]/.test(p) },
-  { label: "Un carácter especial (!@#$%...)", test: (p: string) => /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(p) },
-]
-
-function PasswordRequirements({ password }: { password: string }) {
-  return (
-    <div className="space-y-1.5 pt-1">
-      {passwordRequirements.map(({ label, test }, i) => {
-        const met = test(password)
-        return (
-          <div
-            key={label}
-            className="pw-req flex items-center gap-2"
-            style={{ transitionDelay: `${i * 40}ms` }}
-          >
-            {met ? (
-              <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0 transition-colors duration-200" />
-            ) : (
-              <Circle className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0 transition-colors duration-200" />
-            )}
-            <span className={cn(
-              "text-xs transition-colors duration-200",
-              met ? "text-foreground" : "text-muted-foreground"
-            )}>
-              {label}
-            </span>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
 
 export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
   const [state, formAction, pending] = useActionState(signup, initialState)
   const [password, setPassword] = useState("")
 
-  const allRequirementsMet = password.length > 0 && passwordRequirements.every(({ test }) => test(password))
+  const allRequirementsMet = password.length > 0 && cumpleLasReglas(password)
 
   if (isInviteOnly) {
     return (
-      <Card className="w-full max-w-md auth-card-enter shadow-lg border-border/50">
+      <Card className="w-full max-w-md auth-card-enter rounded-[14px] border-border/60 shadow-[0_12px_32px_rgba(28,27,23,0.12),0_2px_4px_rgba(28,27,23,0.04)]">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <Image src="/short-logo.svg" alt="Koda" width={48} height={48} className="size-12" />
-          </div>
-          <CardTitle className="text-2xl">Beta Privado</CardTitle>
+          <CardTitle asChild>
+            <h1 className="text-2xl">Beta Privado</h1>
+          </CardTitle>
           <CardDescription>Koda Fidelity está en desarrollo</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -78,7 +43,7 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
               ¿Te interesa? Escríbenos para conseguir acceso anticipado.
             </p>
           </div>
-          <Button asChild variant="outline" className="w-full active:scale-[0.97] transition-transform">
+          <Button asChild variant="outline" className="min-h-11 w-full active:scale-[0.97] transition-transform">
             <a href="mailto:contacto@zivelo.dev" className="flex items-center gap-2">
               <Mail className="h-4 w-4" />
               Solicitar acceso
@@ -87,8 +52,8 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
         </CardContent>
         <CardFooter className="justify-center text-sm text-muted-foreground">
           ¿Ya tienes acceso?{" "}
-          <Link href="/login" className="ml-1 text-primary hover:underline font-medium">
-            Iniciar Sesión
+          <Link href="/login" className="ml-1 inline-flex min-h-11 items-center font-medium text-primary hover:underline">
+            Iniciar sesión
           </Link>
         </CardFooter>
       </Card>
@@ -97,12 +62,11 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
 
   if (state.success) {
     return (
-      <Card className="w-full max-w-md auth-card-enter shadow-lg border-border/50">
+      <Card className="w-full max-w-md auth-card-enter rounded-[14px] border-border/60 shadow-[0_12px_32px_rgba(28,27,23,0.12),0_2px_4px_rgba(28,27,23,0.04)]">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <Image src="/short-logo.svg" alt="Koda" width={48} height={48} className="size-12" />
-          </div>
-          <CardTitle className="text-2xl">¡Cuenta creada!</CardTitle>
+          <CardTitle asChild>
+            <h1 className="text-2xl">¡Cuenta creada!</h1>
+          </CardTitle>
           <CardDescription>Revisa tu correo para confirmar tu cuenta</CardDescription>
         </CardHeader>
         <CardContent className="text-center space-y-4">
@@ -114,8 +78,8 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
           </p>
         </CardContent>
         <CardFooter className="justify-center text-sm text-muted-foreground">
-          <Link href="/login" className="text-primary hover:underline font-medium">
-            Ir a Iniciar Sesión
+          <Link href="/login" className="inline-flex min-h-11 items-center font-medium text-primary hover:underline">
+            Ir a iniciar sesión
           </Link>
         </CardFooter>
       </Card>
@@ -123,18 +87,20 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
   }
 
   return (
-    <Card className="w-full max-w-md auth-card-enter shadow-lg border-border/50">
+    <Card className="w-full max-w-md auth-card-enter rounded-[14px] border-border/60 shadow-[0_12px_32px_rgba(28,27,23,0.12),0_2px_4px_rgba(28,27,23,0.04)]">
       <CardHeader className="text-center">
-        <div className="flex justify-center mb-4">
-          <Image src="/short-logo.svg" alt="Koda" width={48} height={48} className="size-12" />
-        </div>
-        <CardTitle className="text-2xl">Crear Cuenta</CardTitle>
+        <CardTitle asChild>
+            <h1 className="text-2xl">Crear cuenta</h1>
+          </CardTitle>
         <CardDescription>Registra tu negocio en Koda Fidelity</CardDescription>
       </CardHeader>
       <CardContent>
         <form action={formAction} className="space-y-4">
           {state.error && (
-            <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
+            <div
+              role="alert"
+              className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive"
+            >
               {state.error}
             </div>
           )}
@@ -170,7 +136,6 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
               id="password"
               name="password"
               type="password"
-              placeholder="••••••••"
               required
               autoComplete="new-password"
               value={password}
@@ -190,18 +155,18 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
 
           <Button
             type="submit"
-            className="w-full active:scale-[0.97] transition-transform"
+            className="min-h-11 w-full active:scale-[0.97] transition-transform"
             disabled={pending || (password.length > 0 && !allRequirementsMet)}
           >
-            {pending ? "Creando cuenta..." : "Crear Cuenta"}
+            {pending ? "Creando cuenta..." : "Crear cuenta"}
           </Button>
         </form>
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm text-muted-foreground">
         <span>
           ¿Ya tienes cuenta?{" "}
-          <Link href="/login" className="text-primary hover:underline font-medium">
-            Iniciar Sesión
+          <Link href="/login" className="inline-flex min-h-11 items-center font-medium text-primary hover:underline">
+            Iniciar sesión
           </Link>
         </span>
       </CardFooter>
