@@ -488,14 +488,7 @@ export default function LandingPage() {
             </Link>
             <p className="mt-3 text-sm leading-relaxed text-white/70">{siteConfig.footer.tagline}</p>
             <p className="mt-3 text-sm leading-relaxed text-white/70">
-              {siteConfig.name} es un producto de{" "}
-              <a
-                href="https://zivelo.dev"
-                className="font-medium text-white underline underline-offset-4 hover:text-primary"
-              >
-                ZIVELO
-              </a>
-              .
+              {siteConfig.name} es un producto de ZIVELO.
             </p>
             <a
               href="https://zivelo.dev"

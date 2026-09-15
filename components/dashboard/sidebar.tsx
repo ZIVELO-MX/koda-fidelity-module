@@ -309,6 +309,10 @@ export function DashboardSidebar({
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
+                // Plegada, la barra deja solo las iniciales del avatar: sin
+                // nombre, el único destino que lleva a cerrar sesión no tiene
+                // cómo llamarse.
+                aria-label="Abrir menú de perfil"
                 className={cn(
                   "flex w-full items-center rounded-lg transition-colors hover:bg-muted",
                   collapsed ? "justify-center p-2" : "gap-3 px-3 py-2",

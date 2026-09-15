@@ -24,7 +24,7 @@ export default function SignupPage() {
             <div className="absolute -bottom-20 right-0 w-[350px] h-[350px] rounded-full bg-primary/[0.07] blur-3xl" />
           </div>
           <div className="relative z-10 flex flex-col justify-between h-full p-12">
-            <Link href="/" className="flex items-center gap-2 w-fit">
+            <Link href="/" className="inline-flex min-h-11 w-fit items-center gap-2">
               <Image src="/short-logo.svg" alt="Koda" width={36} height={36} className="size-9 shrink-0" />
               <span className="font-semibold text-lg text-foreground">Koda Fidelity</span>
             </Link>
@@ -67,7 +67,7 @@ export default function SignupPage() {
         {/* Right form panel */}
         <div className="flex flex-col items-center justify-center p-6 sm:p-8">
           <div className="lg:hidden mb-8">
-            <Link href="/" className="flex items-center gap-2">
+            <Link href="/" className="inline-flex min-h-11 items-center gap-2">
               <Image src="/short-logo.svg" alt="Koda" width={32} height={32} className="size-8 shrink-0" />
               <span className="font-semibold text-foreground">Koda Fidelity</span>
             </Link>

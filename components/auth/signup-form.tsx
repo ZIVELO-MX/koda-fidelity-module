@@ -61,7 +61,9 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
           <div className="flex justify-center mb-4">
             <Image src="/short-logo.svg" alt="Koda" width={48} height={48} className="size-12" />
           </div>
-          <CardTitle className="text-2xl">Beta Privado</CardTitle>
+          <CardTitle asChild>
+            <h1 className="text-2xl">Beta Privado</h1>
+          </CardTitle>
           <CardDescription>Koda Fidelity está en desarrollo</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -78,7 +80,7 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
               ¿Te interesa? Escríbenos para conseguir acceso anticipado.
             </p>
           </div>
-          <Button asChild variant="outline" className="w-full active:scale-[0.97] transition-transform">
+          <Button asChild variant="outline" className="min-h-11 w-full active:scale-[0.97] transition-transform">
             <a href="mailto:contacto@zivelo.dev" className="flex items-center gap-2">
               <Mail className="h-4 w-4" />
               Solicitar acceso
@@ -87,7 +89,7 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
         </CardContent>
         <CardFooter className="justify-center text-sm text-muted-foreground">
           ¿Ya tienes acceso?{" "}
-          <Link href="/login" className="ml-1 text-primary hover:underline font-medium">
+          <Link href="/login" className="ml-1 inline-flex min-h-11 items-center font-medium text-primary hover:underline">
             Iniciar Sesión
           </Link>
         </CardFooter>
@@ -102,7 +104,9 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
           <div className="flex justify-center mb-4">
             <Image src="/short-logo.svg" alt="Koda" width={48} height={48} className="size-12" />
           </div>
-          <CardTitle className="text-2xl">¡Cuenta creada!</CardTitle>
+          <CardTitle asChild>
+            <h1 className="text-2xl">¡Cuenta creada!</h1>
+          </CardTitle>
           <CardDescription>Revisa tu correo para confirmar tu cuenta</CardDescription>
         </CardHeader>
         <CardContent className="text-center space-y-4">
@@ -114,7 +118,7 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
           </p>
         </CardContent>
         <CardFooter className="justify-center text-sm text-muted-foreground">
-          <Link href="/login" className="text-primary hover:underline font-medium">
+          <Link href="/login" className="inline-flex min-h-11 items-center font-medium text-primary hover:underline">
             Ir a Iniciar Sesión
           </Link>
         </CardFooter>
@@ -128,13 +132,18 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
         <div className="flex justify-center mb-4">
           <Image src="/short-logo.svg" alt="Koda" width={48} height={48} className="size-12" />
         </div>
-        <CardTitle className="text-2xl">Crear Cuenta</CardTitle>
+        <CardTitle asChild>
+            <h1 className="text-2xl">Crear Cuenta</h1>
+          </CardTitle>
         <CardDescription>Registra tu negocio en Koda Fidelity</CardDescription>
       </CardHeader>
       <CardContent>
         <form action={formAction} className="space-y-4">
           {state.error && (
-            <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
+            <div
+              role="alert"
+              className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive"
+            >
               {state.error}
             </div>
           )}
@@ -190,7 +199,7 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
 
           <Button
             type="submit"
-            className="w-full active:scale-[0.97] transition-transform"
+            className="min-h-10 w-full active:scale-[0.97] transition-transform"
             disabled={pending || (password.length > 0 && !allRequirementsMet)}
           >
             {pending ? "Creando cuenta..." : "Crear Cuenta"}
@@ -200,7 +209,7 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
       <CardFooter className="flex-col gap-2 text-sm text-muted-foreground">
         <span>
           ¿Ya tienes cuenta?{" "}
-          <Link href="/login" className="text-primary hover:underline font-medium">
+          <Link href="/login" className="inline-flex min-h-11 items-center font-medium text-primary hover:underline">
             Iniciar Sesión
           </Link>
         </span>

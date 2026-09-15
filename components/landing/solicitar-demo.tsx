@@ -160,12 +160,16 @@ export function SolicitarDemo() {
         Solicitar demo
       </Button>
       <p className="mt-3 text-center text-xs text-[#736a5d]">
-        No compartimos tus datos. Al enviar aceptas nuestro{" "}
-        <Link href="/privacidad" className="underline underline-offset-2 hover:text-[#17130f]">
-          aviso de privacidad
-        </Link>
-        .
+        No compartimos tus datos. Al enviar aceptas nuestro aviso de privacidad.
       </p>
+      <div className="text-center">
+        <Link
+          href="/privacidad"
+          className="inline-flex min-h-11 items-center text-xs text-[#736a5d] underline underline-offset-2 hover:text-[#17130f]"
+        >
+          Leer el aviso de privacidad
+        </Link>
+      </div>
     </form>
   )
 }

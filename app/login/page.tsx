@@ -7,9 +7,9 @@ import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { siteConfig } from "@/lib/site-config"
 
 const brandingFeatures = [
-  "Sin apps requeridas — solo escanea el QR",
-  "Acceso seguro con enlace mágico por email",
-  "Setup completo en menos de 2 minutos",
+  "Tus clientes no instalan nada: escanean el QR",
+  "Entran con un enlace seguro que les llega por correo",
+  "Tu tarjeta queda lista en menos de dos minutos",
 ]
 
 export default function LoginPage() {
@@ -24,7 +24,7 @@ export default function LoginPage() {
             <div className="absolute -bottom-20 right-0 w-[350px] h-[350px] rounded-full bg-primary/[0.07] blur-3xl" />
           </div>
           <div className="relative z-10 flex flex-col justify-between h-full p-12">
-            <Link href="/" className="flex items-center gap-2 w-fit">
+            <Link href="/" className="inline-flex min-h-11 w-fit items-center gap-2">
               <Image src="/short-logo.svg" alt="Koda" width={36} height={36} className="size-9 shrink-0" />
               <span className="font-semibold text-lg text-foreground">Koda Fidelity</span>
             </Link>
@@ -67,7 +67,7 @@ export default function LoginPage() {
         {/* Right form panel */}
         <div className="flex flex-col items-center justify-center p-6 sm:p-8">
           <div className="lg:hidden mb-8">
-            <Link href="/" className="flex items-center gap-2">
+            <Link href="/" className="inline-flex min-h-11 items-center gap-2">
               <Image src="/short-logo.svg" alt="Koda" width={32} height={32} className="size-8 shrink-0" />
               <span className="font-semibold text-foreground">Koda Fidelity</span>
             </Link>

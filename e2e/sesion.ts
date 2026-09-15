@@ -19,10 +19,9 @@ export async function entrar(page: Page, correo: string, clave: string) {
   // haría ambigua una búsqueda por etiqueta.
   const contraseña = page.locator("#password")
   const enlaceEnviado = page.getByText("Revisa tu correo")
-  // Por clase, no por rol: el aviso de error del login no lleva `role="alert"`.
-  // Esa pantalla pertenece a FID-0013 y esta ola no la toca, así que la falta
-  // queda documentada en esa misión y aquí se localiza como se pueda.
-  const fallo = page.locator("[class*='bg-destructive/10']").first()
+  // Acotado a la tarjeta: el overlay de desarrollo de Next deja su propio
+  // div con role="alert", vacío, suelto en la página.
+  const fallo = page.locator('[data-slot="card"] [role="alert"]').first()
 
   // La espera es amplia a propósito: en desarrollo la ruta se compila al primer
   // pedido.

@@ -10,20 +10,31 @@ test.describe("Auth UI", () => {
     await expect(page.getByRole("button", { name: "Crear Cuenta" })).toBeVisible()
   })
 
+  // El acceso es de dos pasos: primero el correo, y la contraseña solo después
+  // de saber si ese correo es de un negocio. Estas dos pruebas pedían los dos
+  // campos a la vez, así que esperaban 90s por una contraseña que todavía no
+  // está en el DOM.
   test("login page shows login form", async ({ page }) => {
     await page.goto("/login")
-    await expect(page.getByText("Iniciar Sesión").first()).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Iniciar Sesión" })).toBeVisible()
     await expect(page.getByLabel("Correo electrónico")).toBeVisible()
-    await expect(page.getByLabel("Contraseña")).toBeVisible()
-    await expect(page.getByRole("button", { name: "Iniciar Sesión" })).toBeVisible()
+    await expect(page.locator("#password")).toBeHidden()
+    await expect(page.getByRole("button", { name: "Continuar", exact: true })).toBeVisible()
   })
 
+  // Con una cuenta real y la contraseña mal: así el error lo da el servidor, y
+  // no hay que dar de alta nada ni pedir un enlace mágico contra la base
+  // compartida, que es lo que pasaba con un correo inventado.
   test("login with invalid credentials shows error", async ({ page }) => {
+    test.skip(!process.env.E2E_EMAIL, "Requiere E2E_EMAIL de una cuenta de negocio")
+
     await page.goto("/login")
-    await page.getByLabel("Correo electrónico").fill("wrong@email.com")
-    await page.getByLabel("Contraseña").fill("wrongpassword")
+    await page.getByLabel("Correo electrónico").fill(process.env.E2E_EMAIL!)
+    await page.getByRole("button", { name: "Continuar", exact: true }).click()
+    await page.locator("#password").fill("una-contraseña-que-no-es")
     await page.getByRole("button", { name: "Iniciar Sesión" }).click()
-    await expect(page.getByText("No fue posible iniciar sesión. Verifica tus datos.")).toBeVisible({ timeout: 10000 })
+
+    await expect(page.locator('[data-slot="card"] [role="alert"]')).toBeVisible({ timeout: 30000 })
   })
 
   test("unauthenticated access to dashboard redirects to login", async ({ page }) => {
