@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react"
 import { useRouter } from "next/navigation"
+import { ejecutarSellado } from "@/lib/sellado"
 import { Button } from "@/components/ui/button"
 import { Gift, Loader2, Stamp } from "lucide-react"
 
@@ -34,13 +35,7 @@ export function CustomerRowAction({ customerId, currentStamps, maxStamps }: Cust
     setEstado("loading")
     setBono(null)
     try {
-      const res = await fetch("/api/stamps", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customerId, type: completa ? "redeem" : "stamp" }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error()
+      const data = await ejecutarSellado(customerId, completa ? "redeem" : "stamp")
       setEstado("hecho")
       if (data.milestoneClaim) setBono(data.milestoneClaim)
       router.refresh()

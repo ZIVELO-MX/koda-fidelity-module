@@ -6,11 +6,11 @@ import type { Role } from "@prisma/client"
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }))
 vi.mock("@/lib/actions/auth", () => ({ logout: vi.fn() }))
 
-// La pantalla tiene que hablar los dos contratos de invitación: el de esta rama,
-// que devuelve una contraseña temporal, y el del backend 1.2.0, que ya no la
-// crea y manda un enlace de un uso por correo. Las ramas avanzan sin esperarse,
-// así que el día del merge esto no puede quedarse mudo ni enseñar una
-// contraseña que ya no existe.
+// El contrato de invitación es uno solo: el backend no crea la cuenta ni
+// devuelve contraseña, manda un enlace de un uso por correo y responde 202 con
+// la invitación. Lo que se prueba aquí es que la pantalla no anuncie un envío
+// que no puede confirmar, y que no enseñe una credencial aunque alguna
+// respuesta vieja se la mande.
 
 const BASE_PROPS = {
   currentUserId: "admin-1",
@@ -43,14 +43,23 @@ describe("TeamClient, resultado de la invitación", () => {
     vi.unstubAllGlobals()
   })
 
-  it("con contraseña temporal enseña las credenciales y la acción de compartir", async () => {
+  it("si llega una contraseña temporal, no se enseña: ese contrato se retiró", async () => {
     responder({ user: { id: "u2", email: "maria@test.com", name: "María", role: "sellador", createdAt: new Date() }, temporaryPassword: "abc12345" })
     render(<TeamClient {...BASE_PROPS} />)
     await invitar()
 
-    await waitFor(() => expect(screen.getByText("Cuenta creada")).toBeTruthy())
-    expect(screen.getByText("abc12345")).toBeTruthy()
-    expect(screen.getByRole("button", { name: /Compartir invitación/i })).toBeTruthy()
+    await waitFor(() => expect(screen.getByText("Invitación enviada")).toBeTruthy())
+    expect(screen.queryByText("abc12345")).toBeNull()
+    expect(screen.queryByRole("button", { name: /Compartir invitación/i })).toBeNull()
+  })
+
+  it("un 2xx de forma desconocida no se anuncia como enviado", async () => {
+    responder({ ok: true })
+    render(<TeamClient {...BASE_PROPS} />)
+    await invitar()
+
+    await waitFor(() => expect(screen.getByText(/no reconocemos/i)).toBeTruthy())
+    expect(screen.queryByText("Invitación enviada")).toBeNull()
   })
 
   it("con enlace de un uso dice que se envió y no inventa una contraseña", async () => {
@@ -72,5 +81,33 @@ describe("TeamClient, resultado de la invitación", () => {
     await waitFor(() => expect(screen.getByText("Invitación enviada")).toBeTruthy())
     // Sigue habiendo una sola persona: María entra cuando use el enlace.
     expect(screen.getAllByText(/1 \/ 3/).length).toBeGreaterThan(0)
+  })
+})
+
+describe("TeamClient, los rechazos se dicen", () => {
+  afterEach(() => {
+    cleanup()
+    vi.unstubAllGlobals()
+  })
+
+  const CON_DOS = {
+    ...BASE_PROPS,
+    initialUsers: [
+      ...BASE_PROPS.initialUsers,
+      { id: "u2", email: "maria@test.com", name: "María", role: "sellador" as Role, createdAt: new Date() },
+    ],
+  }
+
+  it("al eliminar, un rechazo del servidor se ve y no se finge que se eliminó", async () => {
+    responder({ error: "No puedes quedarte sin administradores.", action: "Nombra a otro antes de eliminar a este." }, 409)
+    render(<TeamClient {...CON_DOS} />)
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Eliminar a María" })[0])
+    fireEvent.click(await screen.findByRole("button", { name: "Eliminar" }))
+
+    const aviso = await screen.findByRole("alert")
+    expect(aviso).toHaveTextContent(/sin administradores/i)
+    expect(aviso).toHaveTextContent(/nombra a otro/i)
+    expect(screen.getByText("María")).toBeTruthy()
   })
 })

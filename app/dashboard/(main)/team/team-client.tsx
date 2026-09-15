@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import {
   UserPlus, UserMinus, UsersRound, Shield, Stamp,
-  Check, X, Share2, ChevronRight, Loader2, Lock, Clock, Mail,
+  Check, X, ChevronRight, Loader2, Lock, Clock, Mail,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -140,16 +140,15 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
   const [inviteRole, setInviteRole] = useState<Role>("sellador")
   const [inviteLoading, setInviteLoading] = useState(false)
   const [inviteError, setInviteError] = useState<string | null>(null)
-  // `password` es el flujo de hoy. `expiraEn` es el del backend 1.2.0, que ya
-  // no crea la cuenta al invitar: manda un enlace de un uso por correo y nunca
-  // devuelve el token, así que aquí no hay nada que compartir a mano.
+  // El backend ya no crea la cuenta al invitar: manda un enlace de un uso por
+  // correo y nunca devuelve una contraseña. Por eso aquí no hay credenciales
+  // que enseñar ni nada que compartir a mano; solo a quién se le mandó y hasta
+  // cuándo sirve el enlace.
   const [invitedUser, setInvitedUser] = useState<{
     name: string
     email: string
-    password?: string
     expiraEn?: string
   } | null>(null)
-  const [copiado, setCopiado] = useState(false)
 
   // Comparacion de permisos, a peticion
   const [permisosOpen, setPermisosOpen] = useState(false)
@@ -160,41 +159,9 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
 
   // Role change state
   const [roleChangeId, setRoleChangeId] = useState<string | null>(null)
+  const [equipoError, setEquipoError] = useState<string | null>(null)
 
   const isAtLimit = users.length >= memberLimit
-
-  const baseUrl = typeof window !== "undefined" ? window.location.origin : ""
-  const loginUrl = invitedUser
-    ? `${baseUrl}/invite?email=${encodeURIComponent(invitedUser.email)}&business=${encodeURIComponent(businessName)}&name=${encodeURIComponent(invitedUser.name)}`
-    : ""
-
-  const mensajeInvitacion = invitedUser?.password
-    ? `Hola ${invitedUser.name}, te invitamos a unirte al equipo de ${businessName} en Koda Fidelity.\n\n` +
-      `Correo: ${invitedUser.email}\n` +
-      `Contraseña temporal: ${invitedUser.password}\n\n` +
-      `Entra aquí: ${loginUrl}`
-    : ""
-
-  /**
-   * Una sola accion. En el telefono abre la hoja del sistema (WhatsApp, correo,
-   * lo que tenga instalado); donde no exista, deja el mensaje en el portapapeles
-   * para pegarlo donde sea. Antes eran tres botones de copiar mas un campo de
-   * telefono que solo servia para WhatsApp.
-   */
-  const compartirInvitacion = async () => {
-    if (!mensajeInvitacion) return
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({ title: `Acceso a ${businessName}`, text: mensajeInvitacion })
-      } catch {
-        // El usuario cerro la hoja de compartir. No es un error que reportar.
-      }
-      return
-    }
-    await navigator.clipboard.writeText(mensajeInvitacion)
-    setCopiado(true)
-    setTimeout(() => setCopiado(false), 2000)
-  }
 
   const resetInviteModal = () => {
     setInviteStep("form")
@@ -203,7 +170,6 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
     setInviteRole("sellador")
     setInviteError(null)
     setInvitedUser(null)
-    setCopiado(false)
   }
 
   const handleInvite = async () => {
@@ -220,13 +186,23 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
         setInviteError(data.error ?? "No fue posible invitar al usuario")
         return
       }
+      // Un 2xx no basta: si el cuerpo no trae ni la invitación ni el alta, no
+      // sabemos si se mandó nada, y anunciar "invitación enviada" sería
+      // inventarlo. Tampoco se enseña una contraseña temporal aunque llegue:
+      // ese contrato se retiró y mostrarla sería filtrar una credencial.
+      const invitacionValida = typeof data?.invitation?.email === "string"
+      const altaValida = typeof data?.user?.id === "string"
+      if (!invitacionValida && !altaValida) {
+        setInviteError("El servidor respondió algo que no reconocemos. No podemos confirmar el envío.")
+        return
+      }
+
       // Con el flujo de invitación por correo la fila todavía no existe: la
       // persona entra al equipo cuando acepta el enlace.
-      if (data.user) setUsers((prev) => [...prev, data.user])
+      if (altaValida) setUsers((prev) => [...prev, data.user])
       setInvitedUser({
         name: inviteName,
         email: inviteEmail,
-        password: data.temporaryPassword,
         expiraEn: data.invitation?.expiresAt,
       })
       setInviteStep("resultado")
@@ -237,18 +213,33 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
     }
   }
 
+  /**
+   * El servidor rechaza por permisos y protege al último administrador. Antes
+   * esos rechazos no se veían: el rol se quedaba como estaba, sin una palabra,
+   * y la pantalla parecía rota en vez de estar defendiendo una regla.
+   */
+  const motivoDelRechazo = async (res: Response, porDefecto: string) => {
+    const sobre = (await res.json().catch(() => null)) as { error?: string; action?: string } | null
+    return [sobre?.error || porDefecto, sobre?.action].filter(Boolean).join(" ")
+  }
+
   const handleRoleChange = async (userId: string, newRole: Role) => {
     setRoleChangeId(userId)
+    setEquipoError(null)
     try {
       const res = await fetch(`/api/users/${userId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role: newRole }),
       })
-      if (res.ok) {
-        setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)))
-        router.refresh()
+      if (!res.ok) {
+        setEquipoError(await motivoDelRechazo(res, "No fue posible cambiar el rol."))
+        return
       }
+      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)))
+      router.refresh()
+    } catch {
+      setEquipoError("Error de red. El rol no cambió.")
     } finally {
       setRoleChangeId(null)
     }
@@ -257,13 +248,20 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
   const handleRemove = async () => {
     if (!removeTarget) return
     setRemoveLoading(true)
+    setEquipoError(null)
     try {
       const res = await fetch(`/api/users/${removeTarget.id}`, { method: "DELETE" })
-      if (res.ok) {
-        setUsers((prev) => prev.filter((u) => u.id !== removeTarget.id))
-        setRemoveTarget(null)
-        router.refresh()
+      if (!res.ok) {
+        // El diálogo se queda abierto: cerrarlo sin decir nada se lee como que
+        // la persona se eliminó.
+        setEquipoError(await motivoDelRechazo(res, "No fue posible eliminar a esta persona."))
+        return
       }
+      setUsers((prev) => prev.filter((u) => u.id !== removeTarget.id))
+      setRemoveTarget(null)
+      router.refresh()
+    } catch {
+      setEquipoError("Error de red. No se eliminó a nadie.")
     } finally {
       setRemoveLoading(false)
     }
@@ -271,6 +269,15 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
 
   return (
     <div className="space-y-6">
+      {equipoError && (
+        <p
+          role="alert"
+          className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-foreground"
+        >
+          {equipoError}
+        </p>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -532,82 +539,33 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
           ) : (
             <div className="flex flex-col gap-4 min-h-0">
               <DialogHeader>
-                <DialogTitle>
-                  {invitedUser?.password ? "Cuenta creada" : "Invitación enviada"}
-                </DialogTitle>
+                <DialogTitle>Invitación enviada</DialogTitle>
                 <DialogDescription className="break-words">
-                  {invitedUser?.password ? (
-                    <>
-                      Comparte las credenciales con{" "}
-                      <strong className="text-foreground">{invitedUser.name}</strong>{" "}
-                      para que pueda acceder.
-                    </>
-                  ) : (
-                    <>
-                      Le mandamos un enlace de un uso a{" "}
-                      <strong className="text-foreground">{invitedUser?.email}</strong>.
-                      Aparecerá en la lista cuando lo acepte.
-                    </>
-                  )}
+                  Le mandamos un enlace de un uso a{" "}
+                  <strong className="text-foreground">{invitedUser?.email}</strong>.
+                  Aparecerá en la lista cuando lo acepte.
                 </DialogDescription>
               </DialogHeader>
 
               {/* Cuerpo con scroll: el encabezado y los botones no se mueven */}
-              {invitedUser?.password ? (
-                <>
-                  <div className="space-y-4 overflow-y-auto">
-                    <div className="rounded-xl bg-muted/50 border border-border p-4 space-y-3">
-                      <div className="min-w-0">
-                        <p className="text-xs text-muted-foreground mb-0.5">Correo</p>
-                        <p className="text-sm font-mono font-medium text-foreground truncate">{invitedUser.email}</p>
-                      </div>
-                      <Separator />
-                      <div className="min-w-0">
-                        <p className="text-xs text-muted-foreground mb-0.5">Contraseña temporal</p>
-                        <p className="text-sm font-mono font-medium text-foreground">{invitedUser.password}</p>
-                      </div>
-                      <Separator />
-                      <div className="space-y-1.5">
-                        <p className="text-xs text-muted-foreground">Link de acceso</p>
-                        <div className="overflow-x-auto rounded-md bg-background border border-border px-2.5 py-1.5">
-                          <p className="text-xs font-mono text-muted-foreground whitespace-nowrap">{loginUrl}</p>
-                        </div>
-                      </div>
-                    </div>
-
+              <div className="space-y-4 overflow-y-auto">
+                <div className="flex items-start gap-3 rounded-xl border border-border bg-muted/50 p-4">
+                  <Mail className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                  <div className="min-w-0 space-y-1">
+                    <p className="truncate text-sm font-medium text-foreground">{invitedUser?.email}</p>
                     <p className="text-xs text-muted-foreground">
-                      La contraseña solo se muestra ahora. Compartela antes de cerrar.
+                      {invitedUser?.expiraEn
+                        ? `El enlace caduca el ${formatearCaducidad(invitedUser.expiraEn)}.`
+                        : "El enlace sirve una sola vez."}
                     </p>
                   </div>
-
-                  <Button onClick={compartirInvitacion} className="min-h-11 w-full gap-2">
-                    {copiado ? (
-                      <><Check className="h-4 w-4" aria-hidden="true" />Copiado</>
-                    ) : (
-                      <><Share2 className="h-4 w-4" aria-hidden="true" />Compartir invitación</>
-                    )}
-                  </Button>
-                </>
-              ) : (
-                <div className="space-y-4 overflow-y-auto">
-                  <div className="flex items-start gap-3 rounded-xl border border-border bg-muted/50 p-4">
-                    <Mail className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                    <div className="min-w-0 space-y-1">
-                      <p className="truncate text-sm font-medium text-foreground">{invitedUser?.email}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {invitedUser?.expiraEn
-                          ? `El enlace caduca el ${formatearCaducidad(invitedUser.expiraEn)}.`
-                          : "El enlace sirve una sola vez."}
-                      </p>
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-muted-foreground">
-                    No hay contraseña que compartir: el enlace va en el correo y solo funciona una
-                    vez. Si no llega, invítalo de nuevo y el anterior deja de servir.
-                  </p>
                 </div>
-              )}
+
+                <p className="text-xs text-muted-foreground">
+                  No hay contraseña que compartir: el enlace va en el correo y solo funciona una
+                  vez. Si no llega, invítalo de nuevo y el anterior deja de servir.
+                </p>
+              </div>
 
               <Button
                 variant="outline"

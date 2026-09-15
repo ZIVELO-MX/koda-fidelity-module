@@ -19,7 +19,7 @@ function cliente(stamps: number) {
     id: "cust-1",
     name: "Ana García",
     stamps,
-    maxStamps: 10,
+    goal: 10,
     cardName: "Café Reward",
     cardReward: "Café gratis",
     cardBrandColor: "#FF6B35",
@@ -33,7 +33,9 @@ const fetchMock = vi.fn()
 async function seleccionar(stamps: number) {
   fetchMock.mockResolvedValueOnce({
     ok: true,
-    json: async () => ({ customers: [cliente(stamps)] }),
+    status: 200,
+    headers: new Headers(),
+    json: async () => ({ items: [cliente(stamps)], page: 1, pageSize: 20, total: 1 }),
   })
   render(<ScanPage />)
   fireEvent.change(screen.getByLabelText("Buscar por nombre"), { target: { value: "Ana" } })
@@ -78,7 +80,7 @@ describe("Escáner, una sola acción primaria", () => {
 
   it("manda el tipo explícito al sellar, sin dejar que el servidor lo adivine", async () => {
     await seleccionar(3)
-    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ event: "stamp" }) })
+    fetchMock.mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers(), json: async () => ({ event: "stamp" }) })
     fireEvent.click(screen.getByRole("button", { name: /agregar sello/i }))
 
     const [ruta, opciones] = fetchMock.mock.calls.at(-1)!
@@ -88,7 +90,7 @@ describe("Escáner, una sola acción primaria", () => {
 
   it("manda redeem al canjear una tarjeta llena", async () => {
     await seleccionar(10)
-    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ event: "redeem" }) })
+    fetchMock.mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers(), json: async () => ({ event: "redeem" }) })
     fireEvent.click(screen.getByRole("button", { name: /canjear recompensa/i }))
 
     const [, opciones] = fetchMock.mock.calls.at(-1)!
@@ -109,5 +111,81 @@ describe("Escáner, una sola acción primaria", () => {
     const anuncio = await screen.findByText(/bono sorpresa: postre gratis/i, {}, { timeout: 2000 })
     expect(anuncio).toBeVisible()
     expect(screen.queryByRole("alertdialog")).toBeNull()
+  })
+})
+
+describe("La búsqueda dice qué falló, no que no hay nadie", () => {
+  beforeEach(() => {
+    fetchMock.mockReset()
+    vi.stubGlobal("fetch", fetchMock)
+  })
+  afterEach(() => {
+    cleanup()
+    vi.unstubAllGlobals()
+  })
+
+  async function buscar(respuesta: unknown) {
+    fetchMock.mockResolvedValueOnce(respuesta)
+    render(<ScanPage />)
+    fireEvent.change(screen.getByLabelText("Buscar por nombre"), { target: { value: "Ana" } })
+    return screen.findByRole("alert", {}, { timeout: 2000 })
+  }
+
+  const conEstado = (status: number, body: unknown = {}) => ({
+    ok: false,
+    status,
+    headers: new Headers({ "x-request-id": "req-99" }),
+    json: async () => body,
+  })
+
+  it("una sesión caída no se anuncia como cliente inexistente", async () => {
+    const aviso = await buscar(conEstado(401))
+    expect(aviso).toHaveTextContent(/sesión expiró/i)
+    expect(screen.queryByText(/no se encontraron clientes/i)).not.toBeInTheDocument()
+  })
+
+  it("un permiso que falta dice a quién pedirlo", async () => {
+    const aviso = await buscar(conEstado(403))
+    expect(aviso).toHaveTextContent(/no tiene permiso/i)
+    expect(aviso).toHaveTextContent(/administrador/i)
+  })
+
+  it("un error del servidor es reintentable y enseña el requestId para soporte", async () => {
+    const aviso = await buscar(
+      conEstado(500, { error: "Algo falló", action: "Intenta de nuevo.", requestId: "req-99", retryable: true }),
+    )
+    expect(aviso).toHaveTextContent("req-99")
+    expect(screen.getByRole("button", { name: /reintentar/i })).toBeInTheDocument()
+  })
+
+  it("un contrato roto se reporta como tal, no como lista vacía", async () => {
+    const aviso = await buscar({ ok: true, status: 200, headers: new Headers(), json: async () => ({ customers: [] }) })
+    expect(aviso).toHaveTextContent(/no tiene la forma esperada/i)
+  })
+
+  it("una colección vacía sigue siendo una colección vacía", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Headers(),
+      json: async () => ({ items: [], page: 1, pageSize: 20, total: 0 }),
+    })
+    render(<ScanPage />)
+    fireEvent.change(screen.getByLabelText("Buscar por nombre"), { target: { value: "Ana" } })
+    expect(await screen.findByText(/no se encontraron clientes/i, {}, { timeout: 2000 })).toBeVisible()
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument()
+  })
+
+  it("con más resultados de los que caben, ofrece traer el resto", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Headers(),
+      json: async () => ({ items: [cliente(3)], page: 1, pageSize: 1, total: 4 }),
+    })
+    render(<ScanPage />)
+    fireEvent.change(screen.getByLabelText("Buscar por nombre"), { target: { value: "Ana" } })
+    expect(await screen.findByText("1 de 4 clientes", {}, { timeout: 2000 })).toBeVisible()
+    expect(screen.getByRole("button", { name: /ver más resultados/i })).toBeInTheDocument()
   })
 })

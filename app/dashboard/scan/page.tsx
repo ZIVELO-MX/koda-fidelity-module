@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
+import { useState, useEffect, Suspense, useCallback } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
@@ -22,9 +22,17 @@ import {
 } from "lucide-react"
 import { daysUntilExpiry } from "@/lib/card-utils"
 import { getCardIcon } from "@/lib/card-icons"
-import { normalizarClientes, type ClienteBuscado } from "@/lib/clientes-buscados"
+import { parseClientesResponse, type ClienteBuscado } from "@/lib/clientes-buscados"
+import { ejecutarSellado } from "@/lib/sellado"
 
 type SearchCustomer = ClienteBuscado
+
+type FalloDeBusqueda = {
+  mensaje: string
+  accion?: string
+  requestId?: string
+  reintentable: boolean
+}
 
 type ScanState = "idle" | "scanning" | "found" | "stamped" | "redeemed"
 
@@ -36,6 +44,12 @@ function ScanPageInner() {
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<SearchCustomer[]>([])
   const [searching, setSearching] = useState(false)
+  // Una lista vacía y una búsqueda que falló no son lo mismo: antes las dos
+  // pintaban "No se encontraron clientes", así que una sesión caída, un permiso
+  // que falta o un contrato roto se veían como un cliente que no existe.
+  const [searchError, setSearchError] = useState<FalloDeBusqueda | null>(null)
+  const [searchTotal, setSearchTotal] = useState(0)
+  const [searchPage, setSearchPage] = useState(1)
   const [actionLoading, setActionLoading] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
   const [milestoneClaim, setMilestoneClaim] = useState<{ id: string; label: string; iconName: string | null } | null>(null)
@@ -43,30 +57,80 @@ function ScanPageInner() {
   const [useCamera, setUseCamera] = useState(true)
   const [cameraError, setCameraError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      queueMicrotask(() => setSearchResults([]))
-      return
-    }
-
-    const timer = setTimeout(async () => {
+  const buscar = useCallback(
+    async (pagina: number, acumular: boolean) => {
       setSearching(true)
+      setSearchError(null)
       try {
-        const params = new URLSearchParams({ q: searchQuery })
+        const params = new URLSearchParams({ q: searchQuery, page: String(pagina) })
         if (cardIdFilter) params.set("cardId", cardIdFilter)
-        const res = await fetch(`/api/customers?${params}`)
-        // El backend de la 1.2.0 responde `items` en vez de `customers`. El
-        // adaptador entiende las dos formas. Ver lib/clientes-buscados.ts.
-        setSearchResults(normalizarClientes(await res.json()))
-      } catch {
-        setSearchResults([])
+
+        let res: Response
+        try {
+          res = await fetch(`/api/customers?${params}`)
+        } catch {
+          setSearchError({ mensaje: "No hay conexión con el servidor.", reintentable: true })
+          return
+        }
+
+        const cuerpo = await res.json().catch(() => null)
+
+        if (!res.ok) {
+          const sobre = (cuerpo ?? {}) as { error?: string; action?: string; requestId?: string; retryable?: boolean }
+          setSearchError({
+            mensaje:
+              res.status === 401
+                ? "Tu sesión expiró."
+                : res.status === 403
+                  ? "Tu cuenta no tiene permiso para ver los clientes."
+                  : sobre.error || "El servidor no pudo completar la búsqueda.",
+            accion:
+              res.status === 401
+                ? "Vuelve a entrar y repite la búsqueda."
+                : res.status === 403
+                  ? "Pídele a un administrador que te dé acceso."
+                  : sobre.action,
+            requestId: sobre.requestId ?? res.headers.get("x-request-id") ?? undefined,
+            reintentable: sobre.retryable ?? res.status >= 500,
+          })
+          return
+        }
+
+        // El contrato se valida: si la respuesta no trae `items`, es un fallo de
+        // contrato y se dice, en vez de pintar una lista vacía.
+        const pagina_ = parseClientesResponse(cuerpo)
+        setSearchTotal(pagina_.total)
+        setSearchPage(pagina_.page)
+        setSearchResults((previos) => (acumular ? [...previos, ...pagina_.items] : pagina_.items))
+      } catch (err) {
+        setSearchError({
+          mensaje: "La respuesta del servidor no tiene la forma esperada.",
+          accion: err instanceof Error ? err.message : undefined,
+          reintentable: false,
+        })
       } finally {
         setSearching(false)
       }
+    },
+    [searchQuery, cardIdFilter],
+  )
+
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      queueMicrotask(() => {
+        setSearchResults([])
+        setSearchError(null)
+        setSearchTotal(0)
+      })
+      return
+    }
+
+    const timer = setTimeout(() => {
+      void buscar(1, false)
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [searchQuery, cardIdFilter])
+  }, [searchQuery, cardIdFilter, buscar])
 
   const handleScanResult = async (customerId: string) => {
     setScanState("scanning")
@@ -103,15 +167,7 @@ function ScanPageInner() {
     setActionError(null)
 
     try {
-      const res = await fetch("/api/stamps", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customerId: selectedCustomer.id, type }),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) throw new Error("No fue posible procesar la operación")
+      const data = await ejecutarSellado(selectedCustomer.id, type)
 
       if (data.event === "redeem") {
         setSelectedCustomer({ ...selectedCustomer, stamps: 0 })
@@ -238,13 +294,13 @@ function ScanPageInner() {
                   />
                 </div>
 
-                {searching && (
+                {searching && searchResults.length === 0 && (
                   <div className="flex items-center justify-center p-4">
                     <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                   </div>
                 )}
 
-                {!searching && searchResults.length > 0 && (
+                {searchResults.length > 0 && (
                   <div className="bg-card rounded-xl border border-border overflow-hidden">
                     <div className="divide-y divide-border">
                       {searchResults.map((customer) => (
@@ -274,7 +330,52 @@ function ScanPageInner() {
                   </div>
                 )}
 
-                {!searching && searchQuery && searchResults.length === 0 && (
+                {searchError && (
+                  <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+                    <p className="text-sm font-medium text-foreground">{searchError.mensaje}</p>
+                    {searchError.accion && (
+                      <p className="mt-1 text-sm text-muted-foreground">{searchError.accion}</p>
+                    )}
+                    {searchError.reintentable && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-3 min-h-10"
+                        onClick={() => void buscar(1, false)}
+                      >
+                        Reintentar
+                      </Button>
+                    )}
+                    {searchError.requestId && (
+                      <p className="mt-3 text-xs text-muted-foreground">
+                        Referencia para soporte: <span className="font-mono">{searchError.requestId}</span>
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* La API pagina, así que la lista puede estar recortada. Decirlo
+                    y dejar traer el resto es más honesto que enseñar veinte y
+                    callar que hay cuarenta. */}
+                {!searchError && searchResults.length > 0 && searchResults.length < searchTotal && (
+                  <div className="space-y-2 text-center">
+                    <p className="text-xs text-muted-foreground">
+                      {searchResults.length} de {searchTotal} clientes
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="min-h-10"
+                      disabled={searching}
+                      onClick={() => void buscar(searchPage + 1, true)}
+                    >
+                      Ver más resultados
+                    </Button>
+                  </div>
+                )}
+
+                {!searching && !searchError && searchQuery && searchResults.length === 0 && (
                   <p className="p-4 text-sm text-muted-foreground text-center">
                     No se encontraron clientes
                   </p>

@@ -1,38 +1,18 @@
-import { describe, it, expect } from "vitest"
-import { normalizarClientes } from "../clientes-buscados"
+import { describe, expect, it } from "vitest"
+import { normalizarClientes, parseClientesResponse } from "../clientes-buscados"
 
-const VIEJO = {
-  customers: [
-    { id: "c1", name: "Ana", stamps: 3, maxStamps: 10, cardName: "Café", cardReward: "Un café", cardBrandColor: "#f97316", cardExpiresAt: null },
-  ],
-}
+const customer = { id: "c1", name: "Ana", stamps: 3, goal: 10, maxStamps: 10, cardName: "Café", cardReward: "Un café", cardBrandColor: "#f97316", cardExpiresAt: null }
 
-const NUEVO = {
-  items: [
-    { id: "c1", name: "Ana", stamps: 3, goal: 10, cardId: "t1", cardName: "Café", cardReward: "Un café", cardBrandColor: "#f97316", cardExpiresAt: null, cardIsActive: true, readyToRedeem: false },
-  ],
-  page: 1,
-  pageSize: 20,
-  total: 1,
-}
-
-describe("normalizarClientes", () => {
-  it("entiende la forma de esta rama", () => {
-    expect(normalizarClientes(VIEJO)).toEqual([
-      { id: "c1", name: "Ana", stamps: 3, maxStamps: 10, cardName: "Café", cardReward: "Un café", cardBrandColor: "#f97316", cardExpiresAt: null },
-    ])
+describe("customer response contract", () => {
+  it("normalizes the canonical C1 items/goal shape", () => {
+    expect(normalizarClientes({ items: [customer], page: 1, pageSize: 20, total: 1 })).toEqual([{ id: "c1", name: "Ana", stamps: 3, maxStamps: 10, cardName: "Café", cardReward: "Un café", cardBrandColor: "#f97316", cardExpiresAt: null }])
   })
-
-  it("entiende la forma del backend 1.2.0, con items y goal", () => {
-    // Es la regresión de verdad: leer `customers` contra ese cuerpo devolvía
-    // undefined y la búsqueda del escáner se quedaba vacía sin dar error.
-    expect(normalizarClientes(NUEVO)).toEqual(normalizarClientes(VIEJO))
+  it("preserves pagination metadata", () => {
+    expect(parseClientesResponse({ items: [customer], page: 2, pageSize: 20, total: 41 })).toMatchObject({ page: 2, pageSize: 20, total: 41 })
   })
-
-  it("no revienta con un cuerpo de error o vacío", () => {
-    expect(normalizarClientes({ error: "Parámetros inválidos", code: "KF-REQUEST-001" })).toEqual([])
-    expect(normalizarClientes(null)).toEqual([])
-    expect(normalizarClientes(undefined)).toEqual([])
-    expect(normalizarClientes({ items: [null, { name: "sin id" }] })).toEqual([])
+  it("rejects HTTP errors and malformed items instead of returning an empty list", () => {
+    expect(() => normalizarClientes({ error: "bad", code: "KF-REQUEST-001" })).toThrow("bad")
+    expect(() => normalizarClientes({ items: [{ name: "missing id" }] })).toThrow("item id")
+    expect(() => normalizarClientes({})).toThrow("items is required")
   })
 })
