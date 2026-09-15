@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useActionState, useEffect } from "react"
-import Image from "next/image"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { checkBusinessEmail, sendLoginMagicLink, login, sendPasswordReset, type AuthResult } from "@/lib/actions/auth"
@@ -82,11 +81,8 @@ export function LoginForm() {
 
   if (step === "sent") {
     return (
-      <Card className="w-full max-w-md auth-card-enter shadow-lg border-border/50">
+      <Card className="w-full max-w-md auth-card-enter rounded-[14px] border-border/60 shadow-[0_12px_32px_rgba(28,27,23,0.12),0_2px_4px_rgba(28,27,23,0.04)]">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <Image src="/short-logo.svg" alt="Koda" width={48} height={48} className="size-12" />
-          </div>
           <CardTitle asChild>
             <h1 className="text-2xl">Revisa tu correo</h1>
           </CardTitle>
@@ -117,16 +113,13 @@ export function LoginForm() {
 
   if (step === "recover") {
     return (
-      <Card className="w-full max-w-md auth-card-enter shadow-lg border-border/50">
+      <Card className="w-full max-w-md auth-card-enter rounded-[14px] border-border/60 shadow-[0_12px_32px_rgba(28,27,23,0.12),0_2px_4px_rgba(28,27,23,0.04)]">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <Image src="/short-logo.svg" alt="Koda" width={48} height={48} className="size-12" />
-          </div>
           <CardTitle asChild>
             <h1 className="text-2xl">Recuperar contraseña</h1>
           </CardTitle>
           <CardDescription>
-            Te mandamos un enlace a tu correo para que crees una nueva.
+            Escribe tu correo y te mandamos un enlace para crear una nueva.
           </CardDescription>
         </CardHeader>
         {/* Antes esta pantalla abría WhatsApp con un número escrito a mano en el
@@ -160,7 +153,7 @@ export function LoginForm() {
             </div>
             <Button
               type="submit"
-              className="min-h-10 w-full active:scale-[0.97] transition-transform"
+              className="min-h-11 w-full active:scale-[0.97] transition-transform"
               disabled={resetPending}
             >
               {resetPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviarme el enlace"}
@@ -182,11 +175,8 @@ export function LoginForm() {
 
   if (step === "recover-sent") {
     return (
-      <Card className="w-full max-w-md auth-card-enter shadow-lg border-border/50">
+      <Card className="w-full max-w-md auth-card-enter rounded-[14px] border-border/60 shadow-[0_12px_32px_rgba(28,27,23,0.12),0_2px_4px_rgba(28,27,23,0.04)]">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <Image src="/short-logo.svg" alt="Koda" width={48} height={48} className="size-12" />
-          </div>
           <CardTitle asChild>
             <h1 className="text-2xl">Revisa tu correo</h1>
           </CardTitle>
@@ -217,15 +207,12 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-md auth-card-enter shadow-lg border-border/50">
-      <div key={step} className="auth-step-enter">
+    <Card className="w-full max-w-md auth-card-enter rounded-[14px] border-border/60 shadow-[0_12px_32px_rgba(28,27,23,0.12),0_2px_4px_rgba(28,27,23,0.04)]">
+      <div key={step} className="flex flex-col gap-6 auth-step-enter">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <Image src="/short-logo.svg" alt="Koda" width={48} height={48} className="size-12" />
-          </div>
           <CardTitle asChild>
             <h1 className="text-2xl">
-            {step === "password" ? "Ingresa tu contraseña" : "Iniciar Sesión"}
+            {step === "password" ? "Ingresa tu contraseña" : "Iniciar sesión"}
           </h1>
           </CardTitle>
           <CardDescription className={step === "password" ? "mt-3" : undefined}>
@@ -253,7 +240,7 @@ export function LoginForm() {
                   <span className="w-full border-t" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">o correo electrónico</span>
+                  <span className="bg-card px-2 text-muted-foreground">o con tu correo</span>
                 </div>
               </div>
               <form onSubmit={handleEmailSubmit} className="space-y-4">
@@ -273,7 +260,7 @@ export function LoginForm() {
                 </div>
                 <Button
                   type="submit"
-                  className="min-h-10 w-full active:scale-[0.97] transition-transform"
+                  className="min-h-11 w-full active:scale-[0.97] transition-transform"
                   disabled={pending}
                 >
                   {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Continuar"}
@@ -317,10 +304,10 @@ export function LoginForm() {
               </div>
               <Button
                 type="submit"
-                className="min-h-10 w-full active:scale-[0.97] transition-transform"
+                className="min-h-11 w-full active:scale-[0.97] transition-transform"
                 disabled={loginPending}
               >
-                {loginPending ? "Iniciando sesión..." : "Iniciar Sesión"}
+                {loginPending ? "Iniciando sesión..." : "Iniciar sesión"}
               </Button>
               <button
                 type="button"
@@ -336,12 +323,12 @@ export function LoginForm() {
         <CardFooter className="flex-col gap-2 text-sm text-muted-foreground">
           {step !== "password" && (
             <span>
-              ¿Sin acceso?{" "}
+              ¿Tu negocio todavía no tiene cuenta?{" "}
               <Link
                 href="/signup"
                 className="inline-flex min-h-11 items-center font-medium text-primary hover:underline"
               >
-                Más información
+                Cómo conseguir una
               </Link>
             </span>
           )}

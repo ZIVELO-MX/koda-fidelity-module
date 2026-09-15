@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useActionState } from "react"
-import Image from "next/image"
 import Link from "next/link"
 import { signup, type AuthResult } from "@/lib/actions/auth"
 import { Button } from "@/components/ui/button"
@@ -56,11 +55,8 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
 
   if (isInviteOnly) {
     return (
-      <Card className="w-full max-w-md auth-card-enter shadow-lg border-border/50">
+      <Card className="w-full max-w-md auth-card-enter rounded-[14px] border-border/60 shadow-[0_12px_32px_rgba(28,27,23,0.12),0_2px_4px_rgba(28,27,23,0.04)]">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <Image src="/short-logo.svg" alt="Koda" width={48} height={48} className="size-12" />
-          </div>
           <CardTitle asChild>
             <h1 className="text-2xl">Beta Privado</h1>
           </CardTitle>
@@ -90,7 +86,7 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
         <CardFooter className="justify-center text-sm text-muted-foreground">
           ¿Ya tienes acceso?{" "}
           <Link href="/login" className="ml-1 inline-flex min-h-11 items-center font-medium text-primary hover:underline">
-            Iniciar Sesión
+            Iniciar sesión
           </Link>
         </CardFooter>
       </Card>
@@ -99,11 +95,8 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
 
   if (state.success) {
     return (
-      <Card className="w-full max-w-md auth-card-enter shadow-lg border-border/50">
+      <Card className="w-full max-w-md auth-card-enter rounded-[14px] border-border/60 shadow-[0_12px_32px_rgba(28,27,23,0.12),0_2px_4px_rgba(28,27,23,0.04)]">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <Image src="/short-logo.svg" alt="Koda" width={48} height={48} className="size-12" />
-          </div>
           <CardTitle asChild>
             <h1 className="text-2xl">¡Cuenta creada!</h1>
           </CardTitle>
@@ -119,7 +112,7 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
         </CardContent>
         <CardFooter className="justify-center text-sm text-muted-foreground">
           <Link href="/login" className="inline-flex min-h-11 items-center font-medium text-primary hover:underline">
-            Ir a Iniciar Sesión
+            Ir a iniciar sesión
           </Link>
         </CardFooter>
       </Card>
@@ -127,13 +120,10 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
   }
 
   return (
-    <Card className="w-full max-w-md auth-card-enter shadow-lg border-border/50">
+    <Card className="w-full max-w-md auth-card-enter rounded-[14px] border-border/60 shadow-[0_12px_32px_rgba(28,27,23,0.12),0_2px_4px_rgba(28,27,23,0.04)]">
       <CardHeader className="text-center">
-        <div className="flex justify-center mb-4">
-          <Image src="/short-logo.svg" alt="Koda" width={48} height={48} className="size-12" />
-        </div>
         <CardTitle asChild>
-            <h1 className="text-2xl">Crear Cuenta</h1>
+            <h1 className="text-2xl">Crear cuenta</h1>
           </CardTitle>
         <CardDescription>Registra tu negocio en Koda Fidelity</CardDescription>
       </CardHeader>
@@ -179,7 +169,6 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
               id="password"
               name="password"
               type="password"
-              placeholder="••••••••"
               required
               autoComplete="new-password"
               value={password}
@@ -199,10 +188,10 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
 
           <Button
             type="submit"
-            className="min-h-10 w-full active:scale-[0.97] transition-transform"
+            className="min-h-11 w-full active:scale-[0.97] transition-transform"
             disabled={pending || (password.length > 0 && !allRequirementsMet)}
           >
-            {pending ? "Creando cuenta..." : "Crear Cuenta"}
+            {pending ? "Creando cuenta..." : "Crear cuenta"}
           </Button>
         </form>
       </CardContent>
@@ -210,7 +199,7 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
         <span>
           ¿Ya tienes cuenta?{" "}
           <Link href="/login" className="inline-flex min-h-11 items-center font-medium text-primary hover:underline">
-            Iniciar Sesión
+            Iniciar sesión
           </Link>
         </span>
       </CardFooter>
