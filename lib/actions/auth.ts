@@ -164,7 +164,7 @@ export async function sendPasswordReset(_prev: AuthResult, formData: FormData): 
 
   // El destino dice a qué viene, para que la pantalla no le pida un apodo a
   // quien solo va a cambiar su contraseña.
-  const destino = encodeURIComponent("/dashboard/update-password?motivo=recuperacion")
+  const destino = encodeURIComponent("/dashboard/update-password?reason=recovery")
   const redirectTo = `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/auth/callback?next=${destino}`
 
   try {

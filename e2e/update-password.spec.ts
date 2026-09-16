@@ -33,7 +33,7 @@ test.describe("Cambio de contraseña", () => {
 
     test("al recuperar no pide apodo: no vino a eso", async ({ page }) => {
       await entrar(page, CORREO!, CLAVE!)
-      await page.goto("/dashboard/update-password?motivo=recuperacion")
+      await page.goto("/dashboard/update-password?reason=recovery")
 
       await expect(page.getByRole("heading", { name: "Crea una contraseña nueva" })).toBeVisible()
       await expect(page.getByLabel(/apodo/i)).toHaveCount(0)
@@ -41,7 +41,7 @@ test.describe("Cambio de contraseña", () => {
 
     test("las reglas se ven mientras se escribe, no al ser rechazado", async ({ page }) => {
       await entrar(page, CORREO!, CLAVE!)
-      await page.goto("/dashboard/update-password?motivo=recuperacion")
+      await page.goto("/dashboard/update-password?reason=recovery")
 
       await expect(page.getByText("Una letra mayúscula (A–Z)")).toBeVisible()
       await expect(page.getByRole("button", { name: /guardar/i })).toBeDisabled()
@@ -49,7 +49,7 @@ test.describe("Cambio de contraseña", () => {
 
     test("no deja guardar una contraseña que el registro rechazaría", async ({ page }) => {
       await entrar(page, CORREO!, CLAVE!)
-      await page.goto("/dashboard/update-password?motivo=recuperacion")
+      await page.goto("/dashboard/update-password?reason=recovery")
 
       // Ocho caracteres y nada más: lo que esta pantalla aceptaba antes.
       await page.getByLabel("Nueva contraseña").fill("contrasena")
@@ -59,7 +59,7 @@ test.describe("Cambio de contraseña", () => {
 
     test("avisa cuando las dos no son iguales, antes de enviar", async ({ page }) => {
       await entrar(page, CORREO!, CLAVE!)
-      await page.goto("/dashboard/update-password?motivo=recuperacion")
+      await page.goto("/dashboard/update-password?reason=recovery")
 
       await page.getByLabel("Nueva contraseña").fill("Password1!")
       await page.getByLabel("Confirmar contraseña").fill("Password2!")
@@ -70,7 +70,7 @@ test.describe("Cambio de contraseña", () => {
 
     test("con las reglas cumplidas e iguales, deja guardar", async ({ page }) => {
       await entrar(page, CORREO!, CLAVE!)
-      await page.goto("/dashboard/update-password?motivo=recuperacion")
+      await page.goto("/dashboard/update-password?reason=recovery")
 
       await page.getByLabel("Nueva contraseña").fill("Password1!")
       await page.getByLabel("Confirmar contraseña").fill("Password1!")

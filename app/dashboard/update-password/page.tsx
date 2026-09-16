@@ -23,11 +23,11 @@ const initialState: AuthResult = {}
  *   - La recuperación, donde ya tiene cuenta y solo va a cambiar la contraseña.
  *     Pedirle ahí un apodo es preguntarle algo que no vino a hacer.
  *
- * El enlace de recuperación trae `?motivo=recuperacion`, así que la pantalla
+ * El enlace de recuperación trae `?reason=recovery`, así que la pantalla
  * sabe por cuál entró.
  */
 function CambiarContrasena() {
-  const esRecuperacion = useSearchParams().get("motivo") === "recuperacion"
+  const esRecuperacion = useSearchParams().get("reason") === "recovery"
   const [state, action, pending] = useActionState(updatePassword, initialState)
   const [password, setPassword] = useState("")
   const [confirm, setConfirm] = useState("")
