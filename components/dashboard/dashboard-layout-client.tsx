@@ -66,6 +66,7 @@ export function DashboardLayoutClient({
         <DashboardHeader
           collapsed={sidebarCollapsed}
           onToggleCollapse={toggleCollapse}
+          businessName={businessName}
         />
         <main className="flex-1 p-4 sm:p-6 pt-4 lg:pt-6 pb-20 lg:pb-6">
           {closureScheduledFor ? <div role="status" className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-foreground">Cuenta en sólo lectura hasta {new Date(closureScheduledFor).toLocaleDateString("es-MX")}. Puedes consultar, exportar o cancelar el cierre desde Configuración.</div> : null}

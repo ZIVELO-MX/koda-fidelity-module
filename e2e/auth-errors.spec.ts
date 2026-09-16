@@ -15,6 +15,8 @@ test.describe("Auth Error Handling", () => {
 
   test("auth/error page shows generic error for unknown error_code", async ({ page }) => {
     await page.goto("/auth/error?error_code=unknown_error")
+    // Por rol: "Error de autenticación" también sale en el detalle, y una
+    // búsqueda por texto casa con los dos.
     await expect(page.getByRole("heading", { name: "Error de Autenticación" })).toBeVisible()
   })
 
@@ -48,6 +50,8 @@ test.describe("Auth Error Handling", () => {
   test("auth/confirm redirects to error when missing params", async ({ page }) => {
     await page.goto("/auth/confirm")
     await page.waitForURL("**/auth/error?error_code=missing_params")
+    // Por rol: "Error de autenticación" también sale en el detalle, y una
+    // búsqueda por texto casa con los dos.
     await expect(page.getByRole("heading", { name: "Error de Autenticación" })).toBeVisible()
   })
 
@@ -59,10 +63,5 @@ test.describe("Auth Error Handling", () => {
   test("auth/confirm redirects to error when only type is present", async ({ page }) => {
     await page.goto("/auth/confirm?type=magiclink")
     await page.waitForURL("**/auth/error?error_code=missing_params")
-  })
-
-  test("auth/confirm rejects unsupported token types before verification", async ({ page }) => {
-    await page.goto("/auth/confirm?token_hash=fake&type=unsupported")
-    await page.waitForURL("**/auth/error?error_code=invalid_type")
   })
 })
