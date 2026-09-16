@@ -56,6 +56,7 @@ for (const { ancho, alto } of MEDIDAS) {
       ["inicio de sesión", "/login"],
       ["recuperar contraseña", "/login?recover=true"],
       ["registro", "/signup"],
+      ["puerta del portal", "/my-cards"],
     ] as const) {
       test(`${nombre}: cada destino alcanza su mínimo`, async ({ page }) => {
         await page.goto(ruta)

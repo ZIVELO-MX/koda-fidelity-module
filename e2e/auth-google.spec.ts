@@ -17,17 +17,32 @@ test.describe("Google OAuth Flow", () => {
     await expect(page.getByRole("link", { name: "Ir al inicio" })).toBeVisible()
   })
 
-  test("my-cards page shows Google button", async ({ page }) => {
+  test("la puerta del portal habla al cliente, no al dueño de un negocio", async ({ page }) => {
     await page.goto("/my-cards")
-    await expect(page.getByText("Inicia sesión")).toBeVisible()
-    await expect(page.getByText("Continuar con Google")).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Tus tarjetas de lealtad" })).toBeVisible()
+    await expect(page.getByText(/cuántos sellos llevas/i)).toBeVisible()
+    await expect(page.getByRole("button", { name: /continuar con google/i })).toBeVisible()
   })
 
-  test("my-cards page shows email form as fallback", async ({ page }) => {
+  test("y ofrece el correo como segunda entrada", async ({ page }) => {
     await page.goto("/my-cards")
-    await expect(page.getByText("o con correo electrónico")).toBeVisible()
+    await expect(page.getByText("o con tu correo")).toBeVisible()
     await expect(page.getByLabel("Correo Electrónico")).toBeVisible()
-    await expect(page.getByText("Enviar enlace mágico")).toBeVisible()
+    await expect(page.getByRole("button", { name: /enviar enlace mágico/i })).toBeVisible()
+    await expect(page.getByText(/no necesitas contraseña/i)).toBeVisible()
+  })
+
+  test("un correo mal escrito se anuncia, no se traga", async ({ page }) => {
+    await page.goto("/my-cards")
+    // El campo es type=email: el navegador bloquea el envío antes de que corra
+    // la validación de la pantalla, que es la que pinta el aviso.
+    await page.locator("form").evaluate((f: HTMLFormElement) => { f.noValidate = true })
+    await page.getByLabel("Correo Electrónico").fill("sin-arroba")
+    await page.getByRole("button", { name: /enviar enlace mágico/i }).click()
+
+    const aviso = page.locator('[data-slot="card"] [role="alert"]')
+    await expect(aviso).toBeVisible()
+    await expect(aviso).toContainText(/correo electrónico válido/i)
   })
 
   test("auth/error page shows Google button on rate limit", async ({ page }) => {
