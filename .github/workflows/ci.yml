@@ -4,7 +4,7 @@ on:
   push:
     branches: [dev, main]
   pull_request:
-    branches: [dev, benrod/1.2.0, main]
+    branches: [dev, benrod/1.2.0, rulaxx/1.2.0, main]
 
 jobs:
   verify:
