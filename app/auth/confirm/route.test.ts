@@ -5,7 +5,9 @@ describe("auth confirmation redirects", () => {
   const origin = "http://localhost:3000"
 
   it("sends recovery links to the password update screen", () => {
-    expect(resolveAuthRedirect("recovery", null, origin).pathname).toBe("/dashboard/update-password")
+    const redirect = resolveAuthRedirect("recovery", null, origin)
+    expect(redirect.pathname).toBe("/dashboard/update-password")
+    expect(redirect.searchParams.get("reason")).toBe("recovery")
   })
 
   it("keeps magic links on the customer portal", () => {
@@ -13,7 +15,11 @@ describe("auth confirmation redirects", () => {
   })
 
   it("accepts same-origin paths and rejects external redirects", () => {
-    expect(resolveAuthRedirect("recovery", "/dashboard/my-cards", origin).pathname).toBe("/dashboard/update-password")
-    expect(resolveAuthRedirect("recovery", "https://evil.example/phish", origin).pathname).toBe("/dashboard/update-password")
+    const localRedirect = resolveAuthRedirect("recovery", "/dashboard/my-cards", origin)
+    const externalRedirect = resolveAuthRedirect("recovery", "https://evil.example/phish", origin)
+    expect(localRedirect.pathname).toBe("/dashboard/update-password")
+    expect(localRedirect.searchParams.get("reason")).toBe("recovery")
+    expect(externalRedirect.pathname).toBe("/dashboard/update-password")
+    expect(externalRedirect.searchParams.get("reason")).toBe("recovery")
   })
 })

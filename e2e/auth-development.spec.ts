@@ -199,7 +199,7 @@ test.describe("FID-0016 development authentication", () => {
 
     const recoveryLink = await waitForRecoveryLink(request, ADMIN_EMAIL, previousIds)
     await page.goto(recoveryLink)
-    await page.waitForURL("**/dashboard/update-password", { timeout: 15000 })
+    await page.waitForURL("**/dashboard/update-password?reason=recovery", { timeout: 15000 })
     await page.getByLabel("Nueva contraseña").fill("Recovered2!")
     await page.getByLabel("Confirmar contraseña").fill("Recovered2!")
     await page.getByRole("button", { name: "Guardar contraseña" }).click()

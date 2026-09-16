@@ -5,7 +5,9 @@ export function isSupportedAuthType(type: string): boolean {
 }
 
 export function resolveAuthRedirect(type: string, requested: string | null, origin: string): URL {
-  const fallback = type === "recovery" ? "/dashboard/update-password" : "/dashboard/my-cards"
+  const fallback = type === "recovery"
+    ? "/dashboard/update-password?reason=recovery"
+    : "/dashboard/my-cards"
   if (type === "recovery" || !requested) return new URL(fallback, origin)
 
   try {
