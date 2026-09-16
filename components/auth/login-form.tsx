@@ -70,7 +70,7 @@ export function LoginForm() {
     )
   }
 
-  if (step === "recover") {
+  if (step === "recover" && !resetState?.success) {
     return (
       <Card className="w-full max-w-md auth-card-enter rounded-[14px] border-border/60 shadow-[0_12px_32px_rgba(28,27,23,0.12),0_2px_4px_rgba(28,27,23,0.04)]">
         <CardHeader className="text-center">
