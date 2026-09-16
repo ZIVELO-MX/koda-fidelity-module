@@ -46,18 +46,28 @@ export function pasoAnterior(actual: PasoId): PasoId | null {
 }
 
 /**
- * Las categorías son las mismas siete que la landing anuncia por giro, más una
- * salida para quien no encaje. Prometer un rubro fuera y no ofrecerlo aquí
- * sería contradecirse en dos pantallas seguidas.
+ * Las trece categorías del sistema de temas, más una salida.
+ *
+ * No es una lista de relleno: la categoría elige el juego de íconos con el que
+ * se genera el patrón de la tarjeta. Una categoría fuera de estas trece deja la
+ * tarjeta sin patrón, así que aquí solo caben las que el sistema sabe pintar.
+ *
+ * El carrusel de la landing enseña siete, que son un subconjunto para vender.
  */
 export const CATEGORIAS = [
-  "Cafetería",
+  "Panadería",
   "Taquería",
-  "Barbería",
-  "Gimnasio",
-  "Heladería",
+  "Cafetería",
+  "Hamburguesas",
   "Pizzería",
-  "Pastelería",
+  "Barbería",
+  "Salón de belleza",
+  "Gimnasio",
+  "Fútbol",
+  "Sushi",
+  "Veterinaria",
+  "Farmacia",
+  "Heladería",
   "Otro",
 ] as const
 
