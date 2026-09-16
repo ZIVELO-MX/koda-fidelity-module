@@ -11,24 +11,38 @@ test.describe("Google OAuth Flow", () => {
     await page.waitForURL("**/auth/error?error=OAuth%20callback%20error")
   })
 
-  test("join page shows Google button as primary option", async ({ page }) => {
-    const cardId = "test-card-id"
-    await page.goto(`/join/${cardId}`)
-    // Should show error since card doesn't exist
-    await expect(page.getByText("Tarjeta no encontrada")).toBeVisible()
+  test("un enlace de alta que no lleva a ninguna tarjeta lo dice y ofrece salida", async ({ page }) => {
+    await page.goto("/join/test-card-id")
+    await expect(page.getByRole("heading", { name: "Este enlace no lleva a ninguna tarjeta" })).toBeVisible()
+    await expect(page.getByRole("link", { name: "Ir al inicio" })).toBeVisible()
   })
 
-  test("my-cards page shows Google button", async ({ page }) => {
+  test("la puerta del portal habla al cliente, no al dueño de un negocio", async ({ page }) => {
     await page.goto("/my-cards")
-    await expect(page.getByText("Inicia sesión")).toBeVisible()
-    await expect(page.getByText("Continuar con Google")).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Tus tarjetas de lealtad" })).toBeVisible()
+    await expect(page.getByText(/cuántos sellos llevas/i)).toBeVisible()
+    await expect(page.getByRole("button", { name: /continuar con google/i })).toBeVisible()
   })
 
-  test("my-cards page shows email form as fallback", async ({ page }) => {
+  test("y ofrece el correo como segunda entrada", async ({ page }) => {
     await page.goto("/my-cards")
-    await expect(page.getByText("o con correo electrónico")).toBeVisible()
+    await expect(page.getByText("o con tu correo")).toBeVisible()
     await expect(page.getByLabel("Correo Electrónico")).toBeVisible()
-    await expect(page.getByText("Enviar enlace mágico")).toBeVisible()
+    await expect(page.getByRole("button", { name: /enviar enlace mágico/i })).toBeVisible()
+    await expect(page.getByText(/no necesitas contraseña/i)).toBeVisible()
+  })
+
+  test("un correo mal escrito se anuncia, no se traga", async ({ page }) => {
+    await page.goto("/my-cards")
+    // El campo es type=email: el navegador bloquea el envío antes de que corra
+    // la validación de la pantalla, que es la que pinta el aviso.
+    await page.locator("form").evaluate((f: HTMLFormElement) => { f.noValidate = true })
+    await page.getByLabel("Correo Electrónico").fill("sin-arroba")
+    await page.getByRole("button", { name: /enviar enlace mágico/i }).click()
+
+    const aviso = page.locator('[data-slot="card"] [role="alert"]')
+    await expect(aviso).toBeVisible()
+    await expect(aviso).toContainText(/correo electrónico válido/i)
   })
 
   test("auth/error page shows Google button on rate limit", async ({ page }) => {
@@ -38,9 +52,13 @@ test.describe("Google OAuth Flow", () => {
     await expect(page.getByText("Continuar con Google")).toBeVisible()
   })
 
-  test("auth/error page rate limit message mentions Google", async ({ page }) => {
+  test("con el límite alcanzado, Google es una salida pulsable, no solo una palabra", async ({ page }) => {
     await page.goto("/auth/error?error_code=rate_limit")
-    await expect(page.getByText("Google")).toBeVisible()
+    await expect(
+      page.getByRole("button", { name: /continuar con google/i }).or(
+        page.getByRole("link", { name: /continuar con google/i }),
+      ).first(),
+    ).toBeEnabled()
   })
 
   test("auth/error page resend form is dimmed on rate limit", async ({ page }) => {
@@ -49,19 +67,25 @@ test.describe("Google OAuth Flow", () => {
     await expect(resendSection).toBeVisible()
   })
 
-  test("magic link cooldown blocks rapid resends", async ({ page }) => {
-    // This tests the flow: send magic link, get cooldown error
-    // Since we can't actually send emails in e2e, test that
-    // the UI properly shows the email form
+  test("la puerta del portal deja pedir el enlace, sin pedirlo aquí", async ({ page }) => {
+    // No se pulsa enviar a propósito: mandaría un enlace mágico de verdad contra
+    // la base compartida en cada corrida. Lo que se comprueba es que la puerta
+    // ofrece las dos entradas y que el formulario está listo para usarse.
     await page.goto("/my-cards")
+    await expect(page.getByRole("button", { name: /continuar con google/i })).toBeEnabled()
     await page.getByLabel("Correo Electrónico").fill("test@example.com")
-    await page.getByText("Enviar enlace mágico").click()
-    // The form should show either sent state or error
-    await expect(page.locator("text=Revisa tu correo, Enviar enlace mágico").first()).toBeVisible()
+    await expect(page.getByRole("button", { name: /enviar enlace mágico/i })).toBeEnabled()
   })
 
-  test("landing page redirects code param to auth/callback", async ({ page }) => {
-    await page.goto("/?code=test-code&next=%2Fdashboard")
-    await page.waitForURL("**/auth/callback?code=test-code*")
+  test("el code de Supabase en la landing entra al flujo de autenticación", async ({ request }) => {
+    const res = await request.get("/?code=test-code&next=%2Fdashboard", { maxRedirects: 0 })
+    expect(res.status()).toBe(307)
+    expect(res.headers()["location"]).toContain("/auth/callback?code=test-code")
+  })
+
+  test("un error de Supabase en la landing entra a la pantalla de error", async ({ request }) => {
+    const res = await request.get("/?error=access_denied&error_code=otp_expired", { maxRedirects: 0 })
+    expect(res.status()).toBe(307)
+    expect(res.headers()["location"]).toContain("/auth/error?error=access_denied")
   })
 })

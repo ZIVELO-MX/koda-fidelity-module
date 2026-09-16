@@ -102,6 +102,9 @@ jobs:
           psql "$DIRECT_URL" -c 'CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN;'
           pnpm exec prisma migrate deploy
 
+      - name: Build application
+        run: pnpm build
+
       - name: Install Playwright browser
         run: pnpm exec playwright install chromium
 

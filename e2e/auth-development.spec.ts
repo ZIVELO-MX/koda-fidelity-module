@@ -18,7 +18,7 @@ async function login(page: Page, email: string, password: string) {
   await page.getByLabel("Correo electrónico").fill(email)
   await page.getByRole("button", { name: "Continuar", exact: true }).click()
   await page.locator('input[name="password"]').fill(password)
-  await page.getByRole("button", { name: "Iniciar Sesión" }).click()
+  await page.getByRole("button", { name: "Iniciar sesión" }).click()
   await expect(page.getByRole("heading", { name: "Panel" })).toBeVisible({ timeout: 15000 })
 }
 
@@ -27,7 +27,7 @@ async function loginExpectingPasswordSetup(page: Page, email: string, password: 
   await page.getByLabel("Correo electrónico").fill(email)
   await page.getByRole("button", { name: "Continuar", exact: true }).click()
   await page.locator('input[name="password"]').fill(password)
-  await page.getByRole("button", { name: "Iniciar Sesión" }).click()
+  await page.getByRole("button", { name: "Iniciar sesión" }).click()
   await page.waitForURL("**/dashboard/update-password", { timeout: 15000 })
 }
 
@@ -120,7 +120,7 @@ async function apiJson(page: Page, url: string, init: RequestInit) {
 }
 
 async function logout(page: Page) {
-  await page.getByRole("button", { name: /Fidelity Seed|Fidelity Auth/ }).click()
+  await page.getByRole("button", { name: "Abrir menú de perfil" }).click()
   await page.getByRole("menuitem", { name: "Cerrar Sesión" }).click()
   await page.getByRole("button", { name: "Cerrar sesión" }).last().click()
   await page.waitForURL("**/login")
@@ -141,7 +141,7 @@ test.describe("FID-0016 development authentication", () => {
     await page.getByLabel("Correo electrónico").fill(ADMIN_EMAIL)
     await page.getByRole("button", { name: "Continuar", exact: true }).click()
     await page.locator('input[name="password"]').fill("definitely-wrong-password")
-    await page.getByRole("button", { name: "Iniciar Sesión" }).click()
+    await page.getByRole("button", { name: "Iniciar sesión" }).click()
     await expect(page.getByText("Correo o contraseña incorrectos.")).toBeVisible()
   })
 
@@ -176,13 +176,13 @@ test.describe("FID-0016 development authentication", () => {
 
   test("required-password user is redirected and must confirm the new password", async ({ page }) => {
     await loginExpectingPasswordSetup(page, REQUIRED_EMAIL, REQUIRED_PASSWORD)
-    await page.getByLabel("Nueva contraseña").fill("ci-new-password-1")
-    await page.getByLabel("Confirmar contraseña").fill("ci-new-password-2")
-    await page.getByRole("button", { name: "Guardar y continuar" }).click()
-    await expect(page.getByText("Las contraseñas no coinciden")).toBeVisible()
+    await page.getByLabel("Nueva contraseña").fill("Password1!")
+    await page.getByLabel("Confirmar contraseña").fill("Password2!")
+    await expect(page.getByText("Las dos contraseñas no son iguales.")).toBeVisible()
+    await expect(page.getByRole("button", { name: "Guardar y continuar" })).toBeDisabled()
 
-    await page.getByLabel("Nueva contraseña").fill("ci-new-password-2")
-    await page.getByLabel("Confirmar contraseña").fill("ci-new-password-2")
+    await page.getByLabel("Nueva contraseña").fill("Password2!")
+    await page.getByLabel("Confirmar contraseña").fill("Password2!")
     await page.getByRole("button", { name: "Guardar y continuar" }).click()
     await expect(page.getByRole("heading", { name: "Panel" })).toBeVisible({ timeout: 15000 })
     await expect(page.getByRole("heading", { name: "Panel" })).toBeVisible()
@@ -194,19 +194,19 @@ test.describe("FID-0016 development authentication", () => {
     await page.getByRole("button", { name: "Continuar", exact: true }).click()
     await page.getByRole("button", { name: "¿Olvidaste tu contraseña?" }).click()
     const previousIds = await mailpitMessageIds(request, ADMIN_EMAIL)
-    await page.getByRole("button", { name: "Enviar correo de recuperación" }).click()
-    await expect(page.getByText("Si el correo existe, recibirás un enlace para recuperar tu contraseña.")).toBeVisible()
+    await page.getByRole("button", { name: "Enviarme el enlace" }).click()
+    await expect(page.getByRole("heading", { name: "Revisa tu correo" })).toBeVisible()
 
     const recoveryLink = await waitForRecoveryLink(request, ADMIN_EMAIL, previousIds)
     await page.goto(recoveryLink)
-    await page.waitForURL("**/dashboard/update-password", { timeout: 15000 })
-    await page.getByLabel("Nueva contraseña").fill("ci-recovered-password-2")
-    await page.getByLabel("Confirmar contraseña").fill("ci-recovered-password-2")
-    await page.getByRole("button", { name: "Guardar y continuar" }).click()
+    await page.waitForURL("**/dashboard/update-password?reason=recovery", { timeout: 15000 })
+    await page.getByLabel("Nueva contraseña").fill("Recovered2!")
+    await page.getByLabel("Confirmar contraseña").fill("Recovered2!")
+    await page.getByRole("button", { name: "Guardar contraseña" }).click()
     await expect(page.getByRole("heading", { name: "Panel" })).toBeVisible({ timeout: 15000 })
 
     await logout(page)
-    await login(page, ADMIN_EMAIL, "ci-recovered-password-2")
+    await login(page, ADMIN_EMAIL, "Recovered2!")
 
     await page.goto(recoveryLink)
     await page.waitForURL("**/auth/error**", { timeout: 15000 })
@@ -218,8 +218,8 @@ test.describe("FID-0016 development authentication", () => {
     await page.getByRole("button", { name: "Continuar", exact: true }).click()
     await page.getByRole("button", { name: "¿Olvidaste tu contraseña?" }).click()
     const previousIds = await mailpitMessageIds(request, EXPIRED_EMAIL)
-    await page.getByRole("button", { name: "Enviar correo de recuperación" }).click()
-    await expect(page.getByText("Si el correo existe, recibirás un enlace para recuperar tu contraseña.")).toBeVisible()
+    await page.getByRole("button", { name: "Enviarme el enlace" }).click()
+    await expect(page.getByRole("heading", { name: "Revisa tu correo" })).toBeVisible()
     const recoveryLink = await waitForRecoveryLink(request, EXPIRED_EMAIL, previousIds)
     await ageRecoveryToken(EXPIRED_EMAIL)
     await page.goto(recoveryLink)

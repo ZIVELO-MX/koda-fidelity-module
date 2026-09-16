@@ -1,14 +1,13 @@
 import Link from "next/link"
-import Image from "next/image"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 import { Input } from "@/components/ui/input"
-import { ArrowLeft, Gift, Users, Stamp, Calendar, Search, AlertTriangle } from "lucide-react"
+import { ArrowLeft, Search, AlertTriangle } from "lucide-react"
 import { CardActions } from "@/components/dashboard/card-actions"
 import { CardQRInline } from "@/components/dashboard/card-qr-inline"
 import { CustomersTable, SortField, SortOrder } from "@/components/dashboard/customers-table"
-import { getCardIcon } from "@/lib/card-icons"
+import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { isExpired } from "@/lib/card-utils"
 
 export default async function CardDetailPage({
@@ -86,74 +85,73 @@ export default async function CardDetailPage({
         Volver a tarjetas
       </Link>
 
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-4">
-          {(() => {
-            const icon = getCardIcon(card.iconName)
-            const IconComp = icon?.Icon
-            if (card.iconName === "logo" && business.logoUrl) {
-              return (
-                <div
-                  className="w-14 h-14 rounded-xl flex items-center justify-center text-white font-bold text-xl shrink-0"
-                  style={{ backgroundColor: card.brandColor }}
-                >
-                  <Image src={business.logoUrl} alt="" width={36} height={36} className="object-contain" />
-                </div>
-              )
-            }
-            return (
-              <div
-                className="w-14 h-14 rounded-xl flex items-center justify-center text-white font-bold text-xl shrink-0"
-                style={{ backgroundColor: card.brandColor }}
-              >
-                {IconComp ? <IconComp className="h-7 w-7" aria-hidden="true" /> : card.name.charAt(0)}
-              </div>
-            )
-          })()}
-          <div className="min-w-0">
-            <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="min-w-0 break-words text-2xl font-bold text-foreground text-balance">{card.name}</h1>
-              {cardExpired && (
-                <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-destructive/10 text-destructive">
-                  Vencida
-                </span>
-              )}
-            </div>
-            <p className="break-words text-muted-foreground">{card.stampsRequired} sellos para {card.reward}</p>
-          </div>
-        </div>
-        <CardActions
-          cardId={card.id}
-          cardName={card.name}
+      {/* La tarjeta encabeza su propio detalle. Antes iba un cuadro de color
+          con la inicial, y la tarjeta real no aparecía por ninguna parte. */}
+      <div className="grid gap-6 lg:grid-cols-[22rem_minmax(0,1fr)] lg:items-start">
+        <LoyaltyCardPreview
+          businessName={business.name}
+          businessLogo={business.logoUrl ?? undefined}
+          iconName={card.iconName}
+          stampIconName={card.stampIconName}
+          customerName="Tus clientes"
+          currentStamps={0}
+          maxStamps={card.stampsRequired}
+          reward={card.reward}
+          showQR={false}
+          expirationDate={card.expiresAt ? card.expiresAt.toLocaleDateString("es-MX") : undefined}
+          brandColor={card.brandColor}
         />
-      </div>
 
-      {card.description && (
-        <p className="break-words text-muted-foreground">{card.description}</p>
-      )}
+        <div className="space-y-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-3">
+                <h1 className="min-w-0 break-words text-2xl font-bold text-foreground text-balance">
+                  {card.name}
+                </h1>
+                {cardExpired && (
+                  <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+                    Vencida
+                  </span>
+                )}
+              </div>
+              <p className="break-words text-muted-foreground">
+                {card.stampsRequired} sellos para {card.reward}
+              </p>
+            </div>
+            {/* Editar, códigos, archivar y eliminar viven aquí, como acciones
+                secundarias detrás de un menú. */}
+            <CardActions cardId={card.id} cardName={card.name} />
+          </div>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-card rounded-xl p-4 border border-border">
-          <Users className="h-5 w-5 text-muted-foreground mb-2" aria-hidden="true" />
-          <p className="text-2xl font-bold text-foreground">{card._count.customers}</p>
-          <p className="text-sm text-muted-foreground">Clientes</p>
-        </div>
-        <div className="bg-card rounded-xl p-4 border border-border">
-          <Stamp className="h-5 w-5 text-muted-foreground mb-2" aria-hidden="true" />
-          <p className="text-2xl font-bold text-foreground">{totalStamps}</p>
-          <p className="text-sm text-muted-foreground">Sellos totales</p>
-        </div>
-        <div className="bg-card rounded-xl p-4 border border-border">
-          <Gift className="h-5 w-5 text-muted-foreground mb-2" aria-hidden="true" />
-          <p className="text-2xl font-bold text-foreground">{readyToRedeem}</p>
-          <p className="text-sm text-muted-foreground">Listos para canjear</p>
-        </div>
-        <div className="bg-card rounded-xl p-4 border border-border">
-          <Calendar className="h-5 w-5 text-muted-foreground mb-2" aria-hidden="true" />
-          <p className="text-sm font-medium text-foreground">
-            {card.expiresAt ? card.expiresAt.toLocaleDateString("es-MX") : "Sin vencimiento"}
-          </p>
-          <p className="text-sm text-muted-foreground">Vencimiento</p>
+          {card.description && (
+            <p className="break-words text-sm text-muted-foreground">{card.description}</p>
+          )}
+
+          {/* Una línea de cifras, no cuatro cajas del mismo tamaño que competían
+              entre ellas y con la tarjeta. */}
+          <dl className="flex flex-wrap gap-x-8 gap-y-3 border-t border-border pt-4">
+            <div>
+              <dt className="text-xs text-muted-foreground">Clientes</dt>
+              <dd className="text-lg font-semibold tabular-nums text-foreground">
+                {card._count.customers}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Sellos</dt>
+              <dd className="text-lg font-semibold tabular-nums text-foreground">{totalStamps}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Listos para canjear</dt>
+              <dd className="text-lg font-semibold tabular-nums text-foreground">{readyToRedeem}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Vencimiento</dt>
+              <dd className="text-lg font-semibold text-foreground">
+                {card.expiresAt ? card.expiresAt.toLocaleDateString("es-MX") : "Sin vencimiento"}
+              </dd>
+            </div>
+          </dl>
         </div>
       </div>
 

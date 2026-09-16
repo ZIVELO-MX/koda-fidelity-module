@@ -13,8 +13,9 @@ import { provisionSignup } from "@/lib/signup-provisioning"
 import { headers } from "next/headers"
 import { randomUUID } from "node:crypto"
 import { classifyLoginError } from "@/lib/auth-errors"
+import { reglaQueFalta } from "@/lib/reglas-de-contrasena"
 
-export type AuthResult = { error?: string; success?: true; isBusiness?: boolean }
+export type AuthResult = { error?: string; success?: true }
 
 export async function login(_prev: AuthResult, formData: FormData): Promise<AuthResult> {
   const email = formData.get("email") as string
@@ -51,7 +52,14 @@ export async function login(_prev: AuthResult, formData: FormData): Promise<Auth
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (user?.user_metadata?.must_change_password) {
+  const member = user
+    ? await prisma.user.findUnique({
+        where: { authUserId: user.id },
+        select: { passwordSetupRequired: true },
+      })
+    : null
+
+  if (member?.passwordSetupRequired) {
     redirect("/dashboard/update-password")
   }
 
@@ -64,7 +72,8 @@ export async function updatePassword(_prev: AuthResult, formData: FormData): Pro
   const confirm = formData.get("confirm") as string
   const nickname = (formData.get("nickname") as string | null)?.trim() || null
 
-  if (!password || password.length < 8) return { error: "La contraseña debe tener al menos 8 caracteres" }
+  const missingRule = reglaQueFalta(password ?? "")
+  if (missingRule) return { error: `A la contraseña le falta: ${missingRule.toLowerCase()}` }
   if (password !== confirm) return { error: "Las contraseñas no coinciden" }
 
   const supabase = await createClient()
@@ -78,9 +87,9 @@ export async function updatePassword(_prev: AuthResult, formData: FormData): Pro
     return { error: "No fue posible actualizar la contraseña. Intenta de nuevo." }
   }
 
-  if (nickname && user?.email) {
+  if (nickname && user) {
     const userRecord = await prisma.user.findUnique({
-    where: { authUserId: user.id },
+      where: { authUserId: user.id },
       select: { businessId: true },
     })
     if (userRecord?.businessId) {
@@ -168,7 +177,8 @@ export async function sendPasswordReset(_prev: AuthResult, formData: FormData): 
   const email = formData.get("email") as string
   if (!email || !email.includes("@")) return { error: "Ingresa un correo electrónico válido" }
 
-  const redirectTo = `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/auth/callback?next=/dashboard/update-password`
+  const destination = encodeURIComponent("/dashboard/update-password?reason=recovery")
+  const redirectTo = `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/auth/callback?next=${destination}`
 
   try {
     const requestHeaders = await headers()

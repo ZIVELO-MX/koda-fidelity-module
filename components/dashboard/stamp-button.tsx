@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
+import { ejecutarSellado } from "@/lib/sellado"
 import { Button } from "@/components/ui/button"
 import { Stamp, Loader2, Check, Gift } from "lucide-react"
 import { isLight } from "@/lib/color-utils"
@@ -33,15 +34,7 @@ export function StampButton({
 
     try {
       const type = currentStamps >= maxStamps ? "redeem" : "stamp"
-      const res = await fetch("/api/stamps", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Idempotency-Key": crypto.randomUUID() },
-        body: JSON.stringify({ customerId, type }),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) throw new Error("No fue posible procesar la operación")
+      const data = await ejecutarSellado(customerId, type)
 
       setState(data.event === "redeem" ? "redeemed" : "stamped")
       router.refresh()
@@ -52,7 +45,7 @@ export function StampButton({
       setErrorMsg(err instanceof Error ? err.message : "Error al procesar")
       setTimeout(() => setState("idle"), 3000)
     }
-  }, [customerId, currentStamps, maxStamps])
+  }, [customerId, currentStamps, maxStamps, router])
 
   if (state === "stamped") {
     return (

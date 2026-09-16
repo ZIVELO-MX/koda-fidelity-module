@@ -1,18 +1,41 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { NextRequest, NextResponse } from "next/server"
 
-const { getUser } = vi.hoisted(() => ({ getUser: vi.fn() }))
-vi.mock("@/lib/supabase-req-res", () => ({
-  createSupabaseReqResClient: (request: Request) => ({
+const { getUser, createClient } = vi.hoisted(() => ({
+  getUser: vi.fn(),
+  createClient: vi.fn((request: Request) => ({
     supabase: { auth: { getUser } },
     response: NextResponse.next({ request: { headers: request.headers } }),
-  }),
+  })),
+}))
+vi.mock("@/lib/supabase-req-res", () => ({
+  createSupabaseReqResClient: createClient,
 }))
 
 import { proxy } from "./proxy"
 
 describe("request id proxy context", () => {
-  beforeEach(() => getUser.mockResolvedValue({ data: { user: { id: "auth-1" } } }))
+  beforeEach(() => {
+    vi.clearAllMocks()
+    getUser.mockResolvedValue({ data: { user: { id: "auth-1" } } })
+  })
+
+  it("keeps the landing static by skipping Supabase on root requests", async () => {
+    const response = await proxy(new NextRequest("http://localhost/"))
+
+    expect(response.status).toBe(200)
+    expect(createClient).not.toHaveBeenCalled()
+    expect(getUser).not.toHaveBeenCalled()
+  })
+
+  it("forwards root auth callbacks without contacting Supabase", async () => {
+    const response = await proxy(new NextRequest("http://localhost/?code=auth-code&next=%2Fdashboard"))
+
+    expect(response.headers.get("location")).toBe(
+      "http://localhost/auth/callback?code=auth-code&next=%2Fdashboard",
+    )
+    expect(createClient).not.toHaveBeenCalled()
+  })
 
   it("preserves an incoming id on API responses", async () => {
     const response = await proxy(new NextRequest("http://localhost/api/customers", { headers: { "x-request-id": "proxy-incoming" } }))
