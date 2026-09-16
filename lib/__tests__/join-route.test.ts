@@ -4,6 +4,8 @@ const { mockPrisma } = vi.hoisted(() => {
   const mockPrisma = {
     loyaltyCard: { findUnique: vi.fn() },
     customer: { findFirst: vi.fn(), create: vi.fn(), findUnique: vi.fn() },
+    stampLog: { create: vi.fn() },
+    $transaction: vi.fn(),
     user: { findUnique: vi.fn() },
   }
   return { mockPrisma }
@@ -16,6 +18,7 @@ vi.mock("@/lib/supabase-server", () => ({
 }))
 
 vi.mock("@/lib/prisma", () => ({ prisma: mockPrisma }))
+vi.mock("@/lib/account-lifecycle", () => ({ assertBusinessWritable: vi.fn() }))
 
 vi.mock("next/server", () => ({
   NextRequest: class {},
@@ -31,13 +34,14 @@ function makeRequest(body: unknown) {
   return { json: async () => body } as never
 }
 
-const validCard = { id: "card1", expiresAt: null, isActive: true }
+const validCard = { id: "card1", businessId: "business1", expiresAt: null, isActive: true }
 
 beforeEach(() => {
   vi.clearAllMocks()
   mockPrisma.loyaltyCard.findUnique.mockResolvedValue(validCard)
   mockPrisma.customer.findFirst.mockResolvedValue(null)
   mockPrisma.customer.create.mockResolvedValue({ id: "cust1" })
+  mockPrisma.$transaction.mockImplementation(async (callback: (tx: typeof mockPrisma) => unknown) => callback(mockPrisma))
 })
 
 describe("POST /api/join", () => {

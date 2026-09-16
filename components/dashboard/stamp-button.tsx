@@ -45,7 +45,7 @@ export function StampButton({
       setErrorMsg(err instanceof Error ? err.message : "Error al procesar")
       setTimeout(() => setState("idle"), 3000)
     }
-  }, [customerId, currentStamps, maxStamps])
+  }, [customerId, currentStamps, maxStamps, router])
 
   if (state === "stamped") {
     return (

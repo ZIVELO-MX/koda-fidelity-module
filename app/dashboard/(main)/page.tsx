@@ -44,16 +44,16 @@ export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user?.email) {
+  if (!user) {
     redirect("/login")
   }
 
   const userRecord = await prisma.user.findUnique({
-    where: { email: user.email },
+    where: { authUserId: user.id },
     select: { businessId: true },
   })
 
-  if (!userRecord) {
+  if (!userRecord?.businessId) {
     redirect("/login")
   }
 

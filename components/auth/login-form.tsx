@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useActionState, useEffect } from "react"
+import { useState, useActionState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { checkBusinessEmail, sendLoginMagicLink, login, sendPasswordReset, type AuthResult } from "@/lib/actions/auth"
+import { sendLoginMagicLink, login, sendPasswordReset, type AuthResult } from "@/lib/actions/auth"
 import { GoogleButton } from "@/components/auth/google-button"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,61 +22,20 @@ export function LoginForm() {
     searchParams.get("recover") === "true" ? "recover" : "email"
   )
   const [email, setEmail] = useState(emailParam)
-  const [nickname, setNickname] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!emailParam || !emailParam.includes("@")) return
-    checkBusinessEmail(emailParam).then((result) => {
-      if (result.isBusiness) {
-        setNickname(result.nickname)
-        setStep("password")
-      }
-    })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [loginState, loginAction, loginPending] = useActionState(login, initialState)
   const [resetState, resetAction, resetPending] = useActionState(sendPasswordReset, initialState)
 
-  // El correo de recuperación se manda solo: en cuanto el server action
-  // confirma, la pantalla pasa a decir que revise su bandeja.
-  useEffect(() => {
-    if (resetState?.success) setStep("recover-sent")
-  }, [resetState?.success])
-
-  const handleEmailSubmit = async (e: React.FormEvent) => {
+  const handleEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     if (!email.trim() || !email.includes("@")) {
       setError("Ingresa un correo electrónico válido")
       return
     }
-    setPending(true)
-    try {
-      const result = await checkBusinessEmail(email.trim())
-      if (result.isBusiness) {
-        setNickname(result.nickname)
-        setStep("password")
-      } else {
-        const result = await sendLoginMagicLink(email.trim())
-        if (result.error) {
-          setError(result.error)
-        } else {
-          setStep("sent")
-        }
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : ""
-      if (message.includes("rate_limit") || message.includes("over_email_send_rate_limit")) {
-        setError("Has solicitado demasiados enlaces. Espera un momento e intenta de nuevo.")
-      } else {
-        setError("Ocurrió un error. Intenta de nuevo.")
-      }
-    } finally {
-      setPending(false)
-    }
+    setStep("password")
   }
 
   if (step === "sent") {
@@ -111,7 +70,7 @@ export function LoginForm() {
     )
   }
 
-  if (step === "recover") {
+  if (step === "recover" && !resetState?.success) {
     return (
       <Card className="w-full max-w-md auth-card-enter rounded-[14px] border-border/60 shadow-[0_12px_32px_rgba(28,27,23,0.12),0_2px_4px_rgba(28,27,23,0.04)]">
         <CardHeader className="text-center">
@@ -173,7 +132,7 @@ export function LoginForm() {
     )
   }
 
-  if (step === "recover-sent") {
+  if (step === "recover-sent" || resetState?.success) {
     return (
       <Card className="w-full max-w-md auth-card-enter rounded-[14px] border-border/60 shadow-[0_12px_32px_rgba(28,27,23,0.12),0_2px_4px_rgba(28,27,23,0.04)]">
         <CardHeader className="text-center">
@@ -217,7 +176,7 @@ export function LoginForm() {
           </CardTitle>
           <CardDescription className={step === "password" ? "mt-3" : undefined}>
             {step === "password"
-              ? `Bienvenido de vuelta, ${nickname ?? email.split("@")[0]}`
+              ? `Accede con ${email}`
               : "Accede a tu panel o a tus tarjetas de lealtad"}
           </CardDescription>
         </CardHeader>
@@ -253,7 +212,7 @@ export function LoginForm() {
                     value={email}
                     onChange={(e) => { setEmail(e.target.value); setError(null) }}
                     required
-                    autoComplete="email"
+                    autoComplete="username"
                     autoFocus
                     className="[&:user-invalid]:border-destructive [&:user-valid]:border-primary transition-colors"
                   />
@@ -309,9 +268,24 @@ export function LoginForm() {
               >
                 {loginPending ? "Iniciando sesión..." : "Iniciar sesión"}
               </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11 w-full"
+                disabled={pending}
+                onClick={async () => {
+                  setPending(true)
+                  setError(null)
+                  const result = await sendLoginMagicLink(email)
+                  setPending(false)
+                  result.error ? setError(result.error) : setStep("sent")
+                }}
+              >
+                {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviarme un enlace de acceso"}
+              </Button>
               <button
                 type="button"
-                onClick={() => { setStep("email"); setError(null); setNickname(null) }}
+                onClick={() => { setStep("email"); setError(null) }}
                 className="min-h-10 w-full text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
                 Usar otro correo

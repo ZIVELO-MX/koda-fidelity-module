@@ -10,16 +10,23 @@ test.describe("Auth UI", () => {
     await expect(page.getByRole("button", { name: "Crear Cuenta" })).toBeVisible()
   })
 
-  // El acceso es de dos pasos: primero el correo, y la contraseña solo después
-  // de saber si ese correo es de un negocio. Estas dos pruebas pedían los dos
-  // campos a la vez, así que esperaban 90s por una contraseña que todavía no
-  // está en el DOM.
+  // El acceso es de dos pasos. Cualquier correo válido llega al paso de
+  // contraseña sin revelar si pertenece a un negocio registrado.
   test("login page shows login form", async ({ page }) => {
     await page.goto("/login")
-    await expect(page.getByRole("heading", { name: "Iniciar Sesión" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Iniciar sesión" })).toBeVisible()
     await expect(page.getByLabel("Correo electrónico")).toBeVisible()
     await expect(page.locator("#password")).toBeHidden()
     await expect(page.getByRole("button", { name: "Continuar", exact: true })).toBeVisible()
+  })
+
+  test("every valid email reaches the password step without account enumeration", async ({ page }) => {
+    await page.goto("/login")
+    await page.getByLabel("Correo electrónico").fill("correo-no-registrado@example.com")
+    await page.getByRole("button", { name: "Continuar", exact: true }).click()
+
+    await expect(page.locator("#password")).toBeVisible()
+    await expect(page.getByRole("button", { name: "Enviarme un enlace de acceso" })).toBeVisible()
   })
 
   // Con una cuenta real y la contraseña mal: así el error lo da el servidor, y
@@ -32,7 +39,7 @@ test.describe("Auth UI", () => {
     await page.getByLabel("Correo electrónico").fill(process.env.E2E_EMAIL!)
     await page.getByRole("button", { name: "Continuar", exact: true }).click()
     await page.locator("#password").fill("una-contraseña-que-no-es")
-    await page.getByRole("button", { name: "Iniciar Sesión" }).click()
+    await page.getByRole("button", { name: "Iniciar sesión" }).click()
 
     await expect(page.locator('[data-slot="card"] [role="alert"]')).toBeVisible({ timeout: 30000 })
   })

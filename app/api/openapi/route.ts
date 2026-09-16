@@ -1,7 +1,18 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { getOpenApiSpec } from "@/lib/openapi"
+import { requestIdFrom, withRequestId } from "@/lib/api-utils"
 
-export async function GET() {
+/**
+ * @openapi
+ * /api/openapi:
+ *   get:
+ *     tags: [System]
+ *     summary: OpenAPI contract
+ *     responses:
+ *       200: { description: OpenAPI 3.1 document }
+ */
+export async function GET(request: NextRequest) {
+  const requestId = requestIdFrom(request)
   const spec = getOpenApiSpec()
-  return NextResponse.json(spec)
+  return withRequestId(NextResponse.json(spec), requestId)
 }

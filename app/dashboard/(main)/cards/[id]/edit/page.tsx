@@ -17,7 +17,7 @@ export default async function EditCardPage({
   if (!user?.email) redirect("/login")
 
   const userRecord = await prisma.user.findUnique({
-    where: { email: user.email },
+    where: { authUserId: user.id },
     include: {
       business: {
         select: {
@@ -29,7 +29,7 @@ export default async function EditCardPage({
     },
   })
 
-  if (!userRecord || userRecord.role !== "admin") {
+  if (!userRecord || !userRecord.business || userRecord.role !== "admin") {
     redirect("/dashboard/forbidden")
   }
 

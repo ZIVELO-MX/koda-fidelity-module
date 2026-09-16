@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Check, Building2, Mail, Loader2, Globe } from "lucide-react"
+import { AccountClosurePanel } from "@/components/dashboard/account-closure-panel"
 
 export default function SettingsPage() {
   const [businessName, setBusinessName] = useState("")
@@ -206,6 +207,8 @@ export default function SettingsPage() {
           )}
         </Button>
       </div>
+
+      <AccountClosurePanel />
     </div>
   )
 }

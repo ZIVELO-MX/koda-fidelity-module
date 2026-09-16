@@ -12,19 +12,15 @@ export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
   retries: process.env.CI ? 1 : 0,
-  // El servidor es `next dev`, que compila cada ruta la primera vez que la
-  // pides. Con la suite entera eso empuja a varias pruebas por encima de los
-  // 30s de fábrica, y el fallo cae en una distinta cada vez. No es lentitud de
-  // la aplicación: cada spec por separado pasa de sobra.
-  // ponytail: subir el techo alcanza; si molesta el tiempo total, el arreglo de
-  // verdad es servir un `next build` en vez de `next dev`.
-  timeout: 90_000,
+  // CI builds once before Playwright starts the production server. This avoids
+  // route compilation races from `next dev` when the complete suite runs.
+  timeout: 120_000,
   use: {
     baseURL: "http://localhost:3000",
     locale: "es-MX",
   },
   webServer: {
-    command: "INVITE_ONLY=false pnpm dev",
+    command: "INVITE_ONLY=false ./node_modules/.bin/next start",
     port: 3000,
     reuseExistingServer: false,
   },

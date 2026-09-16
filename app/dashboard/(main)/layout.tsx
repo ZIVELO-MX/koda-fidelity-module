@@ -13,19 +13,19 @@ export default async function DashboardLayout({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user?.email) redirect("/login")
 
-  if (user.user_metadata?.must_change_password) {
-    redirect("/dashboard/update-password")
-  }
-
   const userRecord = await prisma.user.findUnique({
-    where: { email: user.email },
-    include: { business: { select: { name: true, brandColor: true, nickname: true } } },
+    where: { authUserId: user.id },
+    include: { business: { select: { id: true, name: true, brandColor: true, nickname: true } } },
   })
 
-  if (!userRecord) {
+  if (!userRecord || !userRecord.business) {
     redirect("/dashboard/forbidden")
   }
+  if (userRecord.passwordSetupRequired) redirect("/dashboard/update-password")
 
+  const [closure] = await Promise.all([
+    prisma.accountClosure.findFirst({ where: { businessId: userRecord.business.id, status: { in: ["SCHEDULED", "PROCESSING", "FAILED"] } }, orderBy: { scheduledFor: "asc" }, select: { scheduledFor: true } }),
+  ])
   const { business, role } = { business: userRecord.business, role: userRecord.role }
 
   // El color del negocio no se inyecta crudo: de él se derivan los estados y el
@@ -51,6 +51,7 @@ export default async function DashboardLayout({
         brandColor={business.brandColor}
         nickname={business.nickname ?? undefined}
         role={role}
+        closureScheduledFor={closure?.scheduledFor.toISOString()}
       >
         {children}
       </DashboardLayoutClient>
