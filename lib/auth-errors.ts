@@ -3,6 +3,34 @@ export interface AuthErrorMessage {
   description: string
 }
 
+export type LoginErrorKind = "invalid_credentials" | "rate_limited" | "infrastructure"
+
+/** Maps provider and server errors to a safe, stable login category. */
+export function classifyLoginError(error: unknown): LoginErrorKind {
+  const message = error instanceof Error ? error.message.toLowerCase() : ""
+  const code = String((error as { code?: unknown })?.code ?? "").toLowerCase()
+  const status = (error as { status?: unknown })?.status
+
+  if (
+    code === "rate_limited" ||
+    code === "too_many_requests" ||
+    message === "rate_limited" ||
+    message === "rate_limit" ||
+    message === "too many requests" ||
+    status === 429
+  ) return "rate_limited"
+
+  if (
+    code === "invalid_credentials" ||
+    code === "invalid_login_credentials" ||
+    message === "invalid login credentials" ||
+    message === "invalid credentials" ||
+    message === "email not confirmed"
+  ) return "invalid_credentials"
+
+  return "infrastructure"
+}
+
 export function getFriendlyAuthError(error: string, errorCode: string): AuthErrorMessage | null {
   const message = error.toLowerCase()
   if (errorCode === "otp_expired" || message.includes("expired") || message.includes("otp_expired")) {

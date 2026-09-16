@@ -1,6 +1,5 @@
 "use server"
 
-import type { AuthSession } from "@/lib/auth"
 import { authService } from "@/lib/auth-service"
 import { config } from "@/lib/config"
 import { prisma } from "@/lib/prisma"
@@ -8,21 +7,15 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { getFriendlySendError } from "@/lib/auth-errors"
 import { createClient } from "@/lib/supabase-server"
+import { createAdminClient } from "@/lib/supabase-admin"
+import { enforceRateLimit, normalizeEmail } from "@/lib/auth-security"
+import { provisionSignup } from "@/lib/signup-provisioning"
+import { headers } from "next/headers"
+import { randomUUID } from "node:crypto"
+import { classifyLoginError } from "@/lib/auth-errors"
+import { reglaQueFalta } from "@/lib/reglas-de-contrasena"
 
-const magicLinkCooldowns = new Map<string, number>()
-const MAGIC_LINK_COOLDOWN_MS = 120_000
-
-export type AuthResult = { error?: string; success?: true; isBusiness?: boolean }
-
-export async function checkBusinessEmail(
-  email: string
-): Promise<{ isBusiness: boolean; nickname: string | null }> {
-  const userRecord = await prisma.user.findUnique({
-    where: { email },
-    select: { id: true, business: { select: { nickname: true } } },
-  })
-  return { isBusiness: userRecord !== null, nickname: userRecord?.business?.nickname ?? null }
-}
+export type AuthResult = { error?: string; success?: true }
 
 export async function login(_prev: AuthResult, formData: FormData): Promise<AuthResult> {
   const email = formData.get("email") as string
@@ -30,17 +23,43 @@ export async function login(_prev: AuthResult, formData: FormData): Promise<Auth
 
   if (!email || !password) return { error: "Correo y contraseña requeridos" }
 
+  const requestId = randomUUID()
   try {
+    const requestHeaders = await headers()
+    await enforceRateLimit("login-identity", normalizeEmail(email), 10, 15 * 60 * 1000)
+    await enforceRateLimit("login-ip", requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown", 30, 15 * 60 * 1000)
     await authService.signIn(email, password)
   } catch (err) {
-    console.error("[login] Error signing in:", err)
-    return { error: "No fue posible iniciar sesión. Verifica tus datos." }
+    const kind = classifyLoginError(err)
+    if (kind === "invalid_credentials") {
+      return { error: "Correo o contraseña incorrectos." }
+    }
+    if (kind === "rate_limited") {
+      return { error: "Demasiados intentos. Espera unos minutos e inténtalo de nuevo." }
+    }
+
+    const error = err instanceof Error ? err : new Error("Unknown login error")
+    const domain = email.includes("@") ? email.slice(email.indexOf("@") + 1).toLowerCase() : "unknown"
+    console.error("[login] Unexpected authentication failure", {
+      requestId,
+      errorName: error.name,
+      errorMessage: error.message,
+      emailDomain: domain,
+    })
+    return { error: `No fue posible iniciar sesión temporalmente. Código de referencia: ${requestId}` }
   }
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (user?.user_metadata?.must_change_password) {
+  const member = user
+    ? await prisma.user.findUnique({
+        where: { authUserId: user.id },
+        select: { passwordSetupRequired: true },
+      })
+    : null
+
+  if (member?.passwordSetupRequired) {
     redirect("/dashboard/update-password")
   }
 
@@ -53,7 +72,8 @@ export async function updatePassword(_prev: AuthResult, formData: FormData): Pro
   const confirm = formData.get("confirm") as string
   const nickname = (formData.get("nickname") as string | null)?.trim() || null
 
-  if (!password || password.length < 8) return { error: "La contraseña debe tener al menos 8 caracteres" }
+  const missingRule = reglaQueFalta(password ?? "")
+  if (missingRule) return { error: `A la contraseña le falta: ${missingRule.toLowerCase()}` }
   if (password !== confirm) return { error: "Las contraseñas no coinciden" }
 
   const supabase = await createClient()
@@ -67,18 +87,19 @@ export async function updatePassword(_prev: AuthResult, formData: FormData): Pro
     return { error: "No fue posible actualizar la contraseña. Intenta de nuevo." }
   }
 
-  if (nickname && user?.email) {
+  if (nickname && user) {
     const userRecord = await prisma.user.findUnique({
-      where: { email: user.email },
+      where: { authUserId: user.id },
       select: { businessId: true },
     })
-    if (userRecord) {
+    if (userRecord?.businessId) {
       await prisma.business.update({
         where: { id: userRecord.businessId },
         data: { nickname },
       })
     }
   }
+  if (user) await prisma.user.updateMany({ where: { authUserId: user.id }, data: { passwordSetupRequired: false } })
 
   revalidatePath("/dashboard")
   redirect("/dashboard")
@@ -95,36 +116,26 @@ export async function signup(_prev: AuthResult, formData: FormData): Promise<Aut
 
   if (!email || !password || !name) return { error: "Todos los campos son requeridos" }
 
-  let session: AuthSession | null = null
-  try {
-    const result = await authService.signUp(email, password, name)
-    session = result
-  } catch (e) {
-    const message = e instanceof Error ? e.message : "Error al registrarse"
-    if (message === "Confirmation email sent") {
-      return { success: true }
-    }
-    return { error: "No fue posible crear la cuenta. Revisa tus datos." }
+  const normalizedEmail = normalizeEmail(email)
+  const debugSignup = config.isDebugEmail(normalizedEmail)
+  const requestHeaders = await headers()
+  await enforceRateLimit("signup-identity", normalizedEmail, 3, 60 * 60 * 1000)
+  await enforceRateLimit("signup-ip", requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown", 5, 60 * 60 * 1000)
+  await prisma.signupIntent.upsert({ where: { email: normalizedEmail }, create: { email: normalizedEmail, name: name.trim() }, update: { name: name.trim(), status: "pending" } })
+  const supabase = await createClient()
+  const { data, error } = debugSignup
+    ? await createDebugUser(normalizedEmail, password, name.trim())
+    : await supabase.auth.signUp({ email: normalizedEmail, password, options: { data: { name: name.trim() } } })
+  if (error || !data.user) return { error: "No fue posible crear la cuenta. Revisa tus datos." }
+  await prisma.signupIntent.update({ where: { email: normalizedEmail }, data: { authUserId: data.user.id } })
+  if (debugSignup) {
+    await authService.signIn(normalizedEmail, password)
+    await provisionSignup(data.user.id)
+    revalidatePath("/dashboard")
+    redirect("/dashboard")
   }
-
-  if (session?.user) {
-    const existing = await prisma.business.findUnique({ where: { email } })
-    if (!existing) {
-      await prisma.business.create({
-        data: {
-          email,
-          name,
-          users: {
-            create: { email, name, role: "admin" },
-          },
-        },
-      })
-    } else {
-      const existingUser = await prisma.user.findUnique({ where: { email } })
-      if (!existingUser) {
-        await prisma.user.create({ data: { email, name, role: "admin", businessId: existing.id } })
-      }
-    }
+  if (data.session) {
+    await provisionSignup(data.user.id)
     revalidatePath("/dashboard")
     redirect("/dashboard")
   }
@@ -132,18 +143,27 @@ export async function signup(_prev: AuthResult, formData: FormData): Promise<Aut
   return { success: true }
 }
 
-export async function sendLoginMagicLink(email: string): Promise<AuthResult> {
-  const lastSent = magicLinkCooldowns.get(email)
-  if (lastSent && Date.now() - lastSent < MAGIC_LINK_COOLDOWN_MS) {
-    const remaining = Math.ceil((MAGIC_LINK_COOLDOWN_MS - (Date.now() - lastSent)) / 1000)
-    return { error: `Ya enviamos un enlace recientemente. Revisa tu correo o espera ${remaining} segundos.` }
+async function createDebugUser(email: string, password: string, name: string) {
+  const admin = createAdminClient().auth.admin
+  for (let page = 1; ; page += 1) {
+    const listed = await admin.listUsers({ page, perPage: 1000 })
+    if (listed.error) return { data: { user: null, session: null }, error: listed.error }
+    const existing = listed.data.users.find((user) => user.email?.toLowerCase() === email.toLowerCase())
+    if (existing) return { data: { user: existing, session: null }, error: null }
+    if (listed.data.users.length < 1000) break
   }
+  const created = await admin.createUser({ email, password, email_confirm: true, user_metadata: { name } })
+  return { data: { user: created.data.user, session: null }, error: created.error }
+}
 
+export async function sendLoginMagicLink(email: string): Promise<AuthResult> {
   try {
+    await enforceRateLimit("magic-link", normalizeEmail(email), 3, 15 * 60 * 1000)
+    const requestHeaders = await headers()
+    await enforceRateLimit("magic-link-ip", requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown", 20, 15 * 60 * 1000)
     await authService.sendMagicLink(email, {
       redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/dashboard/my-cards`,
     })
-    magicLinkCooldowns.set(email, Date.now())
     return { success: true }
   } catch (err) {
     console.error("[sendLoginMagicLink] Error sending magic link:", err)
@@ -157,9 +177,13 @@ export async function sendPasswordReset(_prev: AuthResult, formData: FormData): 
   const email = formData.get("email") as string
   if (!email || !email.includes("@")) return { error: "Ingresa un correo electrónico válido" }
 
-  const redirectTo = `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/auth/callback?next=/dashboard/update-password`
+  const destination = encodeURIComponent("/dashboard/update-password?reason=recovery")
+  const redirectTo = `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/auth/callback?next=${destination}`
 
   try {
+    const requestHeaders = await headers()
+    await enforceRateLimit("password-reset", normalizeEmail(email), 3, 15 * 60 * 1000)
+    await enforceRateLimit("password-reset-ip", requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown", 20, 15 * 60 * 1000)
     await authService.sendPasswordResetEmail(email.trim(), { redirectTo })
     return { success: true }
   } catch (err) {

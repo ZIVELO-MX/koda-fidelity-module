@@ -1,11 +1,27 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { getBusinessFromSession, requireWritableBusinessPrincipal, handleApiError, ValidationError, requireRole, requestIdFrom, withRequestId } from "@/lib/api-utils"
+
+/**
+ * @openapi
+ * /api/users:
+ *   get:
+ *     tags: [Users]
+ *     summary: List business users
+ *     security: [{ cookieAuth: [] }]
+ *     responses: { 200: { description: User list } }
+ *   post:
+ *     tags: [Users]
+ *     summary: Invite a business user
+ *     security: [{ cookieAuth: [] }]
+ *     responses: { 202: { description: Invitation created } }
+ */
 import { createAdminClient } from "@/lib/supabase-admin"
-import { getBusinessFromSession, handleApiError, ValidationError, requireRole } from "@/lib/api-utils"
+import { createInvitationToken, enforceRateLimit, normalizeEmail } from "@/lib/auth-security"
+import { sendSecureInviteEmail } from "@/lib/invite-email"
 
-const DEFAULT_PASSWORD = "Koda1234!"
-
-export async function GET() {
+export async function GET(request?: NextRequest) {
+  const requestId = requestIdFrom(request)
   try {
     const { business, user } = await getBusinessFromSession()
     requireRole(user, "admin")
@@ -21,20 +37,26 @@ export async function GET() {
         createdAt: true,
       },
     })
+    const invitations = await prisma.teamInvitation.findMany({
+      where: { businessId: business.id }, orderBy: { createdAt: "desc" },
+      select: { id: true, email: true, name: true, role: true, status: true, expiresAt: true, createdAt: true },
+    })
 
-    return NextResponse.json({ users })
+    return withRequestId(NextResponse.json({ users, invitations }), requestId)
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }
 
 export async function POST(request: NextRequest) {
+  const requestId = requestIdFrom(request)
   try {
-    const { business, user } = await getBusinessFromSession()
+    const { business, user } = await requireWritableBusinessPrincipal()
     requireRole(user, "admin")
 
     const body = await request.json()
-    const { email, name, role } = body
+    const { name, role } = body
+    const email = typeof body.email === "string" ? normalizeEmail(body.email) : ""
 
     if (!email || typeof email !== "string" || !email.includes("@")) {
       throw new ValidationError("Valid email is required")
@@ -47,6 +69,9 @@ export async function POST(request: NextRequest) {
     }
 
     const memberLimit = parseInt(process.env.TEAM_MEMBER_LIMIT ?? "3", 10)
+    await enforceRateLimit("invitation-business", business.id, 10, 60 * 60 * 1000)
+    await enforceRateLimit("invitation-recipient", email, 3, 60 * 60 * 1000)
+    await enforceRateLimit("invitation-ip", request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown", 20, 60 * 60 * 1000)
     const memberCount = await prisma.user.count({ where: { businessId: business.id } })
     if (memberCount >= memberLimit) {
       throw new ValidationError(`Team member limit of ${memberLimit} reached`)
@@ -57,42 +82,35 @@ export async function POST(request: NextRequest) {
       throw new ValidationError("A user with that email already exists")
     }
 
+    const { token, tokenHash } = createInvitationToken()
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
+    const invitation = await prisma.teamInvitation.create({
+      data: { email, name: name.trim(), role, tokenHash, expiresAt, businessId: business.id, invitedById: user.id },
+      select: { id: true, email: true, name: true, role: true, status: true, expiresAt: true, createdAt: true },
+    })
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
     const supabase = createAdminClient()
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email,
-      password: DEFAULT_PASSWORD,
-      email_confirm: true,
-      user_metadata: { name, must_change_password: true },
+    const callbackTarget = `${baseUrl}/auth/callback?next=${encodeURIComponent(`/invite?token=${token}`)}`
+    const { data: invitationData, error: authError } = await supabase.auth.admin.inviteUserByEmail(email, {
+      redirectTo: callbackTarget,
+      data: { name: name.trim() },
     })
 
     if (authError) {
       if (authError.message.includes("already been registered")) {
-        throw new ValidationError("A user with that email already exists in auth")
+        const { data: link, error: linkError } = await supabase.auth.admin.generateLink({ type: "magiclink", email, options: { redirectTo: callbackTarget } })
+        if (linkError || !link.properties?.action_link) throw new Error(linkError?.message || "Could not create invitation link")
+        await sendSecureInviteEmail({ email, name: name.trim(), businessName: business.name, url: link.properties.action_link })
+      } else {
+        await prisma.teamInvitation.update({ where: { id: invitation.id }, data: { status: "delivery_failed" } })
+        throw new Error(authError.message)
       }
-      throw new Error(authError.message)
     }
-
-    const newUser = await prisma.user.create({
-      data: {
-        email,
-        name: name.trim(),
-        role,
-        businessId: business.id,
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        createdAt: true,
-      },
-    })
-
-    return NextResponse.json(
-      { user: newUser, authUserId: authData.user.id, temporaryPassword: DEFAULT_PASSWORD },
-      { status: 201 },
-    )
+    if (invitationData.user?.id) {
+      await prisma.teamInvitation.update({ where: { id: invitation.id }, data: { authUserId: invitationData.user.id } })
+    }
+    return withRequestId(NextResponse.json({ invitation }, { status: 202 }), requestId)
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }

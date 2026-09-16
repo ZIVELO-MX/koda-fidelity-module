@@ -1,20 +1,17 @@
 "use client"
 
-import { useState, useActionState, useEffect } from "react"
-import Image from "next/image"
+import { useState, useActionState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { checkBusinessEmail, sendLoginMagicLink, login, type AuthResult } from "@/lib/actions/auth"
+import { sendLoginMagicLink, login, sendPasswordReset, type AuthResult } from "@/lib/actions/auth"
 import { GoogleButton } from "@/components/auth/google-button"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Mail, Loader2, ArrowLeft, MessageCircle, Eye, EyeOff } from "lucide-react"
+import { Mail, Loader2, ArrowLeft, Eye, EyeOff } from "lucide-react"
 
-const SUPPORT_WA = "5213921107274"
-
-type LoginStep = "email" | "password" | "sent" | "recover"
+type LoginStep = "email" | "password" | "sent" | "recover" | "recover-sent"
 
 const initialState: AuthResult = {}
 
@@ -25,71 +22,29 @@ export function LoginForm() {
     searchParams.get("recover") === "true" ? "recover" : "email"
   )
   const [email, setEmail] = useState(emailParam)
-  const [nickname, setNickname] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!emailParam || !emailParam.includes("@")) return
-    checkBusinessEmail(emailParam).then((result) => {
-      if (result.isBusiness) {
-        setNickname(result.nickname)
-        setStep("password")
-      }
-    })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [loginState, loginAction, loginPending] = useActionState(login, initialState)
+  const [resetState, resetAction, resetPending] = useActionState(sendPasswordReset, initialState)
 
-  function waRecoverLink(address: string) {
-    const text = address
-      ? `Hola, quisiera restablecer mi contraseña en Koda Fidelity. Correo: ${address}`
-      : "Hola, quisiera restablecer mi contraseña en Koda Fidelity."
-    return `https://wa.me/${SUPPORT_WA}?text=${encodeURIComponent(text)}`
-  }
-
-  const handleEmailSubmit = async (e: React.FormEvent) => {
+  const handleEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     if (!email.trim() || !email.includes("@")) {
       setError("Ingresa un correo electrónico válido")
       return
     }
-    setPending(true)
-    try {
-      const result = await checkBusinessEmail(email.trim())
-      if (result.isBusiness) {
-        setNickname(result.nickname)
-        setStep("password")
-      } else {
-        const result = await sendLoginMagicLink(email.trim())
-        if (result.error) {
-          setError(result.error)
-        } else {
-          setStep("sent")
-        }
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : ""
-      if (message.includes("rate_limit") || message.includes("over_email_send_rate_limit")) {
-        setError("Has solicitado demasiados enlaces. Espera un momento e intenta de nuevo.")
-      } else {
-        setError("Ocurrió un error. Intenta de nuevo.")
-      }
-    } finally {
-      setPending(false)
-    }
+    setStep("password")
   }
 
   if (step === "sent") {
     return (
-      <Card className="w-full max-w-md auth-card-enter shadow-lg border-border/50">
+      <Card className="w-full max-w-md auth-card-enter rounded-[14px] border-border/60 shadow-[0_12px_32px_rgba(28,27,23,0.12),0_2px_4px_rgba(28,27,23,0.04)]">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <Image src="/short-logo.svg" alt="Koda" width={48} height={48} className="size-12" />
-          </div>
-          <CardTitle className="text-2xl">Revisa tu correo</CardTitle>
+          <CardTitle asChild>
+            <h1 className="text-2xl">Revisa tu correo</h1>
+          </CardTitle>
           <CardDescription>
             Te enviamos un enlace mágico a <strong>{email}</strong>
           </CardDescription>
@@ -105,7 +60,7 @@ export function LoginForm() {
         <CardFooter className="flex-col gap-2 text-sm text-muted-foreground">
           <button
             onClick={() => { setStep("email"); setError(null) }}
-            className="inline-flex items-center gap-1 text-primary hover:underline"
+            className="inline-flex min-h-11 items-center gap-1 text-primary hover:underline"
           >
             <ArrowLeft className="h-4 w-4" />
             Usar otro correo
@@ -115,46 +70,92 @@ export function LoginForm() {
     )
   }
 
-  if (step === "recover") {
+  if (step === "recover" && !resetState?.success) {
     return (
-      <Card className="w-full max-w-md auth-card-enter shadow-lg border-border/50">
+      <Card className="w-full max-w-md auth-card-enter rounded-[14px] border-border/60 shadow-[0_12px_32px_rgba(28,27,23,0.12),0_2px_4px_rgba(28,27,23,0.04)]">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <Image src="/short-logo.svg" alt="Koda" width={48} height={48} className="size-12" />
-          </div>
-          <CardTitle className="text-2xl">Recuperar contraseña</CardTitle>
+          <CardTitle asChild>
+            <h1 className="text-2xl">Recuperar contraseña</h1>
+          </CardTitle>
           <CardDescription>
-            Confirma tu correo y escríbenos por WhatsApp para restablecer tu acceso
+            Escribe tu correo y te mandamos un enlace para crear una nueva.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="recover-email">Correo electrónico</Label>
-            <Input
-              id="recover-email"
-              type="email"
-              placeholder="tu@correo.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              autoFocus
-              className="[&:user-invalid]:border-destructive [&:user-valid]:border-primary transition-colors"
-            />
-          </div>
-          <Button
-            asChild
-            className="w-full active:scale-[0.97] transition-transform bg-[#25D366] hover:bg-[#1ebe5d] text-white"
+        {/* Antes esta pantalla abría WhatsApp con un número escrito a mano en el
+            código y pedía que alguien restableciera la contraseña a mano. El
+            enlace de recuperación lo manda Supabase, sirve una sola vez y
+            termina en /dashboard/update-password. */}
+        <form action={resetAction}>
+          <CardContent className="space-y-4">
+            {resetState?.error && (
+              <div
+                role="alert"
+                className="rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+              >
+                {resetState.error}
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="recover-email">Correo electrónico</Label>
+              <Input
+                id="recover-email"
+                name="email"
+                type="email"
+                placeholder="tu@correo.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+                autoFocus
+                className="[&:user-invalid]:border-destructive [&:user-valid]:border-primary transition-colors"
+              />
+            </div>
+            <Button
+              type="submit"
+              className="min-h-11 w-full active:scale-[0.97] transition-transform"
+              disabled={resetPending}
+            >
+              {resetPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviarme el enlace"}
+            </Button>
+          </CardContent>
+        </form>
+        <CardFooter className="flex-col gap-2 text-sm text-muted-foreground">
+          <button
+            onClick={() => { setStep("email"); setError(null) }}
+            className="inline-flex min-h-11 items-center gap-1 text-primary hover:underline"
           >
-            <a href={waRecoverLink(email)} target="_blank" rel="noopener noreferrer">
-              <MessageCircle className="mr-2 h-4 w-4" />
-              Solicitar por WhatsApp
-            </a>
-          </Button>
+            <ArrowLeft className="h-4 w-4" />
+            Volver al inicio de sesión
+          </button>
+        </CardFooter>
+      </Card>
+    )
+  }
+
+  if (step === "recover-sent" || resetState?.success) {
+    return (
+      <Card className="w-full max-w-md auth-card-enter rounded-[14px] border-border/60 shadow-[0_12px_32px_rgba(28,27,23,0.12),0_2px_4px_rgba(28,27,23,0.04)]">
+        <CardHeader className="text-center">
+          <CardTitle asChild>
+            <h1 className="text-2xl">Revisa tu correo</h1>
+          </CardTitle>
+          <CardDescription>
+            Si <strong>{email}</strong> tiene una cuenta, le llegó un enlace para crear una
+            contraseña nueva.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4 text-center">
+          <div className="mail-bounce mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+            <Mail className="h-10 w-10 text-primary" />
+          </div>
+          <p className="text-sm text-muted-foreground">
+            El enlace sirve una sola vez. Si no llega en unos minutos, revisa el correo no deseado.
+          </p>
         </CardContent>
         <CardFooter className="flex-col gap-2 text-sm text-muted-foreground">
           <button
             onClick={() => { setStep("email"); setError(null) }}
-            className="inline-flex items-center gap-1 text-primary hover:underline"
+            className="inline-flex min-h-11 items-center gap-1 text-primary hover:underline"
           >
             <ArrowLeft className="h-4 w-4" />
             Volver al inicio de sesión
@@ -165,25 +166,27 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-md auth-card-enter shadow-lg border-border/50">
-      <div key={step} className="auth-step-enter">
+    <Card className="w-full max-w-md auth-card-enter rounded-[14px] border-border/60 shadow-[0_12px_32px_rgba(28,27,23,0.12),0_2px_4px_rgba(28,27,23,0.04)]">
+      <div key={step} className="flex flex-col gap-6 auth-step-enter">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <Image src="/short-logo.svg" alt="Koda" width={48} height={48} className="size-12" />
-          </div>
-          <CardTitle className="text-2xl">
-            {step === "password" ? "Ingresa tu contraseña" : "Iniciar Sesión"}
+          <CardTitle asChild>
+            <h1 className="text-2xl">
+            {step === "password" ? "Ingresa tu contraseña" : "Iniciar sesión"}
+          </h1>
           </CardTitle>
           <CardDescription className={step === "password" ? "mt-3" : undefined}>
             {step === "password"
-              ? `Bienvenido de vuelta, ${nickname ?? email.split("@")[0]}`
+              ? `Accede con ${email}`
               : "Accede a tu panel o a tus tarjetas de lealtad"}
           </CardDescription>
         </CardHeader>
 
         <CardContent className={step === "password" ? "pt-4" : undefined}>
           {(error || loginState?.error) && (
-            <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive mb-4">
+            <div
+              role="alert"
+              className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive mb-4"
+            >
               {error || loginState.error}
             </div>
           )}
@@ -196,7 +199,7 @@ export function LoginForm() {
                   <span className="w-full border-t" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">o correo electrónico</span>
+                  <span className="bg-card px-2 text-muted-foreground">o con tu correo</span>
                 </div>
               </div>
               <form onSubmit={handleEmailSubmit} className="space-y-4">
@@ -209,14 +212,14 @@ export function LoginForm() {
                     value={email}
                     onChange={(e) => { setEmail(e.target.value); setError(null) }}
                     required
-                    autoComplete="email"
+                    autoComplete="username"
                     autoFocus
                     className="[&:user-invalid]:border-destructive [&:user-valid]:border-primary transition-colors"
                   />
                 </div>
                 <Button
                   type="submit"
-                  className="w-full active:scale-[0.97] transition-transform"
+                  className="min-h-11 w-full active:scale-[0.97] transition-transform"
                   disabled={pending}
                 >
                   {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Continuar"}
@@ -232,7 +235,7 @@ export function LoginForm() {
                   <button
                     type="button"
                     onClick={() => { setStep("recover"); setError(null) }}
-                    className="text-xs text-primary hover:underline"
+                    className="inline-flex min-h-10 items-center text-xs text-primary hover:underline"
                   >
                     ¿Olvidaste tu contraseña?
                   </button>
@@ -260,15 +263,30 @@ export function LoginForm() {
               </div>
               <Button
                 type="submit"
-                className="w-full active:scale-[0.97] transition-transform"
+                className="min-h-11 w-full active:scale-[0.97] transition-transform"
                 disabled={loginPending}
               >
-                {loginPending ? "Iniciando sesión..." : "Iniciar Sesión"}
+                {loginPending ? "Iniciando sesión..." : "Iniciar sesión"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11 w-full"
+                disabled={pending}
+                onClick={async () => {
+                  setPending(true)
+                  setError(null)
+                  const result = await sendLoginMagicLink(email)
+                  setPending(false)
+                  result.error ? setError(result.error) : setStep("sent")
+                }}
+              >
+                {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviarme un enlace de acceso"}
               </Button>
               <button
                 type="button"
-                onClick={() => { setStep("email"); setError(null); setNickname(null) }}
-                className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => { setStep("email"); setError(null) }}
+                className="min-h-10 w-full text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
                 Usar otro correo
               </button>
@@ -279,9 +297,12 @@ export function LoginForm() {
         <CardFooter className="flex-col gap-2 text-sm text-muted-foreground">
           {step !== "password" && (
             <span>
-              ¿Sin acceso?{" "}
-              <Link href="/signup" className="text-primary hover:underline font-medium">
-                Más información
+              ¿Tu negocio todavía no tiene cuenta?{" "}
+              <Link
+                href="/signup"
+                className="inline-flex min-h-11 items-center font-medium text-primary hover:underline"
+              >
+                Cómo conseguir una
               </Link>
             </span>
           )}

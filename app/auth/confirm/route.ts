@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createSupabaseReqResClient } from "@/lib/supabase-req-res"
+import { isSupportedAuthType, resolveAuthRedirect } from "@/lib/auth-redirect"
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -13,7 +14,13 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  const redirectUrl = new URL(redirect_to || "/dashboard/my-cards", request.url)
+  if (!isSupportedAuthType(type)) {
+    return NextResponse.redirect(
+      new URL("/auth/error?error_code=invalid_type", request.url),
+    )
+  }
+
+  const redirectUrl = resolveAuthRedirect(type, redirect_to, new URL(request.url).origin)
   const response = NextResponse.redirect(redirectUrl)
 
   const { supabase } = createSupabaseReqResClient(request, response)

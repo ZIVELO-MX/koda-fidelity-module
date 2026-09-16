@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import {
   UserPlus, UserMinus, UsersRound, Shield, Stamp,
-  Copy, Check, MessageCircle, ChevronRight, Loader2, Lock, Clock,
+  Check, X, ChevronRight, Loader2, Lock, Clock, Mail,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -33,7 +33,6 @@ import {
 } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 import type { Role } from "@prisma/client"
@@ -47,7 +46,7 @@ type TeamUser = {
   hasLoggedIn?: boolean
 }
 
-type InviteStep = "form" | "credentials"
+type InviteStep = "form" | "resultado"
 
 interface TeamClientProps {
   currentUserId: string
@@ -83,80 +82,49 @@ const ROLE_CONFIG: Record<Role, {
   },
 }
 
-function RoleBadge({ role }: { role: Role }) {
-  const config = ROLE_CONFIG[role]
-  const Icon = config.icon
-  return (
-    <Badge variant="outline" className={cn("gap-1.5 text-xs font-medium", config.badgeClass)}>
-      <Icon className="h-3 w-3" />
-      {config.label}
-    </Badge>
-  )
+/**
+ * La comparacion de roles vivia dos veces en la pantalla: dentro de cada
+ * tarjeta del selector y otra vez al pie. Ahora existe una sola, detras de un
+ * boton, y el selector solo dice que rol esta elegido.
+ */
+/** "16 de septiembre", sin la hora, que a quien invita no le dice nada. */
+function formatearCaducidad(iso: string): string {
+  const fecha = new Date(iso)
+  if (Number.isNaN(fecha.getTime())) return "pronto"
+  return fecha.toLocaleDateString("es-MX", { day: "numeric", month: "long" })
 }
 
-function RoleCard({ role, selected, onSelect }: { role: Role; selected: boolean; onSelect: () => void }) {
-  const config = ROLE_CONFIG[role]
-  const Icon = config.icon
+function ComparacionDeRoles() {
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={cn(
-        "w-full text-left rounded-xl border-2 p-4 transition-all",
-        selected
-          ? "border-primary bg-primary/5"
-          : "border-border hover:border-border/80 hover:bg-muted/40",
-      )}
-    >
-      <div className="flex items-start gap-3">
-        <div className={cn(
-          "mt-0.5 h-8 w-8 rounded-lg flex items-center justify-center shrink-0",
-          selected ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground",
-        )}>
-          <Icon className="h-4 w-4" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-foreground">{config.label}</span>
-            {selected && <Check className="h-3.5 w-3.5 text-primary" />}
+    <div className="grid gap-4 sm:grid-cols-2">
+      {(["admin", "sellador"] as Role[]).map((role) => {
+        const config = ROLE_CONFIG[role]
+        const Icon = config.icon
+        return (
+          <div key={role} className="space-y-2 rounded-xl border border-border bg-muted/20 p-4">
+            <div className="flex items-center gap-2">
+              <Icon className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-semibold text-foreground">{config.label}</span>
+            </div>
+            <p className="text-xs text-muted-foreground">{config.description}</p>
+            <ul className="space-y-1">
+              {config.permissions.map((permiso) => (
+                <li key={permiso} className="flex items-start gap-1.5 text-xs text-foreground/80">
+                  <Check className="mt-0.5 h-3 w-3 shrink-0 text-primary" aria-hidden="true" />
+                  {permiso}
+                </li>
+              ))}
+              {config.restrictions.map((limite) => (
+                <li key={limite} className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                  <X className="mt-0.5 h-3 w-3 shrink-0" aria-hidden="true" />
+                  {limite}
+                </li>
+              ))}
+            </ul>
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">{config.description}</p>
-          <ul className="mt-2 space-y-1">
-            {config.permissions.map((p) => (
-              <li key={p} className="flex items-center gap-1.5 text-xs text-foreground/70">
-                <Check className="h-3 w-3 text-primary shrink-0" />
-                {p}
-              </li>
-            ))}
-            {config.restrictions.map((r) => (
-              <li key={r} className="flex items-center gap-1.5 text-xs text-muted-foreground line-through">
-                <div className="h-3 w-3 shrink-0" />
-                {r}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </button>
-  )
-}
-
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false)
-  const handleCopy = () => {
-    navigator.clipboard.writeText(text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-  return (
-    <button
-      type="button"
-      onClick={handleCopy}
-      className="shrink-0 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-      aria-label="Copiar"
-    >
-      {copied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
-    </button>
+        )
+      })}
+    </div>
   )
 }
 
@@ -172,8 +140,18 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
   const [inviteRole, setInviteRole] = useState<Role>("sellador")
   const [inviteLoading, setInviteLoading] = useState(false)
   const [inviteError, setInviteError] = useState<string | null>(null)
-  const [invitedUser, setInvitedUser] = useState<{ name: string; email: string; password: string } | null>(null)
-  const [whatsappPhone, setWhatsappPhone] = useState("")
+  // El backend ya no crea la cuenta al invitar: manda un enlace de un uso por
+  // correo y nunca devuelve una contraseña. Por eso aquí no hay credenciales
+  // que enseñar ni nada que compartir a mano; solo a quién se le mandó y hasta
+  // cuándo sirve el enlace.
+  const [invitedUser, setInvitedUser] = useState<{
+    name: string
+    email: string
+    expiraEn?: string
+  } | null>(null)
+
+  // Comparacion de permisos, a peticion
+  const [permisosOpen, setPermisosOpen] = useState(false)
 
   // Remove modal state
   const [removeTarget, setRemoveTarget] = useState<TeamUser | null>(null)
@@ -181,24 +159,9 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
 
   // Role change state
   const [roleChangeId, setRoleChangeId] = useState<string | null>(null)
+  const [equipoError, setEquipoError] = useState<string | null>(null)
 
   const isAtLimit = users.length >= memberLimit
-
-  const baseUrl = typeof window !== "undefined" ? window.location.origin : ""
-  const loginUrl = invitedUser
-    ? `${baseUrl}/invite?email=${encodeURIComponent(invitedUser.email)}&business=${encodeURIComponent(businessName)}&name=${encodeURIComponent(invitedUser.name)}`
-    : ""
-
-  const whatsappMessage = invitedUser
-    ? `Hola ${invitedUser.name} 👋, te invitamos a unirte al equipo de *${businessName}* en Koda Fidelity.\n\n` +
-      `Accede con tu correo: *${invitedUser.email}*\n` +
-      `Contraseña temporal: *${invitedUser.password}*\n\n` +
-      `Entra aquí: ${loginUrl}`
-    : ""
-
-  const whatsappUrl = whatsappPhone && invitedUser
-    ? `https://wa.me/${whatsappPhone.replace(/\D/g, "")}?text=${encodeURIComponent(whatsappMessage)}`
-    : null
 
   const resetInviteModal = () => {
     setInviteStep("form")
@@ -207,7 +170,6 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
     setInviteRole("sellador")
     setInviteError(null)
     setInvitedUser(null)
-    setWhatsappPhone("")
   }
 
   const handleInvite = async () => {
@@ -224,9 +186,26 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
         setInviteError(data.error ?? "No fue posible invitar al usuario")
         return
       }
-      setUsers((prev) => [...prev, data.user])
-      setInvitedUser({ name: inviteName, email: inviteEmail, password: data.temporaryPassword })
-      setInviteStep("credentials")
+      // Un 2xx no basta: si el cuerpo no trae ni la invitación ni el alta, no
+      // sabemos si se mandó nada, y anunciar "invitación enviada" sería
+      // inventarlo. Tampoco se enseña una contraseña temporal aunque llegue:
+      // ese contrato se retiró y mostrarla sería filtrar una credencial.
+      const invitacionValida = typeof data?.invitation?.email === "string"
+      const altaValida = typeof data?.user?.id === "string"
+      if (!invitacionValida && !altaValida) {
+        setInviteError("El servidor respondió algo que no reconocemos. No podemos confirmar el envío.")
+        return
+      }
+
+      // Con el flujo de invitación por correo la fila todavía no existe: la
+      // persona entra al equipo cuando acepta el enlace.
+      if (altaValida) setUsers((prev) => [...prev, data.user])
+      setInvitedUser({
+        name: inviteName,
+        email: inviteEmail,
+        expiraEn: data.invitation?.expiresAt,
+      })
+      setInviteStep("resultado")
     } catch {
       setInviteError("Error de red. Intenta de nuevo.")
     } finally {
@@ -234,18 +213,33 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
     }
   }
 
+  /**
+   * El servidor rechaza por permisos y protege al último administrador. Antes
+   * esos rechazos no se veían: el rol se quedaba como estaba, sin una palabra,
+   * y la pantalla parecía rota en vez de estar defendiendo una regla.
+   */
+  const motivoDelRechazo = async (res: Response, porDefecto: string) => {
+    const sobre = (await res.json().catch(() => null)) as { error?: string; action?: string } | null
+    return [sobre?.error || porDefecto, sobre?.action].filter(Boolean).join(" ")
+  }
+
   const handleRoleChange = async (userId: string, newRole: Role) => {
     setRoleChangeId(userId)
+    setEquipoError(null)
     try {
       const res = await fetch(`/api/users/${userId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role: newRole }),
       })
-      if (res.ok) {
-        setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)))
-        router.refresh()
+      if (!res.ok) {
+        setEquipoError(await motivoDelRechazo(res, "No fue posible cambiar el rol."))
+        return
       }
+      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)))
+      router.refresh()
+    } catch {
+      setEquipoError("Error de red. El rol no cambió.")
     } finally {
       setRoleChangeId(null)
     }
@@ -254,13 +248,20 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
   const handleRemove = async () => {
     if (!removeTarget) return
     setRemoveLoading(true)
+    setEquipoError(null)
     try {
       const res = await fetch(`/api/users/${removeTarget.id}`, { method: "DELETE" })
-      if (res.ok) {
-        setUsers((prev) => prev.filter((u) => u.id !== removeTarget.id))
-        setRemoveTarget(null)
-        router.refresh()
+      if (!res.ok) {
+        // El diálogo se queda abierto: cerrarlo sin decir nada se lee como que
+        // la persona se eliminó.
+        setEquipoError(await motivoDelRechazo(res, "No fue posible eliminar a esta persona."))
+        return
       }
+      setUsers((prev) => prev.filter((u) => u.id !== removeTarget.id))
+      setRemoveTarget(null)
+      router.refresh()
+    } catch {
+      setEquipoError("Error de red. No se eliminó a nadie.")
     } finally {
       setRemoveLoading(false)
     }
@@ -268,13 +269,22 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
 
   return (
     <div className="space-y-6">
+      {equipoError && (
+        <p
+          role="alert"
+          className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-foreground"
+        >
+          {equipoError}
+        </p>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Equipo</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {users.length === 1
-              ? `1 / ${memberLimit} — solo tú tienes acceso al negocio`
+              ? `1 / ${memberLimit}, solo tú tienes acceso al negocio`
               : `${users.length} / ${memberLimit} personas con acceso`}
           </p>
         </div>
@@ -284,7 +294,7 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
             Límite alcanzado
           </div>
         ) : (
-          <Button onClick={() => { resetInviteModal(); setInviteOpen(true) }} className="gap-2">
+          <Button onClick={() => { resetInviteModal(); setInviteOpen(true) }} className="min-h-11 gap-2">
             <UserPlus className="h-4 w-4" />
             <span className="hidden sm:inline">Invitar colaborador</span>
             <span className="sm:hidden">Invitar</span>
@@ -305,7 +315,7 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
                 Invita a un colaborador para que pueda sellar tarjetas y atender clientes desde su propio acceso.
               </p>
             </div>
-            <Button onClick={() => { resetInviteModal(); setInviteOpen(true) }} variant="outline" className="gap-2 mt-2">
+            <Button onClick={() => { resetInviteModal(); setInviteOpen(true) }} variant="outline" className="mt-2 min-h-11 gap-2">
               <UserPlus className="h-4 w-4" />
               Invitar primer colaborador
             </Button>
@@ -351,7 +361,7 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="sm:hidden h-8 w-8 ml-auto shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        className="sm:hidden min-h-10 min-w-10 ml-auto shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                         disabled={isSelf}
                         onClick={() => setRemoveTarget(member)}
                         aria-label={`Eliminar a ${member.name}`}
@@ -370,7 +380,7 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
                         onValueChange={(val) => handleRoleChange(member.id, val as Role)}
                         disabled={isSelf || roleChangeId === member.id}
                       >
-                        <SelectTrigger className="h-9 w-full sm:h-8 sm:w-36 text-xs gap-1.5">
+                        <SelectTrigger className="h-10 w-full sm:w-36 text-xs gap-1.5">
                           {roleChangeId === member.id
                             ? <Loader2 className="h-3 w-3 animate-spin" />
                             : <SelectValue />
@@ -398,7 +408,7 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        className="min-h-10 min-w-10 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                         disabled={isSelf}
                         onClick={() => setRemoveTarget(member)}
                         aria-label={`Eliminar a ${member.name}`}
@@ -414,39 +424,27 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
         )}
       </div>
 
-      {/* Permissions reference */}
-      <div className="rounded-xl border border-border bg-muted/20 p-5 space-y-3">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Permisos por rol</p>
-        <div className="grid sm:grid-cols-2 gap-4">
-          {(["admin", "sellador"] as Role[]).map((role) => {
-            const config = ROLE_CONFIG[role]
-            const Icon = config.icon
-            return (
-              <div key={role} className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs font-semibold text-foreground">{config.label}</span>
-                  <span className="text-xs text-muted-foreground">— {config.description}</span>
-                </div>
-                <ul className="space-y-1 pl-5">
-                  {config.permissions.map((p) => (
-                    <li key={p} className="flex items-center gap-1.5 text-xs text-foreground/70">
-                      <Check className="h-3 w-3 text-primary shrink-0" />
-                      {p}
-                    </li>
-                  ))}
-                  {config.restrictions.map((r) => (
-                    <li key={r} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <div className="h-3 w-3 rounded-full border border-border shrink-0" />
-                      {r}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )
-          })}
-        </div>
-      </div>
+      {/* La comparacion completa, solo cuando se pide */}
+      <Button
+        variant="outline"
+        onClick={() => setPermisosOpen(true)}
+        className="min-h-11 w-full gap-2 sm:w-auto"
+      >
+        <Shield className="h-4 w-4" aria-hidden="true" />
+        Ver permisos por rol
+      </Button>
+
+      <Dialog open={permisosOpen} onOpenChange={setPermisosOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[90svh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Permisos por rol</DialogTitle>
+            <DialogDescription>
+              Que puede hacer cada persona segun el rol que le asignes.
+            </DialogDescription>
+          </DialogHeader>
+          <ComparacionDeRoles />
+        </DialogContent>
+      </Dialog>
 
       {/* ── Invite modal ── */}
       <Dialog
@@ -492,12 +490,28 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Nivel de acceso</Label>
-                  <div className="grid grid-cols-1 gap-2">
-                    <RoleCard role="sellador" selected={inviteRole === "sellador"} onSelect={() => setInviteRole("sellador")} />
-                    <RoleCard role="admin" selected={inviteRole === "admin"} onSelect={() => setInviteRole("admin")} />
-                  </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="invite-role">Nivel de acceso</Label>
+                  <Select value={inviteRole} onValueChange={(val) => setInviteRole(val as Role)}>
+                    <SelectTrigger id="invite-role" className="h-11 w-full gap-1.5">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sellador">
+                        <span className="flex items-center gap-1.5">
+                          <Stamp className="h-3.5 w-3.5" aria-hidden="true" />
+                          Sellador
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="admin">
+                        <span className="flex items-center gap-1.5">
+                          <Shield className="h-3.5 w-3.5" aria-hidden="true" />
+                          Admin
+                        </span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">{ROLE_CONFIG[inviteRole].description}</p>
                 </div>
 
                 {inviteError && (
@@ -506,13 +520,13 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
               </div>
 
               <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => { setInviteOpen(false); resetInviteModal() }}>
+                <Button variant="outline" className="min-h-11" onClick={() => { setInviteOpen(false); resetInviteModal() }}>
                   Cancelar
                 </Button>
                 <Button
                   onClick={handleInvite}
                   disabled={inviteLoading || !inviteName.trim() || !inviteEmail.trim()}
-                  className="gap-2"
+                  className="min-h-11 gap-2"
                 >
                   {inviteLoading ? (
                     <><Loader2 className="h-4 w-4 animate-spin" />Creando cuenta...</>
@@ -525,80 +539,39 @@ export function TeamClient({ currentUserId, currentUserName, businessName, initi
           ) : (
             <div className="flex flex-col gap-4 min-h-0">
               <DialogHeader>
-                <DialogTitle>Cuenta creada ✓</DialogTitle>
+                <DialogTitle>Invitación enviada</DialogTitle>
                 <DialogDescription className="break-words">
-                  Comparte las credenciales con{" "}
-                  <strong className="text-foreground">{invitedUser?.name}</strong>{" "}
-                  para que pueda acceder.
+                  Le mandamos un enlace de un uso a{" "}
+                  <strong className="text-foreground">{invitedUser?.email}</strong>.
+                  Aparecerá en la lista cuando lo acepte.
                 </DialogDescription>
               </DialogHeader>
 
-              {/* Scrollable body — header and button stay fixed */}
+              {/* Cuerpo con scroll: el encabezado y los botones no se mueven */}
               <div className="space-y-4 overflow-y-auto">
-                {/* Credentials box */}
-                <div className="rounded-xl bg-muted/50 border border-border p-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs text-muted-foreground mb-0.5">Correo</p>
-                      <p className="text-sm font-mono font-medium text-foreground truncate">{invitedUser?.email}</p>
-                    </div>
-                    <CopyButton text={invitedUser?.email ?? ""} />
-                  </div>
-                  <Separator />
-                  <div className="flex items-center gap-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs text-muted-foreground mb-0.5">Contraseña temporal</p>
-                      <p className="text-sm font-mono font-medium text-foreground">{invitedUser?.password}</p>
-                    </div>
-                    <CopyButton text={invitedUser?.password ?? ""} />
-                  </div>
-                  <Separator />
-                  {/* Link row: label + copy en la misma línea, URL con scroll horizontal abajo */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs text-muted-foreground">Link de acceso</p>
-                      <CopyButton text={loginUrl} />
-                    </div>
-                    <div className="overflow-x-auto rounded-md bg-background border border-border px-2.5 py-1.5">
-                      <p className="text-xs font-mono text-muted-foreground whitespace-nowrap">{loginUrl}</p>
-                    </div>
+                <div className="flex items-start gap-3 rounded-xl border border-border bg-muted/50 p-4">
+                  <Mail className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                  <div className="min-w-0 space-y-1">
+                    <p className="truncate text-sm font-medium text-foreground">{invitedUser?.email}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {invitedUser?.expiraEn
+                        ? `El enlace caduca el ${formatearCaducidad(invitedUser.expiraEn)}.`
+                        : "El enlace sirve una sola vez."}
+                    </p>
                   </div>
                 </div>
 
-                {/* WhatsApp section */}
-                <div className="space-y-2">
-                  <Label htmlFor="whatsapp-phone" className="flex items-center gap-1.5">
-                    <MessageCircle className="h-3.5 w-3.5 text-[#25D366]" />
-                    Enviar por WhatsApp
-                  </Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="whatsapp-phone"
-                      value={whatsappPhone}
-                      onChange={(e) => setWhatsappPhone(e.target.value)}
-                      placeholder="+52 55 1234 5678"
-                      type="tel"
-                      className="flex-1"
-                    />
-                    <Button
-                      type="button"
-                      disabled={!whatsappPhone.trim()}
-                      className="bg-[#25D366] hover:bg-[#1ebe5d] text-white shrink-0 gap-1.5"
-                      onClick={() => {
-                        if (whatsappUrl) window.open(whatsappUrl, "_blank", "noopener,noreferrer")
-                      }}
-                    >
-                      <MessageCircle className="h-4 w-4" />
-                      Enviar
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    El número solo se usa para abrir WhatsApp — no se guarda en ningún lado.
-                  </p>
-                </div>
+                <p className="text-xs text-muted-foreground">
+                  No hay contraseña que compartir: el enlace va en el correo y solo funciona una
+                  vez. Si no llega, invítalo de nuevo y el anterior deja de servir.
+                </p>
               </div>
 
-              <Button onClick={() => { setInviteOpen(false); resetInviteModal() }} className="w-full">
+              <Button
+                variant="outline"
+                onClick={() => { setInviteOpen(false); resetInviteModal() }}
+                className="min-h-11 w-full"
+              >
                 Listo
               </Button>
             </div>

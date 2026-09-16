@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
+import { useState, useEffect, Suspense, useCallback } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
@@ -22,26 +22,16 @@ import {
 } from "lucide-react"
 import { daysUntilExpiry } from "@/lib/card-utils"
 import { getCardIcon } from "@/lib/card-icons"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+import { parseClientesResponse, type ClienteBuscado } from "@/lib/clientes-buscados"
+import { ejecutarSellado } from "@/lib/sellado"
 
-interface SearchCustomer {
-  id: string
-  name: string
-  stamps: number
-  maxStamps: number
-  cardName: string
-  cardReward: string
-  cardBrandColor: string
-  cardExpiresAt: string | null
+type SearchCustomer = ClienteBuscado
+
+type FalloDeBusqueda = {
+  mensaje: string
+  accion?: string
+  requestId?: string
+  reintentable: boolean
 }
 
 type ScanState = "idle" | "scanning" | "found" | "stamped" | "redeemed"
@@ -54,35 +44,93 @@ function ScanPageInner() {
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<SearchCustomer[]>([])
   const [searching, setSearching] = useState(false)
+  // Una lista vacía y una búsqueda que falló no son lo mismo: antes las dos
+  // pintaban "No se encontraron clientes", así que una sesión caída, un permiso
+  // que falta o un contrato roto se veían como un cliente que no existe.
+  const [searchError, setSearchError] = useState<FalloDeBusqueda | null>(null)
+  const [searchTotal, setSearchTotal] = useState(0)
+  const [searchPage, setSearchPage] = useState(1)
   const [actionLoading, setActionLoading] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
   const [milestoneClaim, setMilestoneClaim] = useState<{ id: string; label: string; iconName: string | null } | null>(null)
-  const [useCamera, setUseCamera] = useState(false)
+  // La cámara abre sola: sellar es la razón por la que se entra a esta pantalla.
+  const [useCamera, setUseCamera] = useState(true)
   const [cameraError, setCameraError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      queueMicrotask(() => setSearchResults([]))
-      return
-    }
-
-    const timer = setTimeout(async () => {
+  const buscar = useCallback(
+    async (pagina: number, acumular: boolean) => {
       setSearching(true)
+      setSearchError(null)
       try {
-        const params = new URLSearchParams({ q: searchQuery })
+        const params = new URLSearchParams({ q: searchQuery, page: String(pagina) })
         if (cardIdFilter) params.set("cardId", cardIdFilter)
-        const res = await fetch(`/api/customers?${params}`)
-        const data = await res.json()
-        setSearchResults(data.customers || [])
-      } catch {
-        setSearchResults([])
+
+        let res: Response
+        try {
+          res = await fetch(`/api/customers?${params}`)
+        } catch {
+          setSearchError({ mensaje: "No hay conexión con el servidor.", reintentable: true })
+          return
+        }
+
+        const cuerpo = await res.json().catch(() => null)
+
+        if (!res.ok) {
+          const sobre = (cuerpo ?? {}) as { error?: string; action?: string; requestId?: string; retryable?: boolean }
+          setSearchError({
+            mensaje:
+              res.status === 401
+                ? "Tu sesión expiró."
+                : res.status === 403
+                  ? "Tu cuenta no tiene permiso para ver los clientes."
+                  : sobre.error || "El servidor no pudo completar la búsqueda.",
+            accion:
+              res.status === 401
+                ? "Vuelve a entrar y repite la búsqueda."
+                : res.status === 403
+                  ? "Pídele a un administrador que te dé acceso."
+                  : sobre.action,
+            requestId: sobre.requestId ?? res.headers.get("x-request-id") ?? undefined,
+            reintentable: sobre.retryable ?? res.status >= 500,
+          })
+          return
+        }
+
+        // El contrato se valida: si la respuesta no trae `items`, es un fallo de
+        // contrato y se dice, en vez de pintar una lista vacía.
+        const pagina_ = parseClientesResponse(cuerpo)
+        setSearchTotal(pagina_.total)
+        setSearchPage(pagina_.page)
+        setSearchResults((previos) => (acumular ? [...previos, ...pagina_.items] : pagina_.items))
+      } catch (err) {
+        setSearchError({
+          mensaje: "La respuesta del servidor no tiene la forma esperada.",
+          accion: err instanceof Error ? err.message : undefined,
+          reintentable: false,
+        })
       } finally {
         setSearching(false)
       }
+    },
+    [searchQuery, cardIdFilter],
+  )
+
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      queueMicrotask(() => {
+        setSearchResults([])
+        setSearchError(null)
+        setSearchTotal(0)
+      })
+      return
+    }
+
+    const timer = setTimeout(() => {
+      void buscar(1, false)
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [searchQuery, cardIdFilter])
+  }, [searchQuery, cardIdFilter, buscar])
 
   const handleScanResult = async (customerId: string) => {
     setScanState("scanning")
@@ -111,22 +159,15 @@ function ScanPageInner() {
     }
   }
 
-  const addStamp = async () => {
+  // La acción se pide, no se adivina: la pantalla ofrece sellar y canjear, y
+  // quien sella elige. El tipo viaja explícito al servidor.
+  const ejecutar = async (type: "stamp" | "redeem") => {
     if (!selectedCustomer) return
     setActionLoading(true)
     setActionError(null)
 
     try {
-      const type = selectedCustomer.stamps >= selectedCustomer.maxStamps ? "redeem" : "stamp"
-      const res = await fetch("/api/stamps", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customerId: selectedCustomer.id, type }),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) throw new Error("No fue posible procesar la operación")
+      const data = await ejecutarSellado(selectedCustomer.id, type)
 
       if (data.event === "redeem") {
         setSelectedCustomer({ ...selectedCustomer, stamps: 0 })
@@ -151,6 +192,7 @@ function ScanPageInner() {
     setActionError(null)
     setMilestoneClaim(null)
     setCameraError(null)
+    setUseCamera(true)
   }
 
   const selectCustomer = (customer: SearchCustomer) => {
@@ -188,61 +230,77 @@ function ScanPageInner() {
           {scanState === "idle" && (
             <div className="space-y-6">
               <div className="space-y-3">
+                {useCamera && (
+                  <QRScanner
+                    onScan={handleScanResult}
+                    onError={(err) => {
+                      // Si la cámara falló, se apaga: así el botón ofrece
+                      // reintentar en vez de decir que sigue encendida.
+                      setCameraError(err)
+                      setUseCamera(false)
+                    }}
+                  />
+                )}
+
+                {/* No poder abrir la cámara no es un error de quien sella: es un
+                    estado con salida, y la salida es buscar por nombre. */}
+                {cameraError && (
+                  <div
+                    role="status"
+                    className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/20 dark:text-amber-300"
+                  >
+                    <p className="font-medium">{cameraError}</p>
+                    <p className="mt-0.5">Puedes sellar buscando al cliente por su nombre.</p>
+                  </div>
+                )}
+
+                {/* El botón solo apaga la cámara, o la recupera cuando el permiso
+                    falló. Abrirla no es una decisión que haya que tomar cada vez. */}
                 <Button
-                  onClick={() => setUseCamera(!useCamera)}
-                  variant={useCamera ? "default" : "outline"}
-                  className="w-full"
+                  onClick={() => {
+                    setCameraError(null)
+                    setUseCamera(!useCamera)
+                  }}
+                  variant="outline"
+                  className="w-full min-h-11"
                   size="lg"
                 >
                   {useCamera ? (
                     <>
                       <Scan className="h-5 w-5 mr-2" />
-                      Escáner Activo
+                      Apagar cámara
                     </>
                   ) : (
                     <>
                       <Camera className="h-5 w-5 mr-2" />
-                      Abrir Escáner
+                      {cameraError ? "Reintentar cámara" : "Encender cámara"}
                     </>
                   )}
                 </Button>
-
-                {cameraError && (
-                  <p className="text-sm text-red-500 text-center">{cameraError}</p>
-                )}
-
-                {useCamera && (
-                  <QRScanner
-                    onScan={handleScanResult}
-                    onError={(err) => setCameraError(err)}
-                  />
-                )}
-              </div>
-
-              <div className="flex items-center gap-4">
-                <div className="flex-1 h-px bg-border" />
-                <span className="text-sm text-muted-foreground">o buscar</span>
-                <div className="flex-1 h-px bg-border" />
               </div>
 
               <div className="space-y-3">
+                <label htmlFor="buscar-cliente" className="text-sm font-medium text-foreground">
+                  Buscar por nombre
+                </label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Buscar por nombre de cliente..."
+                    id="buscar-cliente"
+                    placeholder="Nombre del cliente"
                     className="pl-10"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
 
-                {searching && (
+                {searching && searchResults.length === 0 && (
                   <div className="flex items-center justify-center p-4">
                     <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                   </div>
                 )}
 
-                {!searching && searchResults.length > 0 && (
+                {searchResults.length > 0 && (
                   <div className="bg-card rounded-xl border border-border overflow-hidden">
                     <div className="divide-y divide-border">
                       {searchResults.map((customer) => (
@@ -272,7 +330,52 @@ function ScanPageInner() {
                   </div>
                 )}
 
-                {!searching && searchQuery && searchResults.length === 0 && (
+                {searchError && (
+                  <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+                    <p className="text-sm font-medium text-foreground">{searchError.mensaje}</p>
+                    {searchError.accion && (
+                      <p className="mt-1 text-sm text-muted-foreground">{searchError.accion}</p>
+                    )}
+                    {searchError.reintentable && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-3 min-h-10"
+                        onClick={() => void buscar(1, false)}
+                      >
+                        Reintentar
+                      </Button>
+                    )}
+                    {searchError.requestId && (
+                      <p className="mt-3 text-xs text-muted-foreground">
+                        Referencia para soporte: <span className="font-mono">{searchError.requestId}</span>
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* La API pagina, así que la lista puede estar recortada. Decirlo
+                    y dejar traer el resto es más honesto que enseñar veinte y
+                    callar que hay cuarenta. */}
+                {!searchError && searchResults.length > 0 && searchResults.length < searchTotal && (
+                  <div className="space-y-2 text-center">
+                    <p className="text-xs text-muted-foreground">
+                      {searchResults.length} de {searchTotal} clientes
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="min-h-10"
+                      disabled={searching}
+                      onClick={() => void buscar(searchPage + 1, true)}
+                    >
+                      Ver más resultados
+                    </Button>
+                  </div>
+                )}
+
+                {!searching && !searchError && searchQuery && searchResults.length === 0 && (
                   <p className="p-4 text-sm text-muted-foreground text-center">
                     No se encontraron clientes
                   </p>
@@ -354,30 +457,52 @@ function ScanPageInner() {
                 <p className="text-sm text-red-500 text-center">{actionError}</p>
               )}
 
-              <Button
-                onClick={addStamp}
-                disabled={actionLoading}
-                size="lg"
-                className="w-full h-16 text-lg text-white"
-                style={selectedCustomer.stamps >= selectedCustomer.maxStamps
-                  ? { backgroundColor: "#16a34a" }
-                  : { backgroundColor: selectedCustomer.cardBrandColor }
-                }
-              >
-                {actionLoading ? (
-                  <Loader2 className="h-6 w-6 mr-3 animate-spin" />
-                ) : selectedCustomer.stamps >= selectedCustomer.maxStamps ? (
-                  <>
-                    <Gift className="h-6 w-6 mr-3" />
-                    Canjear Recompensa
-                  </>
-                ) : (
-                  <>
-                    <Stamp className="h-6 w-6 mr-3" />
-                    Agregar Sello
-                  </>
-                )}
-              </Button>
+              {(() => {
+                const completa = selectedCustomer.stamps >= selectedCustomer.maxStamps
+                return (
+                  <div className="space-y-3">
+                    <Button
+                      onClick={() => ejecutar("stamp")}
+                      disabled={actionLoading || completa}
+                      size="lg"
+                      variant={completa ? "outline" : "default"}
+                      className="w-full h-16 text-lg"
+                      style={completa ? undefined : { backgroundColor: selectedCustomer.cardBrandColor, color: "#FFFFFF" }}
+                    >
+                      {actionLoading ? (
+                        <Loader2 className="h-6 w-6 mr-3 animate-spin" />
+                      ) : (
+                        <Stamp className="h-6 w-6 mr-3" />
+                      )}
+                      Agregar Sello
+                    </Button>
+
+                    {completa && (
+                      <p className="text-sm text-muted-foreground text-center">
+                        La tarjeta está llena. Canjea la recompensa para volver a sellar.
+                      </p>
+                    )}
+
+                    <Button
+                      onClick={() => ejecutar("redeem")}
+                      disabled={actionLoading || !completa}
+                      size="lg"
+                      variant={completa ? "default" : "outline"}
+                      className="w-full h-12 text-base"
+                      style={completa ? { backgroundColor: "#16a34a", color: "#FFFFFF" } : undefined}
+                    >
+                      <Gift className="h-5 w-5 mr-3" />
+                      Canjear Recompensa
+                    </Button>
+
+                    {!completa && (
+                      <p className="text-sm text-muted-foreground text-center">
+                        Faltan {selectedCustomer.maxStamps - selectedCustomer.stamps} sellos para poder canjear.
+                      </p>
+                    )}
+                  </div>
+                )
+              })()}
             </div>
           )}
 
@@ -425,36 +550,35 @@ function ScanPageInner() {
                 </div>
               )}
 
+              {/* El bono se anuncia en la propia pantalla. Un diálogo bloqueante
+                  obligaba a despacharlo antes de seguir atendiendo. */}
               {milestoneClaim && (() => {
                 const milestoneIcon = getCardIcon(milestoneClaim.iconName)
                 const MilestoneIconComp = milestoneIcon?.Icon
                 return (
-                  <AlertDialog open={true} onOpenChange={(o) => { if (!o) setMilestoneClaim(null) }}>
-                    <AlertDialogContent className="max-w-sm">
-                      <AlertDialogHeader>
-                        <div className="mx-auto w-14 h-14 rounded-full flex items-center justify-center mb-2"
-                          style={{ backgroundColor: selectedCustomer?.cardBrandColor ?? "#f97316" }}>
-                          {MilestoneIconComp ? <MilestoneIconComp className="h-7 w-7 text-white" /> : <Gift className="h-7 w-7 text-white" />}
-                        </div>
-                        <AlertDialogTitle className="text-center text-xl">¡Bono Sorpresa!</AlertDialogTitle>
-                        <AlertDialogDescription className="text-center text-base">
-                          <strong className="text-foreground">{selectedCustomer?.name}</strong> obtuvo <strong className="text-foreground">{milestoneClaim.label}</strong>
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg px-4 py-3 text-sm text-amber-700 dark:text-amber-400 text-center">
-                        Notifica al cliente sobre su recompensa
-                      </div>
-                      <AlertDialogFooter className="sm:justify-center gap-2">
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction
-                          className="text-white"
-                          style={{ backgroundColor: selectedCustomer?.cardBrandColor ?? "#f97316" }}
-                        >
-                          Canjear recompensa
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <div
+                    role="status"
+                    className="anuncio-entra flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left dark:border-amber-800 dark:bg-amber-950/20"
+                  >
+                    <div
+                      className="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: selectedCustomer.cardBrandColor }}
+                    >
+                      {MilestoneIconComp ? (
+                        <MilestoneIconComp className="h-6 w-6 text-white" />
+                      ) : (
+                        <Gift className="h-6 w-6 text-white" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-amber-800 dark:text-amber-300">
+                        Bono sorpresa: {milestoneClaim.label}
+                      </p>
+                      <p className="text-sm text-amber-700 dark:text-amber-400">
+                        Avísale a {selectedCustomer.name} antes de que se vaya.
+                      </p>
+                    </div>
+                  </div>
                 )
               })()}
 

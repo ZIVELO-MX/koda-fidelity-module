@@ -35,6 +35,33 @@ const options: swaggerJsdoc.Options = {
         },
       },
       schemas: {
+        BusinessPublic: {
+          type: "object",
+          required: ["name", "brandColor", "logoUrl", "iconName"],
+          properties: {
+            name: { type: "string" }, brandColor: { type: "string" }, logoUrl: { type: "string", nullable: true },
+            iconName: { type: "string", nullable: true }, website: { type: "string", nullable: true }, instagram: { type: "string", nullable: true },
+          },
+        },
+        CardSummary: {
+          type: "object",
+          required: ["id", "name", "reward", "stampsRequired", "isActive"],
+          properties: {
+            id: { type: "string" }, name: { type: "string" }, reward: { type: "string" }, stampsRequired: { type: "integer" },
+            isActive: { type: "boolean" }, status: { type: "string", enum: ["DRAFT", "ACTIVE", "LOCKED_BY_PLAN", "ARCHIVED"] },
+            expiresAt: { type: "string", format: "date-time", nullable: true }, customers: { type: "integer" }, totalStamps: { type: "integer" },
+          },
+        },
+        AccountContext: {
+          type: "object",
+          required: ["user", "business"],
+          properties: { user: { type: "object" }, business: { $ref: "#/components/schemas/BusinessPublic" }, onboardingStatus: { type: "string" }, plan: { type: "string", enum: ["LITE", "PRO"] } },
+        },
+        ApiErrorBody: {
+          type: "object",
+          required: ["error", "code", "action", "requestId", "retryable"],
+          properties: { error: { type: "string" }, code: { type: "string" }, action: { type: "string" }, requestId: { type: "string" }, retryable: { type: "boolean" } },
+        },
         Business: {
           type: "object",
           properties: {
@@ -164,6 +191,22 @@ const options: swaggerJsdoc.Options = {
               },
             },
           },
+        },
+        DashboardStatsV2: {
+          type: "object",
+          required: ["period", "totals", "daily", "weeklyNewCustomers", "topCards"],
+          properties: {
+            period: { type: "object", properties: { from: { type: "string", format: "date-time" }, to: { type: "string", format: "date-time" }, timezone: { type: "string" } } },
+            totals: { type: "object", properties: { activeCards: { type: "integer" }, activeCustomers: { type: "integer" }, stamps: { type: "integer" }, redemptions: { type: "integer" }, completedCycles: { type: "integer" }, redemptionRate: { type: "number", nullable: true } } },
+            daily: { type: "array", items: { type: "object" } },
+            weeklyNewCustomers: { type: "array", items: { type: "object" } },
+            topCards: { type: "array", items: { type: "object" } },
+          },
+        },
+        ApiError: {
+          type: "object",
+          required: ["error", "code", "action", "requestId", "retryable"],
+          properties: { error: { type: "string" }, code: { type: "string" }, action: { type: "string" }, requestId: { type: "string", format: "uuid" }, retryable: { type: "boolean" } },
         },
         Error: {
           type: "object",

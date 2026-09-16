@@ -15,7 +15,9 @@ test.describe("Auth Error Handling", () => {
 
   test("auth/error page shows generic error for unknown error_code", async ({ page }) => {
     await page.goto("/auth/error?error_code=unknown_error")
-    await expect(page.getByText("Error de Autenticación")).toBeVisible()
+    // Por rol: "Error de autenticación" también sale en el detalle, y una
+    // búsqueda por texto casa con los dos.
+    await expect(page.getByRole("heading", { name: "Error de Autenticación" })).toBeVisible()
   })
 
   test("auth/error page shows friendly message for expired error message", async ({ page }) => {
@@ -48,7 +50,9 @@ test.describe("Auth Error Handling", () => {
   test("auth/confirm redirects to error when missing params", async ({ page }) => {
     await page.goto("/auth/confirm")
     await page.waitForURL("**/auth/error?error_code=missing_params")
-    await expect(page.getByText("Error de Autenticación")).toBeVisible()
+    // Por rol: "Error de autenticación" también sale en el detalle, y una
+    // búsqueda por texto casa con los dos.
+    await expect(page.getByRole("heading", { name: "Error de Autenticación" })).toBeVisible()
   })
 
   test("auth/confirm redirects to error when only token_hash is present", async ({ page }) => {

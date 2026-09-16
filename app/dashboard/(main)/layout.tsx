@@ -1,4 +1,5 @@
 import { DashboardLayoutClient } from "@/components/dashboard/dashboard-layout-client"
+import { derivarMarca } from "@/lib/color-marca"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 import { redirect } from "next/navigation"
@@ -12,30 +13,36 @@ export default async function DashboardLayout({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user?.email) redirect("/login")
 
-  if (user.user_metadata?.must_change_password) {
-    redirect("/dashboard/update-password")
-  }
-
   const userRecord = await prisma.user.findUnique({
-    where: { email: user.email },
-    include: { business: { select: { name: true, brandColor: true, nickname: true } } },
+    where: { authUserId: user.id },
+    include: { business: { select: { id: true, name: true, brandColor: true, nickname: true } } },
   })
 
-  if (!userRecord) {
+  if (!userRecord || !userRecord.business) {
     redirect("/dashboard/forbidden")
   }
+  if (userRecord.passwordSetupRequired) redirect("/dashboard/update-password")
 
+  const [closure] = await Promise.all([
+    prisma.accountClosure.findFirst({ where: { businessId: userRecord.business.id, status: { in: ["SCHEDULED", "PROCESSING", "FAILED"] } }, orderBy: { scheduledFor: "asc" }, select: { scheduledFor: true } }),
+  ])
   const { business, role } = { business: userRecord.business, role: userRecord.role }
+
+  // El color del negocio no se inyecta crudo: de él se derivan los estados y el
+  // color de texto que sí se lee encima.
+  const marca = derivarMarca(business.brandColor)
 
   return (
     <div
       className="min-h-screen bg-background"
       style={{
-        '--primary': business.brandColor,
-        '--ring': business.brandColor,
-        '--sidebar-primary': business.brandColor,
-        '--sidebar-ring': business.brandColor,
-        '--chart-1': business.brandColor,
+        '--primary': marca.base,
+        '--primary-foreground': marca.texto,
+        '--ring': marca.base,
+        '--sidebar-primary': marca.base,
+        '--sidebar-primary-foreground': marca.texto,
+        '--sidebar-ring': marca.base,
+        '--chart-1': marca.base,
       } as React.CSSProperties}
     >
       <DashboardLayoutClient
@@ -44,6 +51,7 @@ export default async function DashboardLayout({
         brandColor={business.brandColor}
         nickname={business.nickname ?? undefined}
         role={role}
+        closureScheduledFor={closure?.scheduledFor.toISOString()}
       >
         {children}
       </DashboardLayoutClient>

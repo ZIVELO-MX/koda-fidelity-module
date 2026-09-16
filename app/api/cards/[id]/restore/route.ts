@@ -1,13 +1,25 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getBusinessFromSession, handleApiError, NotFoundError, requireRole } from "@/lib/api-utils"
+import { applyEntitlements } from "@/lib/account-lifecycle"
+import { requireWritableBusinessPrincipal, handleApiError, NotFoundError, requireRole, requestIdFrom, withRequestId } from "@/lib/api-utils"
+
+/**
+ * @openapi
+ * /api/cards/{id}/restore:
+ *   post:
+ *     tags: [Cards]
+ *     summary: Restore an archived card
+ *     security: [{ cookieAuth: [] }]
+ *     responses: { 200: { description: Card restored } }
+ */
 
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const requestId = requestIdFrom(_request)
   try {
-    const { business, user } = await getBusinessFromSession()
+    const { business, user } = await requireWritableBusinessPrincipal()
     requireRole(user, "admin")
     const { id } = await params
 
@@ -16,10 +28,24 @@ export async function POST(
       throw new NotFoundError("Loyalty card not found")
     }
 
-    await prisma.loyaltyCard.update({ where: { id }, data: { isActive: true } })
+    await prisma.$transaction(async (tx) => {
+      await tx.loyaltyCard.update({ where: { id }, data: { isActive: true, status: "ACTIVE" } })
+      const subscription = await tx.subscription.findFirst({
+        where: { businessId: business.id, status: "ACTIVE" },
+        orderBy: { createdAt: "desc" },
+      })
+      const plan = subscription?.proAccessGranted ? "PRO" : (subscription?.plan ?? "LITE")
+      const entitledCards = await applyEntitlements(tx, business.id, plan)
+      if (subscription) {
+        await tx.subscription.update({
+          where: { id: subscription.id },
+          data: { liteCardId: plan === "LITE" ? (entitledCards[0]?.id ?? null) : null },
+        })
+      }
+    })
 
-    return NextResponse.json({ success: true })
+    return withRequestId(NextResponse.json({ success: true }), requestId)
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }
