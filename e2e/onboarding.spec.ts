@@ -82,7 +82,7 @@ test.describe("Alta guiada", () => {
       await page.goto("/onboarding")
       await page.getByRole("button", { name: "Saltar la introducción" }).click()
       await page.getByLabel("Nombre del negocio").fill("Panadería Lupita")
-      await page.getByRole("button", { name: "Pastelería", exact: true }).click()
+      await page.getByRole("button", { name: "Panadería", exact: true }).click()
       await page.getByRole("button", { name: "Continuar" }).click()
       await expect(page.getByRole("heading", { name: "Tu primera tarjeta" })).toBeVisible()
 
