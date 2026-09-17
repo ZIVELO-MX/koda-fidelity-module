@@ -31,14 +31,17 @@ test.describe("Planes Lite y Pro", () => {
         test.skip(true, "La cuenta del fixture no está en el muro de pago; corre prepare:onboarding-e2e")
       }
 
+      const tarjetaLite = page.locator("div").filter({ has: page.getByRole("heading", { name: "Lite" }) }).last()
+      const tarjetaPro = page.locator("div").filter({ has: page.getByRole("heading", { name: "Pro" }) }).last()
+
       await expect(page.getByRole("radio", { name: /al año/i })).toBeChecked()
-      await expect(page.getByText(`$${PRECIOS.lite.anio.toLocaleString("es-MX")}`)).toBeVisible()
-      await expect(page.getByText(`$${PRECIOS.pro.anio.toLocaleString("es-MX")}`)).toBeVisible()
+      await expect(tarjetaLite).toContainText(`$${PRECIOS.lite.anio.toLocaleString("es-MX")}`)
+      await expect(tarjetaPro).toContainText(`$${PRECIOS.pro.anio.toLocaleString("es-MX")}`)
       await expect(page.getByText(/disponible al terminar tu primer mes/i)).toBeVisible()
 
       await page.getByRole("radio", { name: "Al mes" }).click()
-      await expect(page.getByText(`$${PRECIOS.lite.mes}`)).toBeVisible()
-      await expect(page.getByText(`$${PRECIOS.pro.mes}`)).toBeVisible()
+      await expect(tarjetaLite).toContainText(`$${PRECIOS.lite.mes}`)
+      await expect(tarjetaPro).toContainText(`$${PRECIOS.pro.mes}`)
     })
 
     test("no se simula ninguna compra", async ({ page }) => {

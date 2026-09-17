@@ -35,7 +35,8 @@ test.describe("Alta guiada, recorrido completo", () => {
     // Datos: sin nombre ni categoría el servidor no deja avanzar, y se dice.
     await expect(page.getByRole("heading", { name: "Tu negocio" })).toBeVisible()
     await page.getByRole("button", { name: "Continuar" }).click()
-    await expect(page.locator("#contenido [role='alert']").or(page.locator("[role='alert']").first())).toBeVisible()
+    // El aviso se pinta en el encabezado, sobre la barra de pasos.
+    await expect(page.getByRole("alert")).toContainText(/nombre y categoría/i)
 
     const nombre = `Café Aurora ${Date.now()}`
     await page.getByLabel("Nombre del negocio").fill(nombre)
