@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getBusinessFromSession, requireWritableBusinessPrincipal, handleApiError, ValidationError, requireRole, requestIdFrom, withRequestId } from "@/lib/api-utils"
-import { getEntitlements } from "@/lib/account-lifecycle"
+import { syncExpiredEntitlements } from "@/lib/account-lifecycle"
 import { resolveTheme } from "@/lib/card-themes"
 import type { CardSummary } from "@/lib/fidelity-contracts"
 
@@ -97,6 +97,7 @@ export async function GET(request: NextRequest) {
   const requestId = requestIdFrom(request)
   try {
     const { business } = await getBusinessFromSession()
+    await syncExpiredEntitlements(prisma, business.id)
 
     const cards = await prisma.loyaltyCard.findMany({
       where: { businessId: business.id, isActive: true, status: "ACTIVE" },
@@ -181,7 +182,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const entitlements = await getEntitlements(prisma, business.id)
+    const entitlements = await syncExpiredEntitlements(prisma, business.id)
     const theme = await resolveTheme(prisma, typeof body.themeId === "string" ? body.themeId : undefined, entitlements.plan as "LITE" | "PRO")
     const card = await prisma.loyaltyCard.create({
       data: {

@@ -6,6 +6,16 @@ export const fidelityThemeCodes = [
   "salon-belleza", "gimnasio", "futbol", "sushi", "veterinaria", "farmacia", "heladeria",
 ] as const
 
+export const fidelityProThemeCodes = ["gradiente", "foil", "cinetico", "vidrio"] as const
+
+export async function listActiveThemes(db: PrismaClient | Prisma.TransactionClient) {
+  return db.loyaltyTheme.findMany({
+    where: { isActive: true },
+    select: { id: true, code: true, plan: true },
+    orderBy: [{ plan: "asc" }, { code: "asc" }],
+  })
+}
+
 export async function resolveTheme(
   db: PrismaClient | Prisma.TransactionClient,
   themeId: string | undefined,

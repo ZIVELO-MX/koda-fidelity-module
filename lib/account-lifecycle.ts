@@ -1,8 +1,23 @@
-import { Prisma, PrismaClient, SubscriptionPlan } from "@prisma/client"
+import { Prisma, PrismaClient, Subscription, SubscriptionPlan } from "@prisma/client"
 import { AccountReadOnlyError, ConflictError, NotFoundError, ValidationError } from "@/lib/api-utils"
 import { createAdminClient } from "@/lib/supabase-admin"
 
-type Db = PrismaClient
+type QueryDb = PrismaClient | Prisma.TransactionClient
+
+type ManualSubscriptionInput = {
+  businessId: string
+  plan?: "LITE" | "PRO"
+  billingInterval?: "MONTHLY" | "ANNUAL"
+  amountMinor?: number
+  externalReference?: string
+  periodStart?: Date
+  periodEnd?: Date
+  operator?: string
+  idempotencyKey?: string
+  action?: string
+  proAccessGranted?: boolean
+  proTrialEndsAt?: Date | null
+}
 
 export function normalizeProfileEmail(email: string) { return email.trim().toLowerCase() }
 
@@ -21,24 +36,31 @@ export function addGraceDays(date: Date, days = 30) {
 
 export function periodForInterval(start: Date, interval: "MONTHLY" | "ANNUAL") { return addCalendarMonths(start, interval === "ANNUAL" ? 12 : 1) }
 
-export async function activateManualSubscription(db: Db, input: { businessId: string; plan?: "LITE" | "PRO"; billingInterval?: "MONTHLY" | "ANNUAL"; amountMinor?: number; externalReference?: string; periodStart?: Date; periodEnd?: Date; operator?: string; idempotencyKey?: string; action?: string; proAccessGranted?: boolean }) {
+export async function activateManualSubscription(db: PrismaClient, input: ManualSubscriptionInput) {
   const plan = input.plan ?? "LITE"
   const billingInterval = input.billingInterval ?? "MONTHLY"
   const periodStart = input.periodStart ?? new Date()
   const periodEnd = input.periodEnd ?? periodForInterval(periodStart, billingInterval)
+  const action = input.action ?? "activate"
   if (periodEnd <= periodStart) throw new ValidationError("El periodo debe terminar después de iniciar")
   if (!await db.business.findUnique({ where: { id: input.businessId }, select: { id: true } })) throw new NotFoundError("Negocio no encontrado")
   const idempotencyKey = input.idempotencyKey ?? `manual:${input.businessId}:${periodStart.toISOString()}`
   const previous = await db.billingAuditEvent.findUnique({ where: { idempotencyKey } })
   if (previous) return db.subscription.findFirstOrThrow({ where: { businessId: input.businessId, status: "ACTIVE" }, orderBy: { createdAt: "desc" } })
+  const proAccessGranted = plan === "PRO" ? true : (input.proAccessGranted ?? action === "activate")
+  const proTrialEndsAt = plan === "LITE" && proAccessGranted
+    ? input.proTrialEndsAt ?? addCalendarMonths(periodStart, 1)
+    : null
+  if (proTrialEndsAt && proTrialEndsAt <= periodStart) throw new ValidationError("El trial Pro debe terminar después de iniciar")
+  if (input.proTrialEndsAt && !proAccessGranted) throw new ValidationError("El trial Pro requiere acceso Pro")
   return db.$transaction(async (tx) => {
     await tx.subscription.updateMany({ where: { businessId: input.businessId, status: "ACTIVE" }, data: { status: "CANCELED" } })
-    const proAccessGranted = input.proAccessGranted ?? plan === "PRO"
-    const subscription = await tx.subscription.create({ data: { businessId: input.businessId, plan, billingInterval, amountMinor: input.amountMinor ?? 0, currency: "MXN", activatedAt: periodStart, periodStart, periodEnd, externalReference: input.externalReference, proAccessGranted } })
-    const entitledCards = await applyEntitlements(tx, input.businessId, subscription.proAccessGranted ? "PRO" : "LITE")
-    const updatedSubscription = await tx.subscription.update({ where: { id: subscription.id }, data: { liteCardId: subscription.proAccessGranted ? null : (entitledCards[0]?.id ?? null) } })
+    const subscription = await tx.subscription.create({ data: { businessId: input.businessId, plan, billingInterval, amountMinor: input.amountMinor ?? 0, currency: "MXN", activatedAt: periodStart, periodStart, periodEnd, externalReference: input.externalReference, proAccessGranted, proTrialEndsAt } })
+    const effective = resolveEffectiveEntitlements(subscription, periodStart)
+    const entitledCards = await applyEntitlements(tx, input.businessId, effective.plan)
+    const updatedSubscription = await tx.subscription.update({ where: { id: subscription.id }, data: { liteCardId: effective.plan === "LITE" ? (entitledCards[0]?.id ?? null) : null } })
     await tx.onboardingProgress.updateMany({ where: { businessId: input.businessId }, data: { status: "ACTIVE", step: "PAYWALL" } })
-    await tx.billingAuditEvent.create({ data: { businessId: input.businessId, action: input.action ?? "activate", operator: input.operator ?? "internal", idempotencyKey, externalReference: input.externalReference, metadata: { plan, billingInterval, amountMinor: input.amountMinor ?? 0 } } })
+    await tx.billingAuditEvent.create({ data: { businessId: input.businessId, action, operator: input.operator ?? "internal", idempotencyKey, externalReference: input.externalReference, metadata: { plan, billingInterval, amountMinor: input.amountMinor ?? 0, proTrialEndsAt: proTrialEndsAt?.toISOString() ?? null } } })
     return updatedSubscription
   })
 }
@@ -69,20 +91,82 @@ export async function applyEntitlements(db: PrismaClient | Prisma.TransactionCli
   return [keep]
 }
 
-export async function getEntitlements(db: Db, businessId: string, _now = new Date()) {
+export function resolveEffectiveEntitlements(subscription: Subscription | null, now = new Date()) {
+  if (!subscription) return { plan: SubscriptionPlan.LITE, trial: false }
+  const trial = subscription.plan === SubscriptionPlan.LITE
+    && subscription.proAccessGranted
+    && Boolean(subscription.proTrialEndsAt && subscription.proTrialEndsAt > now)
+  return {
+    plan: subscription.plan === SubscriptionPlan.PRO || trial ? SubscriptionPlan.PRO : SubscriptionPlan.LITE,
+    trial,
+  }
+}
+
+export async function getEntitlements(db: QueryDb, businessId: string, now = new Date()) {
   const subscription = await db.subscription.findFirst({ where: { businessId, status: "ACTIVE" }, orderBy: { createdAt: "desc" } })
-  const trial = Boolean(subscription?.proAccessGranted && subscription?.plan === "LITE")
-  return { plan: subscription?.proAccessGranted ? "PRO" : (subscription?.plan ?? "LITE"), billingInterval: subscription?.billingInterval ?? null, subscription, trial }
+  const effective = resolveEffectiveEntitlements(subscription, now)
+  return { ...effective, billingInterval: subscription?.billingInterval ?? null, subscription }
 }
 
-export async function syncExpiredEntitlements(db: Db, businessId: string, now = new Date()) {
+export async function syncExpiredEntitlements(db: PrismaClient, businessId: string, now = new Date()) {
   const entitlements = await getEntitlements(db, businessId, now)
-  const entitledCards = await applyEntitlements(db, businessId, entitlements.plan as SubscriptionPlan)
-  if (entitlements.subscription) await db.subscription.update({ where: { id: entitlements.subscription.id }, data: { liteCardId: entitlements.plan === "LITE" ? (entitledCards[0]?.id ?? null) : null } })
-  return entitlements
+  const subscription = entitlements.subscription
+  const expiredTrial = subscription?.plan === SubscriptionPlan.LITE
+    && subscription.proAccessGranted
+    && (!subscription.proTrialEndsAt || subscription.proTrialEndsAt <= now)
+  if (!subscription || !expiredTrial) return entitlements
+
+  return db.$transaction(async (tx) => {
+    const claimed = await tx.subscription.updateMany({
+      where: {
+        id: subscription.id,
+        status: "ACTIVE",
+        plan: SubscriptionPlan.LITE,
+        proAccessGranted: true,
+        OR: [{ proTrialEndsAt: { lte: now } }, { proTrialEndsAt: null }],
+      },
+      data: { proAccessGranted: false },
+    })
+    if (claimed.count !== 1) return getEntitlements(tx, businessId, now)
+
+    const entitledCards = await applyEntitlements(tx, businessId, SubscriptionPlan.LITE)
+    const updatedSubscription = await tx.subscription.update({
+      where: { id: subscription.id },
+      data: { liteCardId: entitledCards[0]?.id ?? null },
+    })
+    await tx.billingAuditEvent.upsert({
+      where: { idempotencyKey: `trial-expired:${subscription.id}` },
+      create: {
+        businessId,
+        action: "expire_pro_trial",
+        operator: "system",
+        idempotencyKey: `trial-expired:${subscription.id}`,
+        metadata: { proTrialEndsAt: subscription.proTrialEndsAt?.toISOString() ?? null, expiredAt: now.toISOString() },
+      },
+      update: {},
+    })
+    const effective = resolveEffectiveEntitlements(updatedSubscription, now)
+    return { ...effective, billingInterval: updatedSubscription.billingInterval, subscription: updatedSubscription }
+  })
 }
 
-export async function createCustomerProfile(db: Db, input: { authUserId: string; email: string; name: string; avatarPath?: string | null }) {
+export async function syncExpiredEntitlementsBatch(db: PrismaClient, now = new Date(), take = 25) {
+  const candidates = await db.subscription.findMany({
+    where: {
+      status: "ACTIVE",
+      plan: SubscriptionPlan.LITE,
+      proAccessGranted: true,
+      OR: [{ proTrialEndsAt: { lte: now } }, { proTrialEndsAt: null }],
+    },
+    select: { businessId: true },
+    orderBy: { activatedAt: "asc" },
+    take,
+  })
+  for (const candidate of candidates) await syncExpiredEntitlements(db, candidate.businessId, now)
+  return candidates.length
+}
+
+export async function createCustomerProfile(db: PrismaClient, input: { authUserId: string; email: string; name: string; avatarPath?: string | null }) {
   const emailNormalized = normalizeProfileEmail(input.email)
   if (!emailNormalized || !emailNormalized.includes("@") || !input.name.trim()) throw new ValidationError("Perfil de cliente inválido")
   const byAuth = await db.customerProfile.findUnique({ where: { authUserId: input.authUserId } })
@@ -93,7 +177,7 @@ export async function createCustomerProfile(db: Db, input: { authUserId: string;
   return db.customerProfile.create({ data: { authUserId: input.authUserId, emailNormalized, name: input.name.trim(), avatarPath: input.avatarPath ?? null } })
 }
 
-export async function scheduleClosure(db: Db, businessId: string, now = new Date()) {
+export async function scheduleClosure(db: PrismaClient, businessId: string, now = new Date()) {
   const active = await db.accountClosure.findFirst({ where: { businessId, status: { in: ["PROCESSING", "FAILED"] } } })
   if (active) throw new ConflictError("El cierre ya está en proceso y no puede reprogramarse")
   const scheduledFor = addGraceDays(now, 30)
@@ -101,13 +185,13 @@ export async function scheduleClosure(db: Db, businessId: string, now = new Date
   return db.accountClosure.create({ data: { businessId, scheduledFor } })
 }
 
-export async function cancelClosure(db: Db, businessId: string, now = new Date()) {
+export async function cancelClosure(db: PrismaClient, businessId: string, now = new Date()) {
   const canceled = await db.accountClosure.updateMany({ where: { businessId, status: "SCHEDULED", scheduledFor: { gt: now } }, data: { status: "CANCELED", canceledAt: now } })
   if (canceled.count !== 1) throw new ConflictError("El cierre ya no puede cancelarse")
   return canceled
 }
 
-export async function assertBusinessWritable(db: Db, businessId: string) {
+export async function assertBusinessWritable(db: PrismaClient, businessId: string) {
   const closure = await db.accountClosure.findFirst({
     where: { businessId, status: { in: ["SCHEDULED", "PROCESSING", "FAILED"] } },
     orderBy: { scheduledFor: "asc" },
@@ -117,7 +201,7 @@ export async function assertBusinessWritable(db: Db, businessId: string) {
 }
 
 
-export async function previewClosure(db: Db, businessId: string) {
+export async function previewClosure(db: PrismaClient, businessId: string) {
   const [business, cards, customers, closure] = await Promise.all([
     db.business.findUnique({ where: { id: businessId }, select: { id: true, name: true } }),
     db.loyaltyCard.count({ where: { businessId } }),
@@ -128,12 +212,12 @@ export async function previewClosure(db: Db, businessId: string) {
   return { business, cards, customers, scheduledClosure: closure }
 }
 
-export async function registerBusinessAvatar(db: Db, businessId: string, storagePath: string) {
+export async function registerBusinessAvatar(db: PrismaClient, businessId: string, storagePath: string) {
   if (!storagePath.trim()) throw new ValidationError("Ruta de avatar requerida")
   return db.businessAvatarAsset.create({ data: { businessId, storagePath: storagePath.trim() } })
 }
 
-export async function replaceCustomerAvatar(db: Db, profileId: string, bucket: string, storagePath: string) {
+export async function replaceCustomerAvatar(db: PrismaClient, profileId: string, bucket: string, storagePath: string) {
   const profile = await db.customerProfile.findUnique({ where: { id: profileId } })
   if (!profile) throw new NotFoundError("Perfil de cliente no encontrado")
   return db.$transaction(async (tx) => {
@@ -144,7 +228,7 @@ export async function replaceCustomerAvatar(db: Db, profileId: string, bucket: s
   })
 }
 
-export async function cleanupAvatarJob(db: Db, jobId: string) {
+export async function cleanupAvatarJob(db: PrismaClient, jobId: string) {
   const job = await db.avatarCleanupJob.findUnique({ where: { id: jobId } })
   if (!job) throw new NotFoundError("Trabajo de limpieza no encontrado")
   try {
@@ -156,7 +240,7 @@ export async function cleanupAvatarJob(db: Db, jobId: string) {
   }
 }
 
-export async function cleanupBusinessAvatar(db: Db, assetId: string) {
+export async function cleanupBusinessAvatar(db: PrismaClient, assetId: string) {
   const asset = await db.businessAvatarAsset.findUnique({ where: { id: assetId } })
   if (!asset) throw new NotFoundError("Avatar no encontrado")
   try {
@@ -169,7 +253,7 @@ export async function cleanupBusinessAvatar(db: Db, assetId: string) {
   }
 }
 
-async function prepareExecution(db: Db, closureId: string, businessId: string, now: Date) {
+async function prepareExecution(db: PrismaClient, closureId: string, businessId: string, now: Date) {
   const execution = await db.accountClosureExecution.upsert({
     where: { closureId },
     create: { closureId, businessId, status: "PROCESSING", attempts: 1, leaseUntil: new Date(now.getTime() + 5 * 60 * 1000) },
@@ -192,7 +276,7 @@ async function prepareExecution(db: Db, closureId: string, businessId: string, n
   return execution
 }
 
-async function runCleanupTask(db: Db, task: { id: string; kind: "BUSINESS_AVATAR" | "AUTH_USER"; subjectId: string; bucket: string | null; storagePath: string | null }) {
+async function runCleanupTask(db: PrismaClient, task: { id: string; kind: "BUSINESS_AVATAR" | "AUTH_USER"; subjectId: string; bucket: string | null; storagePath: string | null }) {
   try {
     const admin = createAdminClient()
     if (task.kind === "BUSINESS_AVATAR") {
@@ -212,7 +296,7 @@ async function runCleanupTask(db: Db, task: { id: string; kind: "BUSINESS_AVATAR
   }
 }
 
-export async function executeDueClosures(db: Db, now = new Date()) {
+export async function executeDueClosures(db: PrismaClient, now = new Date()) {
   const candidates = await db.accountClosure.findMany({
     where: { OR: [{ status: "SCHEDULED", scheduledFor: { lte: now } }, { status: "FAILED" }, { status: "PROCESSING", updatedAt: { lt: new Date(now.getTime() - 5 * 60 * 1000) } }] },
     select: { id: true, businessId: true, status: true }, take: 25,

@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client"
 import { mockData } from "./mock-data"
 import { createAdminClient } from "../lib/supabase-admin"
 import { ensureSeedAuthUser, resolveSeedRoleUsers } from "./seed-auth"
-import { fidelityThemeCodes } from "../lib/card-themes"
+import { fidelityProThemeCodes, fidelityThemeCodes } from "../lib/card-themes"
 
 const prisma = new PrismaClient()
 
@@ -23,8 +23,15 @@ async function main() {
   console.log("Seeding database...")
 
   const roleBusiness = await prisma.$transaction(async tx => {
-    for (const code of fidelityThemeCodes) {
-      await tx.loyaltyTheme.upsert({ where: { code }, create: { code, plan: "LITE" }, update: { isActive: true } })
+    for (const { code, plan } of [
+      ...fidelityThemeCodes.map(code => ({ code, plan: "LITE" as const })),
+      ...fidelityProThemeCodes.map(code => ({ code, plan: "PRO" as const })),
+    ]) {
+      await tx.loyaltyTheme.upsert({
+        where: { code },
+        create: { id: `theme-${code}`, code, plan },
+        update: { plan, isActive: true },
+      })
     }
     await tx.stampLog.deleteMany({ where: { businessId: { notIn: preservedBusinessIds } } })
     await tx.customer.deleteMany({ where: { card: { businessId: { notIn: preservedBusinessIds } } } })

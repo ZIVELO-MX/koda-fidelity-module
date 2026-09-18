@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma"
 import { getAccountPrincipal, handleApiError, ValidationError, requestIdFrom, withRequestId } from "@/lib/api-utils"
 import { advanceSchema, onboardingDraftSchema } from "@/lib/onboarding-contracts"
 import { advanceOnboarding, ensureCategories, getOnboarding, saveDraft } from "@/lib/onboarding-service"
-import { assertBusinessWritable } from "@/lib/account-lifecycle"
+import { assertBusinessWritable, syncExpiredEntitlements } from "@/lib/account-lifecycle"
+import { listActiveThemes } from "@/lib/card-themes"
 import type { AccountContext } from "@/lib/fidelity-contracts"
 
 /**
@@ -32,16 +33,19 @@ export async function GET(request: NextRequest) {
     const principal = await getAccountPrincipal()
     await ensureCategories(prisma)
     const onboarding = await getOnboarding(prisma, principal.id)
-    const categories = await prisma.businessCategory.findMany({ where: { isActive: true }, orderBy: { name: "asc" } })
     const business = onboarding.business
-    const subscription = business?.subscriptions[0]
+    const [categories, themes, entitlements] = await Promise.all([
+      prisma.businessCategory.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
+      listActiveThemes(prisma),
+      business ? syncExpiredEntitlements(prisma, business.id) : null,
+    ])
     const accountContext: AccountContext = {
       user: { id: onboarding.id, email: onboarding.email, name: onboarding.name, role: onboarding.role },
       business: business ? { id: business.id, name: business.name, brandColor: business.brandColor, logoUrl: business.logoUrl, iconName: business.iconName, website: business.website, instagram: business.instagram } : null,
       onboardingStatus: onboarding.onboardingProgress?.status,
-      plan: subscription?.proAccessGranted ? "PRO" : (subscription?.plan ?? "LITE"),
+      plan: entitlements?.plan ?? "LITE",
     }
-    return withRequestId(NextResponse.json({ onboarding, categories, accountContext }), requestId)
+    return withRequestId(NextResponse.json({ onboarding, categories, themes, accountContext }), requestId)
   } catch (error) { return withRequestId(handleApiError(error, requestId), requestId) }
 }
 
