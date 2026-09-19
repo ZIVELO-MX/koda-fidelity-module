@@ -2,21 +2,33 @@
 
 import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { ORDEN, PASOS_EN_LA_BARRA, type PasoId } from "@/lib/onboarding"
+import type { OnboardingStep } from "@/lib/onboarding"
 
 /**
- * El progreso se ve desde el primer momento, con los obligatorios sólidos y
- * los que se pueden saltar en contorno. Enseñar cuántos pasos hay y cuáles se
+ * El progreso se ve desde el primer momento, con los obligatorios sólidos y los
+ * que se pueden saltar en contorno. Enseñar cuántos pasos hay y cuáles se
  * pueden saltar es lo que evita la sensación de formulario sin final.
+ *
+ * Los pasos son los del servidor, no una lista propia: quien manda sobre en
+ * qué punto va el alta es `OnboardingProgress`.
  */
-export function BarraDePasos({ actual }: { actual: PasoId }) {
+const PASOS: { id: OnboardingStep; etiqueta: string; obligatorio: boolean }[] = [
+  { id: "INTRO", etiqueta: "Intro", obligatorio: false },
+  { id: "BUSINESS", etiqueta: "Datos", obligatorio: true },
+  { id: "CARD", etiqueta: "Tarjeta", obligatorio: true },
+  { id: "ACQUISITION", etiqueta: "Origen", obligatorio: false },
+  { id: "PAYWALL", etiqueta: "Plan", obligatorio: true },
+]
+
+const ORDEN = PASOS.map((p) => p.id)
+
+export function BarraDePasos({ actual }: { actual: OnboardingStep }) {
   const iActual = ORDEN.indexOf(actual)
 
   return (
     <ol className="flex flex-wrap items-center justify-center gap-x-2 gap-y-3">
-      {PASOS_EN_LA_BARRA.map((paso, i) => {
-        const iPaso = ORDEN.indexOf(paso.id)
-        const hecho = iPaso < iActual
+      {PASOS.map((paso, i) => {
+        const hecho = ORDEN.indexOf(paso.id) < iActual
         const aqui = paso.id === actual
 
         return (
@@ -34,13 +46,9 @@ export function BarraDePasos({ actual }: { actual: PasoId }) {
             >
               {hecho && <Check className="h-3 w-3" aria-hidden="true" />}
               {paso.etiqueta}
-              {!paso.obligatorio && !hecho && (
-                <span className="font-normal opacity-70">· opcional</span>
-              )}
+              {!paso.obligatorio && !hecho && <span className="font-normal opacity-70">· opcional</span>}
             </span>
-            {i < PASOS_EN_LA_BARRA.length - 1 && (
-              <span aria-hidden="true" className="h-px w-3 bg-border sm:w-5" />
-            )}
+            {i < PASOS.length - 1 && <span aria-hidden="true" className="h-px w-3 bg-border sm:w-5" />}
           </li>
         )
       })}

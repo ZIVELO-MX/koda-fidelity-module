@@ -1,145 +1,183 @@
 /**
- * El alta guiada: intro, datos, tarjeta, el club, origen y muro de pago.
+ * Cliente del alta guiada contra `/api/onboarding`.
  *
- * Hoy, al registrarse, se cae directo a un panel vacío y sin explicación. Este
- * módulo tiene la forma del flujo y su persistencia; las pantallas viven en
- * components/onboarding.
+ * La primera versión de esta pantalla guardaba el borrador en `localStorage`
+ * porque el backend no tenía dónde ponerlo. Ya lo tiene: `OnboardingProgress`
+ * persiste paso, estado, los dos borradores, el origen y la modalidad de cobro,
+ * con `draftVersion` para no pisar escrituras. Guardar en el navegador ahora
+ * sería mentir: el negocio cambiaría de equipo y se encontraría el alta vacía.
  *
- * Lo que se guarda vive en este navegador, no en el servidor: el campo que
- * marca el alta como terminada todavía no existe en el modelo, y fingir que
- * guardamos en la nube sería prometer algo que no hacemos. En cuanto exista
- * ese campo, `cargarBorrador` y `guardarBorrador` son los dos únicos sitios
- * que cambian.
+ * Aquí no se decide nada del flujo. El servidor es el dueño del paso y del
+ * estado; esto solo lee, guarda y pide avanzar.
  */
-export type PasoId = "intro" | "datos" | "tarjeta" | "club" | "origen" | "pago"
+export type OnboardingStep = "INTRO" | "BUSINESS" | "CARD" | "ACQUISITION" | "PAYWALL"
+export type OnboardingStatus = "IN_PROGRESS" | "AWAITING_PAYMENT" | "ACTIVE"
+export type BillingInterval = "MONTHLY" | "ANNUAL"
 
-export type Paso = {
-  id: PasoId
-  etiqueta: string
-  /** Obligatorio se pinta sólido; lo que se puede saltar o abandonar, en contorno. */
-  obligatorio: boolean
-  /** El club es un momento de llegada, no un paso: no entra en la barra. */
-  enLaBarra: boolean
-}
-
-export const PASOS: Paso[] = [
-  { id: "intro", etiqueta: "Intro", obligatorio: false, enLaBarra: true },
-  { id: "datos", etiqueta: "Datos", obligatorio: true, enLaBarra: true },
-  { id: "tarjeta", etiqueta: "Tarjeta", obligatorio: true, enLaBarra: true },
-  { id: "club", etiqueta: "Tu club", obligatorio: false, enLaBarra: false },
-  { id: "origen", etiqueta: "Origen", obligatorio: false, enLaBarra: true },
-  { id: "pago", etiqueta: "Plan", obligatorio: true, enLaBarra: true },
-]
-
-export const PASOS_EN_LA_BARRA = PASOS.filter((p) => p.enLaBarra)
-
-export const ORDEN: PasoId[] = PASOS.map((p) => p.id)
-
-export function pasoSiguiente(actual: PasoId): PasoId | null {
-  const i = ORDEN.indexOf(actual)
-  return i >= 0 && i < ORDEN.length - 1 ? ORDEN[i + 1] : null
-}
-
-export function pasoAnterior(actual: PasoId): PasoId | null {
-  const i = ORDEN.indexOf(actual)
-  return i > 0 ? ORDEN[i - 1] : null
-}
-
-/**
- * Las categorías son las mismas siete que la landing anuncia por giro, más una
- * salida para quien no encaje. Prometer un rubro fuera y no ofrecerlo aquí
- * sería contradecirse en dos pantallas seguidas.
- */
-export const CATEGORIAS = [
-  "Cafetería",
-  "Taquería",
-  "Barbería",
-  "Gimnasio",
-  "Heladería",
-  "Pizzería",
-  "Pastelería",
-  "Otro",
+/** Los valores que acepta el contrato. No son texto libre. */
+export const ORIGENES = [
+  { valor: "REFERRAL", etiqueta: "Un conocido me lo recomendó" },
+  { valor: "SOCIAL", etiqueta: "Lo vi en redes sociales" },
+  { valor: "SEARCH", etiqueta: "Lo busqué en internet" },
+  { valor: "KODA_POS", etiqueta: "Ya uso Koda POS" },
+  { valor: "EVENT", etiqueta: "Lo conocí en un evento" },
+  { valor: "OTHER", etiqueta: "Otro" },
 ] as const
+
+export type AcquisitionSource = (typeof ORIGENES)[number]["valor"]
 
 /** Las opciones de sellos del diseño. Ni un campo libre ni un número al azar. */
 export const SELLOS_POSIBLES = [5, 8, 10, 12] as const
 
-export type Borrador = {
-  paso: PasoId
-  negocio: string
-  categoria: string
-  sellos: number
-  recompensa: string
-  color: string
-  origen: string | null
-  /** Se salta a propósito, que no es lo mismo que no haberlo contestado aún. */
-  origenSaltado: boolean
+export type Categoria = { id: string; name: string }
+
+export type Tema = { id: string; code: string; plan: "LITE" | "PRO" }
+
+/**
+ * De dónde sale el estado. `mock` es el onboarding temporal de development: no
+ * persiste nada y vive mientras el proceso esté arriba. La pantalla lo dice,
+ * porque probar sobre datos que no se guardan y no saberlo es peor que no
+ * poder probar.
+ */
+export type ModoDelAlta = "live" | "mock"
+
+export type BorradorDeNegocio = { name?: string; categoryId?: string }
+export type BorradorDeTarjeta = {
+  name?: string
+  reward?: string
+  stampsRequired?: number
+  brandColor?: string
+  /** El tema **elegido**. No se toca al degradar: lo que cambia es el efectivo. */
+  themeId?: string
 }
 
-export const BORRADOR_VACIO: Borrador = {
-  paso: "intro",
-  negocio: "",
-  categoria: "",
-  sellos: 10,
-  recompensa: "",
-  color: "#ff6b35",
-  origen: null,
-  origenSaltado: false,
+export type EstadoDelAlta = {
+  step: OnboardingStep
+  status: OnboardingStatus
+  draftVersion: number
+  negocio: BorradorDeNegocio
+  tarjeta: BorradorDeTarjeta
+  acquisitionSource: AcquisitionSource | null
+  selectedBillingInterval: BillingInterval | null
+  primeraTarjetaId: string | null
+  categorias: Categoria[]
+  temas: Tema[]
+  modo: ModoDelAlta
+  /** Plan efectivo de la cuenta. Decide si un acabado Pro llega a verse. */
+  plan: "LITE" | "PRO"
+  /** Nombre real del negocio, si ya existe en la cuenta. */
+  nombreDeLaCuenta: string | null
 }
 
-const CLAVE = "koda-fidelity:alta"
+/** Motivo por el que una llamada del alta no se pudo completar. */
+export type FalloDelAlta =
+  | { tipo: "sesion" }
+  | { tipo: "conflicto"; mensaje: string }
+  | { tipo: "validacion"; mensaje: string }
+  | { tipo: "red" }
+  | { tipo: "servidor"; mensaje: string; requestId?: string }
 
-export function cargarBorrador(): Borrador | null {
-  if (typeof window === "undefined") return null
+export class ErrorDelAlta extends Error {
+  constructor(readonly fallo: FalloDelAlta) {
+    super(fallo.tipo === "sesion" ? "Sesión expirada" : "mensaje" in fallo ? fallo.mensaje : "Error del alta")
+    this.name = "ErrorDelAlta"
+  }
+}
+
+const objeto = (valor: unknown): Record<string, unknown> =>
+  valor && typeof valor === "object" ? (valor as Record<string, unknown>) : {}
+
+const texto = (valor: unknown): string | undefined => (typeof valor === "string" && valor ? valor : undefined)
+
+function normalizar(cuerpo: unknown): EstadoDelAlta {
+  const raiz = objeto(cuerpo)
+  const onboarding = objeto(raiz.onboarding)
+  const progreso = objeto(onboarding.onboardingProgress)
+  if (typeof progreso.draftVersion !== "number") {
+    throw new ErrorDelAlta({ tipo: "servidor", mensaje: "La respuesta del alta no trae el progreso." })
+  }
+  const negocio = objeto(progreso.businessDraft)
+  const tarjeta = objeto(progreso.cardDraft)
+  const categorias = Array.isArray(raiz.categories) ? raiz.categories : []
+  const temas = Array.isArray(raiz.themes) ? raiz.themes : []
+
+  return {
+    step: (texto(progreso.step) as OnboardingStep) ?? "INTRO",
+    status: (texto(progreso.status) as OnboardingStatus) ?? "IN_PROGRESS",
+    draftVersion: progreso.draftVersion,
+    negocio: { name: texto(negocio.name), categoryId: texto(negocio.categoryId) },
+    tarjeta: {
+      name: texto(tarjeta.name),
+      reward: texto(tarjeta.reward),
+      stampsRequired: typeof tarjeta.stampsRequired === "number" ? tarjeta.stampsRequired : undefined,
+      brandColor: texto(tarjeta.brandColor),
+      themeId: texto(tarjeta.themeId),
+    },
+    acquisitionSource: (texto(progreso.acquisitionSource) as AcquisitionSource) ?? null,
+    selectedBillingInterval: (texto(progreso.selectedBillingInterval) as BillingInterval) ?? null,
+    primeraTarjetaId: texto(progreso.firstCardId) ?? null,
+    categorias: categorias
+      .map((c) => objeto(c))
+      .filter((c) => texto(c.id) && texto(c.name))
+      .map((c) => ({ id: String(c.id), name: String(c.name) })),
+    temas: temas
+      .map((t) => objeto(t))
+      .filter((t) => texto(t.id) && texto(t.code))
+      .map((t) => ({
+        id: String(t.id),
+        code: String(t.code),
+        plan: t.plan === "PRO" ? ("PRO" as const) : ("LITE" as const),
+      })),
+    modo: texto(raiz.mode) === "mock" ? "mock" : "live",
+    plan: texto(objeto(raiz.accountContext).plan) === "PRO" ? "PRO" : "LITE",
+    nombreDeLaCuenta: texto(objeto(objeto(raiz.accountContext).business).name) ?? null,
+  }
+}
+
+async function pedir(init: RequestInit & { method: string }): Promise<EstadoDelAlta> {
+  let res: Response
   try {
-    const crudo = window.localStorage.getItem(CLAVE)
-    if (!crudo) return null
-    const datos = JSON.parse(crudo) as Partial<Borrador>
-    // Se acepta lo que se reconoce y nada más: un borrador de otra versión no
-    // puede colarse como si estuviera completo.
-    if (!datos || typeof datos !== "object") return null
-    return {
-      ...BORRADOR_VACIO,
-      ...datos,
-      paso: ORDEN.includes(datos.paso as PasoId) ? (datos.paso as PasoId) : "intro",
-      sellos: SELLOS_POSIBLES.includes(datos.sellos as never) ? (datos.sellos as number) : 10,
-    }
+    res = await fetch("/api/onboarding", {
+      ...init,
+      headers: { "Content-Type": "application/json", ...(init.headers ?? {}) },
+    })
   } catch {
-    return null
+    throw new ErrorDelAlta({ tipo: "red" })
   }
+
+  const cuerpo = await res.json().catch(() => null)
+
+  if (!res.ok) {
+    const sobre = objeto(cuerpo)
+    const mensaje = texto(sobre.error) ?? "El servidor no pudo completar la operación."
+    if (res.status === 401 || res.status === 403) throw new ErrorDelAlta({ tipo: "sesion" })
+    if (res.status === 409) throw new ErrorDelAlta({ tipo: "conflicto", mensaje })
+    if (res.status === 400 || res.status === 422) throw new ErrorDelAlta({ tipo: "validacion", mensaje })
+    throw new ErrorDelAlta({
+      tipo: "servidor",
+      mensaje,
+      requestId: texto(sobre.requestId) ?? res.headers.get("x-request-id") ?? undefined,
+    })
+  }
+
+  return normalizar(cuerpo)
 }
 
-export function guardarBorrador(borrador: Borrador): boolean {
-  if (typeof window === "undefined") return false
-  try {
-    window.localStorage.setItem(CLAVE, JSON.stringify(borrador))
-    return true
-  } catch {
-    // Navegación privada o almacenamiento lleno: no se guarda, y la pantalla
-    // lo dice en vez de enseñar un "guardado" que no ocurrió.
-    return false
-  }
-}
+export const leerAlta = () => pedir({ method: "GET" })
 
-export function olvidarBorrador() {
-  if (typeof window === "undefined") return
-  try {
-    window.localStorage.removeItem(CLAVE)
-  } catch {
-    // Nada que hacer: si no se pudo borrar, tampoco se pudo guardar.
-  }
-}
+export const guardarBorrador = (
+  draftVersion: number,
+  cambios: {
+    business?: BorradorDeNegocio
+    card?: BorradorDeTarjeta
+    acquisitionSource?: AcquisitionSource | null
+    selectedBillingInterval?: BillingInterval | null
+  },
+) => pedir({ method: "PATCH", body: JSON.stringify({ draftVersion, ...cambios }) })
 
-/** Qué falta para poder salir de un paso obligatorio. */
-export function loQueFalta(paso: PasoId, b: Borrador): string | null {
-  if (paso === "datos") {
-    if (!b.negocio.trim()) return "Escribe el nombre de tu negocio."
-    if (!b.categoria.trim()) return "Elige la categoría de tu negocio."
-    return null
-  }
-  if (paso === "tarjeta") {
-    if (!b.recompensa.trim()) return "Escribe qué se lleva tu cliente al llenar la tarjeta."
-    return null
-  }
-  return null
-}
+export type AccionDelAlta =
+  | "complete_intro" | "skip_intro" | "complete_business" | "complete_card"
+  | "complete_acquisition" | "skip_acquisition" | "select_billing_interval" | "open_paywall"
+
+export const avanzar = (accion: AccionDelAlta, draftVersion: number, billingInterval?: BillingInterval) =>
+  pedir({ method: "POST", body: JSON.stringify({ action: accion, draftVersion, billingInterval }) })

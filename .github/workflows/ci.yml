@@ -4,7 +4,7 @@ on:
   push:
     branches: [dev, main]
   pull_request:
-    branches: [dev, benrod/1.2.0, main]
+    branches: [dev, benrod/1.2.0, rulaxx/1.2.0, main]
 
 jobs:
   verify:
@@ -205,6 +205,38 @@ jobs:
 
       - name: Run FID-0016 authentication tests
         run: pnpm exec playwright test --config=playwright.auth.config.ts e2e/auth-development.spec.ts
+
+      # FID-0025. El fixture deja el alta de la cuenta de pruebas en el primer
+      # paso, así que el recorrido arranca siempre del mismo sitio.
+      - name: Prepare onboarding and plan fixtures
+        env:
+          E2E_ONBOARDING_EMAIL: fidelity.seed.portal@dev.invalid
+          E2E_ONBOARDING_PLAN: LITE
+        run: pnpm prepare:onboarding-e2e
+
+      - name: Run FID-0025 onboarding tests
+        env:
+          E2E_ONBOARDING_EMAIL: fidelity.seed.portal@dev.invalid
+          E2E_ONBOARDING_PASSWORD: ${{ env.E2E_PORTAL_PASSWORD || 'ci-portal-password' }}
+        run: >-
+          pnpm exec playwright test --config=playwright.auth.config.ts
+          e2e/onboarding-recorrido.spec.ts
+
+      # El trial vencido y el alta fresca son estados distintos de la misma
+      # cuenta, así que se preparan y se corren por separado.
+      - name: Prepare the expired Pro trial fixture
+        env:
+          E2E_ONBOARDING_EMAIL: fidelity.seed.portal@dev.invalid
+          E2E_ONBOARDING_MODE: expired-trial
+        run: pnpm prepare:onboarding-e2e
+
+      - name: Run FID-0025 plan tests
+        env:
+          E2E_ONBOARDING_EMAIL: fidelity.seed.portal@dev.invalid
+          E2E_ONBOARDING_PASSWORD: ${{ env.E2E_PORTAL_PASSWORD || 'ci-portal-password' }}
+        run: >-
+          pnpm exec playwright test --config=playwright.auth.config.ts
+          e2e/planes.spec.ts
 
       - name: Stop local Supabase
         if: always()
