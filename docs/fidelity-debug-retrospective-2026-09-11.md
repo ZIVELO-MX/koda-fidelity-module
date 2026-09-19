@@ -94,3 +94,41 @@ Playwright corre en GitHub Actions, no como puerta local. El pipeline ya dispara
 - FID-0023 — Corregir riesgos de integración de Fidelity en `benrod/1.2.0` (Benrod), ya entregada.
 
 Sin secretos ni datos personales en este documento.
+
+
+---
+
+## Contraste de la tarjeta de lealtad — anotado el 2026-09-18
+
+**No es un hallazgo de los temas: es anterior a ellos y afecta a todas las tarjetas del producto.**
+Se anota aquí en vez de abrir misión, por decisión de Raúl.
+
+`components/loyalty-card-preview.tsx` pinta el texto en blanco fijo (`const fg = "#ffffff"`) sobre
+el color del negocio. Contra el punto más claro del degradado base, medido con la fórmula de
+contraste de WCAG:
+
+| Color de marca | Blanco sobre el punto más claro |
+|---|---|
+| `#c2410c` | 4.00:1 |
+| `#ff6b35` | 2.43:1 |
+| `#0d9488` | 3.00:1 |
+
+El mínimo AA para texto pequeño es 4.5:1. Ninguno llega, y el naranja de KODA por defecto se queda
+en menos de la mitad.
+
+El ADN ya lo anticipaba para los temas -- *"contraste a verificar por categoría; es donde se cuela
+un texto ilegible"* -- pero el problema no viene del tema: viene de fijar el primer plano en blanco.
+`lib/color-marca.ts` ya tiene `derivarMarca`, que calcula un color de texto legible sobre un color
+de marca arbitrario, y el panel lo usa. La tarjeta no.
+
+**Por qué no se arregla de paso.** Cambiar el primer plano cambia el aspecto de todas las tarjetas
+ya publicadas, en el panel, en el alta pública y en el portal del cliente. Es una decisión de
+diseño con alcance de producto, no un ajuste dentro de una misión de temas.
+
+**Lo que sí se hizo:** que la capa de temas no lo empeore. La primera versión de las pieles aclaraba
+la base de 0.16 a 0.22 -- 3.60:1 con `#c2410c` --; se revirtió, y ahora ningún acabado aclara por
+encima de la base original. La diferencia entre acabados sale del tono y de la textura.
+
+**Si se decide abordarlo**, el camino más corto es usar `derivarMarca(brandColor).texto` como primer
+plano de la tarjeta y verificar los trece giros más los cuatro acabados, que es exactamente el
+barrido que pide el ADN.
