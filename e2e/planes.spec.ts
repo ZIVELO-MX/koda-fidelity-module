@@ -104,22 +104,71 @@ test.describe("Planes Lite y Pro", () => {
     })
   })
 
-  // Lo que no se puede probar todavía porque el servidor no lo hace.
-  // Ver FID-0026, hallazgo 3.
-  test.fixme("el mes de Pro incluido vence en proTrialEndsAt", async () => {
-    // `activateManualSubscription` nunca escribe proTrialEndsAt y
-    // `getEntitlements` ignora su parámetro `now`, así que proAccessGranted da
-    // PRO para siempre.
-  })
+  /**
+   * Transición del mes de Pro incluido a Lite.
+   *
+   * Necesita el estado que monta `E2E_ONBOARDING_MODE=expired-trial`: un mes de
+   * Pro ya vencido, dos tarjetas y un tema Pro elegido en la primera.
+   *
+   * La comprobación de capacidad no es un adorno: estas tres dependen de
+   * FID-0026 (temas Pro en el catálogo y `proTrialEndsAt` leído de verdad). Si
+   * el backend de esta rama todavía no lo trae, se dice por qué en vez de
+   * fallar por la razón equivocada.
+   */
+  test.describe("el mes de Pro incluido termina", () => {
+    test.skip(!CORREO || !CLAVE, "Requiere las credenciales del fixture del alta")
 
-  test.fixme("al vencer el trial se aplican los entitlements de Lite", async () => {
-    // syncExpiredEntitlements vuelve a aplicar lo que getEntitlements devuelve,
-    // que sigue siendo PRO: no puede producir la transición.
-  })
+    let hayTemasPro = false
 
-  test.fixme("un tema Pro conserva su selección y cae al respaldo de Lite", async () => {
-    // El catálogo no tiene ningún tema con plan PRO, así que la rama Pro de
-    // resolveTheme y el themeLocked no se pueden ejercitar. Ver FID-0026,
-    // hallazgos 1 y 2.
+    test.beforeEach(async ({ page }) => {
+      await entrar(page, CORREO!, CLAVE!)
+      const res = await page.request.get("/api/onboarding")
+      const cuerpo = await res.json().catch(() => null)
+      const temas: { plan?: string }[] = cuerpo?.themes ?? []
+      hayTemasPro = temas.some((t) => t.plan === "PRO")
+      test.skip(
+        !hayTemasPro,
+        "Requiere FID-0026 en esta rama: el catálogo todavía no tiene temas Pro",
+      )
+    })
+
+    test("con la fecha pasada, los entitlements son Lite y ya no hay trial", async ({ page }) => {
+      const { entitlements } = await (await page.request.get("/api/subscription")).json()
+
+      // La suscripción sigue siendo Lite con acceso Pro concedido; lo que manda
+      // es la fecha, no la bandera.
+      expect(entitlements.subscription?.plan).toBe("LITE")
+      expect(entitlements.plan, "un trial vencido no puede seguir dando Pro").toBe("LITE")
+      expect(entitlements.trial).toBe(false)
+    })
+
+    test("al vencer se aplican los entitlements de Lite: una sola tarjeta activa", async ({ page }) => {
+      // Leer las tarjetas dispara la sincronización.
+      const tarjetas = await (await page.request.get("/api/cards")).json()
+      const activas: { status?: string }[] = tarjetas.cards ?? tarjetas.items ?? []
+
+      expect(activas.length, "con Lite solo una tarjeta queda activa").toBe(1)
+      for (const tarjeta of activas) expect(tarjeta.status).toBe("ACTIVE")
+      // Que las demás queden bloqueadas y no borradas lo cubre la prueba de
+      // integración del backend; desde el cliente solo se ven las activas.
+    })
+
+    test("el tema Pro conserva su selección y cae al respaldo de Lite", async ({ page }) => {
+      const tarjetas = await (await page.request.get("/api/cards")).json()
+      const lista: {
+        selectedThemeId?: string | null
+        effectiveThemeId?: string | null
+        themeLocked?: boolean
+      }[] = tarjetas.cards ?? tarjetas.items ?? []
+      const conTema = lista.find((t) => t.selectedThemeId)
+      expect(conTema, "la tarjeta que se conserva tiene que traer su tema elegido").toBeTruthy()
+
+      expect(conTema!.selectedThemeId, "la selección no se pierde al degradar").toBeTruthy()
+      expect(
+        conTema!.effectiveThemeId,
+        "el tema efectivo tiene que dejar de ser el Pro elegido",
+      ).not.toBe(conTema!.selectedThemeId)
+      expect(conTema!.themeLocked).toBe(true)
+    })
   })
 })

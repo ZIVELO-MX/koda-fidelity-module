@@ -214,13 +214,29 @@ jobs:
           E2E_ONBOARDING_PLAN: LITE
         run: pnpm prepare:onboarding-e2e
 
-      - name: Run FID-0025 onboarding and plan tests
+      - name: Run FID-0025 onboarding tests
         env:
           E2E_ONBOARDING_EMAIL: fidelity.seed.portal@dev.invalid
           E2E_ONBOARDING_PASSWORD: ${{ env.E2E_PORTAL_PASSWORD || 'ci-portal-password' }}
         run: >-
           pnpm exec playwright test --config=playwright.auth.config.ts
-          e2e/onboarding-recorrido.spec.ts e2e/planes.spec.ts
+          e2e/onboarding-recorrido.spec.ts
+
+      # El trial vencido y el alta fresca son estados distintos de la misma
+      # cuenta, así que se preparan y se corren por separado.
+      - name: Prepare the expired Pro trial fixture
+        env:
+          E2E_ONBOARDING_EMAIL: fidelity.seed.portal@dev.invalid
+          E2E_ONBOARDING_MODE: expired-trial
+        run: pnpm prepare:onboarding-e2e
+
+      - name: Run FID-0025 plan tests
+        env:
+          E2E_ONBOARDING_EMAIL: fidelity.seed.portal@dev.invalid
+          E2E_ONBOARDING_PASSWORD: ${{ env.E2E_PORTAL_PASSWORD || 'ci-portal-password' }}
+        run: >-
+          pnpm exec playwright test --config=playwright.auth.config.ts
+          e2e/planes.spec.ts
 
       - name: Stop local Supabase
         if: always()
