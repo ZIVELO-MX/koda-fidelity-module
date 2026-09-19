@@ -18,7 +18,7 @@ describe("onboarding debug command guard", () => {
   it("rejects a non-debug domain with a correlated error", () => {
     const result = run(["status", "tester@example.com"], { FID_DEBUG_AUTH: "true", NODE_ENV: "development" })
     expect(result.status).toBe(1)
-    expect(result.stderr).toMatch(/@invalid\.dev/)
+    expect(result.stderr).toMatch(/@dev\.invalid/)
     expect(result.stderr).toMatch(/requestId:/)
   })
 })
