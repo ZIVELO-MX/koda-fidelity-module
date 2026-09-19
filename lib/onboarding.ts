@@ -31,12 +31,23 @@ export const SELLOS_POSIBLES = [5, 8, 10, 12] as const
 
 export type Categoria = { id: string; name: string }
 
+export type Tema = { id: string; code: string; plan: "LITE" | "PRO" }
+
+/**
+ * De dónde sale el estado. `mock` es el onboarding temporal de development: no
+ * persiste nada y vive mientras el proceso esté arriba. La pantalla lo dice,
+ * porque probar sobre datos que no se guardan y no saberlo es peor que no
+ * poder probar.
+ */
+export type ModoDelAlta = "live" | "mock"
+
 export type BorradorDeNegocio = { name?: string; categoryId?: string }
 export type BorradorDeTarjeta = {
   name?: string
   reward?: string
   stampsRequired?: number
   brandColor?: string
+  /** El tema **elegido**. No se toca al degradar: lo que cambia es el efectivo. */
   themeId?: string
 }
 
@@ -50,6 +61,10 @@ export type EstadoDelAlta = {
   selectedBillingInterval: BillingInterval | null
   primeraTarjetaId: string | null
   categorias: Categoria[]
+  temas: Tema[]
+  modo: ModoDelAlta
+  /** Plan efectivo de la cuenta. Decide si un acabado Pro llega a verse. */
+  plan: "LITE" | "PRO"
   /** Nombre real del negocio, si ya existe en la cuenta. */
   nombreDeLaCuenta: string | null
 }
@@ -84,6 +99,7 @@ function normalizar(cuerpo: unknown): EstadoDelAlta {
   const negocio = objeto(progreso.businessDraft)
   const tarjeta = objeto(progreso.cardDraft)
   const categorias = Array.isArray(raiz.categories) ? raiz.categories : []
+  const temas = Array.isArray(raiz.themes) ? raiz.themes : []
 
   return {
     step: (texto(progreso.step) as OnboardingStep) ?? "INTRO",
@@ -104,6 +120,16 @@ function normalizar(cuerpo: unknown): EstadoDelAlta {
       .map((c) => objeto(c))
       .filter((c) => texto(c.id) && texto(c.name))
       .map((c) => ({ id: String(c.id), name: String(c.name) })),
+    temas: temas
+      .map((t) => objeto(t))
+      .filter((t) => texto(t.id) && texto(t.code))
+      .map((t) => ({
+        id: String(t.id),
+        code: String(t.code),
+        plan: t.plan === "PRO" ? ("PRO" as const) : ("LITE" as const),
+      })),
+    modo: texto(raiz.mode) === "mock" ? "mock" : "live",
+    plan: texto(objeto(raiz.accountContext).plan) === "PRO" ? "PRO" : "LITE",
     nombreDeLaCuenta: texto(objeto(objeto(raiz.accountContext).business).name) ?? null,
   }
 }

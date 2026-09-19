@@ -15,6 +15,7 @@ import {
   ErrorDelAlta, ORIGENES, SELLOS_POSIBLES, avanzar, guardarBorrador, leerAlta,
   type AccionDelAlta, type AcquisitionSource, type BillingInterval, type EstadoDelAlta,
 } from "@/lib/onboarding"
+import { esAcabadoPro, nombreDeTema } from "@/lib/temas-de-tarjeta"
 import { cn } from "@/lib/utils"
 
 const PESOS = new Intl.NumberFormat("es-MX")
@@ -206,6 +207,16 @@ export function Alta() {
     <div className="landing min-h-screen bg-background forced-light">
       <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-4 py-8 sm:px-6 lg:px-8">
         <header className="space-y-5">
+          {estado.modo === "mock" && (
+            <p
+              role="status"
+              className="mx-auto max-w-xl rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-center text-sm text-foreground"
+            >
+              <strong className="font-semibold">Onboarding de prueba.</strong> Nada de lo que hagas
+              aquí se guarda: el estado vive mientras el proceso esté encendido y se pierde al
+              apagarlo.
+            </p>
+          )}
           <BarraDePasos actual={paso} />
           {aviso && (
             <div
@@ -418,11 +429,22 @@ function Tarjeta({
   estado, onCambio, onCambioLocal,
 }: {
   estado: EstadoDelAlta
-  onCambio: (c: { card?: { reward?: string; stampsRequired?: number; brandColor?: string } }) => void
+  onCambio: (c: { card?: { reward?: string; stampsRequired?: number; brandColor?: string; themeId?: string } }) => void
   onCambioLocal: (e: EstadoDelAlta) => void
 }) {
   const sellos = estado.tarjeta.stampsRequired ?? 10
   const color = estado.tarjeta.brandColor ?? "#ff6b35"
+
+  const elegido = estado.temas.find((t) => t.id === estado.tarjeta.themeId)
+  // El plan de la cuenta decide si el acabado Pro se llega a ver. La selección
+  // se guarda igual: probarlo es parte de lo que empuja a contratar.
+  const temaEfectivo = elegido && (elegido.plan === "LITE" || estado.plan === "PRO") ? elegido.code : null
+  const proSinPlan = Boolean(elegido && elegido.plan === "PRO" && estado.plan !== "PRO")
+
+  const elegirTema = (idDelTema: string) => {
+    onCambioLocal({ ...estado, tarjeta: { ...estado.tarjeta, themeId: idDelTema } })
+    onCambio({ card: { themeId: idDelTema } })
+  }
 
   return (
     <div className="grid items-start gap-10 lg:grid-cols-2">
@@ -489,6 +511,52 @@ function Tarjeta({
             <span className="font-mono text-sm text-muted-foreground">{color}</span>
           </div>
         </div>
+
+        {estado.temas.length > 0 && (
+          <fieldset className="space-y-3">
+            <legend className="text-sm font-medium text-foreground">Tema de la tarjeta</legend>
+            <p className="text-xs text-muted-foreground">
+              Los acabados Pro se pueden elegir desde ahora. Se marcan, pero no se bloquean.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {estado.temas.map((tema) => {
+                const activo = estado.tarjeta.themeId === tema.id
+                return (
+                  <button
+                    key={tema.id}
+                    type="button"
+                    aria-pressed={activo}
+                    onClick={() => elegirTema(tema.id)}
+                    className={cn(
+                      "inline-flex min-h-10 items-center gap-2 rounded-full border px-4 text-sm transition-colors",
+                      activo
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground",
+                    )}
+                  >
+                    {nombreDeTema(tema.code)}
+                    {esAcabadoPro(tema.code) && (
+                      <span
+                        className={cn(
+                          "rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em]",
+                          activo ? "bg-white/20" : "bg-primary/15 text-primary",
+                        )}
+                      >
+                        Pro
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+            {proSinPlan && (
+              <p className="text-xs text-muted-foreground">
+                Tu plan es Lite, así que la tarjeta se publica con tu color. El acabado queda
+                guardado y se aplica en cuanto pases a Pro.
+              </p>
+            )}
+          </fieldset>
+        )}
       </div>
 
       <div className="lg:sticky lg:top-8">
@@ -501,6 +569,7 @@ function Tarjeta({
           maxStamps={sellos}
           reward={estado.tarjeta.reward || "Tu recompensa"}
           brandColor={color}
+          themeCode={temaEfectivo}
           showQR={false}
           className="mx-auto max-w-[300px]"
         />

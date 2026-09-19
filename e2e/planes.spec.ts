@@ -153,7 +153,7 @@ test.describe("Planes Lite y Pro", () => {
       // integración del backend; desde el cliente solo se ven las activas.
     })
 
-    test("el tema Pro conserva su selección y cae al respaldo de Lite", async ({ page }) => {
+    test("el tema Pro conserva su selección y la tarjeta cae al color del negocio", async ({ page }) => {
       const tarjetas = await (await page.request.get("/api/cards")).json()
       const lista: {
         selectedThemeId?: string | null
@@ -164,10 +164,12 @@ test.describe("Planes Lite y Pro", () => {
       expect(conTema, "la tarjeta que se conserva tiene que traer su tema elegido").toBeTruthy()
 
       expect(conTema!.selectedThemeId, "la selección no se pierde al degradar").toBeTruthy()
+      // El diseño pide el color del negocio, no el tema de otro giro: sin tema
+      // efectivo, la tarjeta se pinta con `brandColor`.
       expect(
         conTema!.effectiveThemeId,
-        "el tema efectivo tiene que dejar de ser el Pro elegido",
-      ).not.toBe(conTema!.selectedThemeId)
+        "sin plan que lo sostenga, el acabado Pro no deja tema efectivo",
+      ).toBeNull()
       expect(conTema!.themeLocked).toBe(true)
     })
   })
