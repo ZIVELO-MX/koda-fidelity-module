@@ -67,7 +67,7 @@ integration("account lifecycle PostgreSQL integration", () => {
     expect(card).toHaveLength(2)
   }, 15_000)
 
-  it("keeps a Pro theme selected while applying a Lite fallback and card limit", async () => {
+  it("keeps a Pro theme selected while clearing the effective theme on Lite", async () => {
     const liteTheme = await prisma.loyaltyTheme.findFirstOrThrow({ where: { plan: "LITE", isActive: true }, orderBy: { code: "asc" } })
     const proTheme = await prisma.loyaltyTheme.findFirstOrThrow({ where: { plan: "PRO", isActive: true }, orderBy: { code: "asc" } })
     const cards = await prisma.loyaltyCard.createManyAndReturn({ data: [
@@ -82,7 +82,10 @@ integration("account lifecycle PostgreSQL integration", () => {
     const refreshed = await prisma.loyaltyCard.findMany({ where: { businessId }, orderBy: { createdAt: "asc" } })
     expect(lite.liteCardId).toBeTruthy()
     expect(refreshed.filter((card) => card.status === "ACTIVE")).toHaveLength(1)
-    expect(refreshed.find((card) => card.selectedThemeId === proTheme.id)?.effectiveThemeId).toBe(liteTheme.id)
+    const downgraded = refreshed.find((card) => card.selectedThemeId === proTheme.id)
+    expect(downgraded?.selectedThemeId).toBe(proTheme.id)
+    expect(downgraded?.effectiveThemeId).toBeNull()
+    expect(downgraded?.brandColor).toBe("#ff6b35")
     expect(refreshed.filter((card) => card.status === "LOCKED_BY_PLAN")).toHaveLength(1)
   })
 

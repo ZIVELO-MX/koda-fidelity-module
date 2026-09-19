@@ -75,11 +75,10 @@ export async function applyEntitlements(db: PrismaClient | Prisma.TransactionCli
   }
   const keep = cards.find((card) => card.isLite && card.status !== "ARCHIVED") ?? cards.find((card) => card.status !== "ARCHIVED")
   if (!keep) return cards
-  const liteFallback = await db.loyaltyTheme.findFirst({ where: { isActive: true, plan: "LITE" }, orderBy: { code: "asc" } })
   for (const card of cards.filter((candidate) => candidate.status !== "ARCHIVED")) {
     const effectiveThemeId = card.selectedThemeId
       ? (await db.loyaltyTheme.findUnique({ where: { id: card.selectedThemeId }, select: { plan: true } }))?.plan === "PRO"
-        ? liteFallback?.id ?? null
+        ? null
         : card.selectedThemeId
       : null
     if (card.id === keep.id) {

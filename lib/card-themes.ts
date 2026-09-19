@@ -1,5 +1,5 @@
 import { Prisma, PrismaClient, ThemePlan } from "@prisma/client"
-import { NotFoundError, ValidationError } from "@/lib/api-utils"
+import { NotFoundError } from "@/lib/api-utils"
 
 export const fidelityThemeCodes = [
   "panaderia", "taqueria", "cafeteria", "hamburguesas", "pizzeria", "barberia",
@@ -27,7 +27,5 @@ export async function resolveTheme(
   if (theme.plan !== ThemePlan.PRO || plan === "PRO") {
     return { selectedThemeId: theme.id, effectiveThemeId: theme.id, themeLocked: false }
   }
-  const fallback = await db.loyaltyTheme.findFirst({ where: { isActive: true, plan: ThemePlan.LITE }, orderBy: { code: "asc" } })
-  if (!fallback) throw new ValidationError("No hay un tema Lite disponible para fallback")
-  return { selectedThemeId: theme.id, effectiveThemeId: fallback.id, themeLocked: true }
+  return { selectedThemeId: theme.id, effectiveThemeId: null, themeLocked: true }
 }

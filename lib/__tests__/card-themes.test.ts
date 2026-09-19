@@ -24,8 +24,9 @@ describe("card theme contract", () => {
     await expect(resolveTheme(dbWith({ id: "theme-cafe", code: "cafeteria", plan: "LITE", isActive: true }), "cafeteria", "LITE")).resolves.toEqual({ selectedThemeId: "theme-cafe", effectiveThemeId: "theme-cafe", themeLocked: false })
   })
 
-  it("rejects a Pro-only theme for Lite", async () => {
-    const db = { loyaltyTheme: { findFirst: vi.fn().mockResolvedValueOnce({ id: "theme-pro", code: "pro", plan: "PRO", isActive: true }).mockResolvedValueOnce({ id: "theme-lite", code: "cafeteria", plan: "LITE", isActive: true }) } } as never
-    await expect(resolveTheme(db, "pro", "LITE")).resolves.toEqual({ selectedThemeId: "theme-pro", effectiveThemeId: "theme-lite", themeLocked: true })
+  it("keeps a Pro selection while falling back to the business color for Lite", async () => {
+    const findFirst = vi.fn().mockResolvedValue({ id: "theme-pro", code: "pro", plan: "PRO", isActive: true })
+    await expect(resolveTheme({ loyaltyTheme: { findFirst } } as never, "pro", "LITE")).resolves.toEqual({ selectedThemeId: "theme-pro", effectiveThemeId: null, themeLocked: true })
+    expect(findFirst).toHaveBeenCalledTimes(1)
   })
 })
