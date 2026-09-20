@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase-admin"
 import { prisma } from "@/lib/prisma"
 import { requireWritableBusinessPrincipal, handleApiError, ValidationError, requireRole, requestIdFrom, withRequestId } from "@/lib/api-utils"
 import { registerBusinessAvatar } from "@/lib/account-lifecycle"
+import { signPrivateAvatarPathWithClient } from "@/lib/private-avatar"
 
 const MAX_BYTES = 2 * 1024 * 1024
 
@@ -33,8 +34,7 @@ export async function POST(request: NextRequest) {
     const { error: uploadError } = await admin.storage.from(bucket).upload(path, buffer, { contentType: file.type, upsert: false })
     if (uploadError) throw uploadError
     const asset = await registerBusinessAvatar(prisma, business.id, path)
-    const { data: signed, error: signedError } = await admin.storage.from(bucket).createSignedUrl(path, 60 * 60)
-    if (signedError) throw signedError
-    return withRequestId(NextResponse.json({ asset, avatarPath: path, signedUrl: signed.signedUrl }, { status: 201 }), requestId)
+    const avatarUrl = await signPrivateAvatarPathWithClient(admin, path, `business/${business.id}`)
+    return withRequestId(NextResponse.json({ asset: { ...asset, avatarUrl }, avatarPath: path, signedUrl: avatarUrl }, { status: 201, headers: { "Cache-Control": "private, no-store" } }), requestId)
   } catch (error) { return withRequestId(handleApiError(error, requestId), requestId) }
 }

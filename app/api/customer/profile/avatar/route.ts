@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase-admin"
 import { prisma } from "@/lib/prisma"
 import { getAccountPrincipal, handleApiError, NotFoundError, ValidationError, requestIdFrom, withRequestId } from "@/lib/api-utils"
 import { replaceCustomerAvatar } from "@/lib/account-lifecycle"
+import { signPrivateAvatarPathWithClient, withCustomerAvatarUrl } from "@/lib/private-avatar"
 
 const MAX_BYTES = 2 * 1024 * 1024
 
@@ -40,9 +41,8 @@ export async function PUT(request: NextRequest) {
     const { error } = await admin.storage.from(bucket).upload(path, output, { contentType: "image/webp", upsert: false })
     if (error) throw error
     const updated = await replaceCustomerAvatar(prisma, profile.id, bucket, path)
-    const { data: signed, error: signedError } = await admin.storage.from(bucket).createSignedUrl(path, 3600)
-    if (signedError) throw signedError
-    return withRequestId(NextResponse.json({ profile: updated, signedUrl: signed.signedUrl }), requestId)
+    const avatarUrl = await signPrivateAvatarPathWithClient(admin, path, `customer/${profile.id}`)
+    return withRequestId(NextResponse.json({ profile: { ...updated, avatarUrl }, signedUrl: avatarUrl }, { headers: { "Cache-Control": "private, no-store" } }), requestId)
   } catch (error) { return withRequestId(handleApiError(error, requestId), requestId) }
 }
 
@@ -54,6 +54,6 @@ export async function DELETE(request: NextRequest) {
     if (!profile) throw new NotFoundError("Perfil de cliente no encontrado")
     const updated = await prisma.customerProfile.update({ where: { id: profile.id }, data: { avatarPath: null } })
     if (profile.avatarPath) await prisma.avatarCleanupJob.create({ data: { profileId: profile.id, bucket: process.env.SUPABASE_PRIVATE_AVATAR_BUCKET || "avatars", storagePath: profile.avatarPath } })
-    return withRequestId(NextResponse.json({ profile: updated }), requestId)
+    return withRequestId(NextResponse.json({ profile: await withCustomerAvatarUrl(updated) }, { headers: { "Cache-Control": "private, no-store" } }), requestId)
   } catch (error) { return withRequestId(handleApiError(error, requestId), requestId) }
 }
