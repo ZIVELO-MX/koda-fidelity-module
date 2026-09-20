@@ -13,7 +13,7 @@ import { entrar } from "./sesion"
  * proveedor de cobro. No se simula ninguna compra.
  */
 const CORREO = process.env.E2E_ONBOARDING_EMAIL
-const CLAVE = process.env.E2E_ONBOARDING_PASSWORD
+const CLAVE = process.env.E2E_ONBOARDING_PASSWORD ?? process.env.E2E_PORTAL_PASSWORD
 
 test.describe("Alta guiada, recorrido completo", () => {
   test.skip(

@@ -13,7 +13,7 @@ import { entrar } from "./sesion"
  * servidor, así que el trial no vence nunca. Está documentado en FID-0026.
  */
 const CORREO = process.env.E2E_ONBOARDING_EMAIL
-const CLAVE = process.env.E2E_ONBOARDING_PASSWORD
+const CLAVE = process.env.E2E_ONBOARDING_PASSWORD ?? process.env.E2E_PORTAL_PASSWORD
 
 const PRECIOS = { lite: { mes: 149, anio: 1490 }, pro: { mes: 299, anio: 2990 } }
 
