@@ -1,0 +1,224 @@
+"use client"
+
+import Link from "next/link"
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Check, Building2, Mail, Loader2, Globe } from "lucide-react"
+import { AccountClosurePanel } from "@/components/dashboard/account-closure-panel"
+import { PerfilPersonal } from "@/components/dashboard/perfil-personal"
+import type { Role } from "@prisma/client"
+
+export function SettingsClient({ role }: { role: Role }) {
+  const esAdmin = role === "admin"
+  const [businessName, setBusinessName] = useState("")
+  const [nickname, setNickname] = useState("")
+  const [businessType, setBusinessType] = useState("")
+  const [address, setAddress] = useState("")
+  const [phone, setPhone] = useState("")
+  const [website, setWebsite] = useState("")
+  const [instagram, setInstagram] = useState("")
+  const [email, setEmail] = useState("")
+  const [saved, setSaved] = useState(false)
+  // Sin rol de administrador no hay negocio que cargar, así que la pantalla
+  // no nace esperando.
+  const [loading, setLoading] = useState(esAdmin)
+  const [fetchError, setFetchError] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    // Los datos del negocio son del administrador. Sin ese rol no se piden y la
+    // pantalla se queda con el perfil, que es de la persona.
+    if (!esAdmin) return
+    fetch("/api/business")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.business) {
+          setBusinessName(data.business.name)
+          setNickname(data.business.nickname ?? "")
+          setEmail(data.business.email)
+          setBusinessType(data.business.businessType ?? "")
+          setAddress(data.business.address ?? "")
+          setPhone(data.business.phone ?? "")
+          setWebsite(data.business.website ?? "")
+          setInstagram(data.business.instagram ?? "")
+        }
+      })
+      .catch(() => setFetchError(true))
+      .finally(() => setLoading(false))
+  }, [esAdmin])
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      const res = await fetch("/api/business", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        // Sin `name`: lo posee Marca. El PUT es parcial, así que omitirlo lo
+        // deja intacto en vez de borrarlo.
+        body: JSON.stringify({
+          nickname,
+          businessType,
+          address,
+          phone,
+          website,
+          instagram,
+        }),
+      })
+      if (res.ok) {
+        setSaved(true)
+        setSaveError(null)
+        setTimeout(() => setSaved(false), 2000)
+      } else {
+        throw new Error("No fue posible guardar los cambios")
+      }
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Error al guardar")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+
+  return (
+    <div className="space-y-8 max-w-2xl mx-auto">
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">Configuración</h1>
+        <p className="text-muted-foreground">
+          {esAdmin ? "Gestiona tu cuenta y configuración del negocio" : "Tu perfil y tu cuenta"}
+        </p>
+      </div>
+
+      <PerfilPersonal />
+
+      {esAdmin && (loading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-label="Cargando la configuración" />
+        </div>
+      ) : fetchError ? (
+        <div className="text-center py-20">
+          <h3 className="text-lg font-semibold text-foreground mb-2">Error al cargar</h3>
+          <p className="text-muted-foreground mb-6">No pudimos cargar la configuración del negocio.</p>
+          <Button onClick={() => window.location.reload()} className="min-h-11">Reintentar</Button>
+        </div>
+      ) : (
+        <>
+
+      <div className="bg-card rounded-2xl p-6 border border-border">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Building2 className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-foreground">Información del Negocio</h2>
+            <p className="text-sm text-muted-foreground">Detalles básicos sobre tu negocio</p>
+          </div>
+        </div>
+        <div className="space-y-4">
+          {/* El nombre lo posee Marca, que es donde se ve sobre la tarjeta. Se
+              editaba en las dos pantallas, cada una con su guardado, y el último
+              que guardabas pisaba al otro. */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted/30 p-4">
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground">Nombre del negocio</p>
+              <p className="truncate font-medium text-foreground">{businessName || "Sin nombre"}</p>
+            </div>
+            <Button asChild variant="outline" className="min-h-11">
+              <Link href="/dashboard/branding">Cambiar en Marca</Link>
+            </Button>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="businessType">Tipo de Negocio</Label>
+            <Input id="businessType" value={businessType} onChange={(e) => setBusinessType(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="nickname">Apodo (visible en el panel)</Label>
+            <Input
+              id="nickname"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              placeholder="Ej. Juan, El Jefe, Administrador..."
+              maxLength={40}
+            />
+            <p className="text-xs text-muted-foreground">
+              Se muestra en lugar de tu correo electrónico en el panel. Solo para uso interno.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="address">Dirección</Label>
+            <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="phone">Teléfono</Label>
+            <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          </div>
+
+          {/* El correo no se edita, así que era una tarjeta entera para mostrar
+              un dato. Como fila dice lo mismo ocupando lo que le corresponde. */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted/30 p-4">
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground">Correo de la cuenta</p>
+              <p className="truncate font-medium text-foreground">{email}</p>
+            </div>
+            <Mail className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-card rounded-2xl p-6 border border-border">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Globe className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-foreground">Presencia digital</h2>
+            {/* Sin promesas: hoy no llegan al cliente, y decir que "pronto"
+                aparecerán es exactamente lo que la ola 1 quitó de la app. */}
+            <p className="text-sm text-muted-foreground">
+              Todavía no se muestran a tus clientes.
+            </p>
+          </div>
+        </div>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="website">Sitio web</Label>
+            <Input id="website" value={website} onChange={(e) => setWebsite(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="instagram">Instagram</Label>
+            <Input id="instagram" value={instagram} onChange={(e) => setInstagram(e.target.value)} />
+          </div>
+        </div>
+      </div>
+
+      {/* Save Button */}
+      <div className="flex flex-col items-end gap-3">
+        {saveError && (
+          <p className="text-sm text-red-500 text-right">{saveError}</p>
+        )}
+        <Button onClick={handleSave} className="min-h-11 px-8" disabled={saving}>
+          {saved ? (
+            <>
+              <Check className="h-4 w-4 mr-2" />
+              ¡Guardado!
+            </>
+          ) : saving ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              Guardando...
+            </>
+          ) : (
+            "Guardar Cambios"
+          )}
+        </Button>
+      </div>
+
+      <AccountClosurePanel />
+        </>
+      ))}
+    </div>
+  )
+}
