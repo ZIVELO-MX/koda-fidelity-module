@@ -118,7 +118,10 @@ jobs:
   auth-e2e:
     name: auth-e2e (Supabase local + Mailpit)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # Veinte no alcanzaban: el job corre en serie y cada invocación de Playwright
+    # levanta su propio servidor de producción. Cancelado por tiempo, GitHub lo
+    # pinta rojo sin decir en qué paso se quedó.
+    timeout-minutes: 35
     concurrency:
       group: fid-0016-auth-e2e-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
@@ -173,6 +176,16 @@ jobs:
             cat "$start_log"
             exit 1
           fi
+          # Qué servicios quedaron arriba, por si el fallo llega más adelante.
+          supabase status || true
+
+      - name: Upload the Supabase start log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-start-log
+          path: ${{ runner.temp }}/supabase-start.log
+          if-no-files-found: ignore
 
       - name: Export local Supabase keys
         shell: bash
@@ -217,7 +230,6 @@ jobs:
       - name: Run FID-0025 onboarding tests
         env:
           E2E_ONBOARDING_EMAIL: fidelity.seed.portal@dev.invalid
-          E2E_ONBOARDING_PASSWORD: ${{ env.E2E_PORTAL_PASSWORD || 'ci-portal-password' }}
         run: >-
           pnpm exec playwright test --config=playwright.auth.config.ts
           e2e/onboarding-recorrido.spec.ts
@@ -233,10 +245,19 @@ jobs:
       - name: Run FID-0025 plan tests
         env:
           E2E_ONBOARDING_EMAIL: fidelity.seed.portal@dev.invalid
-          E2E_ONBOARDING_PASSWORD: ${{ env.E2E_PORTAL_PASSWORD || 'ci-portal-password' }}
         run: >-
           pnpm exec playwright test --config=playwright.auth.config.ts
           e2e/planes.spec.ts
+
+      - name: Upload the end-to-end evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-e2e-report
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
 
       - name: Stop local Supabase
         if: always()
