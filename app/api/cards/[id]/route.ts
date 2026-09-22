@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getBusinessFromSession, requireWritableBusinessPrincipal, handleApiError, NotFoundError, ValidationError, requireRole, requestIdFrom, withRequestId } from "@/lib/api-utils"
 import { isExpired } from "@/lib/card-utils"
-import { getEntitlements } from "@/lib/account-lifecycle"
+import { syncExpiredEntitlements } from "@/lib/account-lifecycle"
 import { resolveTheme } from "@/lib/card-themes"
 
 /**
@@ -256,7 +256,7 @@ export async function PUT(
     }
 
     const stampsRequired = body.stampsRequired !== undefined ? Number(body.stampsRequired) : existing.stampsRequired
-    const entitlements = await getEntitlements(prisma, business.id)
+    const entitlements = await syncExpiredEntitlements(prisma, business.id)
     const theme = body.themeId !== undefined
       ? await resolveTheme(prisma, typeof body.themeId === "string" ? body.themeId : undefined, entitlements.plan as "LITE" | "PRO")
       : { selectedThemeId: existing.selectedThemeId, effectiveThemeId: existing.effectiveThemeId }

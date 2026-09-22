@@ -82,6 +82,11 @@ const options: swaggerJsdoc.Options = {
               nullable: true,
               description: "Logo URL",
             },
+            avatarUrl: {
+              type: "string",
+              nullable: true,
+              description: "Fresh signed URL for the private business avatar",
+            },
             createdAt: {
               type: "string",
               format: "date-time",

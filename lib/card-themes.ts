@@ -1,10 +1,20 @@
 import { Prisma, PrismaClient, ThemePlan } from "@prisma/client"
-import { NotFoundError, ValidationError } from "@/lib/api-utils"
+import { NotFoundError } from "@/lib/api-utils"
 
 export const fidelityThemeCodes = [
   "panaderia", "taqueria", "cafeteria", "hamburguesas", "pizzeria", "barberia",
   "salon-belleza", "gimnasio", "futbol", "sushi", "veterinaria", "farmacia", "heladeria",
 ] as const
+
+export const fidelityProThemeCodes = ["gradiente", "foil", "cinetico", "vidrio"] as const
+
+export async function listActiveThemes(db: PrismaClient | Prisma.TransactionClient) {
+  return db.loyaltyTheme.findMany({
+    where: { isActive: true },
+    select: { id: true, code: true, plan: true },
+    orderBy: [{ plan: "asc" }, { code: "asc" }],
+  })
+}
 
 export async function resolveTheme(
   db: PrismaClient | Prisma.TransactionClient,
@@ -17,7 +27,5 @@ export async function resolveTheme(
   if (theme.plan !== ThemePlan.PRO || plan === "PRO") {
     return { selectedThemeId: theme.id, effectiveThemeId: theme.id, themeLocked: false }
   }
-  const fallback = await db.loyaltyTheme.findFirst({ where: { isActive: true, plan: ThemePlan.LITE }, orderBy: { code: "asc" } })
-  if (!fallback) throw new ValidationError("No hay un tema Lite disponible para fallback")
-  return { selectedThemeId: theme.id, effectiveThemeId: fallback.id, themeLocked: true }
+  return { selectedThemeId: theme.id, effectiveThemeId: null, themeLocked: true }
 }

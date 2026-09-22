@@ -228,17 +228,25 @@ test.describe("FID-0016 development authentication", () => {
   })
 
   test("auth-only customer reaches the portal with no cards or business", async ({ page, request }) => {
-    await page.goto("/dashboard/my-cards")
-    await page.getByLabel("Correo Electrónico").fill(CUSTOMER_EMAIL)
-    const previousIds = await mailpitMessageIds(request, CUSTOMER_EMAIL)
-    await page.getByRole("button", { name: "Enviar enlace mágico" }).click()
-    await expect(page.getByText(`Te enviamos un enlace mágico a ${CUSTOMER_EMAIL}.`)).toBeVisible()
-    const magicLink = await waitForMagicLink(request, CUSTOMER_EMAIL, previousIds)
-    await page.goto(magicLink)
-    await page.waitForURL("**/dashboard/my-cards", { timeout: 15000 })
-    await expect(page.getByText("No tienes tarjetas de lealtad")).toBeVisible({ timeout: 15000 })
-    const response = await apiJson(page, `/api/join?email=${encodeURIComponent(CUSTOMER_EMAIL)}`, { method: "GET" })
-    expect(response.status).toBe(200)
-    expect(response.body).toEqual({ customers: [] })
+    const magicLink = await test.step("request customer magic link", async () => {
+      await page.goto("/dashboard/my-cards")
+      await page.getByLabel("Correo Electrónico").fill(CUSTOMER_EMAIL)
+      const previousIds = await mailpitMessageIds(request, CUSTOMER_EMAIL)
+      await page.getByRole("button", { name: "Enviar enlace mágico" }).click()
+      await expect(page.getByText(`Te enviamos un enlace mágico a ${CUSTOMER_EMAIL}.`)).toBeVisible()
+      return waitForMagicLink(request, CUSTOMER_EMAIL, previousIds)
+    })
+
+    await test.step("open customer portal from magic link", async () => {
+      await page.goto(magicLink)
+      await page.waitForURL("**/dashboard/my-cards", { timeout: 15000 })
+      await expect(page.getByText("No tienes tarjetas de lealtad")).toBeVisible({ timeout: 15000 })
+    })
+
+    await test.step("verify customer has no business", async () => {
+      const response = await apiJson(page, `/api/join?email=${encodeURIComponent(CUSTOMER_EMAIL)}`, { method: "GET" })
+      expect(response.status).toBe(200)
+      expect(response.body).toEqual({ customers: [] })
+    })
   })
 })
