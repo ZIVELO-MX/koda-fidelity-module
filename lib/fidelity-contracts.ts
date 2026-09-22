@@ -3,6 +3,7 @@ export type BusinessPublic = {
   name: string
   brandColor: string
   logoUrl: string | null
+  avatarUrl?: string | null
   iconName: string | null
   website?: string | null
   instagram?: string | null

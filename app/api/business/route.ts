@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getBusinessFromSession, requireWritableBusinessPrincipal, handleApiError, ValidationError, requireRole, requestIdFrom, withRequestId } from "@/lib/api-utils"
+import { withBusinessAvatarUrl } from "@/lib/private-avatar"
+
+const noStore = { headers: { "Cache-Control": "private, no-store" } }
 
 /**
  * @openapi
@@ -79,7 +82,7 @@ export async function GET(request: NextRequest) {
   const requestId = requestIdFrom(request)
   try {
     const { business } = await getBusinessFromSession()
-    return withRequestId(NextResponse.json({ business }), requestId)
+    return withRequestId(NextResponse.json({ business: await withBusinessAvatarUrl(prisma, business) }, noStore), requestId)
   } catch (error) {
     return withRequestId(handleApiError(error, requestId), requestId)
   }
@@ -113,7 +116,7 @@ export async function PUT(request: NextRequest) {
       },
     })
 
-    return withRequestId(NextResponse.json({ business: updated }), requestId)
+    return withRequestId(NextResponse.json({ business: await withBusinessAvatarUrl(prisma, updated) }, noStore), requestId)
   } catch (error) {
     return withRequestId(handleApiError(error, requestId), requestId)
   }
