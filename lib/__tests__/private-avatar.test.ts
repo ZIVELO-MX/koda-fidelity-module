@@ -32,12 +32,13 @@ describe("private avatar URLs", () => {
     expect(createSignedUrl).toHaveBeenCalledWith("customer/profile-1/avatar.webp", 3600)
   })
 
-  it("adds avatarUrl to a customer profile without removing avatarPath", async () => {
-    await expect(withCustomerAvatarUrl({ id: "profile-1", avatarPath: "customer/profile-1/avatar.webp", name: "Ada" })).resolves.toMatchObject({
+  it("adds avatarUrl without exposing the stored customer path", async () => {
+    const profile = await withCustomerAvatarUrl({ id: "profile-1", avatarPath: "customer/profile-1/avatar.webp", name: "Ada" })
+    expect(profile).toMatchObject({
       id: "profile-1",
-      avatarPath: "customer/profile-1/avatar.webp",
       avatarUrl: "https://signed/avatar",
     })
+    expect(profile).not.toHaveProperty("avatarPath")
   })
 
   it("uses the latest pending business asset and returns null when none exists", async () => {

@@ -29,7 +29,9 @@ export async function signPrivateAvatarPathWithClient(
 
 export async function withCustomerAvatarUrl<T extends StoredAvatar>(profile: T | null) {
   if (!profile) return null
-  return { ...profile, avatarUrl: await signPrivateAvatarPath(profile.avatarPath, `customer/${String(profile.id)}`) }
+  const avatarUrl = await signPrivateAvatarPath(profile.avatarPath, `customer/${String(profile.id)}`)
+  const { avatarPath: _avatarPath, ...publicProfile } = profile
+  return { ...publicProfile, avatarUrl }
 }
 
 export async function withBusinessAvatarUrl<T extends { id: string }>(db: PrismaClient, business: T) {

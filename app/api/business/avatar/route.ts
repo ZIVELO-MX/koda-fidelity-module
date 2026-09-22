@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
     if (uploadError) throw uploadError
     const asset = await registerBusinessAvatar(prisma, business.id, path)
     const avatarUrl = await signPrivateAvatarPathWithClient(admin, path, `business/${business.id}`)
-    return withRequestId(NextResponse.json({ asset: { ...asset, avatarUrl }, avatarPath: path, signedUrl: avatarUrl }, { status: 201, headers: { "Cache-Control": "private, no-store" } }), requestId)
+    const { storagePath: _storagePath, ...publicAsset } = asset
+    return withRequestId(NextResponse.json({ asset: { ...publicAsset, avatarUrl }, signedUrl: avatarUrl }, { status: 201, headers: { "Cache-Control": "private, no-store" } }), requestId)
   } catch (error) { return withRequestId(handleApiError(error, requestId), requestId) }
 }

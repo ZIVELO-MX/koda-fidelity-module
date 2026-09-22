@@ -42,7 +42,8 @@ export async function PUT(request: NextRequest) {
     if (error) throw error
     const updated = await replaceCustomerAvatar(prisma, profile.id, bucket, path)
     const avatarUrl = await signPrivateAvatarPathWithClient(admin, path, `customer/${profile.id}`)
-    return withRequestId(NextResponse.json({ profile: { ...updated, avatarUrl }, signedUrl: avatarUrl }, { headers: { "Cache-Control": "private, no-store" } }), requestId)
+    const { avatarPath: _avatarPath, ...publicProfile } = updated
+    return withRequestId(NextResponse.json({ profile: { ...publicProfile, avatarUrl }, signedUrl: avatarUrl }, { headers: { "Cache-Control": "private, no-store" } }), requestId)
   } catch (error) { return withRequestId(handleApiError(error, requestId), requestId) }
 }
 
