@@ -203,7 +203,7 @@ jobs:
       - name: Install Playwright browser
         run: pnpm exec playwright install chromium
 
-      - name: Run FID-0016 authentication tests
+      - name: Test FID-0016 browser flows (login, session, recovery, portal)
         run: pnpm exec playwright test --config=playwright.auth.config.ts e2e/auth-development.spec.ts
 
       - name: Stop local Supabase
