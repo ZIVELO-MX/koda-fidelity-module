@@ -165,14 +165,6 @@ test.describe("ola 4, landing pública", () => {
       await expect(page.getByRole("link", { name: "Ir al inicio" })).toBeVisible()
     })
 
-    test("las preguntas abren sin JavaScript y la primera ya está abierta", async ({ page }) => {
-      await page.goto("/")
-      const preguntas = page.locator("#faq details")
-      await expect(preguntas.first()).toHaveAttribute("open", "")
-      // Acordeón nativo: si alguien lo cambia por una librería, esto avisa.
-      expect(await preguntas.count()).toBeGreaterThan(3)
-    })
-
     test("cada campo del formulario lleva su etiqueta a la vista", async ({ page }) => {
       await page.goto("/")
       // Los seis campos del diseño aprobado, con sus ids, que no se cambian
@@ -205,6 +197,64 @@ test.describe("ola 4, landing pública", () => {
       await expect(comoFunciona).not.toContainText("01")
       await expect(comoFunciona).not.toContainText("02")
       await expect(comoFunciona).not.toContainText("03")
+    })
+  })
+
+  /**
+   * El acordeón, con JavaScript realmente apagado.
+   *
+   * La versión anterior de esta prueba se llamaba "sin JavaScript" y corría con
+   * JavaScript como todas las demás, y además no abría nada: miraba que la
+   * primera trajera `open` y contaba elementos. Afirmaba dos cosas que no
+   * comprobaba, que es peor que no tenerla.
+   *
+   * Va en su propio `describe` porque `javaScriptEnabled` es una opción de
+   * contexto y no se puede cambiar dentro de una prueba.
+   */
+  test.describe("el acordeón de preguntas, con JavaScript apagado", () => {
+    test.use({ javaScriptEnabled: false, viewport: { width: 1440, height: 900 } })
+
+    test("la primera ya está abierta y las demás abren al accionarlas", async ({ page }) => {
+      await page.goto("/")
+
+      // Que los scripts de la página estén apagados de verdad. Sin esta guarda,
+      // el defecto que se corrige aquí puede volver sin que nadie lo note.
+      //
+      // No sirve `page.evaluate(() => ...)` a secas: `javaScriptEnabled: false`
+      // apaga los scripts de la página, no el runtime de Playwright, así que
+      // evaluate sigue respondiendo. La señal es `__next_f`, el global que Next
+      // llena desde los scripts en línea del documento: con JavaScript vale
+      // "object" y sin él, "undefined". Medido en las dos modalidades.
+      const scriptsDeLaPagina = await page.evaluate(
+        () => typeof (globalThis as Record<string, unknown>).__next_f,
+      )
+      expect(scriptsDeLaPagina, "los scripts de la página todavía corren").toBe("undefined")
+
+      const preguntas = page.locator("#faq details")
+      // Acordeón nativo: si alguien lo cambia por una librería, esto avisa,
+      // porque una librería no pinta `details` y sin JavaScript no abriría.
+      expect(await preguntas.count()).toBeGreaterThan(3)
+
+      // La primera llega abierta: enseña que el acordeón se abre y responde la
+      // duda más común sin pedir un clic.
+      const primera = preguntas.first()
+      await expect(primera).toHaveAttribute("open", "")
+      await expect(primera.locator("p")).toBeVisible()
+
+      // Y una cerrada se abre de verdad al accionarla, que es lo que la prueba
+      // anterior decía en su nombre y nunca hacía.
+      const segunda = preguntas.nth(1)
+      await expect(segunda).not.toHaveAttribute("open", "")
+      await expect(segunda.locator("p")).toBeHidden()
+
+      await segunda.locator("summary").click()
+
+      await expect(segunda).toHaveAttribute("open", "")
+      await expect(segunda.locator("p")).toBeVisible()
+
+      // Abrir una no cierra la otra: son `details` sueltos, no un grupo con
+      // `name`, así que quien compara dos respuestas no pierde la primera.
+      await expect(primera).toHaveAttribute("open", "")
     })
   })
 })
