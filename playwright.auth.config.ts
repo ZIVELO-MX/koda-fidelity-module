@@ -6,6 +6,8 @@ export default defineConfig({
   workers: 1,
   retries: process.env.CI ? 1 : 0,
   timeout: 30000,
+  globalTimeout: process.env.CI ? 5 * 60_000 : undefined,
+  reporter: [["list", { printSteps: true, printFailuresInline: true }]],
   use: {
     baseURL: "http://localhost:3000",
     locale: "es-MX",
