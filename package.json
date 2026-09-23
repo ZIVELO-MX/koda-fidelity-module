@@ -27,7 +27,8 @@
     "auth:backfill": "tsx scripts/backfill-auth-user-ids.ts",
     "billing:set-plan": "tsx scripts/billing-set-plan.ts",
     "onboarding:debug": "tsx scripts/onboarding-debug.ts",
-    "prepare:onboarding-e2e": "tsx scripts/prepare-onboarding-e2e.ts"
+    "prepare:onboarding-e2e": "tsx scripts/prepare-onboarding-e2e.ts",
+    "onboarding:mock": "tsx scripts/onboarding-mock.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

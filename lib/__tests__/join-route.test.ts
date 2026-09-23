@@ -18,7 +18,10 @@ vi.mock("@/lib/supabase-server", () => ({
 }))
 
 vi.mock("@/lib/prisma", () => ({ prisma: mockPrisma }))
-vi.mock("@/lib/account-lifecycle", () => ({ assertBusinessWritable: vi.fn() }))
+vi.mock("@/lib/account-lifecycle", () => ({
+  assertBusinessWritable: vi.fn(),
+  syncExpiredEntitlements: vi.fn(),
+}))
 
 vi.mock("next/server", () => ({
   NextRequest: class {},

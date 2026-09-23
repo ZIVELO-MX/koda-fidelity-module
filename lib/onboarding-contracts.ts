@@ -7,12 +7,14 @@ export const onboardingDraftSchema = z.object({
   acquisitionSource: z.enum(["KODA_POS", "REFERRAL", "SOCIAL", "SEARCH", "EVENT", "OTHER"]).nullable().optional(),
   selectedBillingInterval: z.enum(["MONTHLY", "ANNUAL"]).nullable().optional(),
 })
+export type OnboardingDraftInput = z.infer<typeof onboardingDraftSchema>
 
 export const advanceSchema = z.object({
   action: z.enum(["complete_intro", "skip_intro", "complete_business", "complete_card", "complete_acquisition", "skip_acquisition", "select_billing_interval", "open_paywall"]),
   draftVersion: z.number().int().min(0),
   billingInterval: z.enum(["MONTHLY", "ANNUAL"]).optional(),
 })
+export type AdvanceInput = z.infer<typeof advanceSchema>
 
 export const manualSubscriptionSchema = z.object({
   businessId: z.string().min(1),

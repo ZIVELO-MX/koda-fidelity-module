@@ -216,7 +216,7 @@ jobs:
       - name: Install Playwright browser
         run: pnpm exec playwright install chromium
 
-      - name: Run FID-0016 authentication tests
+      - name: Test login, session refresh, password recovery, and customer portal
         run: pnpm exec playwright test --config=playwright.auth.config.ts e2e/auth-development.spec.ts
 
       # FID-0025. El fixture deja el alta de la cuenta de pruebas en el primer
