@@ -2,6 +2,8 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { StatCard } from "@/components/dashboard/stat-card"
+import { MetricasHistoricas } from "@/components/dashboard/metricas-historicas"
+import { ActividadPaginada } from "@/components/dashboard/actividad-paginada"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 import { getCardIcon } from "@/lib/card-icons"
@@ -387,6 +389,10 @@ export default async function DashboardPage() {
           </div>
         </div>
       </div>
+
+      <MetricasHistoricas />
+
+      <ActividadPaginada />
 
       {/* Mobile: link to docs */}
       <div className="lg:hidden">
