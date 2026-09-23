@@ -129,6 +129,29 @@ diseño con alcance de producto, no un ajuste dentro de una misión de temas.
 la base de 0.16 a 0.22 -- 3.60:1 con `#c2410c` --; se revirtió, y ahora ningún acabado aclara por
 encima de la base original. La diferencia entre acabados sale del tono y de la textura.
 
+### Medido sobre la paleta que el usuario elige — 2026-09-22
+
+Los tres colores de arriba eran ejemplos. Estos son los seis que ofrece de verdad el asistente de
+tarjetas, que es lo que un negocio puede elegir con un clic. Blanco sobre el punto más claro del
+degradado, sobre el color base y sobre el punto más oscuro:
+
+| Color | Punto claro | Base | Punto oscuro |
+|---|---|---|---|
+| `#f97316` naranja KODA | 2.41 | 2.80 | 4.41 |
+| `#3b82f6` azul | 2.94 | 3.68 | 5.62 |
+| `#10b981` verde | 2.21 | 2.54 | 4.04 |
+| `#8b5cf6` morado | 3.29 | 4.23 | 6.31 |
+| `#ec4899` rosa | 2.96 | 3.53 | 5.43 |
+| `#f59e0b` ámbar | 1.90 | 2.15 | 3.47 |
+
+Ninguno llega a 4.5 en el punto claro, que es justo donde el degradado coloca la esquina superior
+izquierda: el nombre del negocio. Cuatro de los seis tampoco alcanzan 3.0, el mínimo para texto
+grande. El ámbar es el peor en las tres columnas. El acabado foil resta otro 8-12% porque su velo
+añade blanco.
+
+Sigue sin arreglarse por la misma razón de arriba, y sigue siendo decisión de Raúl. La medición se
+anota para que esa decisión se tome con los números de la paleta real.
+
 **Si se decide abordarlo**, el camino más corto es usar `derivarMarca(brandColor).texto` como primer
 plano de la tarjeta y verificar los trece giros más los cuatro acabados, que es exactamente el
 barrido que pide el ADN.
