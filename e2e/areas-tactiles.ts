@@ -27,7 +27,12 @@ export async function medirDestinos(page: Page): Promise<Destino[]> {
       const caja = el.getBoundingClientRect()
       if (caja.width === 0 || caja.height === 0) return false
       const estilo = getComputedStyle(el)
-      return estilo.visibility !== "hidden" && estilo.display !== "none"
+      if (estilo.visibility === "hidden" || estilo.display === "none") return false
+      // Lo que está fuera del árbol de accesibilidad no es un destino: la
+      // landing clona su carrusel dentro de un `aria-hidden` para que el
+      // movimiento no tenga costura, y medir el clon es medir dos veces lo
+      // mismo. `getByRole`, que es lo que esto sustituye, ya los ignoraba.
+      return !el.closest('[aria-hidden="true"], [inert]')
     }
     return [...document.querySelectorAll("a[href], button")]
       .filter(visible)

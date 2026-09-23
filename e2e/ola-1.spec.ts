@@ -17,18 +17,11 @@ const ANCHOS = [
 
 const RUTAS_PUBLICAS = ["/login", "/signup", "/dashboard/my-cards"]
 
-// El ADN pide 40px de área táctil en un control y 44px en un destino de
-// navegación. Medido el 2026-09-08 en los tres anchos. Todo lo de aquí vive en
-// pantallas de acceso que pertenecen a FID-0013, bloqueada, así que se
-// documenta en vez de corregirse.
-const CONOCIDOS_FID_0013 = [
-  "boton Continuar",         // 36px en /login, el mínimo del control es 40
-  "boton Crear Cuenta",      // 36px en /signup con el alta abierta
-  "enlace Koda Fidelity",    // 32px, 36 en 1440
-  "enlace Más información",  // 18px
-  "enlace Solicitar acceso", // 36px, /signup con el alta cerrada
-  "enlace Iniciar Sesión",   // 20px
-]
+// FID-0013 dejó una lista de seis destinos por debajo del mínimo, para no
+// bloquear mientras esas pantallas estaban paradas. Medido el 2026-09-22 en los
+// tres anchos y en las dos caras de /signup, ya no falla ninguno: la lista se
+// va, porque una excepción que ya no aplica solo sirve para tapar la próxima
+// regresión.
 
 // El servidor de pruebas arranca con INVITE_ONLY=false, así que /signup se ve
 // con el formulario abierto. Con la bandera puesta enseña la otra cara, y por
@@ -76,7 +69,7 @@ for (const ancho of ANCHOS) {
         await expect(page.locator(".animate-spin")).toHaveCount(0)
 
         const destinos = await medirDestinos(page)
-        const faltas = faltantes(destinos, CONOCIDOS_FID_0013)
+        const faltas = faltantes(destinos)
         // Aserción de subconjunto: los conocidos no rompen, uno nuevo sí. Ahora
         // mide las dos dimensiones, así que un control ancho y bajo, o alto y
         // estrecho, deja de pasar por bueno.
