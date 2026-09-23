@@ -6,6 +6,8 @@ export default defineConfig({
   workers: 1,
   retries: process.env.CI ? 1 : 0,
   timeout: 30000,
+  globalTimeout: process.env.CI ? 5 * 60_000 : undefined,
+  reporter: [["list", { printSteps: true, printFailuresInline: true }]],
   use: {
     baseURL: "http://localhost:3000",
     locale: "es-MX",
@@ -14,9 +16,10 @@ export default defineConfig({
     screenshot: "off",
   },
   webServer: {
-    command: "pnpm start",
-    port: 3000,
+    command: "node ./node_modules/next/dist/bin/next start -p 3000",
+    url: "http://localhost:3000",
     reuseExistingServer: false,
     timeout: 120000,
+    gracefulShutdown: { signal: "SIGTERM", timeout: 5000 },
   },
 })

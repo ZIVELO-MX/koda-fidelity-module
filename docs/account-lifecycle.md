@@ -5,7 +5,7 @@ activación de planes no dependa todavía de un proveedor de pagos.
 
 ## Endpoints
 
-- `GET /api/onboarding`: devuelve el progreso persistente y las categorías activas.
+- `GET /api/onboarding`: devuelve el progreso persistente, las categorías y los temas activos.
 - `PATCH /api/onboarding`: guarda un borrador con `draftVersion` optimista.
 - `POST /api/onboarding`: avanza u omite un paso; crear la primera tarjeta es transaccional.
 - `GET /api/subscription`: devuelve el plan efectivo y sus entitlements.
@@ -17,8 +17,9 @@ activación de planes no dependa todavía de un proveedor de pagos.
 
 ## Reglas de datos
 
-- La activación manual concede acceso Pro simbólico mediante `proAccessGranted`; no ejecuta cobros, renueva ni degrada automáticamente.
-- Un downgrade a Lite requiere una activación manual explícita con `proAccessGranted: false` y conserva una sola tarjeta Lite activa sin borrar las demás.
+- La primera activación manual de Lite concede un mes Pro y persiste su límite en `proTrialEndsAt`; las renovaciones y cambios de plan siguen siendo manuales y no ejecutan cobros.
+- El vencimiento se aplica de forma idempotente, conserva una sola tarjeta Lite activa sin borrar las demás y registra `expire_pro_trial` en la auditoría de billing.
+- El scheduler debe invocar cada hora `POST /api/cron/subscription-entitlements` con `Authorization: Bearer $CRON_SECRET`. Las rutas de onboarding, suscripción, tarjetas y alta pública actúan como respaldo si el worker se retrasa.
 - El ledger se anonimiza (`customerId = null`) antes de un borrado permanente de cliente.
 - El cierre de negocio se agenda a 30 días y su ejecución elimina el negocio en cascada después de la gracia.
 - Durante la gracia el negocio queda en sólo lectura. Para ejecutar cierres vencidos temporalmente se invoca manualmente `POST /api/cron/account-closures` con `Authorization: Bearer $CRON_SECRET`; cada ejecución reintenta limpiezas fallidas.

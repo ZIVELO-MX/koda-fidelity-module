@@ -34,6 +34,7 @@ describe("OpenAPI spec", () => {
       "/api/cards/{id}/restore",
       "/api/billing/status",
       "/api/cron/account-closures",
+      "/api/cron/subscription-entitlements",
       "/api/customer-profile",
       "/api/customer/profile/avatar",
       "/api/customer/profile",
