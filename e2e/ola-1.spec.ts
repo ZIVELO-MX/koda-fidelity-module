@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test"
+import { medirDestinos, faltantes, informe } from "./areas-tactiles"
 
 // Recorrido de la ola 1 en los tres anchos del design system.
 //
@@ -74,30 +75,12 @@ for (const ancho of ANCHOS) {
         // usuario no llega a tocar, y daba verde sin haber medido nada.
         await expect(page.locator(".animate-spin")).toHaveCount(0)
 
-        const pequeños: string[] = []
-        for (const { rol, minimo } of [
-          { rol: "button" as const, minimo: 40 },
-          { rol: "link" as const, minimo: 44 },
-        ]) {
-          for (const objetivo of await page.getByRole(rol).all()) {
-            if (!(await objetivo.isVisible())) continue
-            const nombre =
-              (await objetivo.getAttribute("aria-label")) || (await objetivo.innerText()).trim()
-            // El overlay de desarrollo de Next no es interfaz de la app.
-            if (/next\.js/i.test(nombre)) continue
-            const caja = await objetivo.boundingBox()
-            if (caja && caja.height < minimo) {
-              const etiqueta = rol === "button" ? "boton" : "enlace"
-              pequeños.push(`${etiqueta} ${nombre || "(sin nombre accesible)"}`)
-            }
-          }
-        }
-
-        // Aserción de subconjunto: arreglar los conocidos la deja en verde, y
-        // uno nuevo la rompe.
-        expect(pequeños.sort(), `en ${ruta} a ${ancho.width}px`).toEqual(
-          pequeños.filter((t) => CONOCIDOS_FID_0013.includes(t)).sort(),
-        )
+        const destinos = await medirDestinos(page)
+        const faltas = faltantes(destinos, CONOCIDOS_FID_0013)
+        // Aserción de subconjunto: los conocidos no rompen, uno nuevo sí. Ahora
+        // mide las dos dimensiones, así que un control ancho y bajo, o alto y
+        // estrecho, deja de pasar por bueno.
+        expect(faltas, informe(faltas, `${ruta} a ${ancho.width}px`)).toEqual([])
       })
     }
   })

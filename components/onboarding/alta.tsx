@@ -16,6 +16,7 @@ import {
   type AccionDelAlta, type AcquisitionSource, type BillingInterval, type EstadoDelAlta,
 } from "@/lib/onboarding"
 import { esAcabadoPro, nombreDeTema } from "@/lib/temas-de-tarjeta"
+import { siteConfig } from "@/lib/site-config"
 import { cn } from "@/lib/utils"
 
 const PESOS = new Intl.NumberFormat("es-MX")
@@ -36,6 +37,22 @@ const INTRO = [
 ]
 
 type Aviso = { texto: string; reintentable: boolean; requestId?: string } | null
+
+/**
+ * El color con el que se pinta la tarjeta cuando el tema efectivo no manda.
+ *
+ * El servidor devuelve `effectiveThemeId: null` cuando el acabado Pro elegido
+ * no tiene plan que lo sostenga, y entonces la tarjeta se pinta con el color
+ * que eligió el negocio. Si no eligió ninguno, el naranja de KODA. Nunca queda
+ * sin identidad, que es lo que pide el diseño.
+ *
+ * El naranja sale de `siteConfig` y no de un literal: es el mismo que usan
+ * Marca, el asistente de tarjetas y el manifiesto, y tenerlo en dos sitios ya
+ * había dejado dos naranjas distintos en la misma pantalla.
+ */
+function colorDeRespaldo(estado: EstadoDelAlta) {
+  return estado.tarjeta.brandColor || siteConfig.defaultBrandColor
+}
 
 export function Alta() {
   const router = useRouter()
@@ -433,7 +450,7 @@ function Tarjeta({
   onCambioLocal: (e: EstadoDelAlta) => void
 }) {
   const sellos = estado.tarjeta.stampsRequired ?? 10
-  const color = estado.tarjeta.brandColor ?? "#ff6b35"
+  const color = colorDeRespaldo(estado)
 
   const elegido = estado.temas.find((t) => t.id === estado.tarjeta.themeId)
   // El plan de la cuenta decide si el acabado Pro se llega a ver. La selección
@@ -594,7 +611,7 @@ function Club({ estado }: { estado: EstadoDelAlta }) {
         currentStamps={0}
         maxStamps={estado.tarjeta.stampsRequired ?? 10}
         reward={estado.tarjeta.reward || "Tu recompensa"}
-        brandColor={estado.tarjeta.brandColor ?? "#ff6b35"}
+        brandColor={colorDeRespaldo(estado)}
         showQR={false}
         className="mx-auto max-w-[300px]"
       />
@@ -670,7 +687,7 @@ export function TarjetaGuardada({ estado }: { estado: EstadoDelAlta }) {
           currentStamps={0}
           maxStamps={estado.tarjeta.stampsRequired ?? 10}
           reward={estado.tarjeta.reward || "Tu recompensa"}
-          brandColor={estado.tarjeta.brandColor ?? "#ff6b35"}
+          brandColor={colorDeRespaldo(estado)}
           themeCode={temaEfectivo}
           showQR={false}
           className="mx-auto max-w-[280px]"

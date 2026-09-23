@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach } from "vitest"
 import { render, screen, cleanup, within } from "@testing-library/react"
 import { TarjetaGuardada } from "../alta"
+import { siteConfig } from "@/lib/site-config"
 import type { EstadoDelAlta } from "@/lib/onboarding"
 
 const ESTADO: EstadoDelAlta = {
@@ -76,5 +77,33 @@ describe("TarjetaGuardada, detrás del muro de pago", () => {
     render(<TarjetaGuardada estado={{ ...ESTADO, negocio: {} }} />)
     const seccion = screen.getByText(/todavía no publicada/i).closest("section") as HTMLElement
     expect(within(seccion).getAllByText(/Café Aurora/i).length).toBeGreaterThan(0)
+  })
+
+  /**
+   * El respaldo cuando el tema efectivo no manda. El servidor devuelve
+   * `effectiveThemeId: null` si el acabado Pro no tiene plan que lo sostenga, y
+   * entonces la tarjeta se pinta con el color del negocio, o con el naranja de
+   * KODA si no eligió ninguno. Nunca queda sin identidad.
+   */
+  it("sin tema efectivo usa el color del negocio", () => {
+    const { container } = render(
+      <TarjetaGuardada estado={{ ...ESTADO, tarjeta: { ...ESTADO.tarjeta, brandColor: "#0ea5e9" } }} />,
+    )
+    const estilos = container.innerHTML
+    expect(estilos).toContain("14, 165, 233")
+    expect(estilos).not.toContain(siteConfig.defaultBrandColor)
+  })
+
+  it("sin tema efectivo y sin color elegido usa el naranja de KODA", () => {
+    // El mismo naranja que Marca, el asistente de tarjetas y el manifiesto: sale
+    // de siteConfig, no de un literal suelto.
+    const sinColor = { ...ESTADO, tarjeta: { ...ESTADO.tarjeta, brandColor: undefined } }
+    const { container } = render(<TarjetaGuardada estado={sinColor} />)
+    const conNaranja = render(
+      <TarjetaGuardada estado={{ ...sinColor, tarjeta: { ...sinColor.tarjeta, brandColor: siteConfig.defaultBrandColor } }} />,
+    )
+    // Sin color elegido se pinta exactamente igual que eligiendo el naranja.
+    expect(container.innerHTML).toBe(conNaranja.container.innerHTML)
+    expect(siteConfig.defaultBrandColor).toBe("#f97316")
   })
 })

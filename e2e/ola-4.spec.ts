@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test"
+import { verificarAreasTactiles } from "./areas-tactiles"
 
 // Recorrido de la ola 4: landing pública y alta por QR.
 //
@@ -44,24 +45,7 @@ test.describe("ola 4, landing pública", () => {
         await page.goto("/")
         expect(await desborda(page), `la landing desborda en ${ancho.nombre}`).toBe(false)
 
-        for (const { rol, minimo } of [
-          { rol: "button" as const, minimo: 40 },
-          { rol: "link" as const, minimo: 44 },
-        ]) {
-          for (const objetivo of await page.getByRole(rol).all()) {
-            if (!(await objetivo.isVisible())) continue
-            const nombre =
-              (await objetivo.getAttribute("aria-label")) || (await objetivo.innerText()).trim()
-            if (/next\.js/i.test(nombre)) continue
-            const caja = await objetivo.boundingBox()
-            if (caja) {
-              expect(
-                caja.height,
-                `${rol} "${nombre}" en ${ancho.nombre}`,
-              ).toBeGreaterThanOrEqual(minimo)
-            }
-          }
-        }
+        await verificarAreasTactiles(page, `la landing en ${ancho.nombre}`)
       })
 
       test("el alta pública cabe y explica un enlace roto", async ({ page }) => {
@@ -71,23 +55,7 @@ test.describe("ola 4, landing pública", () => {
         ).toBeVisible({ timeout: 30000 })
         expect(await desborda(page), `el alta desborda en ${ancho.nombre}`).toBe(false)
 
-        for (const { rol, minimo } of [
-          { rol: "button" as const, minimo: 40 },
-          { rol: "link" as const, minimo: 44 },
-        ]) {
-          for (const objetivo of await page.getByRole(rol).all()) {
-            if (!(await objetivo.isVisible())) continue
-            const nombre =
-              (await objetivo.getAttribute("aria-label")) || (await objetivo.innerText()).trim()
-            if (/next\.js/i.test(nombre)) continue
-            const caja = await objetivo.boundingBox()
-            if (caja) {
-              expect(caja.height, `${rol} "${nombre}" en ${ancho.nombre}`).toBeGreaterThanOrEqual(
-                minimo,
-              )
-            }
-          }
-        }
+        await verificarAreasTactiles(page, `el alta pública en ${ancho.nombre}`)
       })
 
       test("el hero cabe en el primer viewport, con su botón a la vista", async ({ page }) => {

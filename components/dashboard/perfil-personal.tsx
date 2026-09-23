@@ -17,7 +17,13 @@ const coloresDeMarco = ["#f97316", "#3b82f6", "#10b981", "#8b5cf6", "#ec4899", "
 
 const MARCO_POR_DEFECTO = "#ff6b35"
 
-type Perfil = { id: string; name: string; avatarPath: string | null; avatarRingColor: string }
+/**
+ * El servidor ya no manda `avatarPath`: la ruta de almacenamiento es un dato
+ * interno y cada lectura autenticada devuelve una URL firmada fresca, válida
+ * una hora. La pantalla pinta `avatarUrl` y vuelve a pedir el perfil al
+ * recargar, que es justo lo que hace este componente al montarse.
+ */
+type Perfil = { id: string; name: string; avatarUrl: string | null; avatarRingColor: string }
 
 async function leer(url: string, init?: RequestInit) {
   const respuesta = await fetch(url, init)
@@ -76,6 +82,7 @@ export function PerfilPersonal() {
         if (encontrado) {
           setNombre(encontrado.name)
           setMarco(encontrado.avatarRingColor || MARCO_POR_DEFECTO)
+          setFoto(encontrado.avatarUrl)
         }
       })
       .catch(() => {
@@ -93,6 +100,7 @@ export function PerfilPersonal() {
     if (cuerpo?.profile) {
       setPerfil(cuerpo.profile)
       setMarco(cuerpo.profile.avatarRingColor || MARCO_POR_DEFECTO)
+      setFoto(cuerpo.profile.avatarUrl ?? null)
     }
   }
 
@@ -130,9 +138,7 @@ export function PerfilPersonal() {
     try {
       const cuerpo = new FormData()
       cuerpo.append("file", elegido)
-      const respuesta = await leer("/api/customer/profile/avatar", { method: "PUT", body: cuerpo })
-      aplicar(respuesta)
-      setFoto(respuesta?.signedUrl ?? null)
+      aplicar(await leer("/api/customer/profile/avatar", { method: "PUT", body: cuerpo }))
       setAviso("Foto guardada")
     } catch (razon) {
       setError(razon instanceof Error ? razon.message : "No fue posible subir la foto")
@@ -148,7 +154,6 @@ export function PerfilPersonal() {
     setAviso(null)
     try {
       aplicar(await leer("/api/customer/profile/avatar", { method: "DELETE" }))
-      setFoto(null)
     } catch (razon) {
       setError(razon instanceof Error ? razon.message : "No fue posible quitar la foto")
     } finally {
@@ -165,7 +170,7 @@ export function PerfilPersonal() {
   }
 
   const inicial = (nombre.trim() || "?").charAt(0).toUpperCase()
-  const hayFoto = Boolean(perfil?.avatarPath)
+  const hayFoto = Boolean(foto)
 
   return (
     <section className="space-y-4 rounded-2xl border border-border bg-card p-6">
@@ -213,9 +218,6 @@ export function PerfilPersonal() {
           <p className="text-xs text-muted-foreground">
             {perfil ? "JPG, PNG o WEBP, hasta 2 MB." : "Guarda tu nombre para poder subir una foto."}
           </p>
-          {hayFoto && !foto && (
-            <p className="text-xs text-muted-foreground">Tu foto está guardada. Todavía no se muestra al recargar.</p>
-          )}
         </div>
         <input
           ref={archivo}

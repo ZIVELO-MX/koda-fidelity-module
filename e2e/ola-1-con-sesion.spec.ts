@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test"
+import { verificarAreasTactiles } from "./areas-tactiles"
 import { entrar } from "./sesion"
 
 // Recorrido de las superficies de la ola 1 que viven detrás del login.
@@ -37,24 +38,7 @@ async function desborda(page: Page): Promise<boolean> {
 // El ADN pide 40px de área táctil mínima, y 44px en destinos de navegación. Los
 // destinos son enlaces; los botones son controles. Antes esto solo medía
 // botones, y por eso no veía la barra de navegación móvil, que son enlaces.
-async function areasTactiles(page: Page, contexto: string) {
-  const grupos = [
-    { rol: "link" as const, minimo: 44 },
-    { rol: "button" as const, minimo: 40 },
-  ]
-  for (const { rol, minimo } of grupos) {
-    for (const objetivo of await page.getByRole(rol).all()) {
-      if (!(await objetivo.isVisible())) continue
-      const nombre =
-        (await objetivo.getAttribute("aria-label")) || (await objetivo.innerText()).trim()
-      if (/next\.js/i.test(nombre)) continue
-      const caja = await objetivo.boundingBox()
-      if (caja) {
-        expect(caja.height, `${rol} "${nombre}" en ${contexto}`).toBeGreaterThanOrEqual(minimo)
-      }
-    }
-  }
-}
+const areasTactiles = verificarAreasTactiles
 
 test.describe("superficies de la ola 1, con sesión", () => {
   test.skip(!HAY_SUPABASE, "Requiere NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY")
