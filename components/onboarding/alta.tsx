@@ -642,6 +642,68 @@ function Origen({
   )
 }
 
+/**
+ * La tarjeta guardada, detrás del muro. No es decoración: es lo que la persona
+ * ya hizo, y verlo es la diferencia entre "me piden dinero" y "me falta un paso
+ * para publicar esto". Va atenuada porque todavía no está publicada, y las tres
+ * acciones que dependen del QR aparecen con su razón en vez de desaparecer: una
+ * tarjeta que nunca se activó no genera código, así que no hay nada que
+ * compartir, descargar ni imprimir.
+ *
+ * `aria-disabled` en vez de `disabled`: el botón sigue recibiendo foco, que es
+ * la única forma de que quien navega con teclado o lector llegue a la razón.
+ */
+export function TarjetaGuardada({ estado }: { estado: EstadoDelAlta }) {
+  const razon = "razon-sin-publicar"
+  const nombre = estado.negocio.name || estado.nombreDeLaCuenta || "Tu negocio"
+  const temaElegido = estado.temas.find((t) => t.id === estado.tarjeta.themeId)
+  // El acabado Pro no se aplica sin plan que lo sostenga, igual que en el
+  // servidor. La selección no se pierde, solo no se pinta todavía.
+  const temaEfectivo =
+    temaElegido && (temaElegido.plan === "LITE" || estado.plan === "PRO") ? temaElegido.code : null
+
+  return (
+    <section className="mx-auto w-full max-w-md space-y-4 rounded-2xl border border-border bg-card p-5">
+      <div className="opacity-60">
+        <LoyaltyCardPreview
+          businessName={nombre}
+          currentStamps={0}
+          maxStamps={estado.tarjeta.stampsRequired ?? 10}
+          reward={estado.tarjeta.reward || "Tu recompensa"}
+          brandColor={estado.tarjeta.brandColor ?? "#ff6b35"}
+          themeCode={temaEfectivo}
+          showQR={false}
+          className="mx-auto max-w-[280px]"
+        />
+      </div>
+
+      <p className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm font-medium text-foreground">
+        Tu tarjeta está lista, pero todavía no publicada.
+      </p>
+
+      <div className="flex flex-wrap justify-center gap-2">
+        {["Compartir", "Descargar", "Imprimir"].map((accion) => (
+          <button
+            key={accion}
+            type="button"
+            aria-disabled="true"
+            aria-describedby={razon}
+            onClick={(evento) => evento.preventDefault()}
+            className="inline-flex min-h-11 cursor-not-allowed items-center rounded-xl border border-border px-4 text-sm text-muted-foreground opacity-60"
+          >
+            {accion}
+          </button>
+        ))}
+      </div>
+
+      <p id={razon} className="text-center text-xs text-muted-foreground">
+        Sin publicar no hay código QR, así que todavía no hay nada que compartir. Tu negocio y tu
+        tarjeta siguen guardados.
+      </p>
+    </section>
+  )
+}
+
 function Paywall({
   estado, ocupado, onIntervalo,
 }: {
@@ -667,6 +729,8 @@ function Paywall({
           Tu negocio y tu tarjeta ya están guardados en tu cuenta. El plan se contrata para publicarla.
         </p>
       </div>
+
+      <TarjetaGuardada estado={estado} />
 
       <div className="flex justify-center">
         <div role="radiogroup" aria-label="Cómo quieres pagar" className="inline-flex rounded-full border border-border bg-card p-1">

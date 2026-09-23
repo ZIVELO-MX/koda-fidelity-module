@@ -174,3 +174,59 @@ test.describe("Planes Lite y Pro", () => {
     })
   })
 })
+
+/**
+ * La tarjeta guardada detrás del muro, en los tres anchos.
+ *
+ * Una sola prueba y un solo inicio de sesión, cambiando el viewport sobre la
+ * misma página. Tres `describe` con `test.use` serían tres sesiones completas, y
+ * este job corre en serie con un servidor de producción por invocación: lo que
+ * aquí se ve como elegancia, allá son minutos.
+ */
+const MEDIDAS = [
+  { ancho: 375, alto: 812 },
+  { ancho: 768, alto: 1024 },
+  { ancho: 1440, alto: 900 },
+]
+
+test.describe("La tarjeta guardada detrás del muro", () => {
+  test("se ve la tarjeta, se dice que no está publicada y las acciones del QR no se habilitan", async ({ page }) => {
+    test.skip(!CORREO || !CLAVE, "Requiere las credenciales del fixture del alta")
+    // Un login más tres anchos no cabe en los 30s del config; `slow` los triplica.
+    test.slow()
+
+    await entrar(page, CORREO!, CLAVE!)
+    await page.goto("/onboarding")
+    await expect(page.locator("#contenido")).toBeVisible({ timeout: 60000 })
+
+    const muro = page.getByRole("heading", { name: "Publica tu tarjeta" })
+    if (!(await muro.isVisible().catch(() => false))) {
+      test.skip(true, "La cuenta del fixture no está en el muro de pago; corre prepare:onboarding-e2e")
+    }
+
+    for (const { ancho, alto } of MEDIDAS) {
+      await page.setViewportSize({ width: ancho, height: alto })
+
+      // Lo que ya hizo sigue ahí, a la vista, antes de que se le pida nada.
+      await expect(page.getByText(/todavía no publicada/i), `a ${ancho}px`).toBeVisible()
+      await expect(page.getByText(/sin publicar no hay código qr/i), `a ${ancho}px`).toBeVisible()
+      await expect(page.getByText(/siguen guardados/i), `a ${ancho}px`).toBeVisible()
+
+      // Las tres acciones existen y ninguna se habilita: no hay QR que compartir.
+      for (const accion of ["Compartir", "Descargar", "Imprimir"]) {
+        const boton = page.getByRole("button", { name: accion, exact: true })
+        await expect(boton, `${accion} a ${ancho}px`).toBeVisible()
+        await expect(boton, `${accion} a ${ancho}px`).toHaveAttribute("aria-disabled", "true")
+      }
+
+      // El muro no se queda sin salida por mostrar la tarjeta.
+      await expect(page.getByRole("button", { name: /contratar lite/i }), `a ${ancho}px`).toBeVisible()
+    }
+
+    // La razón es alcanzable desde el propio control, no solo mirando.
+    const compartir = page.getByRole("button", { name: "Compartir", exact: true })
+    const descrito = await compartir.getAttribute("aria-describedby")
+    expect(descrito).toBeTruthy()
+    await expect(page.locator(`#${descrito}`)).toContainText(/código qr/i)
+  })
+})
