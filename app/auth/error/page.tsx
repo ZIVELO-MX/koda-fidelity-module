@@ -100,11 +100,9 @@ function AuthErrorContent() {
                 Reenviar de nuevo
               </button>
             </div>
-            <Link href="/my-cards">
-              <Button variant="outline" className="w-full">
-                Mis Tarjetas
-              </Button>
-            </Link>
+            <Button asChild variant="outline" className="min-h-11 w-full">
+              <Link href="/my-cards">Mis Tarjetas</Link>
+            </Button>
           </div>
         </main>
       </div>
@@ -115,8 +113,13 @@ function AuthErrorContent() {
     <div className="min-h-screen bg-background forced-light flex flex-col">
       <header className="border-b border-border bg-card">
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center gap-2">
-          <Link href="/" className="text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-5 w-5" />
+          {/* Un enlace de solo icono necesita nombre, y el área del ADN. */}
+          <Link
+            href="/"
+            aria-label="Volver al inicio"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-5 w-5" aria-hidden="true" />
           </Link>
           <span className="font-semibold text-foreground">Error de autenticación</span>
         </div>
@@ -197,12 +200,12 @@ function AuthErrorContent() {
           </div>
 
           <div className="flex justify-center gap-4">
-            <Link href="/my-cards">
-              <Button variant="outline">Mis Tarjetas</Button>
-            </Link>
-            <Link href="/">
-              <Button variant="ghost">Inicio</Button>
-            </Link>
+            <Button asChild variant="outline" className="min-h-11">
+              <Link href="/my-cards">Mis Tarjetas</Link>
+            </Button>
+            <Button asChild variant="ghost" className="min-h-11">
+              <Link href="/">Inicio</Link>
+            </Button>
           </div>
         </div>
       </main>
