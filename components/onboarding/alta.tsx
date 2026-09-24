@@ -17,6 +17,7 @@ import {
 } from "@/lib/onboarding"
 import { esAcabadoPro, nombreDeTema } from "@/lib/temas-de-tarjeta"
 import { siteConfig } from "@/lib/site-config"
+import { enumerar, hayQueReanudar, loGuardado } from "@/lib/alta-reanudacion"
 import { cn } from "@/lib/utils"
 
 const PESOS = new Intl.NumberFormat("es-MX")
@@ -60,7 +61,12 @@ export function Alta() {
   const [cargando, setCargando] = useState(true)
   const [aviso, setAviso] = useState<Aviso>(null)
   const [ocupado, setOcupado] = useState(false)
-  const [guardando, setGuardando] = useState(false)
+  // Un booleano solo sabía decir "guardando" y callarse. Lo que hacía falta es
+  // que confirme: quien escribe necesita ver que quedó, no que algo parpadeó.
+  const [guardado, setGuardado] = useState<"inactivo" | "guardando" | "guardado">("inactivo")
+  // El aviso de reanudación se calcula con el primer estado del servidor y se
+  // congela: si luego se guarda algo más, no vuelve a saltar.
+  const [reanudado, setReanudado] = useState<string[] | null>(null)
   const [laminaIntro, setLaminaIntro] = useState(0)
   // El club es un momento de llegada, no un paso del servidor: se enseña
   // después de que la tarjeta quedó creada, antes de preguntar el origen.
@@ -111,7 +117,10 @@ export function Alta() {
 
   useEffect(() => {
     leerAlta()
-      .then(setEstado)
+      .then((inicial) => {
+        setEstado(inicial)
+        if (hayQueReanudar(inicial)) setReanudado(loGuardado(inicial))
+      })
       .catch(manejarFallo)
       .finally(() => setCargando(false))
   }, [manejarFallo])
@@ -130,18 +139,23 @@ export function Alta() {
         card: { ...(pendiente.current?.card ?? {}), ...(cambios.card ?? {}) },
       }
       if (temporizador.current) clearTimeout(temporizador.current)
+      // Lo que se acaba de teclear todavía no está guardado.
+      setGuardado("guardando")
       temporizador.current = setTimeout(async () => {
         const porGuardar = pendiente.current
         pendiente.current = null
         if (!porGuardar || !estado) return
-        setGuardando(true)
+        setGuardado("guardando")
         try {
           setEstado(await guardarBorrador(estado.draftVersion, porGuardar))
           setAviso(null)
+          setGuardado("guardado")
         } catch (error) {
+          // El fallo lo cuenta el aviso de arriba, con su reintento. Aquí se
+          // quita la promesa de guardado en vez de dejar un "Guardado" viejo
+          // encima de un error.
+          setGuardado("inactivo")
           manejarFallo(error)
-        } finally {
-          setGuardando(false)
         }
       }, 700)
     },
@@ -253,11 +267,31 @@ export function Alta() {
               )}
             </div>
           )}
-          {guardando && (
-            <p className="text-center text-xs text-muted-foreground" aria-live="polite">
-              Guardando…
-            </p>
+          {/* Al volver, se dice qué se recuperó y se nombra campo por campo. Un
+              "tenemos tus datos" haría creer que no hay nada que revisar. Se
+              puede cerrar: pasado el primer vistazo, estorba. */}
+          {reanudado && reanudado.length > 0 && (
+            <div className="mb-3 flex flex-wrap items-start justify-between gap-2 rounded-xl border border-border bg-muted/40 px-4 py-3">
+              <p className="text-sm text-foreground">
+                Retomamos donde lo dejaste. Ya tenías guardado {enumerar(reanudado)}.
+              </p>
+              <Button
+                type="button"
+                variant="ghost"
+                className="min-h-11 px-3 text-xs"
+                onClick={() => setReanudado(null)}
+              >
+                Entendido
+              </Button>
+            </div>
           )}
+
+          {/* Una sola región viva: quien usa lector de pantalla oye "Guardando"
+              y después "Guardado", no dos mensajes compitiendo. */}
+          <p className="text-center text-xs text-muted-foreground" aria-live="polite">
+            {guardado === "guardando" && "Guardando…"}
+            {guardado === "guardado" && "Guardado"}
+          </p>
         </header>
 
         <main id="contenido" className="flex flex-1 flex-col justify-center py-10">

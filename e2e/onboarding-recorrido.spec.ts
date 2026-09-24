@@ -103,4 +103,49 @@ test.describe("Alta guiada, recorrido completo", () => {
     await page.reload()
     await expect(page.getByLabel("Nombre del negocio")).toHaveValue("Primero", { timeout: 60000 })
   })
+
+  /**
+   * El autoguardado no servía de nada si no se veía. Estas tres cubren lo que
+   * la persona necesita saber: que quedó, qué se recuperó al volver, y que no
+   * se le promete nada que no esté.
+   */
+  test("al escribir se ve que guarda, y confirma que quedó", async ({ page }) => {
+    await page.getByRole("button", { name: "Saltar la introducción" }).click()
+    await expect(page.getByRole("heading", { name: "Tu negocio" })).toBeVisible()
+
+    await page.getByLabel("Nombre del negocio").fill(`Café Aurora ${Date.now()}`)
+
+    // Primero lo dice, y después lo confirma. Un parpadeo sin confirmación deja
+    // a la persona sin saber si se guardó.
+    await expect(page.getByText("Guardando…")).toBeVisible({ timeout: 10000 })
+    await expect(page.getByText("Guardado", { exact: true })).toBeVisible({ timeout: 30000 })
+  })
+
+  test("al volver se dice qué se recuperó, nombrando los campos", async ({ page }) => {
+    await page.getByRole("button", { name: "Saltar la introducción" }).click()
+    const nombre = `Café Aurora ${Date.now()}`
+    await page.getByLabel("Nombre del negocio").fill(nombre)
+    await expect(page.getByText("Guardado", { exact: true })).toBeVisible({ timeout: 30000 })
+    await page.locator("fieldset button").first().click()
+    await page.getByRole("button", { name: "Continuar" }).click()
+    await expect(page.getByRole("heading", { name: "Tu primera tarjeta" })).toBeVisible({ timeout: 30000 })
+
+    await page.reload()
+    await expect(page.locator("#contenido")).toBeVisible({ timeout: 60000 })
+
+    const aviso = page.getByText(/retomamos donde lo dejaste/i)
+    await expect(aviso).toBeVisible({ timeout: 30000 })
+    // Nombra lo que hay, no un "tenemos tus datos" que invite a no revisar.
+    await expect(page.getByText(/el nombre de tu negocio/i)).toBeVisible()
+
+    // Y se puede quitar de en medio.
+    await page.getByRole("button", { name: "Entendido" }).click()
+    await expect(aviso).toHaveCount(0)
+  })
+
+  test("un alta recién empezada no anuncia que recuperó nada", async ({ page }) => {
+    // El fixture deja el alta en el primer paso y sin borradores, así que no
+    // hay nada que reanudar y no debe decirse que sí.
+    await expect(page.getByText(/retomamos donde lo dejaste/i)).toHaveCount(0)
+  })
 })
