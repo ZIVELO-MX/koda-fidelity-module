@@ -11,21 +11,28 @@ import { fallaDe, SIN_CONEXION, type Fallo } from "@/lib/fallos-de-api"
  * `{ plan, billingInterval }`; el usuario y el negocio salen de la sesión, no
  * de un identificador enviado por el cliente.
  *
- * La lectura es tolerante a propósito mientras el backend aterriza: el folio se
- * acepta suelto o envuelto en `request` o `subscriptionRequest`. No se inventan
- * nombres de campo alternativos -- si el servidor llama al folio de otra forma,
- * esto devuelve null y la pantalla lo dice, que es mejor que adivinar. Cuando
- * el contrato esté fijo, esta función se queda con una sola forma.
+ * El contrato quedó fijo con el PR #135, así que la lectura se queda con una
+ * sola forma: `{ request: null }` o `{ request: {...} }`. Lo que la misión
+ * llama folio el servidor lo llama **`ticketNumber`**; se lee de ahí.
+ *
+ * `businessName` y `contactEmail` salen del servidor y no del estado del alta:
+ * son los que soporte va a cotejar, y el correo debe llevar exactamente esos.
  */
 export const RUTA = "/api/subscription-requests"
 
 export type PlanSolicitado = "LITE" | "PRO"
 export type IntervaloSolicitado = "MONTHLY" | "ANNUAL"
 
+export type EstadoSolicitud = "PENDING" | "COMPLETED"
+
 export type Solicitud = {
   folio: string
   plan: PlanSolicitado
   intervalo: IntervaloSolicitado
+  estado: EstadoSolicitud
+  /** Del servidor, no del alta: es lo que soporte va a cotejar. */
+  negocio: string | null
+  correo: string | null
 }
 
 export type Resultado =
@@ -40,17 +47,19 @@ function objeto(valor: unknown): Record<string, unknown> {
   return valor && typeof valor === "object" ? (valor as Record<string, unknown>) : {}
 }
 
-/** Saca la solicitud de donde venga, sin inventar campos que no existan. */
+/** `{ request: null }` o `{ request: { ticketNumber, ... } }`. Nada más. */
 export function leerSolicitud(cuerpo: unknown): Solicitud | null {
-  const raiz = objeto(cuerpo)
-  for (const candidato of [raiz, objeto(raiz.request), objeto(raiz.subscriptionRequest)]) {
-    const folio = texto(candidato.folio)
-    if (!folio) continue
-    const plan = texto(candidato.plan) === "PRO" ? "PRO" : "LITE"
-    const intervalo = texto(candidato.billingInterval) === "MONTHLY" ? "MONTHLY" : "ANNUAL"
-    return { folio, plan, intervalo }
+  const peticion = objeto(objeto(cuerpo).request)
+  const folio = texto(peticion.ticketNumber)
+  if (!folio) return null
+  return {
+    folio,
+    plan: texto(peticion.plan) === "PRO" ? "PRO" : "LITE",
+    intervalo: texto(peticion.billingInterval) === "MONTHLY" ? "MONTHLY" : "ANNUAL",
+    estado: texto(peticion.status) === "COMPLETED" ? "COMPLETED" : "PENDING",
+    negocio: texto(peticion.businessName),
+    correo: texto(peticion.contactEmail),
   }
-  return null
 }
 
 async function pedir(init?: RequestInit): Promise<Resultado> {
@@ -71,6 +80,21 @@ async function pedir(init?: RequestInit): Promise<Resultado> {
       fallo: {
         titulo: "La solicitud todavía no se puede crear",
         detalle: "Esta versión aún no tiene el servicio de solicitudes. Escribe a soporte@zivelo.dev y te la abrimos a mano.",
+        requestId,
+        reintentable: false,
+      },
+    }
+  }
+  if (respuesta.status === 409) {
+    // Conflicto con significado: soporte ya activó este folio, así que cambiar
+    // el plan no es cosa de esta pantalla. `fallaDe` lo leería como una
+    // petición mal formada, que es otra cosa.
+    return {
+      ok: false,
+      fallo: {
+        titulo: "Tu solicitud ya fue atendida",
+        detalle: texto(objeto(cuerpo).error) ?? "Soporte ya activó esta solicitud.",
+        accion: `Escribe a ${SOPORTE} si necesitas cambiar el plan.`,
         requestId,
         reintentable: false,
       },

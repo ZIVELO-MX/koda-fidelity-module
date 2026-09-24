@@ -695,14 +695,23 @@ export function SolicitudCreada({
   copiado: boolean
   onCopiar: (valor: boolean) => void
 }) {
-  const datos = { folio: solicitud.folio, negocio, correo, plan: solicitud.plan, intervalo: solicitud.intervalo }
+  // Lo que manda es lo del servidor: es lo que soporte va a cotejar contra el
+  // folio. El alta solo rellena si el servidor no lo trajo.
+  const datos = {
+    folio: solicitud.folio,
+    negocio: solicitud.negocio ?? negocio,
+    correo: solicitud.correo ?? correo,
+    plan: solicitud.plan,
+    intervalo: solicitud.intervalo,
+  }
   const cuerpo = cuerpoDelCorreo(datos)
+  const atendida = solicitud.estado === "COMPLETED"
 
   return (
     <section aria-labelledby="folio-titulo" className="space-y-4 rounded-2xl border-2 border-primary bg-card p-6">
       <div className="space-y-1">
         <h2 id="folio-titulo" className="text-lg font-semibold text-foreground">
-          Tu solicitud quedó registrada
+          {atendida ? "Tu solicitud fue atendida" : "Tu solicitud quedó registrada"}
         </h2>
         <p className="text-sm text-muted-foreground">
           Plan {NOMBRE_DEL_PLAN[solicitud.plan]}, {NOMBRE_DEL_INTERVALO[solicitud.intervalo]}.
@@ -714,14 +723,24 @@ export function SolicitudCreada({
         <span className="font-mono text-xl font-bold tracking-wider text-foreground">{solicitud.folio}</span>
       </p>
 
-      {/* Lo que no pasó, antes que lo que sigue. */}
-      <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
-        <p className="text-sm font-medium text-foreground">Falta que tú mandes el correo.</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Registrar la solicitud no envía nada, no cobra, no activa tu plan y no publica tu tarjeta.
-          Soporte confirma las condiciones contigo antes de activarla.
-        </p>
-      </div>
+      {/* Lo que no pasó, antes que lo que sigue. Salvo que ya la hayan
+          atendido, en cuyo caso pedir el correo otra vez sería un estorbo. */}
+      {atendida ? (
+        <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4">
+          <p className="text-sm font-medium text-foreground">Soporte ya atendió tu solicitud.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Si tu plan todavía no aparece activo, escribe a {SOPORTE} con este folio.
+          </p>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
+          <p className="text-sm font-medium text-foreground">Falta que tú mandes el correo.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Registrar la solicitud no envía nada, no cobra, no activa tu plan y no publica tu tarjeta.
+            Soporte confirma las condiciones contigo antes de activarla.
+          </p>
+        </div>
+      )}
 
       <div className="flex flex-col gap-2 sm:flex-row">
         <Button asChild className="min-h-11 flex-1">

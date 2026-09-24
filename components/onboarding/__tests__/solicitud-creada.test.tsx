@@ -2,7 +2,14 @@ import { describe, it, expect, vi, afterEach } from "vitest"
 import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react"
 import { SolicitudCreada } from "../alta"
 
-const SOLICITUD = { folio: "KF-2026-0042", plan: "LITE" as const, intervalo: "ANNUAL" as const }
+const SOLICITUD = {
+  folio: "KF-2026-0042",
+  plan: "LITE" as const,
+  intervalo: "ANNUAL" as const,
+  estado: "PENDING" as const,
+  negocio: "Café Aurora",
+  correo: "raul@cafeaurora.mx",
+}
 
 afterEach(() => {
   cleanup()
@@ -75,10 +82,29 @@ describe("SolicitudCreada", () => {
     expect(screen.getByText(/Negocio: Café Aurora/)).toBeInTheDocument()
   })
 
-  it("sin negocio ni correo no rellena con vacíos", () => {
-    pintar({ negocio: null, correo: null })
+  it("sin negocio ni correo por ninguna vía, no rellena con vacíos", () => {
+    pintar({ solicitud: { ...SOLICITUD, negocio: null, correo: null }, negocio: null, correo: null })
     fireEvent.click(screen.getByText(/ver el texto del correo/i))
     expect(screen.getByText(/\(sin nombre\)/)).toBeInTheDocument()
     expect(screen.getByText(/\(sin correo\)/)).toBeInTheDocument()
+  })
+
+  it("una solicitud ya atendida no vuelve a pedir el correo", () => {
+    pintar({ solicitud: { ...SOLICITUD, estado: "COMPLETED" } })
+    expect(screen.getByText(/soporte ya atendió tu solicitud/i)).toBeInTheDocument()
+    expect(screen.queryByText(/falta que tú mandes el correo/i)).toBeNull()
+    // El folio sigue a la vista: es con lo que se reclama si algo no cuadra.
+    expect(screen.getByText("KF-2026-0042")).toBeInTheDocument()
+  })
+
+  it("el negocio y el correo del servidor mandan sobre los del alta", () => {
+    pintar({
+      solicitud: { ...SOLICITUD, negocio: "Café Aurora Centro", correo: "otro@cafeaurora.mx" },
+      negocio: "Nombre del borrador",
+      correo: "borrador@ejemplo.mx",
+    })
+    fireEvent.click(screen.getByText(/ver el texto del correo/i))
+    expect(screen.getByText(/Negocio: Café Aurora Centro/)).toBeInTheDocument()
+    expect(screen.getByText(/Correo de la cuenta: otro@cafeaurora\.mx/)).toBeInTheDocument()
   })
 })

@@ -4,7 +4,19 @@ import {
   solicitarActivacion, solicitudVigente, SOPORTE,
 } from "../solicitudes-de-activacion"
 
-const SOLICITUD = { folio: "KF-2026-0042", plan: "PRO", billingInterval: "MONTHLY" }
+// La forma real que devuelve el PR #135: envuelta en `request`, y el folio se
+// llama `ticketNumber`.
+const RESPUESTA = {
+  request: {
+    ticketNumber: "KF-2026-0042",
+    plan: "PRO",
+    billingInterval: "MONTHLY",
+    status: "PENDING",
+    businessName: "Café Aurora",
+    contactEmail: "raul@cafeaurora.mx",
+    createdAt: "2026-09-23T12:00:00.000Z",
+  },
+}
 
 function servidor(estado: number, cuerpo: unknown, requestId = "req-sol-1") {
   const llamadas: { url: string; metodo: string; cuerpo?: unknown }[] = []
@@ -26,22 +38,34 @@ function servidor(estado: number, cuerpo: unknown, requestId = "req-sol-1") {
 afterEach(() => vi.restoreAllMocks())
 
 describe("leerSolicitud", () => {
-  it("acepta el folio suelto o envuelto, mientras el contrato aterriza", () => {
-    for (const cuerpo of [SOLICITUD, { request: SOLICITUD }, { subscriptionRequest: SOLICITUD }]) {
-      expect(leerSolicitud(cuerpo)?.folio).toBe("KF-2026-0042")
-    }
+  it("lee el contrato real: envuelto en request, con ticketNumber por folio", () => {
+    const s = leerSolicitud(RESPUESTA)
+    expect(s).toEqual({
+      folio: "KF-2026-0042",
+      plan: "PRO",
+      intervalo: "MONTHLY",
+      estado: "PENDING",
+      negocio: "Café Aurora",
+      correo: "raul@cafeaurora.mx",
+    })
   })
 
-  it("sin folio devuelve null en vez de inventar uno", () => {
-    expect(leerSolicitud({ plan: "LITE" })).toBeNull()
-    expect(leerSolicitud({ folio: "   " })).toBeNull()
+  it("distingue una solicitud ya atendida", () => {
+    const s = leerSolicitud({ request: { ...RESPUESTA.request, status: "COMPLETED" } })
+    expect(s?.estado).toBe("COMPLETED")
+  })
+
+  it("sin solicitud o sin folio devuelve null en vez de inventar uno", () => {
+    expect(leerSolicitud({ request: null })).toBeNull()
+    expect(leerSolicitud({ request: { plan: "LITE" } })).toBeNull()
+    expect(leerSolicitud({ request: { ticketNumber: "   " } })).toBeNull()
     expect(leerSolicitud(null)).toBeNull()
   })
 })
 
 describe("solicitarActivacion", () => {
   it("manda solo plan y modalidad: el negocio sale de la sesión", async () => {
-    const llamadas = servidor(201, SOLICITUD)
+    const llamadas = servidor(201, RESPUESTA)
     const r = await solicitarActivacion("PRO", "ANNUAL")
     expect(r.ok).toBe(true)
     expect(llamadas[0].url).toBe("/api/subscription-requests")
@@ -51,7 +75,7 @@ describe("solicitarActivacion", () => {
   })
 
   it("un 201 sin folio se trata como fallo, no como éxito mudo", async () => {
-    servidor(201, { ok: true })
+    servidor(201, { request: null })
     const r = await solicitarActivacion("LITE", "MONTHLY")
     expect(r.ok).toBe(false)
     if (!r.ok) {
@@ -80,6 +104,17 @@ describe("solicitarActivacion", () => {
     }
   })
 
+  it("un 409 dice que ya fue atendida, no que la petición estaba mal", async () => {
+    servidor(409, { error: "La solicitud ya fue activada; contacta a soporte para cambiar el plan", code: "KF-REQUEST-001", requestId: "req-409", retryable: true })
+    const r = await solicitarActivacion("PRO", "ANNUAL")
+    expect(r.ok).toBe(false)
+    if (!r.ok) {
+      expect(r.fallo.titulo).toMatch(/ya fue atendida/i)
+      expect(r.fallo.reintentable).toBe(false)
+      expect(r.fallo.accion).toContain(SOPORTE)
+    }
+  })
+
   it("sin conexión no promete una referencia que no existe", async () => {
     global.fetch = vi.fn(async () => { throw new Error("offline") }) as unknown as typeof fetch
     const r = await solicitarActivacion("LITE", "ANNUAL")
@@ -90,7 +125,7 @@ describe("solicitarActivacion", () => {
 
 describe("solicitudVigente", () => {
   it("recupera la solicitud pendiente al recargar", async () => {
-    const llamadas = servidor(200, { request: SOLICITUD })
+    const llamadas = servidor(200, RESPUESTA)
     const r = await solicitudVigente()
     expect(llamadas[0].metodo).toBe("GET")
     expect(r.ok && r.solicitud?.folio).toBe("KF-2026-0042")
