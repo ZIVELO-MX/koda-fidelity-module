@@ -82,11 +82,23 @@ test.describe("ola 4, landing pública", () => {
       // El anual viene preseleccionado.
       await expect(precios).toContainText("1,490")
       await expect(precios).toContainText("2,990")
-      // El tachado tiene que ser el año pagando mes a mes, no un precio
-      // inventado: 149 x 12 y 299 x 12.
-      await expect(precios.locator("s")).toHaveText(["$1,788", "$3,588"])
+
+      // La comparación es con la otra modalidad, que sigue disponible: 149 x 12
+      // y 299 x 12. Se dice, no se tacha. Un tachado se lee como precio
+      // anterior, y un precio anterior que nunca se cobró es engañoso.
+      await expect(precios).toContainText("Pagando mes a mes, el año costaría $1,788")
+      await expect(precios).toContainText("Pagando mes a mes, el año costaría $3,588")
+      await expect(precios.locator("s"), "un importe tachado se lee como precio anterior").toHaveCount(0)
+
       await expect(precios).toContainText("Ahorras $298")
       await expect(precios).toContainText("Ahorras $598")
+
+      // El equivalente mensual no se redondea hacia abajo: 1490/12 es 124.17, y
+      // decir 124 vendería el plan por menos de lo que cuesta.
+      await expect(precios).toContainText("Equivale a $124.17 al mes")
+      await expect(precios).toContainText("Equivale a $249.17 al mes")
+      // Y la condición que hace comparable la cifra.
+      await expect(precios).toContainText("se cobra una vez al año")
 
       await page.getByRole("radio", { name: /Al mes/ }).click()
       await expect(precios).toContainText("$149")

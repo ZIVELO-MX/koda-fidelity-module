@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { BarraDePasos } from "@/components/onboarding/barra-de-pasos"
 import { PLANES } from "@/lib/planes"
-import { cuentaDelAnual } from "@/lib/precios"
+import { cuentaDelAnual, mesesGratisExactos, pesos } from "@/lib/precios"
 import {
   ErrorDelAlta, ORIGENES, SELLOS_POSIBLES, avanzar, guardarBorrador, leerAlta,
   type AccionDelAlta, type AcquisitionSource, type BillingInterval, type EstadoDelAlta,
@@ -767,7 +767,7 @@ function Paywall({
               {etiqueta}
               {valor === "ANNUAL" && (
                 <span className={cn("rounded-full px-2 py-0.5 text-xs font-bold", anual ? "bg-white/20" : "bg-primary/15 text-primary")}>
-                  2 meses gratis
+                  {mesesGratisExactos(lite.mensual, lite.anual)} meses gratis
                 </span>
               )}
             </button>
@@ -786,8 +786,8 @@ function Paywall({
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
             {anual
-              ? `Equivale a $${PESOS.format(cuentaLite.porMes)} al mes. Dos meses gratis frente al pago mensual.`
-              : `Pagando por año baja a $${PESOS.format(cuentaLite.porMes)} al mes.`}
+              ? `Equivale a $${pesos(cuentaLite.porMes)} al mes, cobrado una vez al año. Ahorras $${pesos(cuentaLite.ahorro)} frente al pago mensual.`
+              : `Pagando por año equivale a $${pesos(cuentaLite.porMes)} al mes.`}
           </p>
           <p className="mt-4 inline-flex w-fit rounded-full bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
             Incluye un mes con todo lo de Pro
