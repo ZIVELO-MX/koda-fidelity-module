@@ -52,15 +52,24 @@ test.describe("superficies de la ola 1, con sesión", () => {
         await entrar(page, CORREO!, CLAVE!)
       })
 
-      test("el panel muestra el día y deja la tendencia vacía con su razón", async ({ page }) => {
+      test("el panel muestra el día y su histórico, ya sin el hueco de la tendencia", async ({ page }) => {
         await expect(page.getByRole("heading", { name: "Panel" })).toBeVisible()
         await expect(page.getByRole("heading", { name: "Hoy" })).toBeVisible()
         await expect(page.getByText("Sellos de hoy")).toBeVisible()
         await expect(page.getByText("Canjes de hoy")).toBeVisible()
         await expect(page.getByText("Clientes nuevos hoy")).toBeVisible()
 
-        await expect(page.getByRole("heading", { name: "Tendencia de 30 días" })).toBeVisible()
-        await expect(page.getByText(/antes que dibujar una tendencia inventada/i)).toBeVisible()
+        // El hueco que decía "la serie diaria llega cuando el backend la
+        // publique" se fue: el backend ya la publica y el panel la pinta.
+        await expect(page.getByText(/antes que dibujar una tendencia inventada/i)).toHaveCount(0)
+        await expect(page.getByRole("heading", { name: "Cómo va tu programa" })).toBeVisible()
+        await expect(page.getByRole("heading", { name: "Toda la actividad" })).toBeVisible()
+
+        // Los dos bloques resuelven su carga: ni se quedan en el spinner ni
+        // dejan una alerta sin explicar.
+        const metricas = page.locator("section", { has: page.getByRole("heading", { name: "Cómo va tu programa" }) })
+        await expect(metricas.getByText(/cargando tus métricas/i)).toHaveCount(0, { timeout: 30000 })
+        await expect(metricas.getByRole("radio", { name: "30 días" })).toBeChecked()
 
         // Las cuatro cifras anteriores no eran ciertas y no deben volver.
         await expect(page.getByText("Tarjetas Activas")).toHaveCount(0)
@@ -81,6 +90,28 @@ test.describe("superficies de la ola 1, con sesión", () => {
         await expect(page.getByRole("button", { name: /^abrir escáner$/i })).toHaveCount(0)
 
         expect(await desborda(page), `escáner en ${ancho.nombre}`).toBe(false)
+      })
+
+      test("el portal del cliente pone la tarjeta a pantalla, sin desbordar", async ({ page }) => {
+        await page.goto("/dashboard/my-cards")
+
+        // El portal tiene tres caras legítimas según quién entre: pedir el
+        // correo, decir que mandó el enlace, o enseñar las tarjetas. La prueba
+        // no fija cuál toca -- depende de la cuenta -- sino que siempre llegue
+        // a una de las tres y ninguna deje un hueco sin explicar.
+        const puerta = page.getByRole("heading", { name: "Mis Tarjetas de Lealtad" })
+        const enviado = page.getByRole("heading", { name: "Revisa tu correo" })
+        const conTarjetas = page.getByRole("heading", { name: "Tus tarjetas" })
+        await expect(
+          puerta.or(enviado).or(conTarjetas).first(),
+          "el portal no llegó a ninguno de sus tres estados",
+        ).toBeVisible({ timeout: 30000 })
+
+        // Y nunca se queda en el cargando.
+        await expect(page.locator(".animate-spin")).toHaveCount(0, { timeout: 30000 })
+
+        expect(await desborda(page), `portal en ${ancho.nombre}`).toBe(false)
+        await areasTactiles(page, `portal en ${ancho.nombre}`)
       })
 
       test("clientes ofrece la acción en la fila y el filtro de listos", async ({ page }) => {
