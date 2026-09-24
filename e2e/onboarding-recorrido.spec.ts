@@ -148,4 +148,36 @@ test.describe("Alta guiada, recorrido completo", () => {
     // hay nada que reanudar y no debe decirse que sí.
     await expect(page.getByText(/retomamos donde lo dejaste/i)).toHaveCount(0)
   })
+
+  /**
+   * La atribución es medición, así que se puede saltar y nunca bloquea. Lo que
+   * no puede pasar es que saltarla deje una respuesta puesta: un número que
+   * nadie contestó es peor que un hueco, porque se cuenta igual.
+   */
+  test("saltar la atribución no deja ninguna respuesta puesta", async ({ page }) => {
+    await page.getByRole("button", { name: "Saltar la introducción" }).click()
+    await page.getByLabel("Nombre del negocio").fill(`Café Aurora ${Date.now()}`)
+    await page.locator("fieldset button").first().click()
+    await page.getByRole("button", { name: "Continuar" }).click()
+
+    await expect(page.getByRole("heading", { name: "Tu primera tarjeta" })).toBeVisible({ timeout: 30000 })
+    await page.getByRole("button", { name: "Continuar" }).click()
+    await expect(page.getByRole("heading", { name: /^Club / })).toBeVisible({ timeout: 30000 })
+    await page.getByRole("button", { name: "Continuar" }).click()
+
+    await expect(page.getByRole("heading", { name: /cómo llegaste a koda fidelity/i })).toBeVisible({ timeout: 30000 })
+    // Las seis opciones acordadas, y ninguna marcada de entrada.
+    const opciones = page.locator('button[aria-pressed]')
+    expect(await opciones.count()).toBe(6)
+    await expect(page.locator('button[aria-pressed="true"]')).toHaveCount(0)
+
+    await page.getByRole("button", { name: "Saltar", exact: true }).click()
+    await expect(page.getByRole("heading", { name: "Publica tu tarjeta" })).toBeVisible({ timeout: 30000 })
+
+    // Y al volver sigue sin respuesta: saltar no inventó una.
+    await page.goto("/onboarding")
+    await expect(page.locator("#contenido")).toBeVisible({ timeout: 60000 })
+    const cuerpo = await page.request.get("/api/onboarding").then((r) => r.json())
+    expect(cuerpo?.onboarding?.onboardingProgress?.acquisitionSource ?? null).toBeNull()
+  })
 })
