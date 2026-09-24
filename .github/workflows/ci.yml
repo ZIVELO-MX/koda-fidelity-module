@@ -115,6 +115,28 @@ jobs:
           e2e/auth-ui.spec.ts
           e2e/update-password.spec.ts
 
+      # Los verificadores de área táctil estaban escritos y no los ejecutaba
+      # ningún job, así que medían solo cuando alguien se acordaba de correrlos
+      # a mano. Son públicos: no piden credenciales ni Supabase local, y con el
+      # Postgres de este job las rutas que consultan la base también responden.
+      - name: Check touch targets and responsive layout at 375, 768 and 1440
+        run: >-
+          pnpm exec playwright test
+          e2e/areas-tactiles-acceso.spec.ts
+          e2e/acceso-recorrido.spec.ts
+          e2e/ola-1.spec.ts
+          e2e/ola-4.spec.ts
+
+      - name: Upload the browser smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-smoke-report
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
+
   auth-e2e:
     name: auth-e2e (Supabase local + Mailpit)
     runs-on: ubuntu-latest
