@@ -12,11 +12,16 @@ import { BarraDePasos } from "@/components/onboarding/barra-de-pasos"
 import { PLANES } from "@/lib/planes"
 import { cuentaDelAnual, mesesGratisExactos, pesos } from "@/lib/precios"
 import {
+  cuerpoDelCorreo, enlaceDeCorreo, NOMBRE_DEL_INTERVALO, NOMBRE_DEL_PLAN, solicitarActivacion,
+  solicitudVigente, SOPORTE, type IntervaloSolicitado, type PlanSolicitado, type Solicitud,
+} from "@/lib/solicitudes-de-activacion"
+import {
   ErrorDelAlta, ORIGENES, SELLOS_POSIBLES, avanzar, guardarBorrador, leerAlta,
   type AccionDelAlta, type AcquisitionSource, type BillingInterval, type EstadoDelAlta,
 } from "@/lib/onboarding"
 import { esAcabadoPro, nombreDeTema } from "@/lib/temas-de-tarjeta"
 import { siteConfig } from "@/lib/site-config"
+import { type Fallo } from "@/lib/fallos-de-api"
 import { cn } from "@/lib/utils"
 
 const PESOS = new Intl.NumberFormat("es-MX")
@@ -670,6 +675,83 @@ function Origen({
  * `aria-disabled` en vez de `disabled`: el botón sigue recibiendo foco, que es
  * la única forma de que quien navega con teclado o lector llegue a la razón.
  */
+/**
+ * El folio, y el correo que la persona tiene que mandar.
+ *
+ * Lo que más importa de esta pantalla es lo que dice que **no** pasó: crear la
+ * solicitud no manda el correo, no cobra, no activa el plan y no publica la
+ * tarjeta. Un folio a secas se lee como "ya está", y no está.
+ *
+ * El botón de copiar existe porque `mailto:` no abre nada en un buen número de
+ * navegadores y equipos. Si no se puede escribir en el portapapeles, el texto
+ * queda a la vista para copiarlo a mano.
+ */
+export function SolicitudCreada({
+  solicitud, negocio, correo, copiado, onCopiar,
+}: {
+  solicitud: Solicitud
+  negocio: string | null
+  correo: string | null
+  copiado: boolean
+  onCopiar: (valor: boolean) => void
+}) {
+  const datos = { folio: solicitud.folio, negocio, correo, plan: solicitud.plan, intervalo: solicitud.intervalo }
+  const cuerpo = cuerpoDelCorreo(datos)
+
+  return (
+    <section aria-labelledby="folio-titulo" className="space-y-4 rounded-2xl border-2 border-primary bg-card p-6">
+      <div className="space-y-1">
+        <h2 id="folio-titulo" className="text-lg font-semibold text-foreground">
+          Tu solicitud quedó registrada
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Plan {NOMBRE_DEL_PLAN[solicitud.plan]}, {NOMBRE_DEL_INTERVALO[solicitud.intervalo]}.
+        </p>
+      </div>
+
+      <p className="rounded-xl bg-muted/50 px-4 py-3 text-center">
+        <span className="block text-xs text-muted-foreground">Folio</span>
+        <span className="font-mono text-xl font-bold tracking-wider text-foreground">{solicitud.folio}</span>
+      </p>
+
+      {/* Lo que no pasó, antes que lo que sigue. */}
+      <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
+        <p className="text-sm font-medium text-foreground">Falta que tú mandes el correo.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Registrar la solicitud no envía nada, no cobra, no activa tu plan y no publica tu tarjeta.
+          Soporte confirma las condiciones contigo antes de activarla.
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Button asChild className="min-h-11 flex-1">
+          <a href={enlaceDeCorreo(datos)}>Escribir a {SOPORTE}</a>
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="min-h-11 flex-1"
+          onClick={() => {
+            void navigator.clipboard?.writeText(cuerpo).then(
+              () => onCopiar(true),
+              () => onCopiar(false),
+            )
+          }}
+        >
+          {copiado ? "Texto copiado" : "Copiar el texto"}
+        </Button>
+      </div>
+
+      <details className="rounded-xl border border-border p-3">
+        <summary className="min-h-11 cursor-pointer text-sm font-medium text-foreground">
+          Ver el texto del correo
+        </summary>
+        <pre className="mt-2 overflow-x-auto whitespace-pre-wrap text-xs text-muted-foreground">{cuerpo}</pre>
+      </details>
+    </section>
+  )
+}
+
 export function TarjetaGuardada({ estado }: { estado: EstadoDelAlta }) {
   const razon = "razon-sin-publicar"
   const nombre = estado.negocio.name || estado.nombreDeLaCuenta || "Tu negocio"
@@ -728,7 +810,39 @@ function Paywall({
   ocupado: boolean
   onIntervalo: (intervalo: BillingInterval) => void
 }) {
-  const [intento, setIntento] = useState(false)
+  // FID-0028: no hay cobro. Se crea una solicitud con folio que soporte usa
+  // para localizar la cuenta, y el correo lo manda la persona, no el sistema.
+  const [solicitud, setSolicitud] = useState<Solicitud | null>(null)
+  const [enviando, setEnviando] = useState<PlanSolicitado | null>(null)
+  const [fallo, setFallo] = useState<Fallo | null>(null)
+  const [copiado, setCopiado] = useState(false)
+
+  // Al recargar se recupera la solicitud pendiente, si la hay.
+  useEffect(() => {
+    let vivo = true
+    const turno = window.setTimeout(() => {
+      void solicitudVigente().then((r) => {
+        if (!vivo) return
+        if (r.ok) setSolicitud(r.solicitud)
+      })
+    }, 0)
+    return () => {
+      vivo = false
+      window.clearTimeout(turno)
+    }
+  }, [])
+
+  const onSolicitar = async (plan: PlanSolicitado) => {
+    setEnviando(plan)
+    setFallo(null)
+    setCopiado(false)
+    const intervalo: IntervaloSolicitado = anual ? "ANNUAL" : "MONTHLY"
+    const r = await solicitarActivacion(plan, intervalo)
+    if (r.ok) setSolicitud(r.solicitud)
+    else setFallo(r.fallo)
+    setEnviando(null)
+  }
+
   // El anual llega seleccionado: es el recomendado y el que regala dos meses.
   const anual = (estado.selectedBillingInterval ?? "ANNUAL") === "ANNUAL"
   const lite = PLANES.find((p) => p.id === "lite")!
@@ -776,49 +890,70 @@ function Paywall({
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        {/* Lite lleva el mes de Pro dentro de su propia tarjeta: el beneficio se
-            dice donde se decide, no en una nota al pie. */}
-        <div className="flex flex-col rounded-2xl border-2 border-primary bg-card p-6">
-          <h2 className="text-xl font-semibold text-foreground">{lite.nombre}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{lite.resumen}</p>
-          <p className="mt-5 text-3xl font-bold text-foreground">
-            ${PESOS.format(precio(lite))} <span className="text-sm font-normal text-muted-foreground">{periodo}</span>
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {anual
-              ? `Equivale a $${pesos(cuentaLite.porMes)} al mes, cobrado una vez al año. Ahorras $${pesos(cuentaLite.ahorro)} frente al pago mensual.`
-              : `Pagando por año equivale a $${pesos(cuentaLite.porMes)} al mes.`}
-          </p>
-          <p className="mt-4 inline-flex w-fit rounded-full bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
-            Incluye un mes con todo lo de Pro
-          </p>
-          <Button className="mt-6 min-h-11 w-full" onClick={() => setIntento(true)}>
-            Contratar {lite.nombre}, ${PESOS.format(precio(lite))}
-          </Button>
-        </div>
-
-        {/* Pro se ve, con su precio y con cuándo se podrá contratar, para que el
-            salto no sorprenda al mes siguiente. */}
-        <div className="flex flex-col rounded-2xl border border-border bg-muted/30 p-6 opacity-75">
-          <h2 className="text-xl font-semibold text-foreground">{pro.nombre}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{pro.resumen}</p>
-          <p className="mt-5 text-3xl font-bold text-foreground">
-            ${PESOS.format(precio(pro))} <span className="text-sm font-normal text-muted-foreground">{periodo}</span>
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {anual ? `Equivale a $${PESOS.format(cuentaPro.porMes)} al mes.` : "Sin permanencia."}
-          </p>
-          <p className="mt-4 text-sm text-muted-foreground">
-            Disponible al terminar tu primer mes, que ya viene con todo lo de Pro.
-          </p>
-        </div>
+        {/* Los dos planes se pueden solicitar desde el principio. Pro ya no se
+            enseña atenuado "para el mes que viene": soporte confirma las
+            condiciones de cualquiera de los dos antes de activar. */}
+        {([lite, pro] as const).map((plan) => {
+          const cuenta = plan.id === "lite" ? cuentaLite : cuentaPro
+          const destacado = plan.id === "lite"
+          const codigo: PlanSolicitado = plan.id === "lite" ? "LITE" : "PRO"
+          return (
+            <div
+              key={plan.id}
+              className={cn(
+                "flex flex-col rounded-2xl bg-card p-6",
+                destacado ? "border-2 border-primary" : "border border-border",
+              )}
+            >
+              <h2 className="text-xl font-semibold text-foreground">{plan.nombre}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">{plan.resumen}</p>
+              <p className="mt-5 text-3xl font-bold text-foreground">
+                ${PESOS.format(precio(plan))}{" "}
+                <span className="text-sm font-normal text-muted-foreground">{periodo}</span>
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {anual
+                  ? `Equivale a $${pesos(cuenta.porMes)} al mes, cobrado una vez al año. Ahorras $${pesos(cuenta.ahorro)} frente al pago mensual.`
+                  : `Pagando por año equivale a $${pesos(cuenta.porMes)} al mes.`}
+              </p>
+              {destacado && (
+                <p className="mt-4 inline-flex w-fit rounded-full bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
+                  Incluye un mes con todo lo de Pro
+                </p>
+              )}
+              <Button
+                className="mt-6 min-h-11 w-full"
+                variant={destacado ? "default" : "outline"}
+                disabled={enviando !== null}
+                onClick={() => void onSolicitar(codigo)}
+              >
+                {enviando === codigo && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
+                Solicitar activación de {plan.nombre}
+              </Button>
+            </div>
+          )
+        })}
       </div>
 
-      {intento && (
-        <p role="alert" className="rounded-xl border border-border bg-muted/40 p-4 text-center text-sm text-foreground">
-          El cobro todavía no está activo en esta versión. Tu negocio y tu tarjeta quedan guardados tal como
-          los dejaste.
-        </p>
+      {fallo && (
+        <div role="alert" className="space-y-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+          <p className="font-medium text-foreground">{fallo.titulo}</p>
+          <p className="text-sm text-muted-foreground">{fallo.detalle}</p>
+          {fallo.accion && <p className="text-sm text-muted-foreground">{fallo.accion}</p>}
+          {fallo.requestId && (
+            <p className="font-mono text-xs text-muted-foreground">Referencia: {fallo.requestId}</p>
+          )}
+        </div>
+      )}
+
+      {solicitud && (
+        <SolicitudCreada
+          solicitud={solicitud}
+          negocio={estado.negocio.name || estado.nombreDeLaCuenta}
+          correo={estado.correoDeLaCuenta}
+          copiado={copiado}
+          onCopiar={setCopiado}
+        />
       )}
 
       {/* Salir no es un botón escondido. */}

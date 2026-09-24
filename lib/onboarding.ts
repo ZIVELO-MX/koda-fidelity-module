@@ -67,6 +67,8 @@ export type EstadoDelAlta = {
   plan: "LITE" | "PRO"
   /** Nombre real del negocio, si ya existe en la cuenta. */
   nombreDeLaCuenta: string | null
+  /** Correo de la sesión. Va en el correo a soporte de FID-0028. */
+  correoDeLaCuenta: string | null
 }
 
 /** Motivo por el que una llamada del alta no se pudo completar. */
@@ -131,6 +133,7 @@ function normalizar(cuerpo: unknown): EstadoDelAlta {
     modo: texto(raiz.mode) === "mock" ? "mock" : "live",
     plan: texto(objeto(raiz.accountContext).plan) === "PRO" ? "PRO" : "LITE",
     nombreDeLaCuenta: texto(objeto(objeto(raiz.accountContext).business).name) ?? null,
+    correoDeLaCuenta: texto(objeto(objeto(raiz.accountContext).user).email) ?? null,
   }
 }
 
