@@ -19,8 +19,10 @@ async function main() {
     process.exitCode = 2
     return
   }
+  const firstActivation = await prisma.subscription.count({ where: { businessId } }) === 0
   const subscription = await activateManualSubscription(prisma, {
-    businessId, plan, billingInterval: interval, proAccessGranted: plan === "PRO", operator, action: "set_plan", idempotencyKey,
+    businessId, plan, billingInterval: interval,
+    operator, action: firstActivation ? "activate" : "set_plan", idempotencyKey,
   })
   console.log(JSON.stringify({ businessId, plan, billingInterval: interval, subscriptionId: subscription.id, status: subscription.status }))
 }

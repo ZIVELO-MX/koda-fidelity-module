@@ -19,7 +19,7 @@ Primero, con acceso interno a la base y el folio recibido por correo:
 pnpm billing:ticket -- show KF-XXXXXXXXXXXXXXXX
 ```
 
-El comando muestra negocio, correo de contacto, plan y modalidad, además del comando exacto `billing:set-plan` para activar según la solicitud. Soporte confirma las condiciones con la persona antes de ejecutarlo. Después de activar, registra la atención:
+El comando muestra negocio, correo de contacto, plan y modalidad, además del comando exacto `billing:set-plan` para activar según la solicitud. Soporte confirma las condiciones con la persona antes de ejecutarlo. En la primera activación Lite, el comando concede el mes Pro incluido; no lo vuelve a conceder en renovaciones o bajadas. Después de activar, registra la atención:
 
 ```sh
 BILLING_OPERATOR=<nombre-del-operador> pnpm billing:ticket -- complete KF-XXXXXXXXXXXXXXXX
