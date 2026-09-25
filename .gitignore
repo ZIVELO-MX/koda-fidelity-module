@@ -64,3 +64,6 @@ docs/design/verificadores/capturas/
 # Motor del documento de temas: es de terceros y no se versiona.
 # Para verlo completo, copiar support.js junto a loyalty-card-themes.dc.html
 docs/design/support.js
+
+# Config local de Playwright para correr en otro puerto. No se versiona.
+playwright.local.config.ts
