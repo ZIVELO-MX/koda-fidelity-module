@@ -50,6 +50,7 @@ describe("OpenAPI spec", () => {
       "/api/passes/google/{cardId}",
       "/api/stamps",
       "/api/subscription",
+      "/api/subscription-requests",
       "/api/users",
       "/api/users/{id}",
     ].sort())
@@ -72,6 +73,8 @@ describe("OpenAPI spec", () => {
     expect(spec.paths["/api/join"]).toHaveProperty("get")
     expect(spec.paths["/api/join"]).toHaveProperty("post")
     expect(spec.paths["/api/stamps"]).toHaveProperty("post")
+    expect(spec.paths["/api/subscription-requests"]).toHaveProperty("get")
+    expect(spec.paths["/api/subscription-requests"]).toHaveProperty("post")
     expect(spec.paths["/api/passes/apple/{cardId}"]).toHaveProperty("post")
     expect(spec.paths["/api/passes/google/{cardId}"]).toHaveProperty("post")
   })
@@ -87,6 +90,7 @@ describe("OpenAPI spec", () => {
     expect(spec.components.schemas).toHaveProperty("CardSummary")
     expect(spec.components.schemas).toHaveProperty("AccountContext")
     expect(spec.components.schemas).toHaveProperty("ApiErrorBody")
+    expect(spec.components.schemas).toHaveProperty("SubscriptionRequestResponse")
   })
 
   it("has security scheme for cookie auth", () => {
