@@ -56,6 +56,11 @@ enum SubscriptionStatus {
   CANCELED
 }
 
+enum SubscriptionRequestStatus {
+  PENDING
+  COMPLETED
+}
+
 enum ClosureStatus {
   SCHEDULED
   PROCESSING
@@ -118,6 +123,7 @@ model Business {
   stampLogs            StampLog[]
   loyaltyOperations    LoyaltyOperation[]
   subscriptions        Subscription[]
+  subscriptionRequests SubscriptionRequest[]
   accountClosures      AccountClosure[]
   avatarAssets         BusinessAvatarAsset[]
   billingAudits        BillingAuditEvent[]
@@ -139,6 +145,7 @@ model User {
   passwordSetupRequired Boolean             @default(false)
   invitationsSent       TeamInvitation[]    @relation("InvitationSender")
   onboardingProgress    OnboardingProgress?
+  subscriptionRequests  SubscriptionRequest[]
 
   @@index([businessId])
 }
@@ -196,6 +203,25 @@ model Subscription {
 
   @@index([businessId, status])
   @@index([periodEnd])
+}
+
+model SubscriptionRequest {
+  id                String                    @id @default(cuid())
+  ticketNumber      String                    @unique
+  businessId        String
+  business          Business                  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  requestedByUserId String
+  requestedByUser   User                      @relation(fields: [requestedByUserId], references: [id], onDelete: Cascade)
+  plan              SubscriptionPlan
+  billingInterval   BillingInterval
+  status            SubscriptionRequestStatus @default(PENDING)
+  completedAt       DateTime?
+  completedBy       String?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  @@index([businessId, createdAt])
+  @@index([requestedByUserId])
 }
 
 model CustomerProfile {
