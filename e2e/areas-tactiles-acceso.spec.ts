@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test"
+import { medirDestinos, faltantes, informe, MINIMO } from "./areas-tactiles"
 
 /**
  * Áreas táctiles de las pantallas de acceso.
@@ -18,34 +19,11 @@ const MEDIDAS = [
   { ancho: 1440, alto: 900 },
 ]
 
-const MINIMO = { enlace: 44, control: 40 }
 
 async function esperarPantalla(page: Page) {
   await page.waitForLoadState("networkidle")
   // Mientras haya spinner no hay nada definitivo que medir.
   await expect(page.locator(".animate-spin")).toHaveCount(0, { timeout: 30000 })
-}
-
-async function medir(page: Page) {
-  return page.evaluate(() => {
-    const visible = (el: Element) => {
-      const caja = el.getBoundingClientRect()
-      if (caja.width === 0 || caja.height === 0) return false
-      const estilo = getComputedStyle(el)
-      return estilo.visibility !== "hidden" && estilo.display !== "none"
-    }
-    return [...document.querySelectorAll("a[href], button")]
-      .filter(visible)
-      .map((el) => {
-        const caja = el.getBoundingClientRect()
-        return {
-          tipo: el.tagName === "A" ? "enlace" : "control",
-          texto: (el.getAttribute("aria-label") || el.textContent || "").trim().slice(0, 45),
-          alto: Math.round(caja.height),
-          ancho: Math.round(caja.width),
-        }
-      })
-  })
 }
 
 for (const { ancho, alto } of MEDIDAS) {
@@ -62,15 +40,11 @@ for (const { ancho, alto } of MEDIDAS) {
         await page.goto(ruta)
         await esperarPantalla(page)
 
-        const destinos = await medir(page)
+        const destinos = await medirDestinos(page)
         expect(destinos.length, `${ruta} no pintó ningún destino que medir`).toBeGreaterThan(0)
 
-        const faltas = destinos.filter((d) => d.alto < MINIMO[d.tipo as "enlace" | "control"])
-        expect(
-          faltas,
-          `en ${ruta} a ${ancho}px:\n` +
-            faltas.map((f) => `  "${f.texto}" (${f.tipo}) mide ${f.ancho}x${f.alto}, pide ${MINIMO[f.tipo as "enlace" | "control"]}`).join("\n"),
-        ).toEqual([])
+        const faltas = faltantes(destinos)
+        expect(faltas, informe(faltas, `${ruta} a ${ancho}px`)).toEqual([])
       })
     }
   })

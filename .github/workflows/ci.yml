@@ -4,7 +4,7 @@ on:
   push:
     branches: [dev, main]
   pull_request:
-    branches: [dev, benrod/1.2.0, main]
+    branches: [dev, benrod/1.2.0, rulaxx/1.2.0, main]
 
 jobs:
   verify:
@@ -118,7 +118,10 @@ jobs:
   auth-e2e:
     name: auth-e2e (Supabase local + Mailpit)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # Veinte no alcanzaban: el job corre en serie y cada invocación de Playwright
+    # levanta su propio servidor de producción. Cancelado por tiempo, GitHub lo
+    # pinta rojo sin decir en qué paso se quedó.
+    timeout-minutes: 35
     concurrency:
       group: fid-0016-auth-e2e-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
@@ -173,6 +176,16 @@ jobs:
             cat "$start_log"
             exit 1
           fi
+          # Qué servicios quedaron arriba, por si el fallo llega más adelante.
+          supabase status || true
+
+      - name: Upload the Supabase start log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-start-log
+          path: ${{ runner.temp }}/supabase-start.log
+          if-no-files-found: ignore
 
       - name: Export local Supabase keys
         shell: bash
@@ -205,6 +218,58 @@ jobs:
 
       - name: Test login, session refresh, password recovery, and customer portal
         run: pnpm exec playwright test --config=playwright.auth.config.ts e2e/auth-development.spec.ts
+
+      # FID-0025. El fixture deja el alta de la cuenta de pruebas en el primer
+      # paso, así que el recorrido arranca siempre del mismo sitio.
+      - name: Prepare onboarding and plan fixtures
+        env:
+          E2E_ONBOARDING_EMAIL: fidelity.seed.portal@dev.invalid
+        run: pnpm prepare:onboarding-e2e
+
+      - name: Run FID-0025 onboarding tests
+        env:
+          E2E_ONBOARDING_EMAIL: fidelity.seed.portal@dev.invalid
+        run: >-
+          pnpm exec playwright test --config=playwright.auth.config.ts
+          e2e/onboarding-recorrido.spec.ts
+
+      - name: Show the saved card behind the paywall
+        env:
+          E2E_ONBOARDING_EMAIL: fidelity.seed.portal@dev.invalid
+          E2E_ONBOARDING_MODE: paywall
+        run: pnpm prepare:onboarding-e2e
+
+      - name: Check plan prices and unpublished card
+        env:
+          E2E_ONBOARDING_EMAIL: fidelity.seed.portal@dev.invalid
+        run: >-
+          pnpm exec playwright test --config=playwright.auth.config.ts
+          e2e/planes.spec.ts --grep @muro
+
+      # El trial vencido y el alta fresca son estados distintos de la misma
+      # cuenta, así que se preparan y se corren por separado.
+      - name: Prepare the expired Pro trial fixture
+        env:
+          E2E_ONBOARDING_EMAIL: fidelity.seed.portal@dev.invalid
+          E2E_ONBOARDING_MODE: expired-trial
+        run: pnpm prepare:onboarding-e2e
+
+      - name: Check expired trial and Lite entitlements
+        env:
+          E2E_ONBOARDING_EMAIL: fidelity.seed.portal@dev.invalid
+        run: >-
+          pnpm exec playwright test --config=playwright.auth.config.ts
+          e2e/planes.spec.ts --grep-invert @muro
+
+      - name: Upload the end-to-end evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-e2e-report
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
 
       - name: Stop local Supabase
         if: always()

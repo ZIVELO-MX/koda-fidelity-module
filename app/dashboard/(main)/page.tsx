@@ -2,6 +2,8 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { StatCard } from "@/components/dashboard/stat-card"
+import { MetricasHistoricas } from "@/components/dashboard/metricas-historicas"
+import { ActividadPaginada } from "@/components/dashboard/actividad-paginada"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 import { getCardIcon } from "@/lib/card-icons"
@@ -248,17 +250,6 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-foreground">Tendencia de 30 días</h2>
-        <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-6">
-          <p className="text-sm text-muted-foreground">
-            Todavía no se puede mostrar. Con los datos que hoy entrega el servidor solo se pueden
-            contar los eventos del día; la serie diaria llega cuando el backend la publique. Queda
-            vacía a propósito, antes que dibujar una tendencia inventada.
-          </p>
-        </div>
-      </div>
-
       <div className="space-y-6">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -387,6 +378,10 @@ export default async function DashboardPage() {
           </div>
         </div>
       </div>
+
+      <MetricasHistoricas />
+
+      <ActividadPaginada />
 
       {/* Mobile: link to docs */}
       <div className="lg:hidden">

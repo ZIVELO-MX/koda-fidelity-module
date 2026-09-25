@@ -378,7 +378,7 @@ export default function DashboardMyCardsPage() {
         <div className="max-w-lg mx-auto space-y-6">
           {hasDashboard && (
             <div className="flex items-center justify-between mb-2">
-              <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <Link href="/dashboard" className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
                 <ArrowLeft className="h-4 w-4" />
                 Volver al dashboard
               </Link>
@@ -396,7 +396,7 @@ export default function DashboardMyCardsPage() {
               onClick={handleRefresh}
               disabled={refreshing}
               aria-label="Recargar tarjetas"
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+              className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
             >
               <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
             </button>

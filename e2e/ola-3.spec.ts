@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test"
+import { verificarAreasTactiles } from "./areas-tactiles"
 import { entrar } from "./sesion"
 
 // Recorrido de la ola 3: Marca, Configuración, Equipo y Documentación.
@@ -34,23 +35,7 @@ async function desborda(page: Page): Promise<boolean> {
 }
 
 /** El ADN pide 40px de área táctil, y 44px en destinos de navegación. */
-async function areasTactiles(page: Page, contexto: string) {
-  for (const { rol, minimo } of [
-    { rol: "link" as const, minimo: 44 },
-    { rol: "button" as const, minimo: 40 },
-  ]) {
-    for (const objetivo of await page.getByRole(rol).all()) {
-      if (!(await objetivo.isVisible())) continue
-      const nombre =
-        (await objetivo.getAttribute("aria-label")) || (await objetivo.innerText()).trim()
-      if (/next\.js/i.test(nombre)) continue
-      const caja = await objetivo.boundingBox()
-      if (caja) {
-        expect(caja.height, `${rol} "${nombre}" en ${contexto}`).toBeGreaterThanOrEqual(minimo)
-      }
-    }
-  }
-}
+const areasTactiles = verificarAreasTactiles
 
 test.describe("ola 3, administración del negocio", () => {
   test.skip(!HAY_SUPABASE, "Requiere NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY")

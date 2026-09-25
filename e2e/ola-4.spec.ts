@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test"
+import { verificarAreasTactiles } from "./areas-tactiles"
 
 // Recorrido de la ola 4: landing pública y alta por QR.
 //
@@ -44,24 +45,7 @@ test.describe("ola 4, landing pública", () => {
         await page.goto("/")
         expect(await desborda(page), `la landing desborda en ${ancho.nombre}`).toBe(false)
 
-        for (const { rol, minimo } of [
-          { rol: "button" as const, minimo: 40 },
-          { rol: "link" as const, minimo: 44 },
-        ]) {
-          for (const objetivo of await page.getByRole(rol).all()) {
-            if (!(await objetivo.isVisible())) continue
-            const nombre =
-              (await objetivo.getAttribute("aria-label")) || (await objetivo.innerText()).trim()
-            if (/next\.js/i.test(nombre)) continue
-            const caja = await objetivo.boundingBox()
-            if (caja) {
-              expect(
-                caja.height,
-                `${rol} "${nombre}" en ${ancho.nombre}`,
-              ).toBeGreaterThanOrEqual(minimo)
-            }
-          }
-        }
+        await verificarAreasTactiles(page, `la landing en ${ancho.nombre}`)
       })
 
       test("el alta pública cabe y explica un enlace roto", async ({ page }) => {
@@ -71,23 +55,7 @@ test.describe("ola 4, landing pública", () => {
         ).toBeVisible({ timeout: 30000 })
         expect(await desborda(page), `el alta desborda en ${ancho.nombre}`).toBe(false)
 
-        for (const { rol, minimo } of [
-          { rol: "button" as const, minimo: 40 },
-          { rol: "link" as const, minimo: 44 },
-        ]) {
-          for (const objetivo of await page.getByRole(rol).all()) {
-            if (!(await objetivo.isVisible())) continue
-            const nombre =
-              (await objetivo.getAttribute("aria-label")) || (await objetivo.innerText()).trim()
-            if (/next\.js/i.test(nombre)) continue
-            const caja = await objetivo.boundingBox()
-            if (caja) {
-              expect(caja.height, `${rol} "${nombre}" en ${ancho.nombre}`).toBeGreaterThanOrEqual(
-                minimo,
-              )
-            }
-          }
-        }
+        await verificarAreasTactiles(page, `el alta pública en ${ancho.nombre}`)
       })
 
       test("el hero cabe en el primer viewport, con su botón a la vista", async ({ page }) => {
@@ -114,11 +82,23 @@ test.describe("ola 4, landing pública", () => {
       // El anual viene preseleccionado.
       await expect(precios).toContainText("1,490")
       await expect(precios).toContainText("2,990")
-      // El tachado tiene que ser el año pagando mes a mes, no un precio
-      // inventado: 149 x 12 y 299 x 12.
-      await expect(precios.locator("s")).toHaveText(["$1,788", "$3,588"])
+
+      // La comparación es con la otra modalidad, que sigue disponible: 149 x 12
+      // y 299 x 12. Se dice, no se tacha. Un tachado se lee como precio
+      // anterior, y un precio anterior que nunca se cobró es engañoso.
+      await expect(precios).toContainText("Pagando mes a mes, el año costaría $1,788")
+      await expect(precios).toContainText("Pagando mes a mes, el año costaría $3,588")
+      await expect(precios.locator("s"), "un importe tachado se lee como precio anterior").toHaveCount(0)
+
       await expect(precios).toContainText("Ahorras $298")
       await expect(precios).toContainText("Ahorras $598")
+
+      // El equivalente mensual no se redondea hacia abajo: 1490/12 es 124.17, y
+      // decir 124 vendería el plan por menos de lo que cuesta.
+      await expect(precios).toContainText("Equivale a $124.17 al mes")
+      await expect(precios).toContainText("Equivale a $249.17 al mes")
+      // Y la condición que hace comparable la cifra.
+      await expect(precios).toContainText("se cobra una vez al año")
 
       await page.getByRole("radio", { name: /Al mes/ }).click()
       await expect(precios).toContainText("$149")
@@ -165,14 +145,6 @@ test.describe("ola 4, landing pública", () => {
       await expect(page.getByRole("link", { name: "Ir al inicio" })).toBeVisible()
     })
 
-    test("las preguntas abren sin JavaScript y la primera ya está abierta", async ({ page }) => {
-      await page.goto("/")
-      const preguntas = page.locator("#faq details")
-      await expect(preguntas.first()).toHaveAttribute("open", "")
-      // Acordeón nativo: si alguien lo cambia por una librería, esto avisa.
-      expect(await preguntas.count()).toBeGreaterThan(3)
-    })
-
     test("cada campo del formulario lleva su etiqueta a la vista", async ({ page }) => {
       await page.goto("/")
       // Los seis campos del diseño aprobado, con sus ids, que no se cambian
@@ -205,6 +177,64 @@ test.describe("ola 4, landing pública", () => {
       await expect(comoFunciona).not.toContainText("01")
       await expect(comoFunciona).not.toContainText("02")
       await expect(comoFunciona).not.toContainText("03")
+    })
+  })
+
+  /**
+   * El acordeón, con JavaScript realmente apagado.
+   *
+   * La versión anterior de esta prueba se llamaba "sin JavaScript" y corría con
+   * JavaScript como todas las demás, y además no abría nada: miraba que la
+   * primera trajera `open` y contaba elementos. Afirmaba dos cosas que no
+   * comprobaba, que es peor que no tenerla.
+   *
+   * Va en su propio `describe` porque `javaScriptEnabled` es una opción de
+   * contexto y no se puede cambiar dentro de una prueba.
+   */
+  test.describe("el acordeón de preguntas, con JavaScript apagado", () => {
+    test.use({ javaScriptEnabled: false, viewport: { width: 1440, height: 900 } })
+
+    test("la primera ya está abierta y las demás abren al accionarlas", async ({ page }) => {
+      await page.goto("/")
+
+      // Que los scripts de la página estén apagados de verdad. Sin esta guarda,
+      // el defecto que se corrige aquí puede volver sin que nadie lo note.
+      //
+      // No sirve `page.evaluate(() => ...)` a secas: `javaScriptEnabled: false`
+      // apaga los scripts de la página, no el runtime de Playwright, así que
+      // evaluate sigue respondiendo. La señal es `__next_f`, el global que Next
+      // llena desde los scripts en línea del documento: con JavaScript vale
+      // "object" y sin él, "undefined". Medido en las dos modalidades.
+      const scriptsDeLaPagina = await page.evaluate(
+        () => typeof (globalThis as Record<string, unknown>).__next_f,
+      )
+      expect(scriptsDeLaPagina, "los scripts de la página todavía corren").toBe("undefined")
+
+      const preguntas = page.locator("#faq details")
+      // Acordeón nativo: si alguien lo cambia por una librería, esto avisa,
+      // porque una librería no pinta `details` y sin JavaScript no abriría.
+      expect(await preguntas.count()).toBeGreaterThan(3)
+
+      // La primera llega abierta: enseña que el acordeón se abre y responde la
+      // duda más común sin pedir un clic.
+      const primera = preguntas.first()
+      await expect(primera).toHaveAttribute("open", "")
+      await expect(primera.locator("p")).toBeVisible()
+
+      // Y una cerrada se abre de verdad al accionarla, que es lo que la prueba
+      // anterior decía en su nombre y nunca hacía.
+      const segunda = preguntas.nth(1)
+      await expect(segunda).not.toHaveAttribute("open", "")
+      await expect(segunda.locator("p")).toBeHidden()
+
+      await segunda.locator("summary").click()
+
+      await expect(segunda).toHaveAttribute("open", "")
+      await expect(segunda.locator("p")).toBeVisible()
+
+      // Abrir una no cierra la otra: son `details` sueltos, no un grupo con
+      // `name`, así que quien compara dos respuestas no pierde la primera.
+      await expect(primera).toHaveAttribute("open", "")
     })
   })
 })
