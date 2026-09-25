@@ -23,6 +23,19 @@ const MEDIDAS = [
   { ancho: 1440, alto: 900 },
 ]
 
+/**
+ * Una sola sesión para todo el archivo.
+ *
+ * Entrar en cada prueba parecía más limpio y no lo era: siete pruebas son siete
+ * inicios de sesión seguidos contra el mismo Supabase, y a partir del tercero o
+ * cuarto empieza a limitarlos, así que `waitForURL` agota sus 60s y el spec
+ * falla por el arnés y no por el producto. Medido: una corrida en verde y la
+ * siguiente con seis fallos, todos en `sesion.ts`.
+ *
+ * En serie y con una página compartida, el login pasa de siete a uno.
+ */
+test.describe.configure({ mode: "serial" })
+
 async function enElMuro(page: Page) {
   await page.goto("/onboarding")
   await expect(page.locator("#contenido")).toBeVisible({ timeout: 60000 })
@@ -35,18 +48,28 @@ async function hayContrato(page: Page) {
   return res.status() !== 404
 }
 
+let page: Page
+
+test.beforeAll(async ({ browser }) => {
+  test.skip(!CORREO || !CLAVE, "Requiere las credenciales del fixture del alta")
+  page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
+  await entrar(page, CORREO!, CLAVE!)
+})
+
+test.afterAll(async () => {
+  await page?.close()
+})
+
 test.describe("Solicitud manual de activación", () => {
   test.skip(!CORREO || !CLAVE, "Requiere las credenciales del fixture del alta")
 
-  test("el muro pide activación, no contrata, y ofrece los dos planes", async ({ page }) => {
-    await entrar(page, CORREO!, CLAVE!)
+  test("el muro pide activación, no contrata, y ofrece los dos planes", async () => {
     if (!(await enElMuro(page))) test.skip(true, "La cuenta del fixture no está en el muro de pago")
 
-    // Los dos planes se pueden solicitar desde el principio.
     await expect(page.getByRole("button", { name: /solicitar activación de lite/i })).toBeEnabled()
     await expect(page.getByRole("button", { name: /solicitar activación de pro/i })).toBeEnabled()
 
-    // Y ya no se promete contratar ni se aplaza Pro al mes siguiente.
+    // Ya no se promete contratar ni se aplaza Pro al mes siguiente.
     await expect(page.getByRole("button", { name: /^contratar/i })).toHaveCount(0)
     await expect(page.getByText(/disponible al terminar tu primer mes/i)).toHaveCount(0)
 
@@ -55,30 +78,29 @@ test.describe("Solicitud manual de activación", () => {
     await expect(page.getByText("2,990")).toBeVisible()
   })
 
-  test("crear la solicitud enseña el folio, y el folio sobrevive a una recarga", async ({ page }) => {
-    await entrar(page, CORREO!, CLAVE!)
+  test("crear la solicitud enseña el ticketNumber, y sobrevive a una recarga", async () => {
     if (!(await enElMuro(page))) test.skip(true, "La cuenta del fixture no está en el muro de pago")
     test.skip(!(await hayContrato(page)), "Requiere FID-0028 en backend: /api/subscription-requests todavía no existe")
 
     await page.getByRole("button", { name: /solicitar activación de lite/i }).click()
 
-    const folio = page.getByText(/^KF-/)
-    await expect(folio).toBeVisible({ timeout: 30000 })
-    const valor = (await folio.innerText()).trim()
+    // El número se pinta en su recuadro y otra vez dentro del texto del correo,
+    // así que se acota al recuadro en vez de buscar el texto suelto.
+    const recuadro = page.locator("span.font-mono").filter({ hasText: /^KF-/ }).first()
+    await expect(recuadro).toBeVisible({ timeout: 30000 })
+    const valor = (await recuadro.innerText()).trim()
+    expect(valor).toMatch(/^KF-[0-9A-F]{16}$/)
 
-    // Recargar recupera la misma solicitud: el folio no vive en el navegador.
     await page.reload()
     await expect(page.locator("#contenido")).toBeVisible({ timeout: 60000 })
-    await expect(page.getByText(valor)).toBeVisible({ timeout: 30000 })
+    await expect(page.getByText(valor, { exact: true })).toBeVisible({ timeout: 30000 })
   })
 
-  test("pedir la activación no publica la tarjeta ni manda el correo", async ({ page }) => {
-    await entrar(page, CORREO!, CLAVE!)
+  test("pedir la activación no publica la tarjeta ni manda el correo", async () => {
     if (!(await enElMuro(page))) test.skip(true, "La cuenta del fixture no está en el muro de pago")
     test.skip(!(await hayContrato(page)), "Requiere FID-0028 en backend: /api/subscription-requests todavía no existe")
 
-    await page.getByRole("button", { name: /solicitar activación de pro/i }).click()
-    await expect(page.getByText(/^KF-/)).toBeVisible({ timeout: 30000 })
+    await expect(page.locator("span.font-mono").filter({ hasText: /^KF-/ }).first()).toBeVisible({ timeout: 30000 })
 
     // Lo que no pasó, dicho en la pantalla.
     await expect(page.getByText(/falta que tú mandes el correo/i)).toBeVisible()
@@ -92,52 +114,65 @@ test.describe("Solicitud manual de activación", () => {
     await expect(page.getByRole("button", { name: "Compartir", exact: true })).toHaveAttribute("aria-disabled", "true")
   })
 
-  test("un error del servidor se explica y se puede reintentar", async ({ page }) => {
-    await entrar(page, CORREO!, CLAVE!)
+  test("el correo a soporte lleva el ticketNumber, el negocio y el correo de la cuenta", async () => {
+    if (!(await enElMuro(page))) test.skip(true, "La cuenta del fixture no está en el muro de pago")
+    test.skip(!(await hayContrato(page)), "Requiere FID-0028 en backend")
+
+    const recuadro = page.locator("span.font-mono").filter({ hasText: /^KF-/ }).first()
+    await expect(recuadro).toBeVisible({ timeout: 30000 })
+    const valor = (await recuadro.innerText()).trim()
+
+    const enlace = page.getByRole("link", { name: /soporte@zivelo\.dev/i })
+    const href = (await enlace.getAttribute("href")) ?? ""
+    expect(href.startsWith("mailto:soporte@zivelo.dev?")).toBe(true)
+    expect(decodeURIComponent(href)).toContain(valor)
+    // El negocio y el correo salen del servidor, no del borrador del alta.
+    expect(decodeURIComponent(href)).toContain(CORREO!)
+  })
+
+  test("un error del servidor se explica, con su referencia, y se puede reintentar", async () => {
     if (!(await enElMuro(page))) test.skip(true, "La cuenta del fixture no está en el muro de pago")
 
-    // Se fuerza el fallo en la red, que es lo que esta prueba quiere ver: que
-    // la pantalla lo diga en vez de quedarse callada o inventar un folio.
     await page.route("**/api/subscription-requests", (ruta) =>
-      ruta.fulfill({
-        status: 500,
-        contentType: "application/json",
-        headers: { "x-request-id": "req-e2e-500" },
-        body: JSON.stringify({ error: "Internal server error", code: "KF-SYS-001", action: "Inténtalo de nuevo más tarde.", requestId: "req-e2e-500", retryable: true }),
-      }),
+      ruta.request().method() === "POST"
+        ? ruta.fulfill({
+            status: 500,
+            contentType: "application/json",
+            headers: { "x-request-id": "req-e2e-500" },
+            body: JSON.stringify({ error: "Internal server error", code: "KF-SYS-001", action: "Inténtalo de nuevo más tarde.", requestId: "req-e2e-500", retryable: true }),
+          })
+        : ruta.continue(),
     )
+    await page.reload()
+    await expect(page.locator("#contenido")).toBeVisible({ timeout: 60000 })
 
-    await page.getByRole("button", { name: /solicitar activación de lite/i }).click()
-    const alerta = page.getByRole("alert")
+    await page.getByRole("button", { name: /solicitar activación de pro/i }).click()
+
+    // Next monta un `role="alert"` vacío para anunciar rutas, así que se acota al
+    // aviso del alta y no al anunciador.
+    const alerta = page.locator('#contenido [role="alert"]').first()
     await expect(alerta).toBeVisible({ timeout: 30000 })
     await expect(alerta).toContainText("req-e2e-500")
-    await expect(page.getByText(/^KF-/)).toHaveCount(0)
-
-    // Y el botón queda listo para volver a intentarlo.
-    await expect(page.getByRole("button", { name: /solicitar activación de lite/i })).toBeEnabled()
+    await expect(page.getByRole("button", { name: /solicitar activación de pro/i })).toBeEnabled()
+    await page.unroute("**/api/subscription-requests")
   })
-})
 
-for (const { ancho, alto } of MEDIDAS) {
-  test.describe(`el muro con solicitud a ${ancho}px`, () => {
-    test.use({ viewport: { width: ancho, height: alto } })
-    test.skip(!CORREO || !CLAVE, "Requiere las credenciales del fixture del alta")
+  test("el muro cabe y se puede accionar en 375, 768 y 1440", async () => {
+    if (!(await enElMuro(page))) test.skip(true, "La cuenta del fixture no está en el muro de pago")
 
-    test("los dos planes caben y se pueden accionar", async ({ page }) => {
-      await entrar(page, CORREO!, CLAVE!)
-      if (!(await enElMuro(page))) test.skip(true, "La cuenta del fixture no está en el muro de pago")
-
+    for (const { ancho, alto } of MEDIDAS) {
+      await page.setViewportSize({ width: ancho, height: alto })
       for (const plan of [/solicitar activación de lite/i, /solicitar activación de pro/i]) {
         const boton = page.getByRole("button", { name: plan })
-        await expect(boton).toBeVisible()
+        await expect(boton, `${plan} a ${ancho}px`).toBeVisible()
         const caja = await boton.boundingBox()
         expect(caja?.height ?? 0, `${plan} a ${ancho}px`).toBeGreaterThanOrEqual(44)
       }
-
       const desborda = await page.evaluate(
         () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
       )
       expect(desborda, `el muro desborda a ${ancho}px`).toBe(false)
-    })
+    }
+    await page.setViewportSize({ width: 1440, height: 900 })
   })
-}
+})
