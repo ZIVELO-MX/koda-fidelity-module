@@ -1,13 +1,15 @@
 import "dotenv/config"
 import { Prisma, PrismaClient } from "@prisma/client"
 import { activateManualSubscription } from "../lib/account-lifecycle"
+import { exigirBaseLocal } from "./onboarding-e2e-guard"
 
 /**
  * Fixture del alta guiada y de los planes, para que los recorridos de
  * Playwright arranquen siempre del mismo sitio.
  *
- * Reutiliza la cuenta que ya crea `prepare-auth-e2e.ts` en vez de inventar
- * otra, y deja su alta en el primer paso con los borradores vacíos.
+ * Reutiliza la cuenta que ya crea `prepare-auth-e2e.ts`. Solo opera sobre el
+ * Supabase local: `fresh` reinicia el alta sin activar un plan, `paywall` deja
+ * visible la tarjeta guardada y `expired-trial` monta la transición a Lite.
  *
  * El reset se hace por Prisma y no con `pnpm onboarding:debug -- reset` a
  * propósito: ese script exige que el correo termine en `@invalid.dev` y todas
@@ -18,7 +20,6 @@ import { activateManualSubscription } from "../lib/account-lifecycle"
 const prisma = new PrismaClient()
 
 const email = process.env.E2E_ONBOARDING_EMAIL ?? "fidelity.seed.portal@dev.invalid"
-const plan = (process.env.E2E_ONBOARDING_PLAN ?? "LITE") as "LITE" | "PRO"
 /**
  * `expired-trial` deja el negocio con un mes de Pro ya vencido y dos tarjetas,
  * una de ellas con un tema Pro elegido. Es el estado desde el que se comprueba
@@ -27,12 +28,31 @@ const plan = (process.env.E2E_ONBOARDING_PLAN ?? "LITE") as "LITE" | "PRO"
 const modo = process.env.E2E_ONBOARDING_MODE ?? "fresh"
 
 async function main() {
+  exigirBaseLocal(process.env)
+  if (!["fresh", "paywall", "expired-trial"].includes(modo)) throw new Error(`Modo de fixture desconocido: ${modo}`)
   const user = await prisma.user.findUnique({
     where: { email },
     include: { onboardingProgress: true },
   })
   if (!user) throw new Error(`Fixture user not found: ${email}. Run prepare-auth-e2e first.`)
   if (!user.businessId) throw new Error(`Fixture user has no business: ${email}`)
+
+  if (modo === "paywall") {
+    if (!user.onboardingProgress?.firstCardId) throw new Error("El muro exige una primera tarjeta guardada")
+    const activa = await prisma.subscription.count({ where: { businessId: user.businessId, status: "ACTIVE" } })
+    if (activa) throw new Error("El muro de prueba exige una cuenta sin suscripción activa")
+    await prisma.onboardingProgress.update({
+      where: { id: user.onboardingProgress.id },
+      data: { step: "PAYWALL", status: "AWAITING_PAYMENT", draftVersion: { increment: 1 } },
+    })
+    console.log(JSON.stringify({ email, businessId: user.businessId, modo, onboarding: "PAYWALL" }))
+    return
+  }
+
+  if (modo === "fresh") {
+    const activa = await prisma.subscription.count({ where: { businessId: user.businessId, status: "ACTIVE" } })
+    if (activa) throw new Error("El alta fresca exige una cuenta sin suscripción activa")
+  }
 
   const reset = {
     step: "INTRO" as const,
@@ -50,27 +70,12 @@ async function main() {
     ? await prisma.onboardingProgress.update({ where: { id: user.onboardingProgress.id }, data: reset })
     : await prisma.onboardingProgress.create({ data: { userId: user.id, businessId: user.businessId } })
 
-  // El plan se fija de forma idempotente: la clave lleva el plan, así que
-  // repetir la preparación no encadena suscripciones.
-  await activateManualSubscription(prisma, {
-    businessId: user.businessId,
-    plan,
-    proAccessGranted: plan === "PRO",
-    operator: "e2e-fixture",
-    action: "set_plan",
-    idempotencyKey: `e2e-onboarding:${user.businessId}:${plan}`,
-  })
-
-  // `activateManualSubscription` marca el alta como ACTIVE al activar, así que
-  // el reset se vuelve a aplicar después para dejarla realmente al principio.
-  await prisma.onboardingProgress.update({ where: { id: progress.id }, data: reset })
-
   const trial = modo === "expired-trial" ? await prepararTrialVencido(user.businessId) : null
   // `activateManualSubscription` marca el alta como ACTIVE, así que se vuelve a
   // dejar al principio después de montar el trial.
   if (trial) await prisma.onboardingProgress.update({ where: { id: progress.id }, data: reset })
 
-  console.log(JSON.stringify({ email, businessId: user.businessId, plan, modo, onboarding: "reset", ...trial }))
+  console.log(JSON.stringify({ email, businessId: user.businessId, modo, onboarding: "INTRO", ...trial }))
 }
 
 /**
@@ -115,7 +120,7 @@ async function prepararTrialVencido(businessId: string) {
     periodEnd: new Date(ahora + 300 * 24 * 60 * 60 * 1000),
     operator: "e2e-fixture",
     action: "activate",
-    idempotencyKey: `e2e-expired-trial:${businessId}:${finDelTrial.toISOString()}`,
+    idempotencyKey: `e2e-expired-trial:${businessId}`,
   })
 
   // La fecha se escribe aquí y no como argumento: `proTrialEndsAt` solo entra

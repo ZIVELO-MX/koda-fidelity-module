@@ -1,4 +1,7 @@
 import { test, expect } from "@playwright/test"
+import { PrismaClient } from "@prisma/client"
+import { execFile } from "node:child_process"
+import { promisify } from "node:util"
 import { entrar } from "./sesion"
 
 /**
@@ -14,18 +17,34 @@ import { entrar } from "./sesion"
  */
 const CORREO = process.env.E2E_ONBOARDING_EMAIL
 const CLAVE = process.env.E2E_ONBOARDING_PASSWORD ?? process.env.E2E_PORTAL_PASSWORD
+const ejecutar = promisify(execFile)
+const db = new PrismaClient()
+
+async function contarTarjetas() {
+  const user = await db.user.findUnique({ where: { email: CORREO! }, select: { businessId: true } })
+  if (!user?.businessId) throw new Error("La cuenta del fixture no tiene negocio")
+  return db.loyaltyCard.count({ where: { businessId: user.businessId } })
+}
 
 test.describe("Alta guiada, recorrido completo", () => {
   test.skip(
     !CORREO || !CLAVE,
     "Requiere E2E_ONBOARDING_EMAIL y E2E_ONBOARDING_PASSWORD, y `pnpm prepare:onboarding-e2e` antes",
   )
+  test.skip(process.env.ALLOW_DESTRUCTIVE_SEED !== "true", "Este recorrido modifica solo el fixture de Supabase local")
 
   test.beforeEach(async ({ page }) => {
+    // El paso vive en Postgres: una página nueva o un login nuevo no lo reinician.
+    // El preparador comprueba que las tres URLs apunten a servicios locales.
+    await ejecutar(process.execPath, ["--import", "tsx", "scripts/prepare-onboarding-e2e.ts"], {
+      env: { ...process.env, E2E_ONBOARDING_MODE: "fresh" },
+    })
     await entrar(page, CORREO!, CLAVE!)
     await page.goto("/onboarding")
     await expect(page.locator("#contenido")).toBeVisible({ timeout: 60000 })
   })
+
+  test.afterAll(async () => db.$disconnect())
 
   test("va de la intro al muro de pago guardando cada paso en el servidor", async ({ page }) => {
     // Intro: se puede saltar desde la primera lámina.
@@ -36,7 +55,7 @@ test.describe("Alta guiada, recorrido completo", () => {
     await expect(page.getByRole("heading", { name: "Tu negocio" })).toBeVisible()
     await page.getByRole("button", { name: "Continuar" }).click()
     // El aviso se pinta en el encabezado, sobre la barra de pasos.
-    await expect(page.getByRole("alert")).toContainText(/nombre y categoría/i)
+    await expect(page.getByRole("alert").filter({ hasText: /nombre y categoría/i })).toBeVisible()
 
     const nombre = `Café Aurora ${Date.now()}`
     await page.getByLabel("Nombre del negocio").fill(nombre)
@@ -68,6 +87,10 @@ test.describe("Alta guiada, recorrido completo", () => {
   })
 
   test("la primera tarjeta se crea una sola vez, aunque se vuelva a pasar", async ({ page }) => {
+    const antes = await (await page.request.get("/api/onboarding")).json()
+    const yaHabiaTarjeta = Boolean(antes?.onboarding?.onboardingProgress?.firstCardId)
+    const totalAntes = await contarTarjetas()
+
     await page.getByRole("button", { name: "Saltar la introducción" }).click()
     await page.getByLabel("Nombre del negocio").fill("Café Aurora")
     await page.locator("fieldset button").first().click()
@@ -78,21 +101,33 @@ test.describe("Alta guiada, recorrido completo", () => {
 
     const primera = page.waitForResponse((r) => r.url().includes("/api/onboarding") && r.request().method() === "POST")
     await page.getByRole("button", { name: "Continuar" }).click()
-    const idPrimera = (await (await primera).json())?.onboarding?.onboardingProgress?.firstCardId
+    const respuestaPrimera = await (await primera).json()
+    const idPrimera = respuestaPrimera?.onboarding?.onboardingProgress?.firstCardId
     expect(idPrimera, "completar la tarjeta tiene que dejar una firstCardId").toBeTruthy()
+    const totalTrasPrimera = await contarTarjetas()
+    expect(totalTrasPrimera).toBe(totalAntes + (yaHabiaTarjeta ? 0 : 1))
 
-    // Volver atrás y repetir no puede crear una segunda.
-    await page.goto("/onboarding")
-    const relectura = await (await page.waitForResponse(
+    const segunda = await page.request.post("/api/onboarding", {
+      data: { action: "complete_card", draftVersion: respuestaPrimera.onboarding.onboardingProgress.draftVersion },
+    })
+    expect(segunda.ok()).toBe(true)
+    expect((await segunda.json())?.onboarding?.onboardingProgress?.firstCardId).toBe(idPrimera)
+    expect(await contarTarjetas(), "repetir complete_card no crea otra tarjeta").toBe(totalTrasPrimera)
+
+    // Una recarga sigue apuntando a la misma tarjeta.
+    const relecturaPendiente = page.waitForResponse(
       (r) => r.url().includes("/api/onboarding") && r.request().method() === "GET",
-    )).json()
+    )
+    await page.goto("/onboarding")
+    const relectura = await (await relecturaPendiente).json()
     expect(relectura?.onboarding?.onboardingProgress?.firstCardId).toBe(idPrimera)
   })
 
   test("un borrador viejo no pisa lo que ya se guardó", async ({ page }) => {
     await page.getByRole("button", { name: "Saltar la introducción" }).click()
+    const guardado = page.waitForResponse((r) => r.url().includes("/api/onboarding") && r.request().method() === "PATCH" && r.ok())
     await page.getByLabel("Nombre del negocio").fill("Primero")
-    await page.waitForResponse((r) => r.url().includes("/api/onboarding") && r.request().method() === "PATCH" && r.ok())
+    await guardado
 
     // Una escritura con una versión ya consumida tiene que ser rechazada.
     const respuesta = await page.request.patch("/api/onboarding", {

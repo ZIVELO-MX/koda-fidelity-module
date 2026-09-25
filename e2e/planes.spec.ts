@@ -7,10 +7,8 @@ import { entrar } from "./sesion"
  * "Los planes funcionan" significa aquí activación manual, trial y entitlements.
  * El cobro real no existe todavía y no se simula ninguna compra.
  *
- * Las transiciones que dependen del vencimiento del mes de Pro están marcadas
- * como `fixme` y no como `skip`: no faltan variables de entorno, falta el
- * comportamiento. `proTrialEndsAt` no se escribe ni se lee en ninguna parte del
- * servidor, así que el trial no vence nunca. Está documentado en FID-0026.
+ * Las transiciones que dependen del vencimiento del mes de Pro se prueban
+ * con un fixture local que prepara el trial vencido.
  */
 const CORREO = process.env.E2E_ONBOARDING_EMAIL
 const CLAVE = process.env.E2E_ONBOARDING_PASSWORD ?? process.env.E2E_PORTAL_PASSWORD
@@ -18,7 +16,7 @@ const CLAVE = process.env.E2E_ONBOARDING_PASSWORD ?? process.env.E2E_PORTAL_PASS
 const PRECIOS = { lite: { mes: 149, anio: 1490 }, pro: { mes: 299, anio: 2990 } }
 
 test.describe("Planes Lite y Pro", () => {
-  test.describe("lo que la interfaz promete", () => {
+  test.describe("lo que la interfaz promete @muro", () => {
     test("el muro de pago dice los precios acordados", async ({ page }) => {
       test.skip(!CORREO || !CLAVE, "Requiere las credenciales del fixture del alta")
 
@@ -26,10 +24,7 @@ test.describe("Planes Lite y Pro", () => {
       await page.goto("/onboarding")
       await expect(page.locator("#contenido")).toBeVisible({ timeout: 60000 })
 
-      const muro = page.getByRole("heading", { name: "Publica tu tarjeta" })
-      if (!(await muro.isVisible().catch(() => false))) {
-        test.skip(true, "La cuenta del fixture no está en el muro de pago; corre prepare:onboarding-e2e")
-      }
+      await expect(page.getByRole("heading", { name: "Publica tu tarjeta" })).toBeVisible()
 
       const tarjetaLite = page.locator("div").filter({ has: page.getByRole("heading", { name: "Lite" }) }).last()
       const tarjetaPro = page.locator("div").filter({ has: page.getByRole("heading", { name: "Pro" }) }).last()
@@ -50,10 +45,7 @@ test.describe("Planes Lite y Pro", () => {
       await entrar(page, CORREO!, CLAVE!)
       await page.goto("/onboarding")
       const contratar = page.getByRole("button", { name: /contratar lite/i })
-      if (!(await contratar.isVisible().catch(() => false))) {
-        test.skip(true, "La cuenta del fixture no está en el muro de pago")
-      }
-
+      await expect(contratar).toBeVisible()
       await contratar.click()
       await expect(page.getByText(/el cobro todavía no está activo/i)).toBeVisible()
       // Y sigue sin publicar: la salida conserva su consecuencia dicha.
@@ -118,18 +110,12 @@ test.describe("Planes Lite y Pro", () => {
   test.describe("el mes de Pro incluido termina", () => {
     test.skip(!CORREO || !CLAVE, "Requiere las credenciales del fixture del alta")
 
-    let hayTemasPro = false
-
     test.beforeEach(async ({ page }) => {
       await entrar(page, CORREO!, CLAVE!)
       const res = await page.request.get("/api/onboarding")
       const cuerpo = await res.json().catch(() => null)
       const temas: { plan?: string }[] = cuerpo?.themes ?? []
-      hayTemasPro = temas.some((t) => t.plan === "PRO")
-      test.skip(
-        !hayTemasPro,
-        "Requiere FID-0026 en esta rama: el catálogo todavía no tiene temas Pro",
-      )
+      expect(temas.some((t) => t.plan === "PRO"), "el fixture necesita un tema Pro activo").toBe(true)
     })
 
     test("con la fecha pasada, los entitlements son Lite y ya no hay trial", async ({ page }) => {
@@ -189,7 +175,7 @@ const MEDIDAS = [
   { ancho: 1440, alto: 900 },
 ]
 
-test.describe("La tarjeta guardada detrás del muro", () => {
+test.describe("La tarjeta guardada detrás del muro @muro", () => {
   test("se ve la tarjeta, se dice que no está publicada y las acciones del QR no se habilitan", async ({ page }) => {
     test.skip(!CORREO || !CLAVE, "Requiere las credenciales del fixture del alta")
     // Un login más tres anchos no cabe en los 30s del config; `slow` los triplica.
@@ -199,10 +185,7 @@ test.describe("La tarjeta guardada detrás del muro", () => {
     await page.goto("/onboarding")
     await expect(page.locator("#contenido")).toBeVisible({ timeout: 60000 })
 
-    const muro = page.getByRole("heading", { name: "Publica tu tarjeta" })
-    if (!(await muro.isVisible().catch(() => false))) {
-      test.skip(true, "La cuenta del fixture no está en el muro de pago; corre prepare:onboarding-e2e")
-    }
+    await expect(page.getByRole("heading", { name: "Publica tu tarjeta" })).toBeVisible()
 
     for (const { ancho, alto } of MEDIDAS) {
       await page.setViewportSize({ width: ancho, height: alto })
