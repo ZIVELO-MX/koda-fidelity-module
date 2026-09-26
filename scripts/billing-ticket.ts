@@ -2,7 +2,9 @@ import "dotenv/config"
 import { prisma } from "../lib/prisma"
 import { completeSubscriptionRequest, getSubscriptionRequestByTicket } from "../lib/subscription-requests"
 
-const [action, ticketNumber, ...extra] = process.argv.slice(2)
+const args = process.argv.slice(2)
+if (args[0] === "--") args.shift()
+const [action, ticketNumber, ...extra] = args
 
 async function main() {
   if (!ticketNumber || extra.length || !["show", "complete"].includes(action)) {
@@ -13,6 +15,17 @@ async function main() {
   const ticket = await getSubscriptionRequestByTicket(prisma, ticketNumber)
   if (!ticket) throw new Error("Folio no encontrado")
   if (action === "show") {
+    const [subscription, activationAudit] = await Promise.all([
+      prisma.subscription.findFirst({
+        where: { businessId: ticket.business.id, status: "ACTIVE" },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, plan: true, billingInterval: true, periodStart: true, periodEnd: true, proTrialEndsAt: true },
+      }),
+      prisma.billingAuditEvent.findUnique({
+        where: { idempotencyKey: `ticket:${ticket.ticketNumber}` },
+        select: { businessId: true, operator: true },
+      }),
+    ])
     console.log(JSON.stringify({
       ticketNumber: ticket.ticketNumber,
       status: ticket.status,
@@ -22,6 +35,11 @@ async function main() {
       plan: ticket.plan,
       billingInterval: ticket.billingInterval,
       createdAt: ticket.createdAt,
+      subscription,
+      activationRecorded: activationAudit?.businessId === ticket.business.id,
+      activationMatchesRequest: activationAudit?.businessId === ticket.business.id
+        && subscription?.plan === ticket.plan && subscription.billingInterval === ticket.billingInterval,
+      activationOperator: activationAudit?.operator ?? null,
       activationCommand: ticket.status === "PENDING"
         ? `pnpm billing:set-plan --business-id ${ticket.business.id} --plan ${ticket.plan} --interval ${ticket.billingInterval} --idempotency-key ticket:${ticket.ticketNumber}`
         : null,
