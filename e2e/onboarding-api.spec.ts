@@ -13,8 +13,12 @@ test("onboarding mutations retain the catalog and account context through the pa
   expect(password).toBeTruthy()
 
   const db = new PrismaClient()
+  let fixture: { userId: string; businessId: string; name: string; categoryId: string | null; firstCardId: string | null } | undefined
   try {
     const user = await db.user.findUniqueOrThrow({ where: { email } })
+    const business = await db.business.findUniqueOrThrow({ where: { id: user.businessId! } })
+    const previous = await db.onboardingProgress.findUnique({ where: { userId: user.id } })
+    fixture = { userId: user.id, businessId: business.id, name: business.name, categoryId: business.categoryId, firstCardId: previous?.firstCardId ?? null }
     await db.onboardingProgress.upsert({
       where: { userId: user.id },
       create: { userId: user.id, businessId: user.businessId },
@@ -68,6 +72,17 @@ test("onboarding mutations retain the catalog and account context through the pa
     expect(current.onboarding.onboardingProgress).toMatchObject({ step: "PAYWALL", status: "AWAITING_PAYMENT" })
     expect(await db.loyaltyCard.findUnique({ where: { id: cardId } })).toMatchObject({ status: "DRAFT", isActive: false })
   } finally {
-    await db.$disconnect()
+    try {
+      if (fixture) {
+        const progress = await db.onboardingProgress.findUnique({ where: { userId: fixture.userId } })
+        await db.onboardingProgress.updateMany({ where: { userId: fixture.userId }, data: { firstCardId: fixture.firstCardId } })
+        if (progress?.firstCardId && progress.firstCardId !== fixture.firstCardId) {
+          await db.loyaltyCard.delete({ where: { id: progress.firstCardId } })
+        }
+        await db.business.update({ where: { id: fixture.businessId }, data: { name: fixture.name, categoryId: fixture.categoryId } })
+      }
+    } finally {
+      await db.$disconnect()
+    }
   }
 })
