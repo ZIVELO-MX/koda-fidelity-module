@@ -68,7 +68,7 @@ export async function advanceOnboarding(db: Db, authUserId: string, action: stri
     const name = String(businessDraft.name)
     const stampsRequired = Number(cardDraft.stampsRequired)
     if (!Number.isInteger(stampsRequired) || stampsRequired < 1 || stampsRequired > 100) throw new ValidationError("La tarjeta debe tener entre 1 y 100 sellos")
-    return db.$transaction(async (tx) => {
+    await db.$transaction(async (tx) => {
       const claimed = await tx.onboardingProgress.updateMany({ where: { id: progress.id, draftVersion }, data: { draftVersion: { increment: 1 } } })
       if (claimed.count !== 1) throw new ConflictError("El borrador cambió; recarga el onboarding")
       const business = user.businessId
@@ -79,8 +79,8 @@ export async function advanceOnboarding(db: Db, authUserId: string, action: stri
       const theme = await resolveTheme(tx, typeof cardDraft.themeId === "string" ? cardDraft.themeId : undefined, entitlements.plan)
       const card = await tx.loyaltyCard.create({ data: { businessId: business.id, name: typeof cardDraft.name === "string" && cardDraft.name.trim() ? cardDraft.name.trim() : `Club ${name}`, reward: String(cardDraft.reward), stampsRequired, brandColor: typeof cardDraft.brandColor === "string" ? cardDraft.brandColor : business.brandColor, isActive: false, isLite: true, status: "DRAFT", selectedThemeId: theme.selectedThemeId, effectiveThemeId: theme.effectiveThemeId } })
       await tx.onboardingProgress.update({ where: { id: progress.id }, data: { ...next, businessId: business.id, firstCardId: card.id } })
-      return { business, card }
     })
+    return getOnboarding(db, authUserId)
   }
   const updated = await db.onboardingProgress.updateMany({ where: { id: progress.id, draftVersion }, data: { ...next, draftVersion: { increment: 1 } } })
   if (updated.count !== 1) throw new ConflictError("El borrador cambió; recarga el onboarding")

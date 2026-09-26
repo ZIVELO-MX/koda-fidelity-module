@@ -51,6 +51,19 @@ describe("first onboarding card theme entitlements", () => {
   })
 })
 
+describe("first card onboarding response", () => {
+  it("returns persisted progress with the first card and the next draft version", async () => {
+    const { db, persisted } = firstCardDb(null)
+
+    const result = await advanceOnboarding(db, "auth-1", "complete_card", 3)
+
+    expect(result).toEqual(persisted)
+    expect(result.onboardingProgress).toMatchObject({
+      firstCardId: "card-1", draftVersion: 4, step: "ACQUISITION",
+    })
+  })
+})
+
 describe("repeating onboarding with an existing first card", () => {
   it("advances without creating a second card", async () => {
     const progress = {
