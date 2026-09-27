@@ -64,7 +64,7 @@ repite el avance. El desmontaje detiene temporizadores y nuevos lotes.
 
 ## Evidencia local y límites
 
-- Regresiones del componente y cola: 26/26 pasan.
+- Regresiones finales del componente y cola: 29/29 pasan (19 del componente).
 - La primera comprobación de tipos encontró un Prisma Client del head anterior;
   se generó el cliente del esquema integrado en dependencias propias del worktree.
   La comprobación posterior pasó.
@@ -73,8 +73,28 @@ repite el avance. El desmontaje detiene temporizadores y nuevos lotes.
   Se repite con acceso de red, sin modificar fuentes ni configuración de build.
 - PostgreSQL 17 temporal, puerto 55488: migraciones aplicadas. Ningún dato del
   Supabase existente ni de negocios reales se usa para estas pruebas.
-- El build con acceso de red pasó. Suite completa y los tres jobs de la
-  integración: pendientes de resultado. Los checks del backend no acreditan la integración frontend.
+- El build con acceso de red pasó antes de la corrección final de sellos.
+- Suite completa local: la primera corrida tuvo 590/591 y la segunda 589/591,
+  ambas con fallos del CLI de soporte. El stderr mostró autoinstall de pnpm
+  detenido por scripts ignorados. Después de instalar con pnpm 11,
+  frozen-lockfile/ignore-scripts como CI y regenerar Prisma, 591/591 pasaron en
+  90 archivos. Ningún escenario se excluyó y ningún timeout se aumentó.
+- CI del primer head 5f01a32: verify 591/591 en 90 archivos; browser-smoke
+  17 casos públicos y 79 de áreas/recorrido. Ocho casos dependientes de
+  credenciales se saltan en el smoke placeholder: no se declaran aprobados.
+- auth-e2e del primer head falló: siete casos de auth y uno de API pasaron;
+  el recorrido tuvo cinco aprobados y tres fallidos. Dos casos de tarjeta
+  no habían persistido los sellos iniciales y uno no completaba la recompensa;
+  otro falló en el login repetido. La traza muestra «Demasiados intentos»;
+  el producto limita a diez intentos por identidad en quince minutos. Precios, activación y trial no se ejecutaron.
+  Evidencia: actions/runs/36344499878. Esta corrida NO aprueba la integración.
+- Corrección final: Continuar confirma los 10 sellos que ya muestra el selector
+  cuando no se editaron, después de vaciar la cola para respetar una selección
+  en vuelo. No inventa recompensa. El spec de atribución escribe la recompensa
+  requerida. Recorrido y planes reutilizan cookies de una sola sesión por
+  invocación, manteniendo páginas independientes y los límites de seguridad.
+- Build, suite y los tres jobs del head posterior a esta corrección siguen
+  pendientes de resultado. Los checks anteriores no acreditan ese head.
 
 ## Cierre requerido
 

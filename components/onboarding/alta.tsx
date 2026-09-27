@@ -27,6 +27,7 @@ import { siteConfig } from "@/lib/site-config"
 import { type Fallo } from "@/lib/fallos-de-api"
 import { cn } from "@/lib/utils"
 
+const SELLOS_POR_DEFECTO = 10
 const PESOS = new Intl.NumberFormat("es-MX")
 
 const INTRO = [
@@ -263,6 +264,12 @@ export function Alta() {
     cancelarTemporizador()
     try {
       if (!await vaciarCola()) return
+      // Continuar confirma también el valor inicial que el selector ya muestra.
+      // Se comprueba después de vaciar para respetar una selección en vuelo.
+      if (accion === "complete_card" && confirmado.current.tarjeta.stampsRequired === undefined) {
+        await cola.current?.encolar({ card: { stampsRequired: SELLOS_POR_DEFECTO } })
+        if (!montado.current) return
+      }
       const siguiente = await avanzar(accion, cola.current?.version() ?? confirmado.current.draftVersion, intervalo)
       publicar(siguiente)
       cola.current?.sembrar(siguiente.draftVersion)
@@ -584,7 +591,7 @@ function Tarjeta({
   onCambio: (c: { card?: { reward?: string; stampsRequired?: number; brandColor?: string; themeId?: string } }) => void
   onCambioLocal: (e: EstadoDelAlta) => void
 }) {
-  const sellos = estado.tarjeta.stampsRequired ?? 10
+  const sellos = estado.tarjeta.stampsRequired ?? SELLOS_POR_DEFECTO
   const color = colorDeRespaldo(estado)
 
   const elegido = estado.temas.find((t) => t.id === estado.tarjeta.themeId)

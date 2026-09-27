@@ -228,6 +228,33 @@ describe("Alta: guardado y avance en una sola cola", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(/cambió de estado/i)
   })
 
+  it.each([10, 8])("confirmar tarjeta guarda los sellos visibles (%i), respetando lo editado en vuelo", async (sellos) => {
+    const tarjeta = { ...INICIAL, step: "CARD" as const, tarjeta: { reward: "Un café" } }
+    vi.mocked(leerAlta).mockResolvedValueOnce(tarjeta)
+    vi.mocked(guardarBorrador).mockResolvedValueOnce({ ...tarjeta, draftVersion: 11, tarjeta: { ...tarjeta.tarjeta, stampsRequired: sellos } })
+    vi.mocked(avanzar).mockResolvedValueOnce({ ...tarjeta, draftVersion: 12, step: "ACQUISITION" })
+    await montar()
+    expect(screen.getByRole("button", { name: "10" })).toHaveAttribute("aria-pressed", "true")
+    if (sellos === 8) fireEvent.click(screen.getByRole("button", { name: "8" }))
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Continuar" })) })
+    expect(guardarBorrador).toHaveBeenCalledTimes(1)
+    expect(guardarBorrador).toHaveBeenCalledWith(10, { card: { stampsRequired: sellos } })
+    expect(avanzar).toHaveBeenCalledWith("complete_card", 11, undefined)
+  })
+
+  it("confirmar los sellos iniciales no inventa una recompensa ausente", async () => {
+    const tarjeta = { ...INICIAL, step: "CARD" as const, tarjeta: {} }
+    vi.mocked(leerAlta).mockResolvedValueOnce(tarjeta)
+    vi.mocked(guardarBorrador).mockResolvedValueOnce({ ...tarjeta, draftVersion: 11, tarjeta: { stampsRequired: 10 } })
+    vi.mocked(avanzar).mockRejectedValueOnce(new ErrorDelAlta({ tipo: "validacion", mensaje: "Completa recompensa y sellos de la tarjeta" }))
+    await montar()
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Continuar" })) })
+    expect(guardarBorrador).toHaveBeenCalledWith(10, { card: { stampsRequired: 10 } })
+    expect(screen.getByLabelText("Recompensa")).toHaveValue("")
+    expect(screen.getByRole("heading", { name: "Tu primera tarjeta" })).toBeInTheDocument()
+    expect(screen.getByRole("alert")).toHaveTextContent("Completa recompensa")
+  })
+
   it("no muestra el Club si el POST de crear tarjeta falla", async () => {
     vi.mocked(leerAlta).mockResolvedValueOnce({ ...INICIAL, step: "CARD" })
     vi.mocked(avanzar).mockRejectedValueOnce(new ErrorDelAlta({ tipo: "servidor", mensaje: "No se creó" }))

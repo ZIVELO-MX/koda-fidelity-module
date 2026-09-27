@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test"
+import { test, expect, type BrowserContext } from "@playwright/test"
 import { PrismaClient } from "@prisma/client"
 import { execFile } from "node:child_process"
 import { promisify } from "node:util"
@@ -19,6 +19,7 @@ const CORREO = process.env.E2E_ONBOARDING_EMAIL
 const CLAVE = process.env.E2E_ONBOARDING_PASSWORD ?? process.env.E2E_PORTAL_PASSWORD
 const ejecutar = promisify(execFile)
 const db = new PrismaClient()
+let cookies: Awaited<ReturnType<BrowserContext["cookies"]>> = []
 
 async function contarTarjetas() {
   const user = await db.user.findUnique({ where: { email: CORREO! }, select: { businessId: true } })
@@ -37,13 +38,22 @@ test.describe("Alta guiada, recorrido completo", () => {
   )
   test.skip(process.env.ALLOW_DESTRUCTIVE_SEED !== "true", "Este recorrido modifica solo el fixture de Supabase local")
 
+  test.beforeAll(async ({ browser }) => {
+    const contexto = await browser.newContext()
+    try {
+      const pagina = await contexto.newPage()
+      await entrar(pagina, CORREO!, CLAVE!)
+      cookies = await contexto.cookies()
+    } finally { await contexto.close() }
+  })
+
   test.beforeEach(async ({ page }) => {
     // El paso vive en Postgres: una página nueva o un login nuevo no lo reinician.
     // El preparador comprueba que las tres URLs apunten a servicios locales.
     await ejecutar(process.execPath, ["--import", "tsx", "scripts/prepare-onboarding-e2e.ts"], {
       env: { ...process.env, E2E_ONBOARDING_MODE: "fresh" },
     })
-    await entrar(page, CORREO!, CLAVE!)
+    await page.context().addCookies(cookies)
     await page.goto("/onboarding")
     await expect(page.locator("#contenido")).toBeVisible({ timeout: 60000 })
   })
@@ -105,7 +115,9 @@ test.describe("Alta guiada, recorrido completo", () => {
 
     const primera = page.waitForResponse((r) => r.url().includes("/api/onboarding") && r.request().method() === "POST")
     await page.getByRole("button", { name: "Continuar" }).click()
-    const respuestaPrimera = await (await primera).json()
+    const respuesta = await primera
+    expect(respuesta.ok(), "complete_card debe guardar antes de comprobar firstCardId").toBe(true)
+    const respuestaPrimera = await respuesta.json()
     const idPrimera = respuestaPrimera?.onboarding?.onboardingProgress?.firstCardId
     expect(idPrimera, "completar la tarjeta tiene que dejar una firstCardId").toBeTruthy()
     const totalTrasPrimera = await contarTarjetas()
@@ -200,6 +212,7 @@ test.describe("Alta guiada, recorrido completo", () => {
     await page.getByRole("button", { name: "Continuar" }).click()
 
     await expect(page.getByRole("heading", { name: "Tu primera tarjeta" })).toBeVisible({ timeout: 30000 })
+    await page.getByLabel("Recompensa").fill("Un café de recompensa")
     await page.getByRole("button", { name: "Continuar" }).click()
     await expect(page.getByRole("heading", { name: /^Club / })).toBeVisible({ timeout: 30000 })
     await page.getByRole("button", { name: "Continuar" }).click()

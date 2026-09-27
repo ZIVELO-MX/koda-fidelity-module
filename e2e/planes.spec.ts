@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test"
+import { test, expect, type BrowserContext } from "@playwright/test"
 import { entrar } from "./sesion"
 
 /**
@@ -13,6 +13,22 @@ import { entrar } from "./sesion"
 const CORREO = process.env.E2E_ONBOARDING_EMAIL
 const CLAVE = process.env.E2E_ONBOARDING_PASSWORD ?? process.env.E2E_PORTAL_PASSWORD
 
+// Cada invocación usa una sesión y conserva el aislamiento de páginas entre casos.
+// Iniciar sesión por caso consumía el límite real de diez intentos por identidad.
+let cookies: Awaited<ReturnType<BrowserContext["cookies"]>> = []
+test.beforeAll(async ({ browser }) => {
+  if (!CORREO || !CLAVE) return
+  const contexto = await browser.newContext()
+  try {
+    const pagina = await contexto.newPage()
+    await entrar(pagina, CORREO, CLAVE)
+    cookies = await contexto.cookies()
+  } finally { await contexto.close() }
+})
+test.beforeEach(async ({ page }) => {
+  await page.context().addCookies(cookies)
+})
+
 const PRECIOS = { lite: { mes: 149, anio: 1490 }, pro: { mes: 299, anio: 2990 } }
 
 test.describe("Planes Lite y Pro", () => {
@@ -21,7 +37,6 @@ test.describe("Planes Lite y Pro", () => {
       if (process.env.CI) expect(Boolean(CORREO && CLAVE), "Credenciales obligatorias de planes").toBe(true)
       test.skip(!CORREO || !CLAVE, "Requiere las credenciales del fixture del alta")
 
-      await entrar(page, CORREO!, CLAVE!)
       await page.goto("/onboarding")
       await expect(page.locator("#contenido")).toBeVisible({ timeout: 60000 })
 
@@ -44,7 +59,6 @@ test.describe("Planes Lite y Pro", () => {
       if (process.env.CI) expect(Boolean(CORREO && CLAVE), "Credenciales obligatorias de planes").toBe(true)
       test.skip(!CORREO || !CLAVE, "Requiere las credenciales del fixture del alta")
 
-      await entrar(page, CORREO!, CLAVE!)
       await page.goto("/onboarding")
       const antes = await (await page.request.get("/api/subscription")).json()
       const creada = page.waitForResponse((res) =>
@@ -67,7 +81,6 @@ test.describe("Planes Lite y Pro", () => {
     test.skip(!CORREO || !CLAVE, "Requiere las credenciales del fixture del alta")
 
     test("la suscripción responde con su plan, su modalidad y si está en trial", async ({ page }) => {
-      await entrar(page, CORREO!, CLAVE!)
 
       const res = await page.request.get("/api/subscription")
       expect(res.ok(), "un negocio con sesión tiene que poder leer sus entitlements").toBe(true)
@@ -84,7 +97,6 @@ test.describe("Planes Lite y Pro", () => {
     })
 
     test("la operación manual es idempotente: repetirla no encadena suscripciones", async ({ page }) => {
-      await entrar(page, CORREO!, CLAVE!)
       const primera = await (await page.request.get("/api/subscription")).json()
       const segunda = await (await page.request.get("/api/subscription")).json()
       expect(segunda.entitlements.subscription?.id).toBe(primera.entitlements.subscription?.id)
@@ -96,7 +108,6 @@ test.describe("Planes Lite y Pro", () => {
     test.skip(!CORREO || !CLAVE, "Requiere las credenciales del fixture del alta")
 
     test("el alta pública rechaza la que no está activa", async ({ page }) => {
-      await entrar(page, CORREO!, CLAVE!)
       const tarjetas = await (await page.request.get("/api/cards")).json()
       const lista: { id: string; status?: string; isActive?: boolean }[] = tarjetas.cards ?? tarjetas.items ?? []
 
@@ -123,7 +134,6 @@ test.describe("Planes Lite y Pro", () => {
     test.skip(!CORREO || !CLAVE, "Requiere las credenciales del fixture del alta")
 
     test.beforeEach(async ({ page }) => {
-      await entrar(page, CORREO!, CLAVE!)
       const res = await page.request.get("/api/onboarding")
       const cuerpo = await res.json().catch(() => null)
       const temas: { plan?: string }[] = cuerpo?.themes ?? []
@@ -194,7 +204,6 @@ test.describe("La tarjeta guardada detrás del muro @muro", () => {
     // Un login más tres anchos no cabe en los 30s del config; `slow` los triplica.
     test.slow()
 
-    await entrar(page, CORREO!, CLAVE!)
     await page.goto("/onboarding")
     await expect(page.locator("#contenido")).toBeVisible({ timeout: 60000 })
 
