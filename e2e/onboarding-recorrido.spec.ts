@@ -180,4 +180,34 @@ test.describe("Alta guiada, recorrido completo", () => {
     const cuerpo = await page.request.get("/api/onboarding").then((r) => r.json())
     expect(cuerpo?.onboarding?.onboardingProgress?.acquisitionSource ?? null).toBeNull()
   })
+
+  /**
+   * Escribir mientras guarda, y avanzar mientras guarda.
+   *
+   * Los dos casos perdían trabajo: la versión del borrador salía de un cierre de
+   * React, así que una segunda escritura en pleno vuelo mandaba una versión ya
+   * vieja, el servidor la rechazaba por conflicto y la pantalla recargaba encima
+   * de lo que la persona acababa de teclear. Avanzar en vuelo fallaba igual.
+   */
+  test("escribir y avanzar mientras guarda no pierde nada", async ({ page }) => {
+    await page.getByRole("button", { name: "Saltar la introducción" }).click()
+    await expect(page.getByRole("heading", { name: "Tu negocio" })).toBeVisible()
+
+    const nombre = `Café Aurora ${Date.now()}`
+    await page.getByLabel("Nombre del negocio").fill(nombre)
+    // Sin esperar el "Guardado": se elige la categoría con el guardado en curso.
+    await page.locator("fieldset button").first().click()
+    // Y se avanza de inmediato, todavía guardando.
+    await page.getByRole("button", { name: "Continuar" }).click()
+
+    // El paso avanza y no aparece ningún conflicto.
+    await expect(page.getByRole("heading", { name: "Tu primera tarjeta" })).toBeVisible({ timeout: 30000 })
+    await expect(page.getByText(/recargamos lo último guardado/i)).toHaveCount(0)
+
+    // Y lo escrito llegó al servidor: se comprueba contra la API, no en pantalla.
+    const cuerpo = await (await page.request.get("/api/onboarding")).json()
+    const borrador = cuerpo?.onboarding?.onboardingProgress?.businessDraft ?? {}
+    expect(borrador.name, "el nombre se perdió en el vuelo").toBe(nombre)
+    expect(borrador.categoryId, "la categoría se perdió en el vuelo").toBeTruthy()
+  })
 })

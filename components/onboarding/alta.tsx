@@ -18,6 +18,7 @@ import {
 import { esAcabadoPro, nombreDeTema } from "@/lib/temas-de-tarjeta"
 import { siteConfig } from "@/lib/site-config"
 import { enumerar, hayQueReanudar, loGuardado } from "@/lib/alta-reanudacion"
+import { crearColaDeBorrador, fusionarCambios, type ColaDeBorrador } from "@/lib/cola-de-borrador"
 import { cn } from "@/lib/utils"
 
 const PESOS = new Intl.NumberFormat("es-MX")
@@ -120,6 +121,22 @@ export function Alta() {
       .then((inicial) => {
         setEstado(inicial)
         if (hayQueReanudar(inicial)) setReanudado(loGuardado(inicial))
+        cola.current = crearColaDeBorrador<EstadoDelAlta, CambiosDelBorrador>({
+          versionInicial: inicial.draftVersion,
+          guardar: guardarBorrador,
+          versionDe: (e) => e.draftVersion,
+          alGuardar: (e) => {
+            setEstado(e)
+            setAviso(null)
+            setGuardado("guardado")
+          },
+          alFallar: (error) => {
+            // El aviso de arriba lo cuenta, con su reintento. Aquí se quita la
+            // promesa de guardado en vez de dejar un "Guardado" sobre un error.
+            setGuardado("inactivo")
+            manejarFallo(error)
+          },
+        })
       })
       .catch(manejarFallo)
       .finally(() => setCargando(false))
@@ -127,57 +144,56 @@ export function Alta() {
 
   // Autoguardado: lo escrito viaja al servidor sin pulsar nada, con un respiro
   // para no mandar una petición por tecla.
-  const pendiente = useRef<Parameters<typeof guardarBorrador>[1] | null>(null)
+  //
+  // La versión la lleva la cola, no este cierre. Antes salía de `estado`, y
+  // escribir durante un guardado en vuelo mandaba una versión ya vieja: el
+  // servidor la rechazaba por conflicto y la edición se perdía.
+  type CambiosDelBorrador = Parameters<typeof guardarBorrador>[1]
+  const cola = useRef<ColaDeBorrador<EstadoDelAlta, CambiosDelBorrador> | null>(null)
   const temporizador = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const porEncolar = useRef<CambiosDelBorrador | null>(null)
 
-  const guardarPronto = useCallback(
-    (cambios: Parameters<typeof guardarBorrador>[1]) => {
-      pendiente.current = {
-        ...(pendiente.current ?? {}),
-        ...cambios,
-        business: { ...(pendiente.current?.business ?? {}), ...(cambios.business ?? {}) },
-        card: { ...(pendiente.current?.card ?? {}), ...(cambios.card ?? {}) },
-      }
-      if (temporizador.current) clearTimeout(temporizador.current)
-      // Lo que se acaba de teclear todavía no está guardado.
-      setGuardado("guardando")
-      temporizador.current = setTimeout(async () => {
-        const porGuardar = pendiente.current
-        pendiente.current = null
-        if (!porGuardar || !estado) return
-        setGuardado("guardando")
-        try {
-          setEstado(await guardarBorrador(estado.draftVersion, porGuardar))
-          setAviso(null)
-          setGuardado("guardado")
-        } catch (error) {
-          // El fallo lo cuenta el aviso de arriba, con su reintento. Aquí se
-          // quita la promesa de guardado en vez de dejar un "Guardado" viejo
-          // encima de un error.
-          setGuardado("inactivo")
-          manejarFallo(error)
-        }
-      }, 700)
-    },
-    [estado, manejarFallo],
-  )
+  const guardarPronto = useCallback((cambios: CambiosDelBorrador) => {
+    porEncolar.current = fusionarCambios(porEncolar.current, cambios)
+    if (temporizador.current) clearTimeout(temporizador.current)
+    // Lo que se acaba de teclear todavía no está guardado.
+    setGuardado("guardando")
+    temporizador.current = setTimeout(() => {
+      temporizador.current = null
+      const cambios = porEncolar.current
+      porEncolar.current = null
+      if (cambios && cola.current) void cola.current.encolar(cambios)
+    }, 700)
+  }, [])
 
-  /** Guarda lo pendiente y después pide avanzar, para no perder la última tecla. */
+  /**
+   * Avanza de paso sin perder la última tecla.
+   *
+   * No se bloquea mientras guarda: se vacía lo que esté pendiente, se espera el
+   * vuelo y solo entonces se pide avanzar, con la versión que confirmó el
+   * servidor. Antes se podía pulsar Continuar en pleno vuelo y el paso fallaba
+   * por conflicto sin que la persona hubiera hecho nada raro.
+   */
   const pedirAvance = useCallback(
     async (accion: AccionDelAlta, intervalo?: BillingInterval) => {
       if (!estado || ocupado) return
       setOcupado(true)
       setAviso(null)
       try {
-        let actual = estado
-        if (temporizador.current) clearTimeout(temporizador.current)
-        if (pendiente.current) {
-          const porGuardar = pendiente.current
-          pendiente.current = null
-          actual = await guardarBorrador(actual.draftVersion, porGuardar)
-          setEstado(actual)
+        if (temporizador.current) {
+          clearTimeout(temporizador.current)
+          temporizador.current = null
         }
-        setEstado(await avanzar(accion, actual.draftVersion, intervalo))
+        const cambios = porEncolar.current
+        porEncolar.current = null
+        if (cambios && cola.current) await cola.current.encolar(cambios)
+        await cola.current?.vaciar()
+
+        const version = cola.current?.version() ?? estado.draftVersion
+        const siguiente = await avanzar(accion, version, intervalo)
+        setEstado(siguiente)
+        // Avanzar también sube la versión: la cola tiene que enterarse.
+        cola.current?.sembrar(siguiente.draftVersion)
       } catch (error) {
         manejarFallo(error)
       } finally {
