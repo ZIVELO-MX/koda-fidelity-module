@@ -3,6 +3,10 @@
 La misión agrega soporte backend para que el onboarding sea reanudable y para que la
 activación de planes no dependa todavía de un proveedor de pagos.
 
+Para activar solicitudes FID-0028 desde soporte, consultar
+[el procedimiento de FID-0029](fid-0029-support-runbook.md), incluidos reintentos,
+recuperación de interrupciones, ensayo local y búsqueda de referencias de error.
+
 ## Endpoints
 
 - `GET /api/onboarding`: devuelve el progreso persistente, las categorías y los temas activos.
