@@ -208,6 +208,24 @@ const options: swaggerJsdoc.Options = {
             topCards: { type: "array", items: { type: "object" } },
           },
         },
+        SubscriptionRequest: {
+          type: "object",
+          required: ["ticketNumber", "plan", "billingInterval", "status", "businessName", "contactEmail", "createdAt"],
+          properties: {
+            ticketNumber: { type: "string", pattern: "^KF-[0-9A-F]{16}$" },
+            plan: { type: "string", enum: ["LITE", "PRO"] },
+            billingInterval: { type: "string", enum: ["MONTHLY", "ANNUAL"] },
+            status: { type: "string", enum: ["PENDING", "COMPLETED"] },
+            businessName: { type: "string" },
+            contactEmail: { type: "string", format: "email" },
+            createdAt: { type: "string", format: "date-time" },
+          },
+        },
+        SubscriptionRequestResponse: {
+          type: "object",
+          required: ["request"],
+          properties: { request: { oneOf: [{ $ref: "#/components/schemas/SubscriptionRequest" }, { type: "null" }] } },
+        },
         ApiError: {
           type: "object",
           required: ["error", "code", "action", "requestId", "retryable"],

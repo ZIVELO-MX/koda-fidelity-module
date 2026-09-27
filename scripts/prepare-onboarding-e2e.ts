@@ -41,11 +41,16 @@ async function main() {
     if (!user.onboardingProgress?.firstCardId) throw new Error("El muro exige una primera tarjeta guardada")
     const activa = await prisma.subscription.count({ where: { businessId: user.businessId, status: "ACTIVE" } })
     if (activa) throw new Error("El muro de prueba exige una cuenta sin suscripción activa")
+    // Sin esto, la solicitud que dejó la corrida anterior sigue ahí: el muro
+    // mostraría ese ticketNumber y la prueba de creación pasaría sin crear
+    // nada. Solo hay una PENDING por negocio, así que la segunda vez nunca
+    // volvería a ejercitar el POST.
+    const solicitudes = await prisma.subscriptionRequest.deleteMany({ where: { businessId: user.businessId } })
     await prisma.onboardingProgress.update({
       where: { id: user.onboardingProgress.id },
-      data: { step: "PAYWALL", status: "AWAITING_PAYMENT", draftVersion: { increment: 1 } },
+      data: { step: "PAYWALL", status: "AWAITING_PAYMENT", selectedBillingInterval: "ANNUAL", draftVersion: { increment: 1 } },
     })
-    console.log(JSON.stringify({ email, businessId: user.businessId, modo, onboarding: "PAYWALL" }))
+    console.log(JSON.stringify({ email, businessId: user.businessId, modo, onboarding: "PAYWALL", solicitudesBorradas: solicitudes.count }))
     return
   }
 

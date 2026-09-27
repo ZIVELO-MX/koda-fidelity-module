@@ -21,6 +21,7 @@ const ESTADO: EstadoDelAlta = {
   modo: "live",
   plan: "LITE",
   nombreDeLaCuenta: "Café Aurora",
+  correoDeLaCuenta: "raul@cafeaurora.mx",
 }
 
 afterEach(cleanup)

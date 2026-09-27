@@ -115,13 +115,32 @@ jobs:
           e2e/auth-ui.spec.ts
           e2e/update-password.spec.ts
 
+      # Los verificadores de área táctil estaban escritos y no los ejecutaba
+      # ningún job, así que medían solo cuando alguien se acordaba de correrlos
+      # a mano. Son públicos: no piden credenciales ni Supabase local, y con el
+      # Postgres de este job las rutas que consultan la base también responden.
+      - name: Check touch targets and responsive layout at 375, 768 and 1440
+        run: >-
+          pnpm exec playwright test
+          e2e/areas-tactiles-acceso.spec.ts
+          e2e/acceso-recorrido.spec.ts
+          e2e/ola-1.spec.ts
+          e2e/ola-4.spec.ts
+
+      - name: Upload the browser smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-smoke-report
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
+
   auth-e2e:
     name: auth-e2e (Supabase local + Mailpit)
     runs-on: ubuntu-latest
-    # Veinte no alcanzaban: el job corre en serie y cada invocación de Playwright
-    # levanta su propio servidor de producción. Cancelado por tiempo, GitHub lo
-    # pinta rojo sin decir en qué paso se quedó.
-    timeout-minutes: 35
+    timeout-minutes: 20
     concurrency:
       group: fid-0016-auth-e2e-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
@@ -219,6 +238,8 @@ jobs:
       - name: Test login, session refresh, password recovery, and customer portal
         run: pnpm exec playwright test --config=playwright.auth.config.ts e2e/auth-development.spec.ts
 
+      - name: Test live onboarding API through the paywall
+        run: pnpm exec playwright test --config=playwright.auth.config.ts e2e/onboarding-api.spec.ts
       # FID-0025. El fixture deja el alta de la cuenta de pruebas en el primer
       # paso, así que el recorrido arranca siempre del mismo sitio.
       - name: Prepare onboarding and plan fixtures
@@ -245,6 +266,21 @@ jobs:
         run: >-
           pnpm exec playwright test --config=playwright.auth.config.ts
           e2e/planes.spec.ts --grep @muro
+
+      # Las pruebas de precios también ejercitan la solicitud sin activar nada.
+      # Reiniciar las solicitudes obliga a FID-0028 a crear una nueva por POST.
+      - name: Prepare a new manual activation request
+        env:
+          E2E_ONBOARDING_EMAIL: fidelity.seed.portal@dev.invalid
+          E2E_ONBOARDING_MODE: paywall
+        run: pnpm prepare:onboarding-e2e
+
+      - name: Check the manual activation request
+        env:
+          E2E_ONBOARDING_EMAIL: fidelity.seed.portal@dev.invalid
+        run: >-
+          pnpm exec playwright test --config=playwright.auth.config.ts
+          e2e/solicitud-activacion.spec.ts
 
       # El trial vencido y el alta fresca son estados distintos de la misma
       # cuenta, así que se preparan y se corren por separado.
