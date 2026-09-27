@@ -28,6 +28,22 @@ import type { AccountContext } from "@/lib/fidelity-contracts"
  *     responses: { 200: { description: Onboarding advanced } }
  */
 
+async function liveContext(onboarding: Awaited<ReturnType<typeof getOnboarding>>) {
+  const business = onboarding.business
+  const [categories, themes, entitlements] = await Promise.all([
+    prisma.businessCategory.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
+    listActiveThemes(prisma),
+    business ? syncExpiredEntitlements(prisma, business.id) : null,
+  ])
+  const accountContext: AccountContext = {
+    user: { id: onboarding.id, email: onboarding.email, name: onboarding.name, role: onboarding.role },
+    business: business ? { id: business.id, name: business.name, brandColor: business.brandColor, logoUrl: business.logoUrl, iconName: business.iconName, website: business.website, instagram: business.instagram } : null,
+    onboardingStatus: onboarding.onboardingProgress?.status,
+    plan: entitlements?.plan ?? "LITE",
+  }
+  return { onboarding, categories, themes, accountContext, mode: "live" }
+}
+
 export async function GET(request: NextRequest) {
   const requestId = requestIdFrom(request)
   try {
@@ -37,19 +53,7 @@ export async function GET(request: NextRequest) {
     }
     await ensureCategories(prisma)
     const onboarding = await getOnboarding(prisma, principal.id)
-    const business = onboarding.business
-    const [categories, themes, entitlements] = await Promise.all([
-      prisma.businessCategory.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
-      listActiveThemes(prisma),
-      business ? syncExpiredEntitlements(prisma, business.id) : null,
-    ])
-    const accountContext: AccountContext = {
-      user: { id: onboarding.id, email: onboarding.email, name: onboarding.name, role: onboarding.role },
-      business: business ? { id: business.id, name: business.name, brandColor: business.brandColor, logoUrl: business.logoUrl, iconName: business.iconName, website: business.website, instagram: business.instagram } : null,
-      onboardingStatus: onboarding.onboardingProgress?.status,
-      plan: entitlements?.plan ?? "LITE",
-    }
-    return withRequestId(NextResponse.json({ onboarding, categories, themes, accountContext, mode: "live" }), requestId)
+    return withRequestId(NextResponse.json(await liveContext(onboarding)), requestId)
   } catch (error) { return withRequestId(handleApiError(error, requestId), requestId) }
 }
 
@@ -66,7 +70,7 @@ export async function PATCH(request: NextRequest) {
     const parsed = onboardingDraftSchema.safeParse(await request.json())
     if (!parsed.success) throw new ValidationError("Borrador de onboarding inválido")
     const onboarding = await saveDraft(prisma, principal.id, parsed.data)
-    return withRequestId(NextResponse.json({ onboarding, mode: "live" }), requestId)
+    return withRequestId(NextResponse.json(await liveContext(onboarding)), requestId)
   } catch (error) { return withRequestId(handleApiError(error, requestId), requestId) }
 }
 
@@ -83,6 +87,6 @@ export async function POST(request: NextRequest) {
     const parsed = advanceSchema.safeParse(await request.json())
     if (!parsed.success) throw new ValidationError("Acción de onboarding inválida")
     const onboarding = await advanceOnboarding(prisma, principal.id, parsed.data.action, parsed.data.draftVersion, parsed.data.billingInterval)
-    return withRequestId(NextResponse.json({ onboarding, mode: "live" }), requestId)
+    return withRequestId(NextResponse.json(await liveContext(onboarding)), requestId)
   } catch (error) { return withRequestId(handleApiError(error, requestId), requestId) }
 }
