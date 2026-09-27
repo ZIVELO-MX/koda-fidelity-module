@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getBusinessFromSession, requireWritableBusinessPrincipal, handleApiError, ValidationError, requireRole, requestIdFrom, withRequestId } from "@/lib/api-utils"
+import { cuerpoJson, getBusinessFromSession, handleApiError, requestIdFrom, requireRole, requireWritableBusinessPrincipal, ValidationError, withRequestId } from "@/lib/api-utils"
 
 /**
  * @openapi
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     const { business, user } = await requireWritableBusinessPrincipal()
     requireRole(user, "admin")
 
-    const body = await request.json()
+    const body = await cuerpoJson(request)
     const { name, role } = body
     const email = typeof body.email === "string" ? normalizeEmail(body.email) : ""
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getBusinessFromSession, requireWritableBusinessPrincipal, handleApiError, ValidationError, requireRole, requestIdFrom, withRequestId } from "@/lib/api-utils"
+import { cuerpoJson, getBusinessFromSession, handleApiError, requestIdFrom, requireRole, requireWritableBusinessPrincipal, ValidationError, withRequestId } from "@/lib/api-utils"
 import { withBusinessAvatarUrl } from "@/lib/private-avatar"
 
 const noStore = { headers: { "Cache-Control": "private, no-store" } }
@@ -93,7 +93,7 @@ export async function PUT(request: NextRequest) {
   try {
     const { business, user } = await requireWritableBusinessPrincipal()
     requireRole(user, "admin")
-    const body = await request.json()
+    const body = await cuerpoJson(request)
 
     if (body.name !== undefined && (!body.name || typeof body.name !== "string" || !body.name.trim())) {
       throw new ValidationError("Business name is required")

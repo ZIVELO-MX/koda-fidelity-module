@@ -1,16 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import {
-  getBusinessFromSession,
-  requireWritableBusinessPrincipal,
-  handleApiError,
-  ValidationError,
-  NotFoundError,
-  ForbiddenError,
-  requireRole,
-  requestIdFrom,
-  withRequestId,
-} from "@/lib/api-utils"
+import { cuerpoJson, ForbiddenError, getBusinessFromSession, handleApiError, NotFoundError, requestIdFrom, requireRole, requireWritableBusinessPrincipal, ValidationError, withRequestId } from "@/lib/api-utils"
 
 /**
  * @openapi
@@ -46,7 +36,7 @@ export async function PUT(
       throw new NotFoundError("User not found")
     }
 
-    const body = await request.json()
+    const body = await cuerpoJson(request)
     const { role } = body
 
     if (role !== "admin" && role !== "sellador") {
