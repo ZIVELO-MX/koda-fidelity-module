@@ -184,3 +184,37 @@ export type AccionDelAlta =
 
 export const avanzar = (accion: AccionDelAlta, draftVersion: number, billingInterval?: BillingInterval) =>
   pedir({ method: "POST", body: JSON.stringify({ action: accion, draftVersion, billingInterval }) })
+
+/**
+ * Conserva lo que ya sabíamos cuando la respuesta no lo trae.
+ *
+ * `normalizar` reconstruye el estado entero desde el cuerpo, así que una
+ * respuesta sin `themes` dejaba `temas: []` y el selector de temas desaparecía a
+ * mitad del alta; sin `accountContext`, `plan` caía a `LITE` y un acabado Pro ya
+ * elegido se repintaba como Lite sin que nadie lo pidiera.
+ *
+ * El servidor ya manda el contexto en los tres verbos, pero esta pantalla no
+ * debería romperse si algún día deja de hacerlo: vaciar un catálogo es inventar
+ * un catálogo vacío, y eso es tan falso como inventar un dato.
+ *
+ * La regla es solo para lo que **nunca** es legítimamente vacío a mitad del
+ * alta: los catálogos y la identidad de la cuenta. El paso, el estado, los
+ * borradores y la versión siempre vienen de la respuesta, porque ahí sí manda
+ * el servidor.
+ */
+export function conservarContexto(previo: EstadoDelAlta | null, nuevo: EstadoDelAlta): EstadoDelAlta {
+  if (!previo) return nuevo
+  // Una respuesta sin ningún catálogo es una respuesta sin contexto: es el
+  // marcador de que el servidor contestó solo con el progreso. Con ese marcador
+  // se conserva también el plan, que `normalizar` habría dejado en LITE por
+  // defecto y no porque el servidor lo dijera.
+  const sinContexto = !nuevo.categorias.length && !nuevo.temas.length
+  return {
+    ...nuevo,
+    categorias: nuevo.categorias.length ? nuevo.categorias : previo.categorias,
+    temas: nuevo.temas.length ? nuevo.temas : previo.temas,
+    plan: sinContexto ? previo.plan : nuevo.plan,
+    nombreDeLaCuenta: nuevo.nombreDeLaCuenta ?? previo.nombreDeLaCuenta,
+    correoDeLaCuenta: nuevo.correoDeLaCuenta ?? previo.correoDeLaCuenta,
+  }
+}

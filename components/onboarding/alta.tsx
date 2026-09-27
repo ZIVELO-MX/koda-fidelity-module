@@ -12,7 +12,7 @@ import { BarraDePasos } from "@/components/onboarding/barra-de-pasos"
 import { PLANES } from "@/lib/planes"
 import { cuentaDelAnual, mesesGratisExactos, pesos } from "@/lib/precios"
 import {
-  ErrorDelAlta, ORIGENES, SELLOS_POSIBLES, avanzar, guardarBorrador, leerAlta,
+  ErrorDelAlta, ORIGENES, SELLOS_POSIBLES, avanzar, conservarContexto, guardarBorrador, leerAlta,
   type AccionDelAlta, type AcquisitionSource, type BillingInterval, type EstadoDelAlta,
 } from "@/lib/onboarding"
 import { enumerar, hayQueReanudar, loGuardado } from "@/lib/alta-reanudacion"
@@ -93,7 +93,7 @@ export function Alta() {
         // Otra pestaña o el otro equipo escribió antes. Se recarga en vez de
         // pisar lo que ya quedó guardado.
         setAviso({ texto: `${f.mensaje} Recargamos lo último guardado.`, reintentable: false })
-        void leerAlta().then(setEstado).catch(() => {
+        void leerAlta().then((releido) => setEstado((previo) => conservarContexto(previo, releido))).catch(() => {
           setAviso({ texto: "El borrador cambió y no pudimos releerlo. Recarga la página.", reintentable: true })
         })
         return
@@ -109,7 +109,8 @@ export function Alta() {
 
   const recargar = useCallback(async () => {
     try {
-      setEstado(await leerAlta())
+      const releido = await leerAlta()
+      setEstado((previo) => conservarContexto(previo, releido))
       setAviso(null)
     } catch (error) {
       manejarFallo(error)
@@ -126,7 +127,7 @@ export function Alta() {
           guardar: guardarBorrador,
           versionDe: (e) => e.draftVersion,
           alGuardar: (e) => {
-            setEstado(e)
+            setEstado((previo) => conservarContexto(previo, e))
             setAviso(null)
             setGuardado("guardado")
           },
@@ -191,7 +192,7 @@ export function Alta() {
 
         const version = cola.current?.version() ?? estado.draftVersion
         const siguiente = await avanzar(accion, version, intervalo)
-        setEstado(siguiente)
+        setEstado((previo) => conservarContexto(previo, siguiente))
         // Avanzar también sube la versión: la cola tiene que enterarse.
         cola.current?.sembrar(siguiente.draftVersion)
       } catch (error) {
