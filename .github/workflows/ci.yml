@@ -224,7 +224,6 @@ jobs:
       - name: Prepare onboarding and plan fixtures
         env:
           E2E_ONBOARDING_EMAIL: fidelity.seed.portal@dev.invalid
-          E2E_ONBOARDING_PLAN: LITE
         run: pnpm prepare:onboarding-e2e
 
       - name: Run FID-0025 onboarding tests
@@ -234,6 +233,19 @@ jobs:
           pnpm exec playwright test --config=playwright.auth.config.ts
           e2e/onboarding-recorrido.spec.ts
 
+      - name: Show the saved card behind the paywall
+        env:
+          E2E_ONBOARDING_EMAIL: fidelity.seed.portal@dev.invalid
+          E2E_ONBOARDING_MODE: paywall
+        run: pnpm prepare:onboarding-e2e
+
+      - name: Check plan prices and unpublished card
+        env:
+          E2E_ONBOARDING_EMAIL: fidelity.seed.portal@dev.invalid
+        run: >-
+          pnpm exec playwright test --config=playwright.auth.config.ts
+          e2e/planes.spec.ts --grep @muro
+
       # El trial vencido y el alta fresca son estados distintos de la misma
       # cuenta, así que se preparan y se corren por separado.
       - name: Prepare the expired Pro trial fixture
@@ -242,12 +254,12 @@ jobs:
           E2E_ONBOARDING_MODE: expired-trial
         run: pnpm prepare:onboarding-e2e
 
-      - name: Run FID-0025 plan tests
+      - name: Check expired trial and Lite entitlements
         env:
           E2E_ONBOARDING_EMAIL: fidelity.seed.portal@dev.invalid
         run: >-
           pnpm exec playwright test --config=playwright.auth.config.ts
-          e2e/planes.spec.ts
+          e2e/planes.spec.ts --grep-invert @muro
 
       - name: Upload the end-to-end evidence
         if: always()
