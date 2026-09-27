@@ -64,14 +64,17 @@ export function LoyaltyCardPreview({
   const iconoDelNegocio = getCardIcon(iconName)?.Icon
   const patron = iconosDelTema(themeCode) ?? (iconoDelNegocio ? [iconoDelNegocio] : null)
 
-  const fg = "#ffffff"
-  const fgMuted = "rgba(255,255,255,0.6)"
-  const fgMuted2 = "rgba(255,255,255,0.7)"
-  const overlay = "rgba(255,255,255,0.12)"
-  const overlayIcon = "rgba(255,255,255,0.2)"
+  // El color del texto lo decide la piel por contraste, así que aquí ya no se
+  // fija el blanco. Las capas se apartan del texto en vez de tirar siempre
+  // hacia el blanco: una placa que aclaraba el fondo debajo de una etiqueta
+  // pequeña era lo que la volvía ilegible sobre los colores claros.
+  const fg = piel.texto
+  const capa = (a: number) => (piel.aparta === 255 ? `rgba(255,255,255,${a})` : `rgba(0,0,0,${a})`)
+  const overlay = capa(0.12)
+  const overlayIcon = capa(0.2)
   const stampBg = "rgba(255,255,255,0.95)"
-  const stampBorder = "rgba(255,255,255,0.3)"
-  const footerBg = "rgba(0,0,0,0.1)"
+  const stampBorder = capa(0.3)
+  const footerBg = capa(0.1)
 
   return (
     <div
@@ -113,7 +116,7 @@ export function LoyaltyCardPreview({
             )
           })()}
           <div>
-            <p className="text-xs uppercase tracking-wide" style={{ color: fgMuted }}>Tarjeta de Lealtad</p>
+            <p className="text-xs uppercase tracking-wide" style={{ color: fg }}>Tarjeta de Lealtad</p>
             <p className="font-semibold text-lg leading-tight" style={{ color: fg }}>{businessName}</p>
           </div>
         </div>
@@ -127,7 +130,7 @@ export function LoyaltyCardPreview({
           tabIndex={onMemberClick ? 0 : undefined}
           onKeyDown={onMemberClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onMemberClick() } } : undefined}
         >
-          <p className="text-xs mb-0.5" style={{ color: fgMuted }}>Miembro</p>
+          <p className="text-xs mb-0.5" style={{ color: fg }}>Miembro</p>
           <p className="font-medium" style={{ color: fg }}>{customerName}</p>
         </div>
       </div>
@@ -136,7 +139,7 @@ export function LoyaltyCardPreview({
       <div className="px-6 pb-4">
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm font-medium" style={{ color: fg }}>Tu Progreso</p>
-          <p className="text-sm" style={{ color: fgMuted2 }}>
+          <p className="text-sm" style={{ color: fg }}>
             {currentStamps}/{maxStamps}
           </p>
         </div>
@@ -197,7 +200,7 @@ export function LoyaltyCardPreview({
           className="rounded-xl px-4 py-3 text-center"
           style={{ backgroundColor: overlay }}
         >
-          <p className="text-xs mb-0.5" style={{ color: fgMuted }}>Premio</p>
+          <p className="text-xs mb-0.5" style={{ color: fg }}>Premio</p>
           <p className="font-semibold" style={{ color: fg }}>{reward}</p>
         </div>
       </div>
@@ -224,8 +227,8 @@ export function LoyaltyCardPreview({
         className="flex items-center justify-between px-6 py-3 text-xs"
         style={{ backgroundColor: footerBg }}
       >
-        {expirationDate && <span style={{ color: fgMuted }}>Vence: {expirationDate}</span>}
-        <span className="ml-auto" style={{ color: fgMuted }}>Con tecnología de Koda</span>
+        {expirationDate && <span style={{ color: fg }}>Vence: {expirationDate}</span>}
+        <span className="ml-auto" style={{ color: fg }}>Con tecnología de Koda</span>
       </div>
     </div>
   )
