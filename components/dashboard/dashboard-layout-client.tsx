@@ -1,11 +1,23 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useSyncExternalStore, useEffect, useCallback } from "react"
 import { DashboardSidebar } from "./sidebar"
 import { DashboardHeader } from "./header"
 import type { Role } from "@prisma/client"
 
 const SIDEBAR_STATE_KEY = "dashboard-sidebar-state"
+
+function subscribeSidebar(onChange: () => void) {
+  window.addEventListener("storage", onChange)
+  window.addEventListener(SIDEBAR_STATE_KEY, onChange)
+  return () => {
+    window.removeEventListener("storage", onChange)
+    window.removeEventListener(SIDEBAR_STATE_KEY, onChange)
+  }
+}
+
+const readSidebar = () => window.localStorage.getItem(SIDEBAR_STATE_KEY) === "true"
+const serverSidebar = () => false
 
 interface DashboardLayoutClientProps {
   children: React.ReactNode
@@ -26,30 +38,16 @@ export function DashboardLayoutClient({
   role,
   closureScheduledFor,
 }: DashboardLayoutClientProps) {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    if (typeof window === "undefined") return false
-    const stored = window.localStorage.getItem(SIDEBAR_STATE_KEY)
-    if (stored === "true") {
-      document.documentElement.classList.add("sidebar-collapsed")
-      return true
-    }
-    return false
-  })
+  const sidebarCollapsed = useSyncExternalStore(subscribeSidebar, readSidebar, serverSidebar)
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("sidebar-collapsed", sidebarCollapsed)
+  }, [sidebarCollapsed])
 
   const toggleCollapse = useCallback(() => {
-    setSidebarCollapsed((prev) => {
-      const next = !prev
-      window.localStorage.setItem(SIDEBAR_STATE_KEY, JSON.stringify(next))
-      document.documentElement.classList.toggle("sidebar-collapsed", next)
-      return next
-    })
+    window.localStorage.setItem(SIDEBAR_STATE_KEY, JSON.stringify(!readSidebar()))
+    window.dispatchEvent(new Event(SIDEBAR_STATE_KEY))
   }, [])
-
-  const [ready, setReady] = useState(
-    typeof window !== "undefined" ? document.documentElement.classList.contains("sidebar-collapsed") : false
-  )
-  useEffect(() => { setReady(true) }, [])
-  if (!ready) return null
 
   return (
     <div className="lg:flex min-h-screen">

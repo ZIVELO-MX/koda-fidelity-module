@@ -62,18 +62,18 @@ export default async function CardsPage({
           <p className="text-muted-foreground">Gestiona tus campañas de tarjetas de lealtad digitales</p>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:flex">
-          <Link href="/dashboard/cards/archived">
-            <Button variant="outline">
+          <Button variant="outline" asChild>
+            <Link href="/dashboard/cards/archived">
               <Archive className="h-4 w-4 mr-2" aria-hidden="true" />
               Archivadas
-            </Button>
-          </Link>
-          <Link href="/dashboard/cards/new">
-            <Button>
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/dashboard/cards/new">
               <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
               Crear Tarjeta
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
 
@@ -118,9 +118,9 @@ export default async function CardsPage({
               : "Crea tu primera tarjeta de lealtad para empezar"}
           </p>
           {!q && status !== "expired" && (
-            <Link href="/dashboard/cards/new">
-              <Button><Plus className="h-4 w-4 mr-2" />Crear Tarjeta</Button>
-            </Link>
+            <Button asChild>
+              <Link href="/dashboard/cards/new"><Plus className="h-4 w-4 mr-2" />Crear Tarjeta</Link>
+            </Button>
           )}
         </div>
       ) : (

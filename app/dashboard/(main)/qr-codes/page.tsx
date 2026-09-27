@@ -101,9 +101,9 @@ export default function QRCodesPage() {
                     <p className="text-sm text-foreground font-mono truncate">{url}</p>
                   </div>
 
-                  <Link href={`/dashboard/qr-codes/${card.id}`}>
-                    <Button variant="outline" className="w-full">Ver Detalles</Button>
-                  </Link>
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link href={`/dashboard/qr-codes/${card.id}`}>Ver Detalles</Link>
+                  </Button>
                 </div>
               </div>
             )

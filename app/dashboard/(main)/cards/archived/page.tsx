@@ -27,12 +27,12 @@ export default async function ArchivedCardsPage() {
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-4">
-        <Link href="/dashboard/cards">
-          <Button variant="ghost" size="sm">
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/dashboard/cards">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver
-          </Button>
-        </Link>
+          </Link>
+        </Button>
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Archive className="h-6 w-6 text-muted-foreground" />
@@ -53,9 +53,9 @@ export default async function ArchivedCardsPage() {
           <p className="text-muted-foreground mb-6">
             Las tarjetas que archives aparecerán aquí. Podrás restaurarlas en cualquier momento.
           </p>
-          <Link href="/dashboard/cards">
-            <Button variant="outline">Ver tarjetas activas</Button>
-          </Link>
+          <Button variant="outline" asChild>
+            <Link href="/dashboard/cards">Ver tarjetas activas</Link>
+          </Button>
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
