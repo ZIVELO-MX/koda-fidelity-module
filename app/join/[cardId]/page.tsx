@@ -11,6 +11,7 @@ import { Check, Mail, Loader2 } from "lucide-react"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
 import { getFriendlySendError } from "@/lib/auth-errors"
 import { mensajeDeAlta, type MotivoAlta } from "@/lib/alta-estados"
+import { cn } from "@/lib/utils"
 
 type Step = "loading" | "error" | "form" | "sent" | "ready"
 
@@ -25,6 +26,10 @@ interface JoinCustomer {
     brandColor: string
     iconName: string | null
     isActive: boolean
+    status?: string | null
+    /** El tema que de verdad se pinta. Null cuando un acabado Pro no tiene
+     *  plan que lo sostenga: entonces manda el color del negocio. */
+    effectiveTheme?: { code: string } | null
     expiresAt: string | null
     expired: boolean
     business: {
@@ -56,6 +61,10 @@ export default function JoinCardPage() {
     businessBrandColor: string
     businessLogoUrl: string | null
     businessIconName: string | null
+    status?: string | null
+    /** El tema que de verdad se pinta. Null cuando un acabado Pro no tiene plan
+     *  que lo sostenga: entonces manda el color del negocio. */
+    effectiveTheme?: { code: string } | null
   } | null>(null)
   const [motivo, setMotivo] = useState<MotivoAlta>("no-encontrada")
   const [name, setName] = useState("")
@@ -86,10 +95,12 @@ export default function JoinCardPage() {
       const supabase = createBrowserSupabase()
       const { data: { session } } = await supabase.auth.getSession()
 
-      // Archived cards: existing members can still view; new members cannot join
+      // Una tarjeta que estuvo activa y se desactivó por cambio de plan no es
+      // lo mismo que una cerrada a nuevas altas: sus códigos ya andan impresos,
+      // y quien escanea merece saber que sus sellos siguen ahí.
       if (!cardJson.card.isActive) {
         if (!session?.user?.email) {
-          setMotivo("cerrada")
+          setMotivo(cardJson.card.status === "LOCKED_BY_PLAN" ? "desactivada" : "cerrada")
           setStep("error")
           return
         }
@@ -230,8 +241,11 @@ export default function JoinCardPage() {
         businessBrandColor: customer.card.business.brandColor,
         businessLogoUrl: customer.card.business.logoUrl,
         businessIconName: customer.card.business.iconName,
+        // El código del tema efectivo lo trae la consulta pública de la
+        // tarjeta; `/api/join` solo manda los identificadores.
+        temaEfectivo: cardData?.effectiveTheme?.code ?? null,
       }
-    : cardData
+    : cardData && { ...cardData, temaEfectivo: cardData.effectiveTheme?.code ?? null }
 
   if (step === "loading") {
     return (
@@ -247,7 +261,14 @@ export default function JoinCardPage() {
     const mensaje = mensajeDeAlta(motivo)
     return (
       <div className="min-h-screen bg-background forced-light flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-sm space-y-4 text-center">
+        <div
+          className={cn(
+            "w-full max-w-sm space-y-4 text-center",
+            // Ámbar, no rojo: la tarjeta no está rota y quien la escanea no
+            // tiene nada que ver con el plan del negocio.
+            mensaje.tono === "aviso" && "rounded-2xl border border-amber-500/40 bg-amber-500/10 p-6",
+          )}
+        >
           <h1 className="text-2xl font-bold text-foreground">{mensaje.titulo}</h1>
           <p className="text-muted-foreground">{mensaje.detalle}</p>
           <Button asChild variant="outline" className="min-h-11">
@@ -300,6 +321,7 @@ export default function JoinCardPage() {
                 reward={cardInfo.reward}
                 expirationDate={cardInfo.expiresAt ? new Date(cardInfo.expiresAt).toLocaleDateString("es-MX") : undefined}
                 brandColor={cardInfo.brandColor}
+                themeCode={cardInfo.temaEfectivo}
                 showQR={true}
                 qrValue={customer.id}
               />

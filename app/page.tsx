@@ -193,16 +193,16 @@ export default function LandingPage() {
               <span className="whitespace-nowrap font-semibold text-lg text-white">Koda Fidelity</span>
             </Link>
             <div className="hidden lg:flex items-center gap-8">
-              <SmoothNavLink href="#disenos" className="inline-flex min-h-11 items-center text-sm text-white/70 hover:text-white transition-colors">
+              <SmoothNavLink href="#disenos" className="inline-flex min-h-11 min-w-11 items-center justify-center text-sm text-white/70 hover:text-white transition-colors">
                 Diseños
               </SmoothNavLink>
-              <SmoothNavLink href="#how-it-works" className="inline-flex min-h-11 items-center text-sm text-white/70 hover:text-white transition-colors">
+              <SmoothNavLink href="#how-it-works" className="inline-flex min-h-11 min-w-11 items-center justify-center text-sm text-white/70 hover:text-white transition-colors">
                 Cómo Funciona
               </SmoothNavLink>
-              <SmoothNavLink href="#pricing" className="inline-flex min-h-11 items-center text-sm text-white/70 hover:text-white transition-colors">
+              <SmoothNavLink href="#pricing" className="inline-flex min-h-11 min-w-11 items-center justify-center text-sm text-white/70 hover:text-white transition-colors">
                 Precios
               </SmoothNavLink>
-              <SmoothNavLink href="#faq" className="inline-flex min-h-11 items-center text-sm text-white/70 hover:text-white transition-colors">
+              <SmoothNavLink href="#faq" className="inline-flex min-h-11 min-w-11 items-center justify-center text-sm text-white/70 hover:text-white transition-colors">
                 FAQ
               </SmoothNavLink>
             </div>

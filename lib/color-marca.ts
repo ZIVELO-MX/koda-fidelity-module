@@ -49,7 +49,9 @@ export function contraste(a: string, b: string): number {
   return (alto + 0.05) / (bajo + 0.05)
 }
 
-function mezclar(hex: string, destino: number, p: number): string {
+/** Acerca un color a blanco (255) o a negro (0). Lo usan el motor de marca y
+ * las pieles de tarjeta, que antes llevaban cada una su copia. */
+export function mezclar(hex: string, destino: number, p: number): string {
   return aHex(canales(hex).map((c) => c + (destino - c) * p))
 }
 
