@@ -54,7 +54,9 @@ repite el avance. El desmontaje detiene temporizadores y nuevos lotes.
 - browser-smoke ejecuta los verificadores de áreas y acceso en 375/768/1440.
 - auth-e2e conserva el orden: auth, API real, fixture fresco, recorrido,
   paywall, precios, limpieza de solicitudes, activación manual, trial vencido
-  y entitlements Lite. Las pruebas de precios consumen ahora el contrato de
+  y entitlements Lite. El preparador del muro restaura ANNUAL: las pruebas de
+  precios cambian a MONTHLY y FID-0028 debe empezar en su fixture anual.
+  Las pruebas de precios consumen ahora el contrato de
   activación manual; ya no buscan Contratar ni el aviso antiguo de Pro diferido.
 - La activación exige muro y API disponibles. El fixture debe iniciar sin
   solicitud y el POST debe devolver 201; folio y PENDING se confirman por GET

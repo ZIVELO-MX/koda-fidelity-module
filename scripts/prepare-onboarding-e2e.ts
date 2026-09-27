@@ -48,7 +48,7 @@ async function main() {
     const solicitudes = await prisma.subscriptionRequest.deleteMany({ where: { businessId: user.businessId } })
     await prisma.onboardingProgress.update({
       where: { id: user.onboardingProgress.id },
-      data: { step: "PAYWALL", status: "AWAITING_PAYMENT", draftVersion: { increment: 1 } },
+      data: { step: "PAYWALL", status: "AWAITING_PAYMENT", selectedBillingInterval: "ANNUAL", draftVersion: { increment: 1 } },
     })
     console.log(JSON.stringify({ email, businessId: user.businessId, modo, onboarding: "PAYWALL", solicitudesBorradas: solicitudes.count }))
     return
