@@ -246,6 +246,17 @@ jobs:
           pnpm exec playwright test --config=playwright.auth.config.ts
           e2e/planes.spec.ts --grep @muro
 
+      # FID-0028. Corre con el fixture del muro todavía puesto y despues de las
+      # pruebas de precios, porque crea una solicitud y solo cabe una PENDING
+      # por negocio. El preparador borra las de la corrida anterior, asi que el
+      # POST se ejercita de verdad cada vez en lugar de encontrarse la vieja.
+      - name: Check the manual activation request
+        env:
+          E2E_ONBOARDING_EMAIL: fidelity.seed.portal@dev.invalid
+        run: >-
+          pnpm exec playwright test --config=playwright.auth.config.ts
+          e2e/solicitud-activacion.spec.ts
+
       # El trial vencido y el alta fresca son estados distintos de la misma
       # cuenta, así que se preparan y se corren por separado.
       - name: Prepare the expired Pro trial fixture
