@@ -12,9 +12,10 @@ import { BarraDePasos } from "@/components/onboarding/barra-de-pasos"
 import { PLANES } from "@/lib/planes"
 import { cuentaDelAnual, mesesGratisExactos, pesos } from "@/lib/precios"
 import {
-  ErrorDelAlta, ORIGENES, SELLOS_POSIBLES, avanzar, conservarContexto, guardarBorrador, leerAlta,
+  ErrorDelAlta, ORIGENES, SELLOS_POSIBLES, avanzar, guardarBorrador, leerAlta,
   type AccionDelAlta, type AcquisitionSource, type BillingInterval, type EstadoDelAlta,
 } from "@/lib/onboarding"
+import { conservarContexto } from "@/lib/onboarding"
 import { enumerar, hayQueReanudar, loGuardado } from "@/lib/alta-reanudacion"
 import { crearColaDeBorrador, fusionarCambios, type ColaDeBorrador } from "@/lib/cola-de-borrador"
 import { esAcabadoPro, nombreDeTema } from "@/lib/temas-de-tarjeta"
