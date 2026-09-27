@@ -127,10 +127,19 @@ Para reproducir el antes, basta correr el script sobre `origin/dev`.
 ## Límites de esta medición
 
 - **Se mide el texto, no los gráficos.** Dos cosas quedan fuera y sin cambiar: el ícono del
-  sello de hito, que va en blanco sobre `brandColor` (2.15 con ámbar), y el QR, que se pinta con
-  `brandColor` sobre blanco. El QR es el que más me preocupa de los dos, porque un contraste
-  bajo puede afectar al lector, no solo a la vista. Ninguno es regresión de este cambio: los dos
-  ya estaban así. Quedan anotados para decidir aparte.
+  sello de hito, que va en blanco sobre `brandColor` (2.15 con ámbar), y el **QR**, que se pinta
+  con `brandColor` sobre blanco.
+
+  El QR es el que más me preocupa, porque ahí un contraste bajo no afea: impide leer. Medido
+  sobre la landing, sus módulos son `#f97316` sobre `#FFFFFF`, **2.80:1**, y con ámbar
+  (`#f59e0b`) bajan a **2.15:1**. Está por debajo del 3:1 que piden la mayoría de los lectores,
+  y bastante por debajo de la diferencia de reflectancia que recomienda la norma del código. En
+  buena luz se lee; en mala, es frágil.
+
+  El arreglo sería una línea -- pintar los módulos con una versión honda del color en vez de con
+  el color crudo --, pero queda fuera de este encargo, que es el contraste del **texto**. Ninguno
+  de los dos es regresión de este cambio: ya estaban así. Los dejo medidos para que se decidan
+  aparte.
 - **El velo de cada acabado se modela por su desplazamiento máximo**, no píxel a píxel. Es un
   modelo de peor caso, igual que el de `contraste-resultado.md`.
 - La garantía está fijada en `lib/__tests__/contraste-de-tarjeta.test.ts`, que recorre los seis
