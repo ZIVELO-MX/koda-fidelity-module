@@ -32,8 +32,13 @@ test.describe("Auth UI", () => {
   // Con una cuenta real y la contraseña mal: así el error lo da el servidor, y
   // no hay que dar de alta nada ni pedir un enlace mágico contra la base
   // compartida, que es lo que pasaba con un correo inventado.
-  test("login with invalid credentials shows error", async ({ page }) => {
-    test.skip(!process.env.E2E_EMAIL, "Requiere E2E_EMAIL de una cuenta de negocio")
+  test("@auth-local login with invalid credentials shows error", async ({ page }) => {
+    if (process.env.CI) {
+      expect(process.env.E2E_EMAIL, "auth-local requiere la cuenta sembrada").toBeTruthy()
+      expect(process.env.FID_0019_LOCAL_E2E).toBe("true")
+    } else {
+      test.skip(!process.env.E2E_EMAIL, "Requiere E2E_EMAIL de una cuenta de negocio")
+    }
 
     await page.goto("/login")
     await page.getByLabel("Correo electrónico").fill(process.env.E2E_EMAIL!)
@@ -41,7 +46,7 @@ test.describe("Auth UI", () => {
     await page.locator("#password").fill("una-contraseña-que-no-es")
     await page.getByRole("button", { name: "Iniciar sesión" }).click()
 
-    await expect(page.locator('[data-slot="card"] [role="alert"]')).toBeVisible({ timeout: 30000 })
+    await expect(page.getByText("Correo o contraseña incorrectos.", { exact: true })).toBeVisible()
   })
 
   test("unauthenticated access to dashboard redirects to login", async ({ page }) => {

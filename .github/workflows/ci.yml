@@ -114,6 +114,7 @@ jobs:
           e2e/auth-errors.spec.ts
           e2e/auth-ui.spec.ts
           e2e/update-password.spec.ts
+          --grep-invert @auth-local
 
       # Los verificadores de área táctil estaban escritos y no los ejecutaba
       # ningún job, así que medían solo cuando alguien se acordaba de correrlos
@@ -234,6 +235,16 @@ jobs:
 
       - name: Install Playwright browser
         run: pnpm exec playwright install chromium
+
+      # Estos ocho casos necesitan sesión real; antes se saltaban en smoke.
+      # Van antes de la recuperación, que cambia la contraseña del admin.
+      - name: Check authenticated UI and password validation
+        env:
+          E2E_EMAIL: fidelity.seed.admin@dev.invalid
+          E2E_PASSWORD: ci-admin-password-2
+        run: >-
+          pnpm exec playwright test --config=playwright.auth.config.ts
+          e2e/auth-ui.spec.ts e2e/update-password.spec.ts --grep @auth-local
 
       - name: Test login, session refresh, password recovery, and customer portal
         run: pnpm exec playwright test --config=playwright.auth.config.ts e2e/auth-development.spec.ts
