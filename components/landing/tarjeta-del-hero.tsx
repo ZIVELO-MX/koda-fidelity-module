@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useSyncExternalStore } from "react"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { siteConfig } from "@/lib/site-config"
 
@@ -14,25 +14,32 @@ import { siteConfig } from "@/lib/site-config"
  * deslizándose, nada llama la atención. Y si la persona pidió menos
  * movimiento, la tarjeta aparece ya sellada.
  */
+const reducedMotionQuery = "(prefers-reduced-motion: reduce)"
+function subscribeMotion(onChange: () => void) {
+  const media = window.matchMedia(reducedMotionQuery)
+  media.addEventListener("change", onChange)
+  return () => media.removeEventListener("change", onChange)
+}
+const readMotion = () => window.matchMedia(reducedMotionQuery).matches
+const serverMotion = () => false
+
 export function TarjetaDelHero() {
   const demo = siteConfig.hero.demoCard
   const [sellos, setSellos] = useState(demo.currentStamps)
 
+  const menosMovimiento = useSyncExternalStore(subscribeMotion, readMotion, serverMotion)
+
   useEffect(() => {
-    const menosMovimiento = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    if (menosMovimiento) {
-      setSellos(demo.currentStamps + 1)
-      return
-    }
+    if (menosMovimiento) return
     const reloj = setTimeout(() => setSellos(demo.currentStamps + 1), 1100)
     return () => clearTimeout(reloj)
-  }, [demo.currentStamps])
+  }, [demo.currentStamps, menosMovimiento])
 
   return (
     <LoyaltyCardPreview
       businessName={demo.businessName}
       iconName="coffee"
-      currentStamps={sellos}
+      currentStamps={menosMovimiento ? demo.currentStamps + 1 : sellos}
       maxStamps={demo.maxStamps}
       reward={demo.reward}
       expirationDate="31 dic 2026"

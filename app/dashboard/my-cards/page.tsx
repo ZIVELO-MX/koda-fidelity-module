@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo, useEffect } from "react"
 import Link from "next/link"
+import type { Session } from "@supabase/supabase-js"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -223,10 +224,7 @@ export default function DashboardMyCardsPage() {
     })
   }, [])
 
-  const loadCards = useCallback(async () => {
-    const supabase = createBrowserSupabase()
-    const { data: { session } } = await supabase.auth.getSession()
-
+  const loadCards = useCallback(async (session: Session | null) => {
     if (session?.user?.email) {
       setSessionEmail(session.user.email)
       try {
@@ -249,11 +247,17 @@ export default function DashboardMyCardsPage() {
     setState(session?.user?.email ? "cards" : "email")
   }, [])
 
-  useEffect(() => { loadCards() }, [loadCards])
+  useEffect(() => {
+    const supabase = createBrowserSupabase()
+    void supabase.auth.getSession().then(({ data }) => loadCards(data.session))
+  }, [loadCards])
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true)
-    loadCards().finally(() => setRefreshing(false))
+    const supabase = createBrowserSupabase()
+    void supabase.auth.getSession()
+      .then(({ data }) => loadCards(data.session))
+      .finally(() => setRefreshing(false))
   }, [loadCards])
 
   const activeCards = useMemo(() => cards.filter((c) => c.isActive && c.card.isActive && !isExpired(c.card.expiresAt)), [cards])

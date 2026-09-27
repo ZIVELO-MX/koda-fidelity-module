@@ -1,6 +1,6 @@
 import nextConfig from "eslint-config-next"
 
-export default [
+const config = [
   // Los entregables de diseño no son código de producto. `docs/design/support.js`
   // es un motor de terceros que se copia para ver el documento de temas.
   { ignores: ["docs/**"] },
@@ -14,3 +14,5 @@ export default [
     },
   },
 ]
+
+export default config

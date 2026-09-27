@@ -6,7 +6,7 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => ({ get: () => null }),
 }))
 vi.mock("next/image", () => ({
-  default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => <img {...props} />,
+  default: ({ alt, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => <img alt={alt ?? ""} {...props} />,
 }))
 // La cámara no se monta en jsdom. Lo que se prueba aquí es la decisión de sellar
 // o canjear, que llega igual por la búsqueda por nombre.
