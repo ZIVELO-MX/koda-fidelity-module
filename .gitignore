@@ -64,3 +64,9 @@ docs/design/verificadores/capturas/
 # Motor del documento de temas: es de terceros y no se versiona.
 # Para verlo completo, copiar support.js junto a loyalty-card-themes.dc.html
 docs/design/support.js
+
+# iCloud deja copias numeradas al sincronizar («cola-de-borrador 2.ts»). Nunca
+# son fuente: rompen `tsc --noEmit` por declaración duplicada y hacen que vitest
+# corra dos veces el mismo archivo. Se me colaron por un `git add -A`.
+* [0-9]*.ts
+* [0-9]*.tsx
