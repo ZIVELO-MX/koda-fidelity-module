@@ -5,7 +5,7 @@ import { useState } from "react"
 import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { cuentaDelAnual } from "@/lib/precios"
+import { cuentaDelAnual, mesesGratisExactos, pesos } from "@/lib/precios"
 import { PLANES, PRECIOS_VIGENTES_DESDE } from "@/lib/planes"
 
 type Modalidad = "anual" | "mensual"
@@ -51,7 +51,7 @@ export function Precios() {
                     modalidad === "anual" ? "bg-white/20" : "bg-primary/15 text-primary",
                   )}
                 >
-                  2 meses gratis
+                  {mesesGratisExactos(PLANES[0].mensual, PLANES[0].anual)} meses gratis
                 </span>
               )}
             </button>
@@ -100,21 +100,20 @@ export function Precios() {
               {modalidad === "anual" ? (
                 <>
                   <p className={cn("mt-2 text-sm font-medium", destacado ? "text-white" : "text-foreground")}>
-                    Te sale en ${PESOS.format(cuenta.porMes)} al mes.
+                    Equivale a ${pesos(cuenta.porMes)} al mes, y se cobra una vez al año.
                   </p>
+                  {/* Sin tachado: el año mes a mes no es un precio anterior,
+                      es la otra modalidad y sigue disponible. */}
                   <p className={cn("mt-1 text-sm", destacado ? "text-[#FAFAF7]/75" : "text-muted-foreground")}>
-                    Mes a mes serían{" "}
-                    <s className={destacado ? "text-[#FAFAF7]/55" : "text-muted-foreground/70"}>
-                      ${PESOS.format(cuenta.doceMeses)}
-                    </s>
-                    , o sea ${PESOS.format(plan.mensual)} al mes. Ahorras ${PESOS.format(cuenta.ahorro)}.
+                    Pagando mes a mes, el año costaría ${pesos(cuenta.doceMeses)}. Ahorras $
+                    {pesos(cuenta.ahorro)}.
                   </p>
                 </>
               ) : (
                 <p className={cn("mt-2 text-sm", destacado ? "text-[#FAFAF7]/75" : "text-muted-foreground")}>
-                  Sin permanencia. Pagando por año baja a{" "}
+                  Sin permanencia. Pagando por año equivale a{" "}
                   <span className={cn("font-semibold", destacado ? "text-white" : "text-foreground")}>
-                    ${PESOS.format(cuenta.porMes)} al mes
+                    ${pesos(cuenta.porMes)} al mes
                   </span>
                   .
                 </p>

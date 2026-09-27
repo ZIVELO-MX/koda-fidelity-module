@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation"
 import type { Metadata } from "next"
-import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 import { Alta } from "@/components/onboarding/alta"
 
@@ -22,16 +21,7 @@ export default async function OnboardingPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user?.email) redirect("/login")
 
-  const negocio = await prisma.business.findUnique({
-    where: { email: user.email },
-    select: { name: true, businessType: true, brandColor: true },
-  })
-
-  return (
-    <Alta
-      nombreInicial={negocio?.name ?? ""}
-      categoriaInicial={negocio?.businessType ?? ""}
-      colorInicial={negocio?.brandColor ?? "#ff6b35"}
-    />
-  )
+  // El estado del alta lo sirve `GET /api/onboarding`, resuelto por
+  // `authUserId`. Aquí solo se comprueba que haya sesión.
+  return <Alta />
 }
