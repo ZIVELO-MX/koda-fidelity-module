@@ -108,13 +108,21 @@ Los treinta pares de color y acabado llegan a AA (4.5:1).
 
 ## Resultado visual
 
-![Antes](capturas/tarjetas-contraste-antes.png)
+Para verlo, no solo medirlo:
 
-![Después](capturas/tarjetas-contraste-despues.png)
+```
+pnpm build
+pnpm exec tsx docs/design/verificadores/capturar-tarjetas.tsx
+```
 
-Las dos capturas salen del componente real renderizado con `react-dom/server` y la hoja de
-estilos compilada, no de una maqueta. Los seis colores siguen siendo reconocibles: el naranja
-sigue naranja y el ámbar sigue ámbar. Lo que cambia es que las etiquetas pequeñas se leen.
+Deja una imagen por acabado en `capturas/`, que no se versiona: son artefactos regenerables,
+igual que las del resto de verificadores. Renderiza el componente real con `react-dom/server` y
+la hoja de estilos del build, así que es la tarjeta de producción y no una maqueta.
+
+Comparadas con las mismas capturas tomadas antes del cambio: los seis colores siguen siendo
+reconocibles -- el naranja sigue naranja y el ámbar sigue ámbar --, y lo que cambia es que
+«Tarjeta de Lealtad», «Miembro», «Premio», «Vence» y el pie pasan de casi borrarse a leerse.
+Para reproducir el antes, basta correr el script sobre `origin/dev`.
 
 ## Límites de esta medición
 
