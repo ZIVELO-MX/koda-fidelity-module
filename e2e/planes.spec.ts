@@ -18,6 +18,7 @@ const PRECIOS = { lite: { mes: 149, anio: 1490 }, pro: { mes: 299, anio: 2990 } 
 test.describe("Planes Lite y Pro", () => {
   test.describe("lo que la interfaz promete @muro", () => {
     test("el muro de pago dice los precios acordados", async ({ page }) => {
+      if (process.env.CI) expect(Boolean(CORREO && CLAVE), "Credenciales obligatorias de planes").toBe(true)
       test.skip(!CORREO || !CLAVE, "Requiere las credenciales del fixture del alta")
 
       await entrar(page, CORREO!, CLAVE!)
@@ -32,7 +33,7 @@ test.describe("Planes Lite y Pro", () => {
       await expect(page.getByRole("radio", { name: /al año/i })).toBeChecked()
       await expect(tarjetaLite).toContainText(`$${PRECIOS.lite.anio.toLocaleString("es-MX")}`)
       await expect(tarjetaPro).toContainText(`$${PRECIOS.pro.anio.toLocaleString("es-MX")}`)
-      await expect(page.getByText(/disponible al terminar tu primer mes/i)).toBeVisible()
+      await expect(page.getByRole("button", { name: /solicitar activación de pro/i })).toBeEnabled()
 
       await page.getByRole("radio", { name: "Al mes" }).click()
       await expect(tarjetaLite).toContainText(`$${PRECIOS.lite.mes}`)
@@ -40,20 +41,29 @@ test.describe("Planes Lite y Pro", () => {
     })
 
     test("no se simula ninguna compra", async ({ page }) => {
+      if (process.env.CI) expect(Boolean(CORREO && CLAVE), "Credenciales obligatorias de planes").toBe(true)
       test.skip(!CORREO || !CLAVE, "Requiere las credenciales del fixture del alta")
 
       await entrar(page, CORREO!, CLAVE!)
       await page.goto("/onboarding")
-      const contratar = page.getByRole("button", { name: /contratar lite/i })
-      await expect(contratar).toBeVisible()
-      await contratar.click()
-      await expect(page.getByText(/el cobro todavía no está activo/i)).toBeVisible()
-      // Y sigue sin publicar: la salida conserva su consecuencia dicha.
-      await expect(page.getByText(/sin publicar, tu tarjeta no genera código qr/i)).toBeVisible()
+      const antes = await (await page.request.get("/api/subscription")).json()
+      const creada = page.waitForResponse((res) =>
+        new URL(res.url()).pathname === "/api/subscription-requests" && res.request().method() === "POST",
+      )
+      await page.getByRole("button", { name: /solicitar activación de lite/i }).click()
+      expect((await creada).ok()).toBe(true)
+      await expect(page.locator("span.font-mono").filter({ hasText: /^KF-/ }).first()).toBeVisible()
+      for (const promesa of [/no cobra/i, /no activa tu plan/i, /no publica tu tarjeta/i]) {
+        await expect(page.getByText(promesa)).toBeVisible()
+      }
+      const despues = await (await page.request.get("/api/subscription")).json()
+      expect(despues.entitlements).toEqual(antes.entitlements)
+      await expect(page.getByRole("button", { name: "Compartir", exact: true })).toHaveAttribute("aria-disabled", "true")
     })
   })
 
   test.describe("entitlements del servidor", () => {
+    if (process.env.CI) expect(Boolean(CORREO && CLAVE), "Credenciales obligatorias de planes").toBe(true)
     test.skip(!CORREO || !CLAVE, "Requiere las credenciales del fixture del alta")
 
     test("la suscripción responde con su plan, su modalidad y si está en trial", async ({ page }) => {
@@ -82,6 +92,7 @@ test.describe("Planes Lite y Pro", () => {
   })
 
   test.describe("una tarjeta bloqueada por plan no se ofrece al cliente", () => {
+    if (process.env.CI) expect(Boolean(CORREO && CLAVE), "Credenciales obligatorias de planes").toBe(true)
     test.skip(!CORREO || !CLAVE, "Requiere las credenciales del fixture del alta")
 
     test("el alta pública rechaza la que no está activa", async ({ page }) => {
@@ -108,6 +119,7 @@ test.describe("Planes Lite y Pro", () => {
    * fallar por la razón equivocada.
    */
   test.describe("el mes de Pro incluido termina", () => {
+    if (process.env.CI) expect(Boolean(CORREO && CLAVE), "Credenciales obligatorias de planes").toBe(true)
     test.skip(!CORREO || !CLAVE, "Requiere las credenciales del fixture del alta")
 
     test.beforeEach(async ({ page }) => {
@@ -177,6 +189,7 @@ const MEDIDAS = [
 
 test.describe("La tarjeta guardada detrás del muro @muro", () => {
   test("se ve la tarjeta, se dice que no está publicada y las acciones del QR no se habilitan", async ({ page }) => {
+    if (process.env.CI) expect(Boolean(CORREO && CLAVE), "Credenciales obligatorias de planes").toBe(true)
     test.skip(!CORREO || !CLAVE, "Requiere las credenciales del fixture del alta")
     // Un login más tres anchos no cabe en los 30s del config; `slow` los triplica.
     test.slow()
@@ -203,7 +216,7 @@ test.describe("La tarjeta guardada detrás del muro @muro", () => {
       }
 
       // El muro no se queda sin salida por mostrar la tarjeta.
-      await expect(page.getByRole("button", { name: /contratar lite/i }), `a ${ancho}px`).toBeVisible()
+      await expect(page.getByRole("button", { name: /solicitar activación de lite/i }), `a ${ancho}px`).toBeVisible()
     }
 
     // La razón es alcanzable desde el propio control, no solo mirando.

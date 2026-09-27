@@ -62,11 +62,11 @@ describe("la cola del borrador", () => {
     const s = servidor()
     const { c, guardados } = cola(s)
 
-    c.encolar({ business: { name: "Café" } })
+    void c.encolar({ business: { name: "Café" } })
     expect(s.recibidos).toHaveLength(1)
 
     // Se escribe durante el vuelo. Antes esto se perdía.
-    c.encolar({ business: { categoryId: "c1" } })
+    void c.encolar({ business: { categoryId: "c1" } })
     expect(s.recibidos, "no debe salir una segunda petición en paralelo").toHaveLength(1)
 
     s.responder()
@@ -81,10 +81,10 @@ describe("la cola del borrador", () => {
     const s = servidor(1)
     const { c } = cola(s, 1)
 
-    c.encolar({ card: { reward: "uno" } })
+    void c.encolar({ card: { reward: "uno" } })
     expect(s.recibidos[0].version).toBe(1)
 
-    c.encolar({ card: { reward: "dos" } })
+    void c.encolar({ card: { reward: "dos" } })
     s.responder() // el servidor pasa a la versión 2
     await vi.waitFor(() => expect(s.recibidos).toHaveLength(2))
 
@@ -96,12 +96,15 @@ describe("la cola del borrador", () => {
     const s = servidor()
     const { c, fallos } = cola(s)
 
-    c.encolar({ business: { name: "Café" } })
+    const vuelo = c.encolar({ business: { name: "Café" } })
+    const rechazado = expect(vuelo).rejects.toThrow("500")
     s.fallar(new Error("500"))
+    await rechazado
     await vi.waitFor(() => expect(fallos).toHaveLength(1))
 
     // No se reintenta solo, pero lo pendiente sigue ahí.
     expect(c.ocupada()).toBe(true)
+    c.reanudar()
     void c.vaciar()
     await vi.waitFor(() => expect(s.recibidos).toHaveLength(2))
     expect(s.recibidos[1].cambios.business).toEqual({ name: "Café" })
@@ -111,11 +114,14 @@ describe("la cola del borrador", () => {
     const s = servidor()
     const { c, fallos } = cola(s)
 
-    c.encolar({ business: { name: "Café" } })
-    c.encolar({ card: { reward: "uno" } })
+    const vuelo = c.encolar({ business: { name: "Café" } })
+    const rechazado = expect(vuelo).rejects.toThrow("500")
+    void c.encolar({ card: { reward: "uno" } }).catch(() => {})
     s.fallar(new Error("500"))
+    await rechazado
     await vi.waitFor(() => expect(fallos).toHaveLength(1))
 
+    c.reanudar()
     void c.vaciar()
     await vi.waitFor(() => expect(s.recibidos).toHaveLength(2))
     // Las dos tandas viajan juntas: el nombre y la recompensa.
@@ -127,7 +133,7 @@ describe("la cola del borrador", () => {
     const s = servidor()
     const { c, guardados } = cola(s)
 
-    c.encolar({ business: { name: "Café" } })
+    void c.encolar({ business: { name: "Café" } })
     let vaciada = false
     void c.vaciar().then(() => { vaciada = true })
 
@@ -153,7 +159,7 @@ describe("la versión tras avanzar de paso", () => {
 
     // Avanzar de paso subió la versión en el servidor, de 1 a 5.
     c.sembrar(5)
-    c.encolar({ card: { reward: "uno" } })
+    void c.encolar({ card: { reward: "uno" } })
 
     expect(s.recibidos[0].version).toBe(5)
   })

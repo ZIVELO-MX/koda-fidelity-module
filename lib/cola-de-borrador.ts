@@ -48,6 +48,14 @@ export type ColaDeBorrador<E, C extends CambiosFusionables> = {
   encolar: (cambios: C) => Promise<void>
   /** Espera a que no quede nada por guardar. Lo usa el avance de paso. */
   vaciar: () => Promise<void>
+  /** Cambios posteriores al lote que está en vuelo. */
+  pendientes: () => C | null
+  /** Retoma explícitamente la cola tras releer el servidor. */
+  reanudar: () => void
+  /** Descarta los cambios únicamente por decisión explícita de la persona. */
+  descartar: () => void
+  /** Impide iniciar otro lote al desmontar el componente. */
+  detener: () => void
   /** La versión más fresca que confirmó el servidor. */
   version: () => number
   /** Si hay algo esperando o en vuelo. */
@@ -64,35 +72,42 @@ export function crearColaDeBorrador<E, C extends CambiosFusionables>(opciones: {
   versionInicial: number
   guardar: (version: number, cambios: C) => Promise<E>
   versionDe: (estado: E) => number
-  alGuardar: (estado: E) => void
+  alGuardar: (estado: E, pendientes: C | null) => void
+  alVaciar?: () => void
   alFallar: (error: unknown) => void
 }): ColaDeBorrador<E, C> {
   let version = opciones.versionInicial
   let pendiente: C | null = null
   let corriendo: Promise<void> | null = null
+  let fallo: unknown = null
+  let detenida = false
 
   async function correr() {
-    while (pendiente) {
+    while (pendiente && !detenida) {
       const enVuelo = pendiente
       pendiente = null
       try {
         const estado = await opciones.guardar(version, enVuelo)
         version = opciones.versionDe(estado)
-        opciones.alGuardar(estado)
+        opciones.alGuardar(estado, pendiente)
       } catch (error) {
         // Lo que no se guardó vuelve a la cola, debajo de lo que llegó después,
         // para que un reintento lo recupere en vez de perderlo.
         pendiente = fusionarCambios(enVuelo, (pendiente ?? {}) as C)
+        fallo = error
         opciones.alFallar(error)
-        return
+        throw error
       }
     }
   }
 
   function arrancar() {
+    if (fallo !== null) return Promise.reject(fallo)
+    if (detenida) return Promise.reject(new Error("La cola está detenida"))
     if (!corriendo) {
       corriendo = correr().finally(() => {
         corriendo = null
+        if (!pendiente && !detenida && fallo === null) opciones.alVaciar?.()
       })
     }
     return corriendo
@@ -104,9 +119,14 @@ export function crearColaDeBorrador<E, C extends CambiosFusionables>(opciones: {
       return arrancar()
     },
     vaciar() {
-      // Puede quedar algo encolado por un fallo anterior: se intenta de nuevo.
+      // Un fallo conserva lo pendiente y rechaza el avance hasta reanudar.
+      if (fallo !== null) return Promise.reject(fallo)
       return pendiente ? arrancar() : (corriendo ?? Promise.resolve())
     },
+    pendientes: () => pendiente,
+    reanudar: () => { fallo = null },
+    descartar: () => { pendiente = null; fallo = null },
+    detener: () => { detenida = true },
     version: () => version,
     ocupada: () => Boolean(pendiente) || Boolean(corriendo),
     sembrar(nueva) {

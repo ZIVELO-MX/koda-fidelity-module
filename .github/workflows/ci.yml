@@ -140,10 +140,7 @@ jobs:
   auth-e2e:
     name: auth-e2e (Supabase local + Mailpit)
     runs-on: ubuntu-latest
-    # Veinte no alcanzaban: el job corre en serie y cada invocación de Playwright
-    # levanta su propio servidor de producción. Cancelado por tiempo, GitHub lo
-    # pinta rojo sin decir en qué paso se quedó.
-    timeout-minutes: 35
+    timeout-minutes: 20
     concurrency:
       group: fid-0016-auth-e2e-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
@@ -270,10 +267,14 @@ jobs:
           pnpm exec playwright test --config=playwright.auth.config.ts
           e2e/planes.spec.ts --grep @muro
 
-      # FID-0028. Corre con el fixture del muro todavía puesto y despues de las
-      # pruebas de precios, porque crea una solicitud y solo cabe una PENDING
-      # por negocio. El preparador borra las de la corrida anterior, asi que el
-      # POST se ejercita de verdad cada vez en lugar de encontrarse la vieja.
+      # Las pruebas de precios también ejercitan la solicitud sin activar nada.
+      # Reiniciar las solicitudes obliga a FID-0028 a crear una nueva por POST.
+      - name: Prepare a new manual activation request
+        env:
+          E2E_ONBOARDING_EMAIL: fidelity.seed.portal@dev.invalid
+          E2E_ONBOARDING_MODE: paywall
+        run: pnpm prepare:onboarding-e2e
+
       - name: Check the manual activation request
         env:
           E2E_ONBOARDING_EMAIL: fidelity.seed.portal@dev.invalid

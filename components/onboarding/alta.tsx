@@ -44,6 +44,14 @@ const INTRO = [
   },
 ]
 
+type CambiosDelBorrador = Parameters<typeof guardarBorrador>[1]
+
+function conCambios(estado: EstadoDelAlta, cambios: CambiosDelBorrador | null): EstadoDelAlta {
+  if (!cambios) return estado
+  const { business, card, ...opciones } = cambios
+  return { ...estado, ...opciones, negocio: { ...estado.negocio, ...business }, tarjeta: { ...estado.tarjeta, ...card } }
+}
+
 type Aviso = { texto: string; reintentable: boolean; requestId?: string } | null
 
 /**
@@ -70,7 +78,7 @@ export function Alta() {
   const [ocupado, setOcupado] = useState(false)
   // Un booleano solo sabía decir "guardando" y callarse. Lo que hacía falta es
   // que confirme: quien escribe necesita ver que quedó, no que algo parpadeó.
-  const [guardado, setGuardado] = useState<"inactivo" | "guardando" | "guardado">("inactivo")
+  const [guardado, setGuardado] = useState<"inactivo" | "guardando" | "guardado" | "sinGuardar">("inactivo")
   // El aviso de reanudación se calcula con el primer estado del servidor y se
   // congela: si luego se guarda algo más, no vuelve a saltar.
   const [reanudado, setReanudado] = useState<string[] | null>(null)
@@ -79,136 +87,192 @@ export function Alta() {
   // después de que la tarjeta quedó creada, antes de preguntar el origen.
   const [enElClub, setEnElClub] = useState(false)
 
-  /** Traduce un fallo del alta a lo que la pantalla tiene que enseñar. */
-  const manejarFallo = useCallback(
-    (error: unknown) => {
-      if (!(error instanceof ErrorDelAlta)) {
-        setAviso({ texto: "Ocurrió algo inesperado.", reintentable: true })
-        return
-      }
-      const f = error.fallo
-      if (f.tipo === "sesion") {
-        router.replace("/login")
-        return
-      }
-      if (f.tipo === "red") {
-        setAviso({ texto: "No hay conexión con el servidor.", reintentable: true })
-        return
-      }
-      if (f.tipo === "conflicto") {
-        // Otra pestaña o el otro equipo escribió antes. Se recarga en vez de
-        // pisar lo que ya quedó guardado.
-        setAviso({ texto: `${f.mensaje} Recargamos lo último guardado.`, reintentable: false })
-        void leerAlta().then((releido) => setEstado((previo) => conservarContexto(previo, releido))).catch(() => {
-          setAviso({ texto: "El borrador cambió y no pudimos releerlo. Recarga la página.", reintentable: true })
-        })
-        return
-      }
-      setAviso({
-        texto: f.mensaje,
-        reintentable: f.tipo === "servidor",
-        requestId: f.tipo === "servidor" ? f.requestId : undefined,
-      })
-    },
-    [router],
-  )
-
-  const recargar = useCallback(async () => {
-    try {
-      const releido = await leerAlta()
-      setEstado((previo) => conservarContexto(previo, releido))
-      setAviso(null)
-    } catch (error) {
-      manejarFallo(error)
-    }
-  }, [manejarFallo])
-
-  useEffect(() => {
-    leerAlta()
-      .then((inicial) => {
-        setEstado(inicial)
-        if (hayQueReanudar(inicial)) setReanudado(loGuardado(inicial))
-        cola.current = crearColaDeBorrador<EstadoDelAlta, CambiosDelBorrador>({
-          versionInicial: inicial.draftVersion,
-          guardar: guardarBorrador,
-          versionDe: (e) => e.draftVersion,
-          alGuardar: (e) => {
-            setEstado((previo) => conservarContexto(previo, e))
-            setAviso(null)
-            setGuardado("guardado")
-          },
-          alFallar: (error) => {
-            // El aviso de arriba lo cuenta, con su reintento. Aquí se quita la
-            // promesa de guardado en vez de dejar un "Guardado" sobre un error.
-            setGuardado("inactivo")
-            manejarFallo(error)
-          },
-        })
-      })
-      .catch(manejarFallo)
-      .finally(() => setCargando(false))
-  }, [manejarFallo])
-
-  // Autoguardado: lo escrito viaja al servidor sin pulsar nada, con un respiro
-  // para no mandar una petición por tecla.
-  //
-  // La versión la lleva la cola, no este cierre. Antes salía de `estado`, y
-  // escribir durante un guardado en vuelo mandaba una versión ya vieja: el
-  // servidor la rechazaba por conflicto y la edición se perdía.
-  type CambiosDelBorrador = Parameters<typeof guardarBorrador>[1]
+  const [conflicto, setConflicto] = useState(false)
+  const confirmado = useRef<EstadoDelAlta | null>(null)
   const cola = useRef<ColaDeBorrador<EstadoDelAlta, CambiosDelBorrador> | null>(null)
   const temporizador = useRef<ReturnType<typeof setTimeout> | null>(null)
   const porEncolar = useRef<CambiosDelBorrador | null>(null)
+  const bloqueo = useRef(false)
+  const pausado = useRef(false)
+  const montado = useRef(true)
+
+  const cancelarTemporizador = useCallback(() => {
+    if (temporizador.current !== null) clearTimeout(temporizador.current)
+    temporizador.current = null
+  }, [])
+
+  const publicar = useCallback((actual: EstadoDelAlta, pendientes: CambiosDelBorrador | null = null) => {
+    const completo = conservarContexto(confirmado.current, actual)
+    confirmado.current = completo
+    if (montado.current) setEstado(conCambios(completo, fusionarCambios(pendientes, porEncolar.current ?? {})))
+  }, [])
+
+  const manejarFallo = useCallback((error: unknown) => {
+    if (!montado.current) return
+    if (!(error instanceof ErrorDelAlta)) {
+      setAviso({ texto: "Ocurrió algo inesperado.", reintentable: true })
+      return
+    }
+    const f = error.fallo
+    if (f.tipo === "sesion") {
+      router.replace("/login")
+      return
+    }
+    if (f.tipo === "conflicto") {
+      pausado.current = true
+      cancelarTemporizador()
+      setConflicto(true)
+      setGuardado("sinGuardar")
+      setAviso({ texto: "El borrador cambió en otro sitio. Tus cambios siguen aquí, pero no están guardados.", reintentable: false })
+      return
+    }
+    if (f.tipo === "red") {
+      setAviso({ texto: "No hay conexión con el servidor.", reintentable: true })
+      return
+    }
+    setAviso({ texto: f.mensaje, reintentable: f.tipo === "servidor" || f.tipo === "validacion",
+      requestId: f.tipo === "servidor" ? f.requestId : undefined })
+  }, [router, cancelarTemporizador])
+
+  const iniciarCola = useCallback((version: number) => {
+    cola.current = crearColaDeBorrador<EstadoDelAlta, CambiosDelBorrador>({
+      versionInicial: version,
+      guardar: guardarBorrador,
+      versionDe: (e) => e.draftVersion,
+      alGuardar: (e, pendientes) => {
+        publicar(e, pendientes)
+        if (montado.current) setAviso(null)
+      },
+      alVaciar: () => {
+        if (montado.current && !porEncolar.current && !pausado.current) setGuardado("guardado")
+      },
+      alFallar: (error) => {
+        pausado.current = true
+        cancelarTemporizador()
+        if (montado.current) setGuardado("sinGuardar")
+        manejarFallo(error)
+      },
+    })
+  }, [publicar, cancelarTemporizador, manejarFallo])
+
+  const vaciarCola = useCallback(async () => {
+    const c = cola.current
+    if (!c || pausado.current || !montado.current) return false
+    const cambios = porEncolar.current
+    porEncolar.current = null
+    if (cambios) await c.encolar(cambios)
+    await c.vaciar()
+    return !pausado.current && montado.current
+  }, [])
 
   const guardarPronto = useCallback((cambios: CambiosDelBorrador) => {
+    if (bloqueo.current) return
     porEncolar.current = fusionarCambios(porEncolar.current, cambios)
-    if (temporizador.current) clearTimeout(temporizador.current)
-    // Lo que se acaba de teclear todavía no está guardado.
+    setEstado((actual) => actual ? conCambios(actual, cambios) : actual)
+    cancelarTemporizador()
+    if (pausado.current) {
+      setGuardado("sinGuardar")
+      return
+    }
     setGuardado("guardando")
     temporizador.current = setTimeout(() => {
       temporizador.current = null
-      const cambios = porEncolar.current
-      porEncolar.current = null
-      if (cambios && cola.current) void cola.current.encolar(cambios)
+      void vaciarCola().catch(() => { /* La cola conserva el lote y muestra el fallo. */ })
     }, 700)
-  }, [])
+  }, [cancelarTemporizador, vaciarCola])
 
-  /**
-   * Avanza de paso sin perder la última tecla.
-   *
-   * No se bloquea mientras guarda: se vacía lo que esté pendiente, se espera el
-   * vuelo y solo entonces se pide avanzar, con la versión que confirmó el
-   * servidor. Antes se podía pulsar Continuar en pleno vuelo y el paso fallaba
-   * por conflicto sin que la persona hubiera hecho nada raro.
-   */
-  const pedirAvance = useCallback(
-    async (accion: AccionDelAlta, intervalo?: BillingInterval) => {
-      if (!estado || ocupado) return
-      setOcupado(true)
-      setAviso(null)
-      try {
-        if (temporizador.current) {
-          clearTimeout(temporizador.current)
-          temporizador.current = null
-        }
-        const cambios = porEncolar.current
-        porEncolar.current = null
-        if (cambios && cola.current) await cola.current.encolar(cambios)
-        await cola.current?.vaciar()
-
-        const version = cola.current?.version() ?? estado.draftVersion
-        const siguiente = await avanzar(accion, version, intervalo)
-        setEstado((previo) => conservarContexto(previo, siguiente))
-        // Avanzar también sube la versión: la cola tiene que enterarse.
-        cola.current?.sembrar(siguiente.draftVersion)
-      } catch (error) {
-        manejarFallo(error)
-      } finally {
-        setOcupado(false)
+  const recargar = useCallback(async () => {
+    if (bloqueo.current) return
+    bloqueo.current = true
+    setOcupado(true)
+    cancelarTemporizador()
+    try {
+      const actual = await leerAlta()
+      if (!montado.current) return
+      const pendientes = cola.current?.pendientes() ?? null
+      if ((pendientes || porEncolar.current) && actual.status !== "IN_PROGRESS") {
+        manejarFallo(new ErrorDelAlta({ tipo: "conflicto", mensaje: "El alta ya cambió de estado." }))
+        setAviso({ texto: "El alta cambió de estado en otro sitio. Tus cambios siguen aquí; puedes usar la versión del servidor.", reintentable: false })
+        return
       }
-    },
-    [estado, ocupado, manejarFallo],
-  )
+      publicar(actual, pendientes)
+      if (!cola.current) iniciarCola(actual.draftVersion)
+      cola.current?.sembrar(actual.draftVersion)
+      cola.current?.reanudar()
+      pausado.current = false
+      setConflicto(false)
+      setAviso(null)
+      if (pendientes || porEncolar.current) {
+        setGuardado("guardando")
+        await vaciarCola()
+      } else setGuardado("inactivo")
+    } catch (error) {
+      pausado.current = true
+      manejarFallo(error)
+    } finally {
+      bloqueo.current = false
+      if (montado.current) setOcupado(false)
+    }
+  }, [cancelarTemporizador, publicar, vaciarCola, manejarFallo, iniciarCola])
+
+  const usarServidor = useCallback(async () => {
+    if (bloqueo.current || !window.confirm("¿Descartar tus cambios sin guardar y usar la versión del servidor?")) return
+    bloqueo.current = true
+    setOcupado(true)
+    try {
+      const actual = await leerAlta()
+      if (!montado.current) return
+      porEncolar.current = null
+      cola.current?.descartar()
+      cola.current?.sembrar(actual.draftVersion)
+      publicar(actual)
+      pausado.current = false
+      setConflicto(false)
+      setAviso(null)
+      setGuardado("inactivo")
+    } catch (error) { manejarFallo(error) }
+    finally {
+      bloqueo.current = false
+      if (montado.current) setOcupado(false)
+    }
+  }, [publicar, manejarFallo])
+
+  useEffect(() => {
+    let activo = true
+    montado.current = true
+    leerAlta().then((inicial) => {
+      if (!activo) return
+      publicar(inicial)
+      if (hayQueReanudar(inicial)) setReanudado(loGuardado(inicial))
+      iniciarCola(inicial.draftVersion)
+    }).catch((error: unknown) => { if (activo) manejarFallo(error) })
+      .finally(() => { if (activo) setCargando(false) })
+    return () => {
+      activo = false
+      montado.current = false
+      cancelarTemporizador()
+      cola.current?.detener()
+    }
+  }, [publicar, manejarFallo, cancelarTemporizador, iniciarCola])
+
+  const pedirAvance = useCallback(async (accion: AccionDelAlta, intervalo?: BillingInterval) => {
+    if (!confirmado.current || bloqueo.current || pausado.current) return
+    bloqueo.current = true
+    setOcupado(true)
+    setAviso(null)
+    cancelarTemporizador()
+    try {
+      if (!await vaciarCola()) return
+      const siguiente = await avanzar(accion, cola.current?.version() ?? confirmado.current.draftVersion, intervalo)
+      publicar(siguiente)
+      cola.current?.sembrar(siguiente.draftVersion)
+      if (montado.current && accion === "complete_card") setEnElClub(true)
+    } catch (error) { manejarFallo(error) }
+    finally {
+      bloqueo.current = false
+      if (montado.current) setOcupado(false)
+    }
+  }, [cancelarTemporizador, vaciarCola, publicar, manejarFallo])
 
   if (cargando) {
     return (
@@ -283,6 +347,12 @@ export function Alta() {
                   Referencia para soporte: <span className="font-mono">{aviso.requestId}</span>
                 </p>
               )}
+              {conflicto && (
+                <div className="mt-3 flex flex-wrap justify-center gap-2">
+                  <Button variant="outline" className="min-h-11" disabled={ocupado} onClick={() => void recargar()}>Reaplicar mis cambios</Button>
+                  <Button variant="outline" className="min-h-11" disabled={ocupado} onClick={() => void usarServidor()}>Usar versión del servidor</Button>
+                </div>
+              )}
               {aviso.reintentable && (
                 <Button variant="outline" size="sm" className="mt-3 min-h-10" onClick={() => void recargar()}>
                   Reintentar
@@ -314,6 +384,7 @@ export function Alta() {
           <p className="text-center text-xs text-muted-foreground" aria-live="polite">
             {guardado === "guardando" && "Guardando…"}
             {guardado === "guardado" && "Guardado"}
+            {guardado === "sinGuardar" && "Cambios sin guardar"}
           </p>
         </header>
 
@@ -334,23 +405,28 @@ export function Alta() {
           )}
 
           {paso === "BUSINESS" && (
-            <Datos estado={estado} onCambio={guardarPronto} onCambioLocal={setEstado} />
+            <fieldset disabled={ocupado}>
+              <Datos estado={estado} onCambio={guardarPronto} onCambioLocal={setEstado} />
+            </fieldset>
           )}
 
           {paso === "CARD" && (
-            <Tarjeta estado={estado} onCambio={guardarPronto} onCambioLocal={setEstado} />
+            <fieldset disabled={ocupado}>
+              <Tarjeta estado={estado} onCambio={guardarPronto} onCambioLocal={setEstado} />
+            </fieldset>
           )}
 
           {paso === "ACQUISITION" && enElClub && <Club estado={estado} />}
 
           {paso === "ACQUISITION" && !enElClub && (
+            <fieldset disabled={ocupado}>
             <Origen
               elegido={estado.acquisitionSource}
               onElegir={(origen) => {
-                setEstado({ ...estado, acquisitionSource: origen })
                 guardarPronto({ acquisitionSource: origen })
               }}
             />
+            </fieldset>
           )}
 
           {enPaywall && (
@@ -365,7 +441,9 @@ export function Alta() {
         {paso !== "INTRO" && !enPaywall && (
           <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6">
             <span className="text-xs text-muted-foreground">
-              Lo que escribes se guarda solo. Puedes cerrar y volver.
+              {guardado === "sinGuardar" ? "Tus cambios siguen aquí. Reintenta antes de cerrar."
+                : guardado === "guardando" ? "Guardando tus cambios. Espera antes de cerrar."
+                : "Lo que escribes se guarda solo."}
             </span>
             <div className="flex items-center gap-3">
               {paso === "ACQUISITION" && !enElClub && (
@@ -380,10 +458,10 @@ export function Alta() {
               )}
               <Button
                 className="min-h-11 px-8"
-                disabled={ocupado}
+                disabled={ocupado || guardado === "sinGuardar"}
                 onClick={() => {
                   if (paso === "BUSINESS") return void pedirAvance("complete_business")
-                  if (paso === "CARD") return void pedirAvance("complete_card").then(() => setEnElClub(true))
+                  if (paso === "CARD") return void pedirAvance("complete_card")
                   if (enElClub) return setEnElClub(false)
                   return void pedirAvance("complete_acquisition")
                 }}

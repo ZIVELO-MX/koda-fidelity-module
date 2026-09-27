@@ -27,6 +27,10 @@ async function contarTarjetas() {
 }
 
 test.describe("Alta guiada, recorrido completo", () => {
+  if (process.env.CI) {
+    expect(Boolean(CORREO && CLAVE), "Credenciales obligatorias del recorrido").toBe(true)
+    expect(process.env.ALLOW_DESTRUCTIVE_SEED).toBe("true")
+  }
   test.skip(
     !CORREO || !CLAVE,
     "Requiere E2E_ONBOARDING_EMAIL y E2E_ONBOARDING_PASSWORD, y `pnpm prepare:onboarding-e2e` antes",
