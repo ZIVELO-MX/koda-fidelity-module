@@ -173,26 +173,26 @@ export function LandingMobileNav() {
             }}
           >
             <DrawerClose asChild>
-              <Link
-                href="/login"
-                onClick={() => handleNavClick("/login")}
-                className="w-full"
-              >
-                <Button variant="outline" className="w-full min-h-11">
+              <Button variant="outline" className="w-full min-h-11" asChild>
+                <Link
+                  href="/login"
+                  onClick={() => handleNavClick("/login")}
+                  className="w-full"
+                >
                   Iniciar Sesión
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </DrawerClose>
             <DrawerClose asChild>
-              <Link
-                href="/signup"
-                onClick={() => handleNavClick("/signup")}
-                className="w-full"
-              >
-                <Button className="w-full min-h-11 active:scale-[0.97] transition-transform">
+              <Button className="w-full min-h-11 active:scale-[0.97] transition-transform" asChild>
+                <Link
+                  href="/signup"
+                  onClick={() => handleNavClick("/signup")}
+                  className="w-full"
+                >
                   Empieza por solo $149 al mes
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </DrawerClose>
           </div>
         </DrawerContent>

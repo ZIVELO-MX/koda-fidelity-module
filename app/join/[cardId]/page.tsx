@@ -359,11 +359,11 @@ export default function JoinCardPage() {
               Escanea este código QR en el negocio para acumular sellos
             </p>
 
-            <Link href="/my-cards">
-              <Button variant="outline" className="w-full">
+            <Button variant="outline" className="w-full" asChild>
+              <Link href="/my-cards">
                 Ver todas mis tarjetas
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
         </main>
       </div>

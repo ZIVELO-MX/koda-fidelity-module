@@ -130,9 +130,9 @@ export default async function DashboardPage() {
           <h2 className="text-xl font-bold text-foreground mb-2">Error al cargar el panel</h2>
           <p className="text-muted-foreground">Ocurrió un error inesperado. Intenta de nuevo.</p>
         </div>
-        <Link href="/dashboard">
-          <Button>Reintentar</Button>
-        </Link>
+        <Button asChild>
+          <Link href="/dashboard">Reintentar</Link>
+        </Button>
       </div>
     )
   }
@@ -168,18 +168,18 @@ export default async function DashboardPage() {
           <p className="text-muted-foreground">¡Bienvenido, {business.nickname ?? business.name}! Esto es lo que está pasando.</p>
         </div>
         <div className="flex gap-2">
-          <Link href="/dashboard/scan">
-            <Button variant="outline" className="min-h-11">
+          <Button variant="outline" className="min-h-11" asChild>
+            <Link href="/dashboard/scan">
               <Stamp className="h-4 w-4 mr-2" />
               Escáner
-            </Button>
-          </Link>
-          <Link href="/dashboard/cards/new">
-            <Button className="min-h-11">
+            </Link>
+          </Button>
+          <Button className="min-h-11" asChild>
+            <Link href="/dashboard/cards/new">
               <Plus className="h-4 w-4 mr-2" />
               Crear Tarjeta
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
 
