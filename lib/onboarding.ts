@@ -67,7 +67,7 @@ export type EstadoDelAlta = {
   plan: "LITE" | "PRO"
   /** Nombre real del negocio, si ya existe en la cuenta. */
   nombreDeLaCuenta: string | null
-  /** Correo de la sesión, tal como lo manda `accountContext.user.email`. */
+  /** Correo de la sesión. Va en el correo a soporte de FID-0028. */
   correoDeLaCuenta: string | null
 }
 
