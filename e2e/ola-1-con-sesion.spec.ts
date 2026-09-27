@@ -41,18 +41,25 @@ async function desborda(page: Page): Promise<boolean> {
 const areasTactiles = verificarAreasTactiles
 
 test.describe("superficies de la ola 1, con sesión", () => {
+  test.describe.configure({ mode: "serial" })
   test.skip(!HAY_SUPABASE, "Requiere NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY")
   test.skip(!CORREO || !CLAVE, "Requiere E2E_EMAIL y E2E_PASSWORD de una cuenta admin de prueba")
 
+  let page: Page
+  test.beforeAll(async ({ browser }) => {
+    page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
+    await entrar(page, CORREO!, CLAVE!)
+  })
+  test.afterAll(async () => page?.close())
+
   for (const ancho of ANCHOS) {
     test.describe(`${ancho.nombre} (${ancho.width}px)`, () => {
-      test.use({ viewport: { width: ancho.width, height: ancho.height } })
-
-      test.beforeEach(async ({ page }) => {
-        await entrar(page, CORREO!, CLAVE!)
+      test.beforeEach(async () => {
+        await page.setViewportSize({ width: ancho.width, height: ancho.height })
+        await page.goto("/dashboard")
       })
 
-      test("el panel muestra el día y su histórico, ya sin el hueco de la tendencia", async ({ page }) => {
+      test("el panel muestra el día y su histórico, ya sin el hueco de la tendencia", async () => {
         await expect(page.getByRole("heading", { name: "Panel" })).toBeVisible()
         await expect(page.getByRole("heading", { name: "Hoy" })).toBeVisible()
         await expect(page.getByText("Sellos de hoy")).toBeVisible()
@@ -80,7 +87,7 @@ test.describe("superficies de la ola 1, con sesión", () => {
         await areasTactiles(page, `panel en ${ancho.nombre}`)
       })
 
-      test("el escáner abre la cámara y deja la búsqueda a la vista", async ({ page }) => {
+      test("el escáner abre la cámara y deja la búsqueda a la vista", async () => {
         await page.goto("/dashboard/scan")
         await expect(page.getByLabel("Buscar por nombre")).toBeVisible()
         // El botón solo apaga o recupera: abrir no es una decisión de cada vez.
@@ -92,7 +99,7 @@ test.describe("superficies de la ola 1, con sesión", () => {
         expect(await desborda(page), `escáner en ${ancho.nombre}`).toBe(false)
       })
 
-      test("el portal del cliente pone la tarjeta a pantalla, sin desbordar", async ({ page }) => {
+      test("el portal del cliente pone la tarjeta a pantalla, sin desbordar", async () => {
         await page.goto("/dashboard/my-cards")
 
         // El portal tiene tres caras legítimas según quién entre: pedir el
@@ -114,7 +121,7 @@ test.describe("superficies de la ola 1, con sesión", () => {
         await areasTactiles(page, `portal en ${ancho.nombre}`)
       })
 
-      test("clientes ofrece la acción en la fila y el filtro de listos", async ({ page }) => {
+      test("clientes ofrece la acción en la fila y el filtro de listos", async () => {
         await page.goto("/dashboard/customers")
         // Exacto: el estado vacío trae "Aún no tienes clientes", que también casa.
         await expect(page.getByRole("heading", { name: "Clientes", exact: true })).toBeVisible()
@@ -133,10 +140,12 @@ test.describe("superficies de la ola 1, con sesión", () => {
   }
 
   test.describe("navegación de escritorio", () => {
-    test.use({ viewport: { width: 1440, height: 900 } })
+    test.beforeEach(async () => {
+      await page.setViewportSize({ width: 1440, height: 900 })
+      await page.goto("/dashboard")
+    })
 
-    test("agrupa en Operación, Programa y Negocio, sin escáner", async ({ page }) => {
-      await entrar(page, CORREO!, CLAVE!)
+    test("agrupa en Operación, Programa y Negocio, sin escáner", async () => {
       const aside = page.locator("aside")
       // Por rol y exacto: el nombre del negocio en el perfil también contiene
       // "Negocio", y haría ambigua una búsqueda por texto suelto.
