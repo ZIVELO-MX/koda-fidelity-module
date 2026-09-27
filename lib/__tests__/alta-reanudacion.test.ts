@@ -7,7 +7,7 @@ const VACIO: EstadoDelAlta = {
   negocio: {}, tarjeta: {},
   acquisitionSource: null, selectedBillingInterval: null, primeraTarjetaId: null,
   categorias: [], temas: [], modo: "live", plan: "LITE",
-  nombreDeLaCuenta: null,
+  nombreDeLaCuenta: null, correoDeLaCuenta: null,
 }
 
 describe("lo que se puede afirmar que quedó guardado", () => {

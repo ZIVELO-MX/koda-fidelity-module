@@ -15,10 +15,10 @@ import {
   ErrorDelAlta, ORIGENES, SELLOS_POSIBLES, avanzar, guardarBorrador, leerAlta,
   type AccionDelAlta, type AcquisitionSource, type BillingInterval, type EstadoDelAlta,
 } from "@/lib/onboarding"
-import { esAcabadoPro, nombreDeTema } from "@/lib/temas-de-tarjeta"
-import { siteConfig } from "@/lib/site-config"
 import { enumerar, hayQueReanudar, loGuardado } from "@/lib/alta-reanudacion"
 import { crearColaDeBorrador, fusionarCambios, type ColaDeBorrador } from "@/lib/cola-de-borrador"
+import { esAcabadoPro, nombreDeTema } from "@/lib/temas-de-tarjeta"
+import { siteConfig } from "@/lib/site-config"
 import { cn } from "@/lib/utils"
 
 const PESOS = new Intl.NumberFormat("es-MX")
