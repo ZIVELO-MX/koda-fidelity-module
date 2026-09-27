@@ -206,6 +206,9 @@ jobs:
       - name: Test login, session refresh, password recovery, and customer portal
         run: pnpm exec playwright test --config=playwright.auth.config.ts e2e/auth-development.spec.ts
 
+      - name: Test live onboarding API through the paywall
+        run: pnpm exec playwright test --config=playwright.auth.config.ts e2e/onboarding-api.spec.ts
+
       - name: Stop local Supabase
         if: always()
         run: supabase stop
