@@ -73,3 +73,4 @@ playwright.local.config.ts
 # corra dos veces el mismo archivo. Se me colaron por un `git add -A`.
 * [0-9]*.ts
 * [0-9]*.tsx
+* [0-9]*.md
