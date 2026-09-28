@@ -737,7 +737,7 @@ function Tarjeta({
   )
 }
 
-function Club({ estado }: { estado: EstadoDelAlta }) {
+export function Club({ estado }: { estado: EstadoDelAlta }) {
   const nombre = estado.negocio.name || estado.nombreDeLaCuenta || "de tu negocio"
   return (
     <div className="mx-auto max-w-md space-y-8 text-center">
@@ -747,14 +747,25 @@ function Club({ estado }: { estado: EstadoDelAlta }) {
       </div>
 
       {/* Vacía, con sus sellos por llenar: es la promesa, no una simulación de
-          un progreso que nadie ha ganado todavía. */}
+          un progreso que nadie ha ganado todavía.
+
+          El QR va aquí y solo aquí dentro del alta. Es la única pantalla que el
+          prototipo aprobado muestra con código, porque es el momento de llegada:
+          la tarjeta se ve entera, como la verá el cliente. En el paso de la
+          tarjeta y en el muro sigue apagado, que es lo que manda el wireframe:
+          «sin publicar no hay QR».
+
+          Por eso no lleva enlace. La tarjeta todavía no se publica, así que un
+          código que apuntara a su dirección daría en nada; lleva texto inerte y
+          quien lo escanee lee el nombre del club, no un error. */}
       <LoyaltyCardPreview
         businessName={estado.negocio.name || "Tu negocio"}
         currentStamps={0}
         maxStamps={estado.tarjeta.stampsRequired ?? 10}
         reward={estado.tarjeta.reward || "Tu recompensa"}
         brandColor={colorDeRespaldo(estado)}
-        showQR={false}
+        showQR
+        qrValue={`Club ${nombre}`}
         className="mx-auto max-w-[300px]"
       />
     </div>

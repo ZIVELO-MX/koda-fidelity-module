@@ -46,7 +46,6 @@ export function BarraDePasos({ actual }: { actual: OnboardingStep }) {
             >
               {hecho && <Check className="h-3 w-3" aria-hidden="true" />}
               {paso.etiqueta}
-              {!paso.obligatorio && !hecho && <span className="font-normal opacity-70">· opcional</span>}
             </span>
             {i < PASOS.length - 1 && <span aria-hidden="true" className="h-px w-3 bg-border sm:w-5" />}
           </li>
