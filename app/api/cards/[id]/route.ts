@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getBusinessFromSession, requireWritableBusinessPrincipal, handleApiError, NotFoundError, ValidationError, requireRole, requestIdFrom, withRequestId } from "@/lib/api-utils"
+import { cuerpoJson, getBusinessFromSession, handleApiError, NotFoundError, requestIdFrom, requireRole, requireWritableBusinessPrincipal, ValidationError, withRequestId } from "@/lib/api-utils"
 import { isExpired } from "@/lib/card-utils"
 import { syncExpiredEntitlements } from "@/lib/account-lifecycle"
 import { resolveTheme } from "@/lib/card-themes"
@@ -242,7 +242,7 @@ export async function PUT(
       throw new NotFoundError("Loyalty card not found")
     }
 
-    const body = await request.json()
+    const body = await cuerpoJson(request)
 
     if (body.name !== undefined && (!body.name || typeof body.name !== "string" || !body.name.trim())) {
       throw new ValidationError("Card name is required")

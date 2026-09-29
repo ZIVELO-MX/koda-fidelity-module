@@ -159,6 +159,32 @@ export function requireRole(user: Pick<SessionBusiness["user"], "role">, ...allo
   }
 }
 
+/**
+ * El cuerpo JSON de una petición, o un error del cliente si viene mal formado.
+ *
+ * `request.json()` lanza un `SyntaxError`, que no es ninguna de las clases que
+ * `handleApiError` reconoce: caía en la rama de descarte y se devolvía un 500
+ * `KF-SYS-001` con `retryable: true`, así que el cliente reintentaba un cuerpo
+ * que nunca iba a parsear, y el registro «API Error» quedaba sin atribuir.
+ *
+ * El envoltorio va aquí y no en `handleApiError` a propósito: mapear todos los
+ * `SyntaxError` a 400 convertiría también los del servidor -- la clave de
+ * servicio de Google se lee con `JSON.parse` -- en «corrige los datos
+ * enviados», que sería mentirle al usuario sobre un fallo nuestro.
+ *
+ * Devuelve el mismo tipo que `request.json()` para ser un reemplazo exacto:
+ * las rutas ya leen `body.campo` sin validar. Apretar eso a `unknown` son 112
+ * errores de tipos en ocho rutas y es un trabajo aparte, no parte de este
+ * arreglo.
+ */
+export async function cuerpoJson(request: { json: () => Promise<any> }): Promise<any> {
+  try {
+    return await request.json()
+  } catch {
+    throw new ValidationError("El cuerpo de la petición no es JSON válido")
+  }
+}
+
 export function handleApiError(error: unknown, requestId: string = randomUUID()): NextResponse<ApiErrorBody> {
   if (error instanceof AccountReadOnlyError) {
     return NextResponse.json({ error: error.message, code: "KF-ACCOUNT-READONLY", action: `La cuenta se eliminará el ${error.scheduledFor.toISOString()}. Cancela el cierre para volver a editar.`, requestId, retryable: false }, { status: 423, headers: { "x-request-id": requestId } })

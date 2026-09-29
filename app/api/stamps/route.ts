@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { requireWritableBusinessPrincipal, handleApiError, requestIdFrom, ValidationError, withRequestId } from "@/lib/api-utils"
+import { cuerpoJson, handleApiError, requestIdFrom, requireWritableBusinessPrincipal, ValidationError, withRequestId } from "@/lib/api-utils"
 import { executeLoyaltyOperation } from "@/lib/loyalty-engine"
 
 /**
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
   try {
     const { business } = await requireWritableBusinessPrincipal()
 
-    const body = await request.json()
+    const body = await cuerpoJson(request)
 
     if (!body.customerId || typeof body.customerId !== "string") {
       throw new ValidationError("Customer ID is required")

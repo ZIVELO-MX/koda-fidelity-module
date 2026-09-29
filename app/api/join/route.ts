@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
-import { getBusinessFromSession, handleApiError, ValidationError, NotFoundError, UnauthorizedError, requestIdFrom, withRequestId } from "@/lib/api-utils"
+import { cuerpoJson, getBusinessFromSession, handleApiError, NotFoundError, requestIdFrom, UnauthorizedError, ValidationError, withRequestId } from "@/lib/api-utils"
 import { isExpired } from "@/lib/card-utils"
 import { assertBusinessWritable, syncExpiredEntitlements } from "@/lib/account-lifecycle"
 
@@ -180,7 +180,7 @@ export function withCurrentCycleMilestoneClaims<
 export async function POST(request: NextRequest) {
   const requestId = requestIdFrom(request)
   try {
-    const body = await request.json()
+    const body = await cuerpoJson(request)
     const { name, email, cardId } = body
 
     if (!name || typeof name !== "string" || !name.trim()) {

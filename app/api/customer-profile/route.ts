@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getAccountPrincipal, handleApiError, ValidationError, requestIdFrom, withRequestId } from "@/lib/api-utils"
+import { cuerpoJson, getAccountPrincipal, handleApiError, requestIdFrom, ValidationError, withRequestId } from "@/lib/api-utils"
 import { createCustomerProfile } from "@/lib/account-lifecycle"
 import { withCustomerAvatarUrl } from "@/lib/private-avatar"
 
@@ -39,7 +39,7 @@ export async function PUT(request: NextRequest) {
   const requestId = requestIdFrom(request)
   try {
     const principal = await getAccountPrincipal()
-    const body = await request.json()
+    const body = await cuerpoJson(request)
     if (typeof body.name !== "string" || !body.name.trim()) throw new ValidationError("Nombre requerido")
     const profile = await createCustomerProfile(prisma, { authUserId: principal.id, email: principal.email ?? "", name: body.name })
     return withRequestId(NextResponse.json({ profile: await withCustomerAvatarUrl(profile) }, noStore), requestId)
@@ -50,7 +50,7 @@ export async function PATCH(request: NextRequest) {
   const requestId = requestIdFrom(request)
   try {
     const principal = await getAccountPrincipal()
-    const body = await request.json()
+    const body = await cuerpoJson(request)
     if (body.avatarRingColor !== undefined && (typeof body.avatarRingColor !== "string" || !/^#[0-9a-f]{6}$/i.test(body.avatarRingColor))) {
       throw new ValidationError("El color del marco debe ser hexadecimal")
     }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getBusinessFromSession, handleApiError, ValidationError, requestIdFrom, withRequestId, withApiContext } from "@/lib/api-utils"
+import { cuerpoJson, getBusinessFromSession, handleApiError, requestIdFrom, ValidationError, withApiContext, withRequestId } from "@/lib/api-utils"
 import { activateManualSubscription, assertBusinessWritable, getEntitlements, syncExpiredEntitlements } from "@/lib/account-lifecycle"
 import { manualSubscriptionSchema } from "@/lib/onboarding-contracts"
 
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
   try {
     const expected = process.env.BILLING_INTERNAL_SECRET
     if (!expected || request.headers.get("x-billing-internal-secret") !== expected) throw new ValidationError("Operación interna requerida")
-    const body = await request.json()
+    const body = await cuerpoJson(request)
     const parsed = manualSubscriptionSchema.safeParse(body)
     if (!parsed.success) throw new ValidationError("Suscripción manual inválida")
     const businessId = parsed.data.businessId
