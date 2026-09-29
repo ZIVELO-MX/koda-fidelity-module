@@ -69,7 +69,7 @@ docs/design/support.js
 playwright.local.config.ts
 
 # iCloud deja copias numeradas al sincronizar («cola-de-borrador 2.ts»). Nunca
-# son fuente: rompen `tsc --noEmit` por declaración duplicada y hacen que vitest
-# corra dos veces el mismo archivo. Se me colaron por un `git add -A`.
-* [0-9]*.ts
-* [0-9]*.tsx
+# son fuente. La regla cubre cualquier extensión a propósito: la primera versión
+# solo miraba .ts y .tsx, y por eso llegaron a dev nueve .md y nueve .sql dentro
+# de una carpeta de migración de Prisma.
+* [0-9]*.*
