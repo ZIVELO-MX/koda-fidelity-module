@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { SelectorDeTema } from "@/components/selector-de-tema"
 import type { Tema } from "@/lib/onboarding"
+import { nombreDeTema } from "@/lib/temas-de-tarjeta"
 import { IconPicker } from "@/components/dashboard/icon-picker"
 import { ArrowLeft, Check, ChevronDown, Plus, Trash2 } from "lucide-react"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
@@ -139,9 +140,13 @@ export function NuevaTarjeta({ temas, plan }: { temas: Tema[]; plan: "LITE" | "P
     }
   }
 
+  const temaElegido = temas.find((t) => t.id === themeId)
   const resumenDeDefectos = [
     expirationDate ? "Con vencimiento" : "Sin vencimiento",
     marcaHeredada ? "Color y logo del negocio" : "Marca personalizada",
+    // El tema vive aquí dentro, junto al color. Si el resumen no lo nombra,
+    // nadie abre el panel para descubrir que existe.
+    temaElegido ? `Tema ${nombreDeTema(temaElegido.code)}` : "Sin tema",
     milestones.length > 0
       ? `${milestones.length} sorpresa${milestones.length !== 1 ? "s" : ""}`
       : "Sin sorpresas",
@@ -479,7 +484,7 @@ export function NuevaTarjeta({ temas, plan }: { temas: Tema[]; plan: "LITE" | "P
                   : undefined
               }
               brandColor={brandColor}
-              themeCode={temas.find((t) => t.id === themeId)?.code ?? null}
+              themeCode={temaElegido?.code ?? null}
             />
 
             <Button

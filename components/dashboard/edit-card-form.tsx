@@ -12,6 +12,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { SelectorDeTema } from "@/components/selector-de-tema"
 import type { Tema } from "@/lib/onboarding"
+import { nombreDeTema } from "@/lib/temas-de-tarjeta"
 import { IconPicker } from "@/components/dashboard/icon-picker"
 import { ExpirationPicker } from "@/components/dashboard/expiration-picker"
 import { toast } from "sonner"
@@ -149,9 +150,13 @@ export function EditCardForm({
     router.refresh()
   }
 
+  const temaElegido = temas.find((t) => t.id === themeId)
   const resumenDeDefectos = [
     expiresAt ? "Con vencimiento" : "Sin vencimiento",
     description.trim() ? "Con descripción" : "Sin descripción",
+    // El tema vive aquí dentro, como en la creación: si el resumen no lo nombra,
+    // nadie abre el panel para descubrir que existe.
+    temaElegido ? `Tema ${nombreDeTema(temaElegido.code)}` : "Sin tema",
     milestones.length > 0
       ? `${milestones.length} sorpresa${milestones.length !== 1 ? "s" : ""}`
       : "Sin sorpresas",
@@ -481,7 +486,7 @@ export function EditCardForm({
               brandColor={color}
               // Lo elegido, como en el alta: con Lite el aviso del selector dice
               // que se publica con el color del negocio.
-              themeCode={temas.find((t) => t.id === themeId)?.code ?? null}
+              themeCode={temaElegido?.code ?? null}
             />
 
             <Button type="button" onClick={handleSave} disabled={saving} className="mt-6 min-h-11 w-full">

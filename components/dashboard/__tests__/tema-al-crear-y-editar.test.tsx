@@ -74,3 +74,24 @@ describe("Crear una tarjeta", () => {
     expect(enviada("POST")!.themeId).toBe("theme-gradiente")
   })
 })
+
+describe("El resumen plegado de la creación", () => {
+  it("nombra el tema, que vive dentro junto al color", () => {
+    render(<NuevaTarjeta temas={TEMAS} plan="LITE" />)
+    expect(screen.getByText(/Sin tema/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: /Cafetería/ }))
+    expect(screen.getByText(/Tema Cafetería/)).toBeInTheDocument()
+  })
+})
+
+describe("El resumen plegado de la edición", () => {
+  it("nombra el tema que la tarjeta ya tiene", () => {
+    render(
+      <EditCardForm
+        cardId="card-1" businessName="Café Aurora" initialName="Club" initialReward="Un café"
+        initialColor="#c2410c" initialStampsRequired={10} temas={TEMAS} plan="LITE" initialThemeId="theme-cafeteria"
+      />,
+    )
+    expect(screen.getByText(/Tema Cafetería/)).toBeInTheDocument()
+  })
+})
