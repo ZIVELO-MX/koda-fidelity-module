@@ -39,6 +39,7 @@ export default async function CardsPage({
     where,
     include: {
       _count: { select: { customers: { where: { isActive: true } } } },
+      effectiveTheme: { select: { code: true } },
     },
     orderBy: { createdAt: "desc" },
   })
@@ -151,6 +152,7 @@ export default async function CardsPage({
                     reward={card.reward}
                     showQR={false}
                     brandColor={card.brandColor}
+                    themeCode={card.effectiveTheme?.code ?? null}
                   />
                 </div>
 

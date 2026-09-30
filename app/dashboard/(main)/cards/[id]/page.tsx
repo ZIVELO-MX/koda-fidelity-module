@@ -36,6 +36,7 @@ export default async function CardDetailPage({
     include: {
       _count: { select: { customers: { where: { isActive: true } } } },
       milestoneRewards: { orderBy: { stampNumber: "asc" } },
+      effectiveTheme: { select: { code: true } },
       customers: {
         where: { isActive: true },
         include: {
@@ -100,6 +101,7 @@ export default async function CardDetailPage({
           showQR={false}
           expirationDate={card.expiresAt ? card.expiresAt.toLocaleDateString("es-MX") : undefined}
           brandColor={card.brandColor}
+          themeCode={card.effectiveTheme?.code ?? null}
         />
 
         <div className="space-y-4">

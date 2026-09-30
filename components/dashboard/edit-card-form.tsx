@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
+import { SelectorDeTema } from "@/components/selector-de-tema"
+import type { Tema } from "@/lib/onboarding"
 import { IconPicker } from "@/components/dashboard/icon-picker"
 import { ExpirationPicker } from "@/components/dashboard/expiration-picker"
 import { toast } from "sonner"
@@ -42,6 +44,10 @@ interface EditCardFormProps {
   initialDescription?: string | null
   initialExpiresAt?: string | null
   initialMilestones?: MilestoneEdit[]
+  /** Catálogo de temas y plan de la cuenta, leídos en el servidor por la página. */
+  temas?: Tema[]
+  plan?: "LITE" | "PRO"
+  initialThemeId?: string | null
 }
 
 export function EditCardForm({
@@ -57,11 +63,15 @@ export function EditCardForm({
   initialDescription = null,
   initialExpiresAt = null,
   initialMilestones = [],
+  temas = [],
+  plan = "LITE",
+  initialThemeId = null,
 }: EditCardFormProps) {
   const router = useRouter()
   const [name, setName] = useState(initialName)
   const [reward, setReward] = useState(initialReward)
   const [color, setColor] = useState(initialColor)
+  const [themeId, setThemeId] = useState<string | null>(initialThemeId)
   const [stampsRequired, setStampsRequired] = useState(initialStampsRequired)
   const [iconName, setIconName] = useState<string | null>(initialIcon)
   const [stampIconName, setStampIconName] = useState<string | null>(initialStampIcon)
@@ -116,6 +126,8 @@ export function EditCardForm({
         reward: reward.trim(),
         stampsRequired,
         brandColor: color,
+        // `null` quita el tema: `resolveTheme` lo limpia.
+        themeId,
         iconName,
         stampIconName,
         description: description.trim() || null,
@@ -302,6 +314,8 @@ export function EditCardForm({
                 </div>
               </div>
 
+              <SelectorDeTema temas={temas} elegido={themeId} plan={plan} onElegir={setThemeId} conSoloColor />
+
               <div className="grid gap-6 lg:grid-cols-2">
                 <div className="space-y-3">
                   <Label>Ícono de la tarjeta</Label>
@@ -465,6 +479,9 @@ export function EditCardForm({
                 expiresAt ? new Date(expiresAt + "T12:00:00").toLocaleDateString("es-MX") : undefined
               }
               brandColor={color}
+              // Lo elegido, como en el alta: con Lite el aviso del selector dice
+              // que se publica con el color del negocio.
+              themeCode={temas.find((t) => t.id === themeId)?.code ?? null}
             />
 
             <Button type="button" onClick={handleSave} disabled={saving} className="mt-6 min-h-11 w-full">

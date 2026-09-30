@@ -22,8 +22,8 @@ import {
 import { conservarContexto } from "@/lib/onboarding"
 import { enumerar, hayQueReanudar, loGuardado } from "@/lib/alta-reanudacion"
 import { crearColaDeBorrador, fusionarCambios, type ColaDeBorrador } from "@/lib/cola-de-borrador"
-import { esAcabadoPro, nombreDeTema } from "@/lib/temas-de-tarjeta"
 import { siteConfig } from "@/lib/site-config"
+import { SelectorDeTema } from "@/components/selector-de-tema"
 import { type Fallo } from "@/lib/fallos-de-api"
 import { cn } from "@/lib/utils"
 
@@ -604,7 +604,6 @@ export function Tarjeta({
   const elegido = estado.temas.find((t) => t.id === estado.tarjeta.themeId)
   // El plan de la cuenta decide si el acabado Pro se llega a ver. La selección
   // se guarda igual: probarlo es parte de lo que empuja a contratar.
-  const proSinPlan = Boolean(elegido && elegido.plan === "PRO" && estado.plan !== "PRO")
 
   const elegirTema = (idDelTema: string) => {
     onCambioLocal({ ...estado, tarjeta: { ...estado.tarjeta, themeId: idDelTema } })
@@ -677,51 +676,12 @@ export function Tarjeta({
           </div>
         </div>
 
-        {estado.temas.length > 0 && (
-          <fieldset className="space-y-3">
-            <legend className="text-sm font-medium text-foreground">Tema de la tarjeta</legend>
-            <p className="text-xs text-muted-foreground">
-              Los acabados Pro se pueden elegir desde ahora. Se marcan, pero no se bloquean.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {estado.temas.map((tema) => {
-                const activo = estado.tarjeta.themeId === tema.id
-                return (
-                  <button
-                    key={tema.id}
-                    type="button"
-                    aria-pressed={activo}
-                    onClick={() => elegirTema(tema.id)}
-                    className={cn(
-                      "inline-flex min-h-10 items-center gap-2 rounded-full border px-4 text-sm transition-colors",
-                      activo
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground",
-                    )}
-                  >
-                    {nombreDeTema(tema.code)}
-                    {esAcabadoPro(tema.code) && (
-                      <span
-                        className={cn(
-                          "rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em]",
-                          activo ? "bg-white/20" : "bg-primary/15 text-primary",
-                        )}
-                      >
-                        Pro
-                      </span>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-            {proSinPlan && (
-              <p className="text-xs text-muted-foreground">
-                Tu plan es Lite, así que la tarjeta se publica con tu color. El acabado queda
-                guardado y se aplica en cuanto pases a Pro.
-              </p>
-            )}
-          </fieldset>
-        )}
+        <SelectorDeTema
+          temas={estado.temas}
+          elegido={estado.tarjeta.themeId}
+          plan={estado.plan}
+          onElegir={(id) => id && elegirTema(id)}
+        />
       </div>
 
       <div className="lg:sticky lg:top-8">
