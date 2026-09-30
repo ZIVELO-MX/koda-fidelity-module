@@ -1,7 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { esAcabadoPro, nombreDeTema } from "@/lib/temas-de-tarjeta"
+import { esAcabadoPro, nombreDeTema, pielDeTarjeta, type ColorDeTexto } from "@/lib/temas-de-tarjeta"
 import type { Tema } from "@/lib/onboarding"
 
 /**
@@ -91,5 +91,51 @@ function Opcion({ activa, onClick, children }: { activa: boolean; onClick: () =>
     >
       {children}
     </button>
+  )
+}
+
+const COLORES_DE_TEXTO: { valor: ColorDeTexto; etiqueta: string }[] = [
+  { valor: "AUTO", etiqueta: "Automático" },
+  { valor: "DARK", etiqueta: "Negro" },
+  { valor: "LIGHT", etiqueta: "Blanco" },
+]
+
+/**
+ * El color del texto de la tarjeta. Automático lo decide el contraste; negro o
+ * blanco los elige el negocio, y entonces el tono del fondo se ajusta lo mínimo
+ * para que el texto siga leyéndose. El aviso dice lo que pasó con el color para
+ * que no parezca un error: si el tono se movió, o si el acabado no admite texto
+ * negro y se quedó en blanco.
+ */
+export function SelectorDeColorDeTexto({
+  valor,
+  onCambio,
+  brandColor,
+  themeCode,
+}: {
+  valor: ColorDeTexto
+  onCambio: (valor: ColorDeTexto) => void
+  brandColor: string
+  themeCode: string | null
+}) {
+  const piel = pielDeTarjeta(themeCode, brandColor, valor)
+  const aviso = !piel.colorDeTextoRespetado
+    ? `Con ${nombreDeTema(themeCode ?? "")} el texto va en blanco: en negro no se leería.`
+    : valor !== "AUTO" && piel.tonoAjustado
+      ? "Para que el texto se lea, el tono de la tarjeta se ajusta un poco."
+      : null
+
+  return (
+    <fieldset className="space-y-3">
+      <legend className="text-sm font-medium text-foreground">Color del texto</legend>
+      <div className="flex flex-wrap gap-2">
+        {COLORES_DE_TEXTO.map((c) => (
+          <Opcion key={c.valor} activa={valor === c.valor} onClick={() => onCambio(c.valor)}>
+            {c.etiqueta}
+          </Opcion>
+        ))}
+      </div>
+      {aviso && <p className="text-xs text-muted-foreground">{aviso}</p>}
+    </fieldset>
   )
 }

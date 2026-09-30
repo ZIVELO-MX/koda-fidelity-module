@@ -8,9 +8,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
-import { SelectorDeTema } from "@/components/selector-de-tema"
+import { SelectorDeColorDeTexto, SelectorDeTema } from "@/components/selector-de-tema"
 import type { Tema } from "@/lib/onboarding"
-import { nombreDeTema } from "@/lib/temas-de-tarjeta"
+import { nombreDeTema, type ColorDeTexto } from "@/lib/temas-de-tarjeta"
 import { IconPicker } from "@/components/dashboard/icon-picker"
 import { ArrowLeft, Check, ChevronDown, Plus, Trash2 } from "lucide-react"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
@@ -45,6 +45,7 @@ export function NuevaTarjeta({ temas, plan }: { temas: Tema[]; plan: "LITE" | "P
   const [expirationDate, setExpirationDate] = useState("")
   const [brandColor, setBrandColor] = useState("#f97316")
   const [themeId, setThemeId] = useState<string | null>(null)
+  const [textColor, setTextColor] = useState<ColorDeTexto>("AUTO")
   const [iconName, setIconName] = useState<string | null>(null)
   const [stampIconName, setStampIconName] = useState<string | null>(null)
   const [milestones, setMilestones] = useState<Sorpresa[]>([])
@@ -113,6 +114,7 @@ export function NuevaTarjeta({ temas, plan }: { temas: Tema[]; plan: "LITE" | "P
           stampsRequired: maxStamps,
           brandColor,
           themeId: themeId ?? undefined,
+          textColor,
           iconName: iconName || undefined,
           stampIconName: stampIconName || undefined,
           description: description || undefined,
@@ -307,6 +309,8 @@ export function NuevaTarjeta({ temas, plan }: { temas: Tema[]; plan: "LITE" | "P
 
               <SelectorDeTema temas={temas} elegido={themeId} plan={plan} onElegir={setThemeId} conSoloColor />
 
+              <SelectorDeColorDeTexto valor={textColor} onCambio={setTextColor} brandColor={brandColor} themeCode={temaElegido?.code ?? null} />
+
               <div className="space-y-3">
                 <Label>Ícono de la tarjeta</Label>
                 {/* El logo es una opción del selector, no un campo aparte, y la
@@ -485,6 +489,7 @@ export function NuevaTarjeta({ temas, plan }: { temas: Tema[]; plan: "LITE" | "P
               }
               brandColor={brandColor}
               themeCode={temaElegido?.code ?? null}
+              textColor={textColor}
             />
 
             <Button

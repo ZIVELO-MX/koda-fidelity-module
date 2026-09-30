@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest"
 import { render, screen, cleanup, fireEvent } from "@testing-library/react"
-import { SelectorDeTema } from "../selector-de-tema"
+import { SelectorDeColorDeTexto, SelectorDeTema } from "../selector-de-tema"
 import type { Tema } from "@/lib/onboarding"
 
 const TEMAS: Tema[] = [
@@ -40,5 +40,37 @@ describe("SelectorDeTema", () => {
   it("sin catálogo no pinta nada", () => {
     const { container } = render(<SelectorDeTema temas={[]} elegido={null} plan="LITE" onElegir={() => {}} />)
     expect(container).toBeEmptyDOMElement()
+  })
+})
+
+describe("SelectorDeColorDeTexto", () => {
+  const pinta = (valor: "AUTO" | "DARK" | "LIGHT", brandColor: string, themeCode: string | null = null) =>
+    render(<SelectorDeColorDeTexto valor={valor} onCambio={() => {}} brandColor={brandColor} themeCode={themeCode} />)
+
+  it("en automático no avisa de nada", () => {
+    pinta("AUTO", "#f59e0b")
+    expect(screen.queryByText(/se ajusta|va en blanco/)).toBeNull()
+  })
+
+  it("blanco sobre ámbar avisa de que el tono se ajusta, para que no parezca un error", () => {
+    pinta("LIGHT", "#f59e0b")
+    expect(screen.getByText(/el tono de la tarjeta se ajusta/)).toBeInTheDocument()
+  })
+
+  it("negro sobre ámbar no mueve nada, así que no avisa", () => {
+    pinta("DARK", "#f59e0b")
+    expect(screen.queryByText(/se ajusta/)).toBeNull()
+  })
+
+  it("negro sobre Gradiente vivo explica que el texto se queda en blanco", () => {
+    pinta("DARK", "#f97316", "gradiente")
+    expect(screen.getByText(/Gradiente vivo el texto va en blanco/)).toBeInTheDocument()
+  })
+
+  it("elegir cambia el valor", () => {
+    const onCambio = vi.fn()
+    render(<SelectorDeColorDeTexto valor="AUTO" onCambio={onCambio} brandColor="#f97316" themeCode={null} />)
+    fireEvent.click(screen.getByRole("button", { name: "Blanco" }))
+    expect(onCambio).toHaveBeenCalledWith("LIGHT")
   })
 })

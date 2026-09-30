@@ -95,3 +95,27 @@ describe("El resumen plegado de la edición", () => {
     expect(screen.getByText(/Tema Cafetería/)).toBeInTheDocument()
   })
 })
+
+describe("El color del texto", () => {
+  it("la edición manda el que se elige", async () => {
+    render(
+      <EditCardForm
+        cardId="card-1" businessName="Café Aurora" initialName="Club" initialReward="Un café"
+        initialColor="#c2410c" initialStampsRequired={10} temas={TEMAS} plan="LITE"
+      />,
+    )
+    fireEvent.click(screen.getByRole("button", { name: "Blanco" }))
+    fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }))
+    await waitFor(() => expect(enviada("PUT")).toBeTruthy())
+    expect(enviada("PUT")!.textColor).toBe("LIGHT")
+  })
+
+  it("crear sin tocarlo manda automático", async () => {
+    render(<NuevaTarjeta temas={TEMAS} plan="LITE" />)
+    fireEvent.change(document.getElementById("recompensa")!, { target: { value: "Un café" } })
+    fireEvent.change(document.getElementById("nombre")!, { target: { value: "Club" } })
+    fireEvent.click(screen.getByRole("button", { name: "Publicar tarjeta" }))
+    await waitFor(() => expect(enviada("POST")).toBeTruthy())
+    expect(enviada("POST")!.textColor).toBe("AUTO")
+  })
+})

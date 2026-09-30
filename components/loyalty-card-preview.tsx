@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 import { mezclar } from "@/lib/color-marca"
 import { getCardIcon } from "@/lib/card-icons"
 import { PatronDeIconos } from "@/components/patron-de-iconos"
-import { iconosDelTema, pielDeTarjeta } from "@/lib/temas-de-tarjeta"
+import { iconosDelTema, pielDeTarjeta, type ColorDeTexto } from "@/lib/temas-de-tarjeta"
 
 
 
@@ -33,6 +33,8 @@ interface LoyaltyCardPreviewProps {
    * que es lo que pide el diseño. La selección no se pierde, solo no se aplica.
    */
   themeCode?: string | null
+  /** Negro o blanco forzados por el negocio; sin él, lo decide el contraste. */
+  textColor?: ColorDeTexto
 }
 
 export function LoyaltyCardPreview({
@@ -52,12 +54,13 @@ export function LoyaltyCardPreview({
   onMemberClick,
   milestoneClaims = [],
   themeCode = null,
+  textColor = "AUTO",
 }: LoyaltyCardPreviewProps) {
   const stamps = Array.from({ length: maxStamps }, (_, i) => i < currentStamps)
   const milestonePositions = new Map(milestoneClaims.map(c => [c.stampNumber, c]))
 
   // La piel sale del tema efectivo. Sin tema, el color del negocio.
-  const piel = pielDeTarjeta(themeCode, brandColor)
+  const piel = pielDeTarjeta(themeCode, brandColor, textColor)
 
   // El patrón: el del giro cuando el tema lo define, y si no el ícono del
   // negocio. Sin ninguno de los dos, la tarjeta va limpia.
