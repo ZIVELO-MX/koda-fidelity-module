@@ -1,4 +1,7 @@
 import { DashboardLayoutClient } from "@/components/dashboard/dashboard-layout-client"
+import { FinDelMesPro } from "@/components/dashboard/fin-del-mes-pro"
+import { getEntitlements } from "@/lib/account-lifecycle"
+import { avisoDeFinDeMes } from "@/lib/fin-del-mes-pro"
 import { derivarMarca } from "@/lib/color-marca"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
@@ -28,6 +31,11 @@ export default async function DashboardLayout({
   ])
   const { business, role } = { business: userRecord.business, role: userRecord.role }
 
+  // El fin del mes Pro solo lo ve quien puede decidir sobre el plan. Las
+  // tarjetas solo se leen si hay prueba en curso: el resto de las veces el
+  // aviso cuesta una consulta, la de la suscripción.
+  const aviso = role === "admin" ? await calcularAviso(business.id) : null
+
   // El color del negocio no se inyecta crudo: de él se derivan los estados y el
   // color de texto que sí se lee encima.
   const marca = derivarMarca(business.brandColor)
@@ -52,9 +60,31 @@ export default async function DashboardLayout({
         nickname={business.nickname ?? undefined}
         role={role}
         closureScheduledFor={closure?.scheduledFor.toISOString()}
+        avisos={aviso && <FinDelMesPro aviso={aviso} negocio={business.name} correo={user.email} />}
       >
         {children}
       </DashboardLayoutClient>
     </div>
+  )
+}
+
+async function calcularAviso(businessId: string) {
+  const entitlements = await getEntitlements(prisma, businessId)
+  if (!entitlements.trial || !entitlements.subscription) return null
+  const tarjetas = await prisma.loyaltyCard.findMany({
+    where: { businessId },
+    select: {
+      id: true, name: true, reward: true, stampsRequired: true, brandColor: true,
+      status: true, isActive: true, isLite: true, createdAt: true,
+      selectedTheme: { select: { code: true, plan: true } },
+    },
+  })
+  return avisoDeFinDeMes(
+    {
+      trial: entitlements.trial,
+      billingInterval: entitlements.billingInterval,
+      subscription: { id: entitlements.subscription.id, proTrialEndsAt: entitlements.subscription.proTrialEndsAt },
+    },
+    tarjetas,
   )
 }
