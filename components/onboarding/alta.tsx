@@ -71,6 +71,13 @@ function colorDeRespaldo(estado: EstadoDelAlta) {
   return estado.tarjeta.brandColor || siteConfig.defaultBrandColor
 }
 
+/** El tema que verá el cliente: un acabado Pro solo se pinta con plan Pro, igual
+ *  que en el servidor. La selección no se pierde, solo no se aplica todavía. */
+function temaEfectivoDe(estado: EstadoDelAlta): string | null {
+  const elegido = estado.temas.find((t) => t.id === estado.tarjeta.themeId)
+  return elegido && (elegido.plan === "LITE" || estado.plan === "PRO") ? elegido.code : null
+}
+
 export function Alta() {
   const router = useRouter()
   const [estado, setEstado] = useState<EstadoDelAlta | null>(null)
@@ -584,7 +591,7 @@ function Datos({
   )
 }
 
-function Tarjeta({
+export function Tarjeta({
   estado, onCambio, onCambioLocal,
 }: {
   estado: EstadoDelAlta
@@ -597,7 +604,6 @@ function Tarjeta({
   const elegido = estado.temas.find((t) => t.id === estado.tarjeta.themeId)
   // El plan de la cuenta decide si el acabado Pro se llega a ver. La selección
   // se guarda igual: probarlo es parte de lo que empuja a contratar.
-  const temaEfectivo = elegido && (elegido.plan === "LITE" || estado.plan === "PRO") ? elegido.code : null
   const proSinPlan = Boolean(elegido && elegido.plan === "PRO" && estado.plan !== "PRO")
 
   const elegirTema = (idDelTema: string) => {
@@ -728,7 +734,11 @@ function Tarjeta({
           maxStamps={sellos}
           reward={estado.tarjeta.reward || "Tu recompensa"}
           brandColor={color}
-          themeCode={temaEfectivo}
+          // Aquí se enseña lo elegido, Pro incluido, aunque el plan sea Lite: es
+          // una prueba, y probar el acabado es lo que empuja a contratar. El aviso
+          // de debajo del selector dice que se publica con el color del negocio.
+          // Lo que verá el cliente lo enseñan el Club y el muro.
+          themeCode={elegido?.code ?? null}
           showQR={false}
           className="mx-auto max-w-[300px]"
         />
@@ -764,6 +774,7 @@ export function Club({ estado }: { estado: EstadoDelAlta }) {
         maxStamps={estado.tarjeta.stampsRequired ?? 10}
         reward={estado.tarjeta.reward || "Tu recompensa"}
         brandColor={colorDeRespaldo(estado)}
+        themeCode={temaEfectivoDe(estado)}
         showQR
         qrValue={`Club ${nombre}`}
         className="mx-auto max-w-[300px]"
@@ -922,11 +933,9 @@ export function SolicitudCreada({
 export function TarjetaGuardada({ estado }: { estado: EstadoDelAlta }) {
   const razon = "razon-sin-publicar"
   const nombre = estado.negocio.name || estado.nombreDeLaCuenta || "Tu negocio"
-  const temaElegido = estado.temas.find((t) => t.id === estado.tarjeta.themeId)
   // El acabado Pro no se aplica sin plan que lo sostenga, igual que en el
   // servidor. La selección no se pierde, solo no se pinta todavía.
-  const temaEfectivo =
-    temaElegido && (temaElegido.plan === "LITE" || estado.plan === "PRO") ? temaElegido.code : null
+  const temaEfectivo = temaEfectivoDe(estado)
 
   return (
     <section className="mx-auto w-full max-w-md space-y-4 rounded-2xl border border-border bg-card p-5">
