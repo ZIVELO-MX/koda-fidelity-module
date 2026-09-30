@@ -5,6 +5,7 @@ import { avisoDeFinDeMes } from "@/lib/fin-del-mes-pro"
 import { derivarMarca } from "@/lib/color-marca"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
+import { withCustomerAvatarUrl } from "@/lib/private-avatar"
 import { redirect } from "next/navigation"
 
 export default async function DashboardLayout({
@@ -26,8 +27,16 @@ export default async function DashboardLayout({
   }
   if (userRecord.passwordSetupRequired) redirect("/dashboard/update-password")
 
-  const [closure] = await Promise.all([
+  // La foto de «Tu perfil» se firma aquí, como en /api/customer/profile: el
+  // bucket es privado y la URL dura una hora.
+  const [closure, perfil] = await Promise.all([
     prisma.accountClosure.findFirst({ where: { businessId: userRecord.business.id, status: { in: ["SCHEDULED", "PROCESSING", "FAILED"] } }, orderBy: { scheduledFor: "asc" }, select: { scheduledFor: true } }),
+    prisma.customerProfile
+      .findUnique({ where: { authUserId: user.id }, select: { id: true, avatarPath: true, avatarRingColor: true } })
+      .then(withCustomerAvatarUrl)
+      // Una foto no puede tumbar el panel: la firma lanza si Storage falla, y
+      // entonces quedan las iniciales. La API sí propaga ese error; aquí no.
+      .catch(() => null),
   ])
   const { business, role } = { business: userRecord.business, role: userRecord.role }
 
@@ -58,6 +67,8 @@ export default async function DashboardLayout({
         businessName={business.name}
         brandColor={business.brandColor}
         nickname={business.nickname ?? undefined}
+        avatarUrl={perfil?.avatarUrl ?? null}
+        avatarRingColor={perfil?.avatarRingColor}
         role={role}
         closureScheduledFor={closure?.scheduledFor.toISOString()}
         avisos={aviso && <FinDelMesPro aviso={aviso} negocio={business.name} correo={user.email} />}

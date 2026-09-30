@@ -42,7 +42,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { logout } from "@/lib/actions/auth"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -55,6 +55,9 @@ interface DashboardSidebarProps {
   businessName: string
   brandColor: string
   nickname?: string
+  /** Foto de «Tu perfil», ya firmada. Si no carga, quedan las iniciales. */
+  avatarUrl?: string | null
+  avatarRingColor?: string
   role: Role
   collapsed: boolean
   onToggleCollapse: () => void
@@ -170,12 +173,17 @@ export function DashboardSidebar({
   businessName,
   brandColor,
   nickname,
+  avatarUrl,
+  avatarRingColor,
   role,
   collapsed,
   onToggleCollapse,
 }: DashboardSidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
+  // El marco solo tiene sentido alrededor de una foto; sin ella quedan las
+  // iniciales sobre el color del negocio, como hasta ahora.
+  const marco = avatarUrl ? { boxShadow: `0 0 0 2px ${avatarRingColor ?? brandColor}` } : undefined
   const [moreOpen, setMoreOpen] = useState(false)
   const [logoutOpen, setLogoutOpen] = useState(false)
   const [openGroups, setOpenGroups] = useState<string[]>(() => {
@@ -303,7 +311,8 @@ export function DashboardSidebar({
             )}
         </nav>
 
-        {/* Perfil fijado abajo */}
+        {/* Perfil fijado abajo. Con foto, la foto sustituye a las iniciales con
+            el marco del color elegido, como en «Tu perfil». */}
         <div className="border-t border-border p-2 shrink-0">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -318,7 +327,8 @@ export function DashboardSidebar({
                   collapsed ? "justify-center p-2" : "gap-3 px-3 py-2",
                 )}
               >
-                <Avatar className={cn("shrink-0", collapsed ? "h-8 w-8" : "h-9 w-9")}>
+                <Avatar className={cn("shrink-0", collapsed ? "h-8 w-8" : "h-9 w-9")} style={marco}>
+                  {avatarUrl && <AvatarImage src={avatarUrl} alt="" className="object-cover" />}
                   <AvatarFallback
                     className="text-sm font-medium text-white"
                     style={{ backgroundColor: brandColor }}
@@ -340,7 +350,8 @@ export function DashboardSidebar({
             </DropdownMenuTrigger>
             <DropdownMenuContent side="right" align="end" className="w-56">
               <div className="flex items-center gap-3 px-2 py-2">
-                <Avatar className="h-10 w-10">
+                <Avatar className="h-10 w-10" style={marco}>
+                  {avatarUrl && <AvatarImage src={avatarUrl} alt="" className="object-cover" />}
                   <AvatarFallback
                     className="text-sm font-medium text-white"
                     style={{ backgroundColor: brandColor }}

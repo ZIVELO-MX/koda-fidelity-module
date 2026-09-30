@@ -25,6 +25,8 @@ interface DashboardLayoutClientProps {
   businessName: string
   brandColor: string
   nickname?: string
+  avatarUrl?: string | null
+  avatarRingColor?: string
   role: Role
   closureScheduledFor?: string
   /** Avisos que el servidor decidió mostrar encima del contenido. */
@@ -37,6 +39,8 @@ export function DashboardLayoutClient({
   businessName,
   brandColor,
   nickname,
+  avatarUrl,
+  avatarRingColor,
   role,
   closureScheduledFor,
   avisos,
@@ -59,6 +63,8 @@ export function DashboardLayoutClient({
         businessName={businessName}
         brandColor={brandColor}
         nickname={nickname}
+        avatarUrl={avatarUrl}
+        avatarRingColor={avatarRingColor}
         role={role}
         collapsed={sidebarCollapsed}
         onToggleCollapse={toggleCollapse}
