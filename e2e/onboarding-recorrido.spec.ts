@@ -68,8 +68,8 @@ test.describe("Alta guiada, recorrido completo", () => {
     // Datos: sin nombre ni categoría el servidor no deja avanzar, y se dice.
     await expect(page.getByRole("heading", { name: "Tu negocio" })).toBeVisible()
     await page.getByRole("button", { name: "Continuar" }).click()
-    // El aviso se pinta en el encabezado, sobre la barra de pasos.
-    await expect(page.getByRole("alert").filter({ hasText: /nombre y categoría/i })).toBeVisible()
+    // La validación se presenta como toast y señala los campos que faltan.
+    await expect(page.getByText(/Completa nombre y categoría del negocio/i)).toBeVisible()
 
     const nombre = `Café Aurora ${Date.now()}`
     await page.getByLabel("Nombre del negocio").fill(nombre)
@@ -85,9 +85,8 @@ test.describe("Alta guiada, recorrido completo", () => {
     await expect(page.getByText("0/8")).toBeVisible()
     await page.getByRole("button", { name: "Continuar" }).click()
 
-    // El club, con su nombre y la tarjeta vacía. Va antes del muro.
-    await expect(page.getByRole("heading", { name: `Club ${nombre}` })).toBeVisible({ timeout: 30000 })
-    await expect(page.getByText("Así lo verán tus clientes.")).toBeVisible()
+    // La tarjeta y el QR ilustrativos se muestran antes del muro de pago.
+    await expect(page.getByRole("heading", { name: "Tu tarjeta está lista, pero todavía no publicada." })).toBeVisible({ timeout: 30000 })
     await page.getByRole("button", { name: "Continuar" }).click()
 
     // Origen: se puede saltar y nunca bloquea.
@@ -214,7 +213,7 @@ test.describe("Alta guiada, recorrido completo", () => {
     await expect(page.getByRole("heading", { name: "Tu primera tarjeta" })).toBeVisible({ timeout: 30000 })
     await page.getByLabel("Recompensa").fill("Un café de recompensa")
     await page.getByRole("button", { name: "Continuar" }).click()
-    await expect(page.getByRole("heading", { name: /^Club / })).toBeVisible({ timeout: 30000 })
+    await expect(page.getByRole("heading", { name: "Tu tarjeta está lista, pero todavía no publicada." })).toBeVisible({ timeout: 30000 })
     await page.getByRole("button", { name: "Continuar" }).click()
 
     await expect(page.getByRole("heading", { name: /cómo llegaste a koda fidelity/i })).toBeVisible({ timeout: 30000 })
