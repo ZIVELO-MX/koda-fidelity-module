@@ -70,6 +70,7 @@ test.describe("Alta guiada, recorrido completo", () => {
     await page.getByRole("button", { name: "Continuar" }).click()
     // La validación se presenta como toast y señala los campos que faltan.
     await expect(page.getByText(/Completa nombre y categoría del negocio/i)).toBeVisible()
+    await expect(page.getByLabel("Nombre del negocio")).toHaveAttribute("aria-invalid", "true")
 
     const nombre = `Café Aurora ${Date.now()}`
     await page.getByLabel("Nombre del negocio").fill(nombre)
@@ -87,6 +88,8 @@ test.describe("Alta guiada, recorrido completo", () => {
 
     // La tarjeta y el QR ilustrativos se muestran antes del muro de pago.
     await expect(page.getByRole("heading", { name: "Tu tarjeta está lista, pero todavía no publicada." })).toBeVisible({ timeout: 30000 })
+    await expect(page.getByText(nombre, { exact: true })).toBeVisible()
+    await expect(page.getByText("0/8")).toBeVisible()
     await page.getByRole("button", { name: "Continuar" }).click()
 
     // Origen: se puede saltar y nunca bloquea.
@@ -94,7 +97,7 @@ test.describe("Alta guiada, recorrido completo", () => {
     await page.getByRole("button", { name: "Saltar", exact: true }).click()
 
     // Muro de pago.
-    await expect(page.getByRole("heading", { name: "Publica tu tarjeta" })).toBeVisible({ timeout: 30000 })
+    await expect(page.getByRole("heading", { name: "Ahora sí, los planes." })).toBeVisible({ timeout: 30000 })
     await expect(page.getByRole("radio", { name: /al año/i })).toBeChecked()
     await expect(page.getByRole("link", { name: "Salir sin publicar" })).toBeVisible()
   })
@@ -223,7 +226,7 @@ test.describe("Alta guiada, recorrido completo", () => {
     await expect(page.locator('button[aria-pressed="true"]')).toHaveCount(0)
 
     await page.getByRole("button", { name: "Saltar", exact: true }).click()
-    await expect(page.getByRole("heading", { name: "Publica tu tarjeta" })).toBeVisible({ timeout: 30000 })
+    await expect(page.getByRole("heading", { name: "Ahora sí, los planes." })).toBeVisible({ timeout: 30000 })
 
     // Y al volver sigue sin respuesta: saltar no inventó una.
     await page.goto("/onboarding")

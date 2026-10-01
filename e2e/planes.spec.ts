@@ -40,7 +40,7 @@ test.describe("Planes Lite y Pro", () => {
       await page.goto("/onboarding")
       await expect(page.locator("#contenido")).toBeVisible({ timeout: 60000 })
 
-      await expect(page.getByRole("heading", { name: "Publica tu tarjeta" })).toBeVisible()
+      await expect(page.getByRole("heading", { name: "Ahora sí, los planes." })).toBeVisible()
 
       const tarjetaLite = page.locator("div").filter({ has: page.getByRole("heading", { name: "Lite" }) }).last()
       const tarjetaPro = page.locator("div").filter({ has: page.getByRole("heading", { name: "Pro" }) }).last()
@@ -207,7 +207,7 @@ test.describe("La tarjeta guardada detrás del muro @muro", () => {
     await page.goto("/onboarding")
     await expect(page.locator("#contenido")).toBeVisible({ timeout: 60000 })
 
-    await expect(page.getByRole("heading", { name: "Publica tu tarjeta" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Ahora sí, los planes." })).toBeVisible()
 
     for (const { ancho, alto } of MEDIDAS) {
       await page.setViewportSize({ width: ancho, height: alto })

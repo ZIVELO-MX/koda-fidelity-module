@@ -36,7 +36,7 @@ test.describe.configure({ mode: "serial" })
 async function enElMuro(page: Page) {
   await page.goto("/onboarding")
   await expect(page.locator("#contenido")).toBeVisible({ timeout: 60000 })
-  await expect(page.getByRole("heading", { name: "Publica tu tarjeta" })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Ahora sí, los planes." })).toBeVisible()
 }
 
 /** ¿Está el contrato de solicitudes en esta rama? */
@@ -120,7 +120,7 @@ test.describe("Solicitud manual de activación", () => {
 
     // Y la tarjeta sigue sin publicar: el muro no se fue y sus acciones de QR
     // siguen desactivadas.
-    await expect(page.getByRole("heading", { name: "Publica tu tarjeta" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Ahora sí, los planes." })).toBeVisible()
     await expect(page.getByRole("button", { name: "Compartir", exact: true })).toHaveAttribute("aria-disabled", "true")
   })
 
