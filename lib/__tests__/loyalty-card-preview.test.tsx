@@ -21,4 +21,20 @@ describe("LoyaltyCardPreview", () => {
     expect(container.querySelector(".lucide-coffee")).toBeInTheDocument()
     expect(container.querySelector(".lucide-star")).toBeInTheDocument()
   })
+
+  it("honors a forced dark text color", () => {
+    render(
+      <LoyaltyCardPreview
+        businessName="Cafetería"
+        customerName="Ana"
+        currentStamps={0}
+        maxStamps={2}
+        reward="Café gratis"
+        textColor="DARK"
+        showQR={false}
+      />,
+    )
+
+    expect(screen.getAllByText("Ana").some((element) => element.getAttribute("style")?.includes("rgb(23, 23, 23)"))).toBe(true)
+  })
 })

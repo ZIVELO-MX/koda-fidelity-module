@@ -63,6 +63,19 @@ import type { CardSummary } from "@/lib/fidelity-contracts"
  *               brandColor:
  *                 type: string
  *                 description: Brand color in hexadecimal format
+ *               textColor:
+ *                 type: string
+ *                 enum: [AUTO, DARK, LIGHT]
+ *                 default: AUTO
+ *               iconName:
+ *                 type: string
+ *                 nullable: true
+ *               stampIconName:
+ *                 type: string
+ *                 nullable: true
+ *               themeId:
+ *                 type: string
+ *                 description: Selected theme ID or code
  *               description:
  *                 type: string
  *                 description: Optional description
@@ -117,7 +130,9 @@ export async function GET(request: NextRequest) {
       reward: card.reward,
       stampsRequired: card.stampsRequired,
       brandColor: card.brandColor,
+      textColor: card.textColor,
       iconName: card.iconName,
+      stampIconName: card.stampIconName,
       isActive: card.isActive,
       status: card.status,
       selectedThemeId: card.selectedThemeId,
@@ -145,6 +160,10 @@ export async function POST(request: NextRequest) {
     requireRole(user, "admin")
 
     const body = await cuerpoJson(request)
+
+    if (body.textColor !== undefined && !["AUTO", "DARK", "LIGHT"].includes(String(body.textColor))) {
+      throw new ValidationError("textColor must be AUTO, DARK, or LIGHT")
+    }
 
     if (!body.name || typeof body.name !== "string" || !body.name.trim()) {
       throw new ValidationError("Card name is required")
@@ -191,7 +210,8 @@ export async function POST(request: NextRequest) {
         reward: body.reward.trim(),
         stampsRequired,
         brandColor: body.brandColor || business.brandColor,
-        iconName: body.iconName || business.iconName || null,
+        textColor: body.textColor ?? "AUTO",
+        iconName: body.iconName === undefined ? business.iconName || null : body.iconName || null,
         stampIconName: body.stampIconName ?? null,
         description: body.description?.trim() || null,
         expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,

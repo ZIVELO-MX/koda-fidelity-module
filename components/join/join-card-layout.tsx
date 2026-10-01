@@ -13,7 +13,10 @@ export interface JoinCardData {
   stampsRequired: number
   reward: string
   brandColor: string
+  textColor?: "AUTO" | "DARK" | "LIGHT"
   iconName: string | null
+  stampIconName?: string | null
+  themeCode?: string | null
   expiresAt: string | null
   businessName: string
   businessBrandColor: string
@@ -91,6 +94,7 @@ export function JoinCardLayout({
                 businessName={cardInfo.businessName}
                 businessLogo={cardInfo.businessLogoUrl ?? undefined}
                 iconName={cardInfo.iconName ?? cardInfo.businessIconName}
+                stampIconName={cardInfo.stampIconName}
                 customerName={name || "Tu Nombre"}
                 currentStamps={0}
                 maxStamps={cardInfo.stampsRequired}
@@ -101,6 +105,8 @@ export function JoinCardLayout({
                     : undefined
                 }
                 brandColor={cardInfo.brandColor}
+                textColor={cardInfo.textColor}
+                themeCode={cardInfo.themeCode}
                 showQR={false}
                 onMemberClick={preview ? undefined : onMemberClick}
               />

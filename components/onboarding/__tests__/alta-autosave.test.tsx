@@ -1,10 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
+import { toast } from "sonner"
 import { Alta } from "../alta"
 import { avanzar, ErrorDelAlta, guardarBorrador, leerAlta, type EstadoDelAlta } from "@/lib/onboarding"
 
 const router = vi.hoisted(() => ({ replace: vi.fn() }))
+const toastMock = vi.hoisted(() => ({ error: vi.fn(), info: vi.fn(), dismiss: vi.fn() }))
 vi.mock("next/navigation", () => ({ useRouter: () => router }))
+vi.mock("sonner", () => ({ toast: toastMock }))
 vi.mock("@/lib/onboarding", async (original) => ({
   ...await original<typeof import("@/lib/onboarding")>(),
   leerAlta: vi.fn(), guardarBorrador: vi.fn(), avanzar: vi.fn(),
@@ -39,6 +42,16 @@ async function montar() {
   await act(async () => { render(<Alta />) })
 }
 
+function accionDeToast(label: string, tipo: "action" | "cancel" = "action") {
+  const llamadas = vi.mocked(toast.error).mock.calls
+  for (const [, opcionesDesconocidas] of [...llamadas].reverse()) {
+    const opciones = opcionesDesconocidas as unknown as Record<string, { label?: string; onClick?: () => unknown } | undefined>
+    const accion = opciones[tipo]
+    if (accion?.label === label && accion.onClick) return accion.onClick
+  }
+  throw new Error(`No se publicó la acción de toast: ${label}`)
+}
+
 function escribir(nombre: string) {
   fireEvent.change(screen.getByLabelText("Nombre del negocio"), { target: { value: nombre } })
 }
@@ -56,6 +69,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  toast.dismiss()
   cleanup()
   vi.restoreAllMocks()
   vi.useRealTimers()
@@ -122,14 +136,14 @@ describe("Alta: guardado y avance en una sola cola", () => {
     escribir("Segundo")
     await act(async () => { primera.rechazar(new ErrorDelAlta({ tipo, mensaje: "No se pudo guardar" })) })
     expect(screen.getByLabelText("Nombre del negocio")).toHaveValue("Segundo")
-    expect(screen.getByText("Cambios sin guardar")).toBeInTheDocument()
+    expect(screen.getByRole("status")).toHaveTextContent("Tus cambios siguen aquí. Reintenta antes de cerrar.")
     expect(screen.queryByText("Guardado", { exact: true })).not.toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled()
     await transcurrir(1400)
     expect(guardarBorrador).toHaveBeenCalledTimes(1)
 
     vi.mocked(leerAlta).mockResolvedValueOnce(respuesta("Primero", 11))
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Reintentar" })) })
+    await act(async () => { await accionDeToast("Reintentar")() })
     expect(guardarBorrador).toHaveBeenNthCalledWith(2, 11, { business: { name: "Segundo" } })
     expect(screen.getByText("Guardado", { exact: true })).toBeInTheDocument()
     expect(avanzar).not.toHaveBeenCalled()
@@ -165,7 +179,7 @@ describe("Alta: guardado y avance en una sola cola", () => {
     await act(async () => { primera.rechazar(new ErrorDelAlta({ tipo: "red" })) })
     expect(screen.getByLabelText("Recompensa")).toHaveValue("Premio nuevo")
     expect(screen.getByRole("button", { name: "12" })).toHaveAttribute("aria-pressed", "true")
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Reintentar" })) })
+    await act(async () => { await accionDeToast("Reintentar")() })
     expect(guardarBorrador).toHaveBeenNthCalledWith(2, 10, { card: { reward: "Premio nuevo", stampsRequired: 12 } })
     expect(screen.getByText("Guardado", { exact: true })).toBeInTheDocument()
   })
@@ -188,11 +202,11 @@ describe("Alta: guardado y avance en una sola cola", () => {
     const servidor = { ...respuesta("Servidor", 20), negocio: { name: "Servidor", categoryId: "restaurante" } }
     vi.mocked(leerAlta).mockResolvedValueOnce(servidor)
     vi.mocked(guardarBorrador).mockResolvedValueOnce({ ...servidor, negocio: { ...servidor.negocio, name: "Local más reciente" }, draftVersion: 21 })
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Reaplicar mis cambios" })) })
+    await act(async () => { await accionDeToast("Reaplicar mis cambios")() })
     expect(guardarBorrador).toHaveBeenNthCalledWith(2, 20, { business: { name: "Local más reciente" } })
     expect(screen.getByLabelText("Nombre del negocio")).toHaveValue("Local más reciente")
     expect(screen.getByText("Guardado", { exact: true })).toBeInTheDocument()
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument()
+    expect(vi.mocked(toast.error)).toHaveBeenCalledTimes(1)
     expect(avanzar).not.toHaveBeenCalled()
   })
 
@@ -200,7 +214,7 @@ describe("Alta: guardado y avance en una sola cola", () => {
     await provocarConflicto()
     const confirmar = vi.spyOn(window, "confirm").mockReturnValue(confirmacion)
     vi.mocked(leerAlta).mockResolvedValueOnce(respuesta("Servidor", 20))
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Usar versión del servidor" })) })
+    await act(async () => { await accionDeToast("Usar versión del servidor", "cancel")() })
     expect(confirmar).toHaveBeenCalledWith(expect.stringMatching(/descartar/i))
     expect(screen.getByLabelText("Nombre del negocio")).toHaveValue(confirmacion ? "Servidor" : "Local")
     expect(leerAlta).toHaveBeenCalledTimes(confirmacion ? 2 : 1)
@@ -212,7 +226,7 @@ describe("Alta: guardado y avance en una sola cola", () => {
     await provocarConflicto()
     vi.spyOn(window, "confirm").mockReturnValue(true)
     vi.mocked(leerAlta).mockRejectedValueOnce(new ErrorDelAlta({ tipo: "red" }))
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Usar versión del servidor" })) })
+    await act(async () => { await accionDeToast("Usar versión del servidor", "cancel")() })
     expect(screen.getByLabelText("Nombre del negocio")).toHaveValue("Local")
     expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled()
     expect(screen.queryByText("Guardado", { exact: true })).not.toBeInTheDocument()
@@ -221,11 +235,11 @@ describe("Alta: guardado y avance en una sola cola", () => {
   it("un alta terminada en otra pestaña no recibe una reaplicación de borrador", async () => {
     await provocarConflicto()
     vi.mocked(leerAlta).mockResolvedValueOnce({ ...respuesta("Servidor", 20), status: "ACTIVE" })
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Reaplicar mis cambios" })) })
+    await act(async () => { await accionDeToast("Reaplicar mis cambios")() })
     expect(screen.getByLabelText("Nombre del negocio")).toHaveValue("Local")
     expect(guardarBorrador).toHaveBeenCalledTimes(1)
     expect(avanzar).not.toHaveBeenCalled()
-    expect(screen.getByRole("alert")).toHaveTextContent(/cambió de estado/i)
+    expect(vi.mocked(toast.error).mock.calls.some(([message]) => String(message).match(/cambió de estado/i))).toBe(true)
   })
 
   it.each([10, 8])("confirmar tarjeta guarda los sellos visibles (%i), respetando lo editado en vuelo", async (sellos) => {
@@ -249,10 +263,12 @@ describe("Alta: guardado y avance en una sola cola", () => {
     vi.mocked(avanzar).mockRejectedValueOnce(new ErrorDelAlta({ tipo: "validacion", mensaje: "Completa recompensa y sellos de la tarjeta" }))
     await montar()
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Continuar" })) })
-    expect(guardarBorrador).toHaveBeenCalledWith(10, { card: { stampsRequired: 10 } })
+    expect(guardarBorrador).not.toHaveBeenCalled()
+    expect(avanzar).not.toHaveBeenCalled()
     expect(screen.getByLabelText("Recompensa")).toHaveValue("")
     expect(screen.getByRole("heading", { name: "Tu primera tarjeta" })).toBeInTheDocument()
-    expect(screen.getByRole("alert")).toHaveTextContent("Completa recompensa")
+    expect(vi.mocked(toast.error).mock.calls.some(([message]) => String(message) === "Escribe la recompensa para continuar.")).toBe(true)
+    expect(screen.getByLabelText("Recompensa")).toHaveAttribute("aria-invalid", "true")
   })
 
   it("no muestra el Club si el POST de crear tarjeta falla", async () => {
@@ -262,7 +278,7 @@ describe("Alta: guardado y avance en una sola cola", () => {
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Continuar" })) })
     expect(screen.getByRole("heading", { name: "Tu primera tarjeta" })).toBeInTheDocument()
     expect(screen.queryByRole("heading", { name: "Club Inicial" })).not.toBeInTheDocument()
-    expect(screen.getByRole("alert")).toHaveTextContent("No se creó")
+    expect(vi.mocked(toast.error).mock.calls.some(([message]) => String(message) === "No se creó")).toBe(true)
   })
 
   it("cancelar la pantalla detiene el temporizador y no envía el borrador", async () => {

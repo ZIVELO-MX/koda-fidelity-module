@@ -33,6 +33,7 @@ interface LoyaltyCardPreviewProps {
    * que es lo que pide el diseño. La selección no se pierde, solo no se aplica.
    */
   themeCode?: string | null
+  textColor?: "AUTO" | "DARK" | "LIGHT"
 }
 
 export function LoyaltyCardPreview({
@@ -52,6 +53,7 @@ export function LoyaltyCardPreview({
   onMemberClick,
   milestoneClaims = [],
   themeCode = null,
+  textColor = "AUTO",
 }: LoyaltyCardPreviewProps) {
   const stamps = Array.from({ length: maxStamps }, (_, i) => i < currentStamps)
   const milestonePositions = new Map(milestoneClaims.map(c => [c.stampNumber, c]))
@@ -68,8 +70,9 @@ export function LoyaltyCardPreview({
   // fija el blanco. Las capas se apartan del texto en vez de tirar siempre
   // hacia el blanco: una placa que aclaraba el fondo debajo de una etiqueta
   // pequeña era lo que la volvía ilegible sobre los colores claros.
-  const fg = piel.texto
-  const capa = (a: number) => (piel.aparta === 255 ? `rgba(255,255,255,${a})` : `rgba(0,0,0,${a})`)
+  const fg = textColor === "DARK" ? "#171717" : textColor === "LIGHT" ? "#ffffff" : piel.texto
+  const claroDetrasDelTexto = textColor === "DARK" ? true : textColor === "LIGHT" ? false : piel.aparta === 255
+  const capa = (a: number) => (claroDetrasDelTexto ? `rgba(255,255,255,${a})` : `rgba(0,0,0,${a})`)
   const overlay = capa(0.12)
   const overlayIcon = capa(0.2)
   const stampBg = "rgba(255,255,255,0.95)"
