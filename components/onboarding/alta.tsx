@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { IconPicker } from "@/components/dashboard/icon-picker"
+import { AvisoDeColorDeTexto } from "@/components/aviso-de-color-de-texto"
 import { BarraDePasos } from "@/components/onboarding/barra-de-pasos"
 import { PLANES } from "@/lib/planes"
 import { mesesGratisExactos } from "@/lib/precios"
@@ -707,7 +708,7 @@ function Datos({
   )
 }
 
-function Tarjeta({
+export function Tarjeta({
   estado, onCambio, onCambioLocal, errorRecompensa, recompensaRef, onRecompensaCorregida,
 }: {
   estado: EstadoDelAlta
@@ -721,9 +722,6 @@ function Tarjeta({
   const color = colorDeRespaldo(estado)
 
   const elegido = estado.temas.find((t) => t.id === estado.tarjeta.themeId)
-  // El plan de la cuenta decide si el acabado Pro se llega a ver. La selección
-  // se guarda igual: probarlo es parte de lo que empuja a contratar.
-  const temaEfectivo = elegido && (elegido.plan === "LITE" || estado.plan === "PRO") ? elegido.code : null
   const proSinPlan = Boolean(elegido && elegido.plan === "PRO" && estado.plan !== "PRO")
 
   const elegirTema = (idDelTema: string) => {
@@ -820,6 +818,7 @@ function Tarjeta({
             <option value="DARK">Oscuro</option>
             <option value="LIGHT">Claro</option>
           </select>
+          <AvisoDeColorDeTexto brandColor={color} themeCode={elegido?.code ?? null} textColor={estado.tarjeta.textColor ?? "AUTO"} />
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -902,7 +901,11 @@ function Tarjeta({
           maxStamps={sellos}
           reward={estado.tarjeta.reward || "Tu recompensa"}
           brandColor={color}
-          themeCode={temaEfectivo}
+          // Aquí se enseña lo elegido, Pro incluido, aunque el plan sea Lite: probar
+          // el acabado es lo que empuja a contratar, y el aviso del selector dice que
+          // se publica con el color del negocio. Cómo queda publicada lo enseña
+          // «Tarjeta lista», con el tema efectivo.
+          themeCode={elegido?.code ?? null}
           textColor={estado.tarjeta.textColor ?? "AUTO"}
           iconName={estado.tarjeta.iconName}
           stampIconName={estado.tarjeta.stampIconName}

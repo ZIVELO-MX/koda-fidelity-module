@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react"
+import { renderToStaticMarkup } from "react-dom/server"
+import { render, screen, within } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 
@@ -23,18 +24,36 @@ describe("LoyaltyCardPreview", () => {
   })
 
   it("honors a forced dark text color", () => {
-    render(
+    // Se consulta solo esta tarjeta: el DOM de la prueba anterior sigue montado,
+    // y su «Ana» en automático sobre naranja ya es tinta, así que buscar en toda
+    // la pantalla pasaba aunque el negro forzado no se aplicara. Y el violeta es
+    // un color donde automático pondría blanco: solo pasa si se respeta el negro.
+    const { container } = render(
       <LoyaltyCardPreview
         businessName="Cafetería"
         customerName="Ana"
         currentStamps={0}
         maxStamps={2}
         reward="Café gratis"
+        brandColor="#8b5cf6"
         textColor="DARK"
         showQR={false}
       />,
     )
 
-    expect(screen.getAllByText("Ana").some((element) => element.getAttribute("style")?.includes("rgb(23, 23, 23)"))).toBe(true)
+    // El negro forzado es la tinta del sistema (#1C1B17), la misma con la que
+    // la piel mide el contraste: así la garantía de lectura vale para él.
+    expect(within(container).getByText("Ana").getAttribute("style")).toContain("rgb(28, 27, 23)")
+  })
+
+  it("con blanco forzado sobre un color claro, ajusta el tono para que se lea", () => {
+    // Blanco sobre ámbar crudo queda en 2.15:1. La piel oscurece el fondo hasta
+    // 4.5, así que el degradado ya no arranca en el ámbar tal cual.
+    const html = renderToStaticMarkup(
+      <LoyaltyCardPreview businessName="Panadería" currentStamps={0} maxStamps={2} reward="Pan" brandColor="#f59e0b" textColor="LIGHT" showQR={false} />,
+    )
+    expect(html).toContain("radial-gradient(")
+    expect(html).toContain("color:#FFFFFF")
+    expect(html).not.toMatch(/radial-gradient\([^,]*,\s*#F59E0B/i)
   })
 })

@@ -59,7 +59,7 @@ export function LoyaltyCardPreview({
   const milestonePositions = new Map(milestoneClaims.map(c => [c.stampNumber, c]))
 
   // La piel sale del tema efectivo. Sin tema, el color del negocio.
-  const piel = pielDeTarjeta(themeCode, brandColor)
+  const piel = pielDeTarjeta(themeCode, brandColor, textColor)
 
   // El patrón: el del giro cuando el tema lo define, y si no el ícono del
   // negocio. Sin ninguno de los dos, la tarjeta va limpia.
@@ -70,9 +70,12 @@ export function LoyaltyCardPreview({
   // fija el blanco. Las capas se apartan del texto en vez de tirar siempre
   // hacia el blanco: una placa que aclaraba el fondo debajo de una etiqueta
   // pequeña era lo que la volvía ilegible sobre los colores claros.
-  const fg = textColor === "DARK" ? "#171717" : textColor === "LIGHT" ? "#ffffff" : piel.texto
-  const claroDetrasDelTexto = textColor === "DARK" ? true : textColor === "LIGHT" ? false : piel.aparta === 255
-  const capa = (a: number) => (claroDetrasDelTexto ? `rgba(255,255,255,${a})` : `rgba(0,0,0,${a})`)
+  //
+  // Un color de texto forzado también pasa por la piel, que mueve el tono del
+  // fondo lo mínimo para que se siga leyendo. Pintarlo tal cual dejaba, por
+  // ejemplo, blanco sobre ámbar en 2.15:1, justo lo que se corrigió en 1.2.0.
+  const fg = piel.texto
+  const capa = (a: number) => (piel.aparta === 255 ? `rgba(255,255,255,${a})` : `rgba(0,0,0,${a})`)
   const overlay = capa(0.12)
   const overlayIcon = capa(0.2)
   const stampBg = "rgba(255,255,255,0.95)"

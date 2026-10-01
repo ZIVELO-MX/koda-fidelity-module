@@ -16,6 +16,7 @@ import { getRarityColor, getRarityLabel, getRarityDescription, getRarityRange } 
 import { sorpresasQueViajan, validarBorrador, type Sorpresa } from "@/lib/tarjeta-borrador"
 import { ExpirationPicker } from "@/components/dashboard/expiration-picker"
 import { nombreDeTema } from "@/lib/temas-de-tarjeta"
+import { AvisoDeColorDeTexto } from "@/components/aviso-de-color-de-texto"
 
 type TemaDisponible = { id: string; code: string; plan: "LITE" | "PRO" }
 
@@ -157,7 +158,10 @@ export default function CreateCardPage() {
       : "Sin sorpresas",
   ].join(" · ")
   const temaElegido = themes.find((theme) => theme.id === themeId)
-  const themeCode = temaElegido && (temaElegido.plan === "LITE" || accountPlan === "PRO") ? temaElegido.code : null
+  // La vista previa enseña lo elegido, Pro incluido, igual que en el alta: es
+  // donde se decide, y el aviso de debajo dice que con Lite se guarda y se
+  // activa al pasar a Pro. La tarjeta publicada usa el tema efectivo.
+  const themeCode = temaElegido?.code ?? null
 
   return (
     <div className="min-h-[calc(100vh-100px)]">
@@ -364,6 +368,7 @@ export default function CreateCardPage() {
                   <option value="DARK">Oscuro</option>
                   <option value="LIGHT">Claro</option>
                 </select>
+                <AvisoDeColorDeTexto brandColor={brandColor} themeCode={themeCode} textColor={textColor} />
               </div>
 
               {/* Lista de las sorpresas configuradas. Antes había una fila por

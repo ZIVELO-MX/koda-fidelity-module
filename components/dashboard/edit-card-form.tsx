@@ -17,6 +17,7 @@ import { getRarityColor, getRarityDescription, getRarityLabel, getRarityRange } 
 import { sorpresasQueViajan, validarBorrador } from "@/lib/tarjeta-borrador"
 import { cn } from "@/lib/utils"
 import { nombreDeTema } from "@/lib/temas-de-tarjeta"
+import { AvisoDeColorDeTexto } from "@/components/aviso-de-color-de-texto"
 
 type TemaDisponible = { id: string; code: string; plan: "LITE" | "PRO" }
 
@@ -168,7 +169,10 @@ export function EditCardForm({
       : "Sin sorpresas",
   ].join(" · ")
   const temaElegido = themes.find((theme) => theme.id === themeId)
-  const themeCode = temaElegido && (temaElegido.plan === "LITE" || accountPlan === "PRO") ? temaElegido.code : null
+  // La vista previa enseña lo elegido, Pro incluido, igual que en el alta: es
+  // donde se decide, y el aviso de debajo dice que con Lite se guarda y se
+  // activa al pasar a Pro. La tarjeta publicada usa el tema efectivo.
+  const themeCode = temaElegido?.code ?? null
 
   return (
     <div className="space-y-8">
@@ -370,6 +374,7 @@ export function EditCardForm({
                     <option value="DARK">Oscuro</option>
                     <option value="LIGHT">Claro</option>
                   </select>
+                  <AvisoDeColorDeTexto brandColor={color} themeCode={themeCode} textColor={textColor} />
                 </div>
               </div>
 
