@@ -1160,6 +1160,9 @@ export function TarjetaGuardada({ estado }: { estado: EstadoDelAlta }) {
           reward={estado.tarjeta.reward || "Tu recompensa"}
           brandColor={colorDeRespaldo(estado)}
           themeCode={temaEfectivo}
+          textColor={estado.tarjeta.textColor ?? "AUTO"}
+          iconName={estado.tarjeta.iconName}
+          stampIconName={estado.tarjeta.stampIconName}
           showQR={false}
           className="mx-auto max-w-[280px]"
         />
@@ -1245,6 +1248,8 @@ function Paywall({
         <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Ahora sí, los planes.</h1>
         <p className="text-muted-foreground">Elige el plan que mejor acompaña a tu negocio.</p>
       </div>
+
+      <TarjetaGuardada estado={estado} />
 
       <div className="flex justify-center">
         <div
