@@ -62,8 +62,8 @@ test.describe("Alta guiada, recorrido completo", () => {
 
   test("va de la intro al muro de pago guardando cada paso en el servidor", async ({ page }) => {
     // Intro: se puede saltar desde la primera lámina.
-    await expect(page.getByRole("button", { name: "Saltar la introducción" })).toBeVisible()
-    await page.getByRole("button", { name: "Saltar la introducción" }).click()
+    await expect(page.getByRole("button", { name: "Saltar introducción" })).toBeVisible()
+    await page.getByRole("button", { name: "Saltar introducción" }).click()
 
     // Datos: sin nombre ni categoría el servidor no deja avanzar, y se dice.
     await expect(page.getByRole("heading", { name: "Tu negocio" })).toBeVisible()
@@ -105,7 +105,7 @@ test.describe("Alta guiada, recorrido completo", () => {
     const yaHabiaTarjeta = Boolean(antes?.onboarding?.onboardingProgress?.firstCardId)
     const totalAntes = await contarTarjetas()
 
-    await page.getByRole("button", { name: "Saltar la introducción" }).click()
+    await page.getByRole("button", { name: "Saltar introducción" }).click()
     await page.getByLabel("Nombre del negocio").fill("Café Aurora")
     await page.locator("fieldset button").first().click()
     await page.getByRole("button", { name: "Continuar" }).click()
@@ -140,7 +140,7 @@ test.describe("Alta guiada, recorrido completo", () => {
   })
 
   test("un borrador viejo no pisa lo que ya se guardó", async ({ page }) => {
-    await page.getByRole("button", { name: "Saltar la introducción" }).click()
+    await page.getByRole("button", { name: "Saltar introducción" }).click()
     const guardado = page.waitForResponse((r) => r.url().includes("/api/onboarding") && r.request().method() === "PATCH" && r.ok())
     await page.getByLabel("Nombre del negocio").fill("Primero")
     await guardado
@@ -161,7 +161,7 @@ test.describe("Alta guiada, recorrido completo", () => {
    * se le promete nada que no esté.
    */
   test("al escribir se ve que guarda, y confirma que quedó", async ({ page }) => {
-    await page.getByRole("button", { name: "Saltar la introducción" }).click()
+    await page.getByRole("button", { name: "Saltar introducción" }).click()
     await expect(page.getByRole("heading", { name: "Tu negocio" })).toBeVisible()
 
     await page.getByLabel("Nombre del negocio").fill(`Café Aurora ${Date.now()}`)
@@ -173,7 +173,7 @@ test.describe("Alta guiada, recorrido completo", () => {
   })
 
   test("al volver se dice qué se recuperó, nombrando los campos", async ({ page }) => {
-    await page.getByRole("button", { name: "Saltar la introducción" }).click()
+    await page.getByRole("button", { name: "Saltar introducción" }).click()
     const nombre = `Café Aurora ${Date.now()}`
     await page.getByLabel("Nombre del negocio").fill(nombre)
     await expect(page.getByText("Guardado", { exact: true })).toBeVisible({ timeout: 30000 })
@@ -206,7 +206,7 @@ test.describe("Alta guiada, recorrido completo", () => {
    * nadie contestó es peor que un hueco, porque se cuenta igual.
    */
   test("saltar la atribución no deja ninguna respuesta puesta", async ({ page }) => {
-    await page.getByRole("button", { name: "Saltar la introducción" }).click()
+    await page.getByRole("button", { name: "Saltar introducción" }).click()
     await page.getByLabel("Nombre del negocio").fill(`Café Aurora ${Date.now()}`)
     await page.locator("fieldset button").first().click()
     await page.getByRole("button", { name: "Continuar" }).click()
@@ -242,7 +242,7 @@ test.describe("Alta guiada, recorrido completo", () => {
    * de lo que la persona acababa de teclear. Avanzar en vuelo fallaba igual.
    */
   test("escribir y avanzar mientras guarda no pierde nada", async ({ page }) => {
-    await page.getByRole("button", { name: "Saltar la introducción" }).click()
+    await page.getByRole("button", { name: "Saltar introducción" }).click()
     await expect(page.getByRole("heading", { name: "Tu negocio" })).toBeVisible()
 
     const nombre = `Café Aurora ${Date.now()}`
