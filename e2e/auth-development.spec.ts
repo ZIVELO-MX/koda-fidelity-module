@@ -220,7 +220,7 @@ test.describe("FID-0016 development authentication", () => {
     await expect(page.getByRole("link", { name: "Panel del negocio" })).toHaveCount(0)
   })
 
-  test("signup provisions a business into onboarding and a customer into My Cards", async ({ page }) => {
+  test("signup provisions a business into onboarding and a customer into My Cards", async ({ page, browser }) => {
     const unique = `${Date.now()}@example.com`
     await page.goto("/signup")
     await page.getByLabel("Correo electrónico").fill(`business-${unique}`)
@@ -230,14 +230,19 @@ test.describe("FID-0016 development authentication", () => {
     await page.getByRole("button", { name: "Crear cuenta", exact: true }).click()
     await page.waitForURL("**/onboarding", { timeout: 15000 })
 
-    await page.goto("/signup")
-    await page.getByLabel("Correo electrónico").fill(`customer-${unique}`)
-    await page.getByLabel("Contraseña").fill("SecurePass123!")
-    await page.getByRole("button", { name: "Continuar", exact: true }).click()
-    await page.getByText("Soy un cliente", { exact: true }).click()
-    await page.getByLabel("Tu nombre").fill("Cliente E2E")
-    await page.getByRole("button", { name: "Crear cuenta", exact: true }).click()
-    await page.waitForURL("**/dashboard/my-cards", { timeout: 15000 })
-    await expect(page.getByText("No tienes tarjetas de lealtad")).toBeVisible({ timeout: 15000 })
+    const customerPage = await browser.newPage()
+    try {
+      await customerPage.goto("/signup")
+      await customerPage.getByLabel("Correo electrónico").fill(`customer-${unique}`)
+      await customerPage.getByLabel("Contraseña").fill("SecurePass123!")
+      await customerPage.getByRole("button", { name: "Continuar", exact: true }).click()
+      await customerPage.getByText("Soy un cliente", { exact: true }).click()
+      await customerPage.getByLabel("Tu nombre").fill("Cliente E2E")
+      await customerPage.getByRole("button", { name: "Crear cuenta", exact: true }).click()
+      await customerPage.waitForURL("**/dashboard/my-cards", { timeout: 15000 })
+      await expect(customerPage.getByText("No tienes tarjetas de lealtad")).toBeVisible({ timeout: 15000 })
+    } finally {
+      await customerPage.close()
+    }
   })
 })
