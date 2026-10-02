@@ -13,12 +13,12 @@ test("onboarding mutations retain the catalog and account context through the pa
   expect(password).toBeTruthy()
 
   const db = new PrismaClient()
-  let fixture: { userId: string; businessId: string; name: string; categoryId: string | null; firstCardId: string | null } | undefined
+  let fixture: { userId: string; businessId: string; name: string; ownerName: string | null; categoryId: string | null; firstCardId: string | null } | undefined
   try {
     const user = await db.user.findUniqueOrThrow({ where: { email } })
     const business = await db.business.findUniqueOrThrow({ where: { id: user.businessId! } })
     const previous = await db.onboardingProgress.findUnique({ where: { userId: user.id } })
-    fixture = { userId: user.id, businessId: business.id, name: business.name, categoryId: business.categoryId, firstCardId: previous?.firstCardId ?? null }
+    fixture = { userId: user.id, businessId: business.id, name: business.name, ownerName: user.name, categoryId: business.categoryId, firstCardId: previous?.firstCardId ?? null }
     await db.onboardingProgress.upsert({
       where: { userId: user.id },
       create: { userId: user.id, businessId: user.businessId },
@@ -58,7 +58,7 @@ test("onboarding mutations retain the catalog and account context through the pa
 
     await mutate("post", { action: "skip_intro" })
     expect(current.onboarding.onboardingProgress.step).toBe("BUSINESS")
-    await mutate("patch", { business: { name: "Onboarding API CI", categoryId: current.categories[0].id } })
+    await mutate("patch", { business: { ownerName: "Onboarding CI", name: "Onboarding API CI", categoryId: current.categories[0].id } })
     await mutate("post", { action: "complete_business" })
     expect(current.onboarding.onboardingProgress.step).toBe("CARD")
     await mutate("patch", { card: { reward: "Coffee", stampsRequired: 8 } })
@@ -79,6 +79,7 @@ test("onboarding mutations retain the catalog and account context through the pa
         if (progress?.firstCardId && progress.firstCardId !== fixture.firstCardId) {
           await db.loyaltyCard.delete({ where: { id: progress.firstCardId } })
         }
+        await db.user.update({ where: { id: fixture.userId }, data: { name: fixture.ownerName } })
         await db.business.update({ where: { id: fixture.businessId }, data: { name: fixture.name, categoryId: fixture.categoryId } })
       }
     } finally {
