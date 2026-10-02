@@ -45,6 +45,16 @@ async function withSerializableRetry<T>(operation: () => Promise<T>): Promise<T>
   throw new Error("Serializable transaction retry exhausted")
 }
 
+// Repetir la clave es reintentar la misma operación. Con otro cliente o de otro
+// tipo no lo es: devolver la respuesta guardada haría creer que se aplicó algo
+// que no se aplicó.
+function repetida(existing: { customerId: string; type: string; response: Prisma.JsonValue }, input: OperationInput) {
+  if (existing.customerId !== input.customerId || existing.type !== input.type) {
+    throw new ValidationError("Idempotency-Key was already used for a different operation")
+  }
+  return existing.response as unknown as OperationResult
+}
+
 export async function executeLoyaltyOperation(db: Db, input: OperationInput): Promise<OperationResult> {
   if (!input.idempotencyKey || input.idempotencyKey.length > 200) {
     throw new ValidationError("Idempotency-Key is required and must be at most 200 characters")
@@ -55,7 +65,7 @@ export async function executeLoyaltyOperation(db: Db, input: OperationInput): Pr
       const existing = await tx.loyaltyOperation.findUnique({
         where: { businessId_idempotencyKey: { businessId: input.businessId, idempotencyKey: input.idempotencyKey } },
       })
-      if (existing) return existing.response as unknown as OperationResult
+      if (existing) return repetida(existing, input)
 
       const customer = await tx.customer.findUnique({ where: { id: input.customerId }, include: customerInclude })
       if (!customer || customer.card.businessId !== input.businessId || !customer.isActive) {
@@ -157,7 +167,7 @@ export async function executeLoyaltyOperation(db: Db, input: OperationInput): Pr
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       const existing = await db.loyaltyOperation.findUnique({ where: { businessId_idempotencyKey: { businessId: input.businessId, idempotencyKey: input.idempotencyKey } } })
-      if (existing) return existing.response as unknown as OperationResult
+      if (existing) return repetida(existing, input)
     }
     throw error
   }
