@@ -1,4 +1,4 @@
-import { test, expect, type BrowserContext } from "@playwright/test"
+import { test, expect, type BrowserContext, type Page } from "@playwright/test"
 import { entrar } from "./sesion"
 
 /**
@@ -31,16 +31,21 @@ test.beforeEach(async ({ page }) => {
 
 const PRECIOS = { lite: { mes: 149, anio: 1490 }, pro: { mes: 299, anio: 2990 } }
 
+async function irAPlanes(page: Page) {
+  await page.goto("/onboarding")
+  await expect(page.locator("#contenido")).toBeVisible({ timeout: 60000 })
+  await expect(page.getByRole("heading", { name: "Tu tarjeta está lista, pero todavía no publicada." })).toBeVisible()
+  await page.getByRole("button", { name: "Continuar" }).click()
+  await expect(page.getByRole("heading", { name: "Ahora sí, los planes." })).toBeVisible()
+}
+
 test.describe("Planes Lite y Pro", () => {
   test.describe("lo que la interfaz promete @muro", () => {
     test("el muro de pago dice los precios acordados", async ({ page }) => {
       if (process.env.CI) expect(Boolean(CORREO && CLAVE), "Credenciales obligatorias de planes").toBe(true)
       test.skip(!CORREO || !CLAVE, "Requiere las credenciales del fixture del alta")
 
-      await page.goto("/onboarding")
-      await expect(page.locator("#contenido")).toBeVisible({ timeout: 60000 })
-
-      await expect(page.getByRole("heading", { name: "Ahora sí, los planes." })).toBeVisible()
+      await irAPlanes(page)
 
       const tarjetaLite = page.locator("div").filter({ has: page.getByRole("heading", { name: "Lite" }) }).last()
       const tarjetaPro = page.locator("div").filter({ has: page.getByRole("heading", { name: "Pro" }) }).last()
@@ -59,7 +64,7 @@ test.describe("Planes Lite y Pro", () => {
       if (process.env.CI) expect(Boolean(CORREO && CLAVE), "Credenciales obligatorias de planes").toBe(true)
       test.skip(!CORREO || !CLAVE, "Requiere las credenciales del fixture del alta")
 
-      await page.goto("/onboarding")
+      await irAPlanes(page)
       const antes = await (await page.request.get("/api/subscription")).json()
       const creada = page.waitForResponse((res) =>
         new URL(res.url()).pathname === "/api/subscription-requests" && res.request().method() === "POST",
@@ -72,7 +77,7 @@ test.describe("Planes Lite y Pro", () => {
       }
       const despues = await (await page.request.get("/api/subscription")).json()
       expect(despues.entitlements).toEqual(antes.entitlements)
-      await expect(page.getByRole("button", { name: "Compartir", exact: true })).toHaveAttribute("aria-disabled", "true")
+      await expect(page.getByText(/sin publicar, tu tarjeta no genera código qr/i)).toBeVisible()
     })
   })
 
@@ -207,31 +212,17 @@ test.describe("La tarjeta guardada detrás del muro @muro", () => {
     await page.goto("/onboarding")
     await expect(page.locator("#contenido")).toBeVisible({ timeout: 60000 })
 
-    await expect(page.getByRole("heading", { name: "Ahora sí, los planes." })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Tu tarjeta está lista, pero todavía no publicada." })).toBeVisible()
 
     for (const { ancho, alto } of MEDIDAS) {
       await page.setViewportSize({ width: ancho, height: alto })
 
-      // Lo que ya hizo sigue ahí, a la vista, antes de que se le pida nada.
-      await expect(page.getByText(/todavía no publicada/i), `a ${ancho}px`).toBeVisible()
-      await expect(page.getByText(/sin publicar no hay código qr/i), `a ${ancho}px`).toBeVisible()
-      await expect(page.getByText(/siguen guardados/i), `a ${ancho}px`).toBeVisible()
-
-      // Las tres acciones existen y ninguna se habilita: no hay QR que compartir.
-      for (const accion of ["Compartir", "Descargar", "Imprimir"]) {
-        const boton = page.getByRole("button", { name: accion, exact: true })
-        await expect(boton, `${accion} a ${ancho}px`).toBeVisible()
-        await expect(boton, `${accion} a ${ancho}px`).toHaveAttribute("aria-disabled", "true")
-      }
-
-      // El muro no se queda sin salida por mostrar la tarjeta.
-      await expect(page.getByRole("button", { name: /solicitar activación de lite/i }), `a ${ancho}px`).toBeVisible()
+      // El primer slide se limita a la tarjeta y permite llegar a los planes.
+      await expect(page.getByRole("button", { name: "Continuar" }), `a ${ancho}px`).toBeVisible()
     }
 
-    // La razón es alcanzable desde el propio control, no solo mirando.
-    const compartir = page.getByRole("button", { name: "Compartir", exact: true })
-    const descrito = await compartir.getAttribute("aria-describedby")
-    expect(descrito).toBeTruthy()
-    await expect(page.locator(`#${descrito}`)).toContainText(/código qr/i)
+    await page.getByRole("button", { name: "Continuar" }).click()
+    await expect(page.getByRole("heading", { name: "Ahora sí, los planes." })).toBeVisible()
+    await expect(page.getByRole("button", { name: /solicitar activación de lite/i })).toBeVisible()
   })
 })
