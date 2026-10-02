@@ -171,8 +171,9 @@ export async function createCustomerProfile(db: PrismaClient, input: { authUserI
   const byAuth = await db.customerProfile.findUnique({ where: { authUserId: input.authUserId } })
   const byEmail = await db.customerProfile.findUnique({ where: { emailNormalized } })
   if (byAuth && byEmail && byAuth.id !== byEmail.id) throw new ConflictError("La identidad y el correo pertenecen a perfiles distintos")
-  if (byEmail && byEmail.authUserId !== input.authUserId) throw new ConflictError("El correo ya pertenece a otra identidad")
+  if (byEmail?.authUserId && byEmail.authUserId !== input.authUserId) throw new ConflictError("El correo ya pertenece a otra identidad")
   if (byAuth) return db.customerProfile.update({ where: { id: byAuth.id }, data: { name: input.name.trim(), emailNormalized, avatarPath: input.avatarPath === undefined ? byAuth.avatarPath : input.avatarPath } })
+  if (byEmail && !byEmail.authUserId) return db.customerProfile.update({ where: { id: byEmail.id }, data: { authUserId: input.authUserId, name: input.name.trim(), avatarPath: input.avatarPath ?? byEmail.avatarPath } })
   return db.customerProfile.create({ data: { authUserId: input.authUserId, emailNormalized, name: input.name.trim(), avatarPath: input.avatarPath ?? null } })
 }
 
