@@ -34,7 +34,7 @@ test("onboarding mutations retain the catalog and account context through the pa
     await page.getByRole("button", { name: "Continuar", exact: true }).click()
     await page.locator('input[name="password"]').fill(password!)
     await page.getByRole("button", { name: "Iniciar sesión" }).click()
-    await page.waitForURL("**/dashboard")
+    await page.waitForURL("**/onboarding")
 
     const initialResponse = await page.request.get("/api/onboarding")
     expect(initialResponse.ok()).toBe(true)
