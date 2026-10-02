@@ -30,7 +30,7 @@ describe("onboarding mock", () => {
     expect((await getMockOnboarding(database, principal)).mode).toBe("mock")
     const drafted = await saveMockDraft(database, principal, {
       draftVersion: 0,
-      business: { name: "Café Aurora", categoryId: "category-1" },
+      business: { ownerName: "Alex García", name: "Café Aurora", categoryId: "category-1" },
       card: { reward: "Café gratis", stampsRequired: 8, themeId: "foil" },
     })
     const businessStep = await advanceMockOnboarding(database, principal, { action: "complete_business", draftVersion: drafted.onboarding.onboardingProgress.draftVersion })
