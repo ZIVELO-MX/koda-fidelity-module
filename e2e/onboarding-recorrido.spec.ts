@@ -96,6 +96,10 @@ test.describe("Alta guiada, recorrido completo", () => {
     await expect(page.getByRole("heading", { name: /cómo llegaste/i })).toBeVisible()
     await page.getByRole("button", { name: "Saltar", exact: true }).click()
 
+    // El muro de pago primero muestra la tarjeta; los planes están en el segundo slide.
+    await expect(page.getByRole("heading", { name: "Tu tarjeta está lista, pero todavía no publicada." })).toBeVisible()
+    await page.getByRole("button", { name: "Continuar" }).click()
+
     // Muro de pago.
     await expect(page.getByRole("heading", { name: "Ahora sí, los planes." })).toBeVisible({ timeout: 30000 })
     await expect(page.getByRole("radio", { name: /al año/i })).toBeChecked()
@@ -226,6 +230,8 @@ test.describe("Alta guiada, recorrido completo", () => {
     await expect(page.locator('button[aria-pressed="true"]')).toHaveCount(0)
 
     await page.getByRole("button", { name: "Saltar", exact: true }).click()
+    await expect(page.getByRole("heading", { name: "Tu tarjeta está lista, pero todavía no publicada." })).toBeVisible()
+    await page.getByRole("button", { name: "Continuar" }).click()
     await expect(page.getByRole("heading", { name: "Ahora sí, los planes." })).toBeVisible({ timeout: 30000 })
 
     // Y al volver sigue sin respuesta: saltar no inventó una.
