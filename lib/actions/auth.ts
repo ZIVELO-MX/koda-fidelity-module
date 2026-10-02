@@ -14,8 +14,11 @@ import { headers } from "next/headers"
 import { randomUUID } from "node:crypto"
 import { classifyLoginError } from "@/lib/auth-errors"
 import { reglaQueFalta } from "@/lib/reglas-de-contrasena"
+import { RateLimitError } from "@/lib/api-utils"
 
 export type AuthResult = { error?: string; success?: true }
+
+const DEMASIADOS_INTENTOS = "Demasiados intentos. Espera unos minutos e inténtalo de nuevo."
 
 export async function login(_prev: AuthResult, formData: FormData): Promise<AuthResult> {
   const email = formData.get("email") as string
@@ -35,7 +38,7 @@ export async function login(_prev: AuthResult, formData: FormData): Promise<Auth
       return { error: "Correo o contraseña incorrectos." }
     }
     if (kind === "rate_limited") {
-      return { error: "Demasiados intentos. Espera unos minutos e inténtalo de nuevo." }
+      return { error: DEMASIADOS_INTENTOS }
     }
 
     const error = err instanceof Error ? err : new Error("Unknown login error")
@@ -119,8 +122,14 @@ export async function signup(_prev: AuthResult, formData: FormData): Promise<Aut
   const normalizedEmail = normalizeEmail(email)
   const debugSignup = config.isDebugEmail(normalizedEmail)
   const requestHeaders = await headers()
-  await enforceRateLimit("signup-identity", normalizedEmail, 3, 60 * 60 * 1000)
-  await enforceRateLimit("signup-ip", requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown", 5, 60 * 60 * 1000)
+  // Fuera de un try, el límite reventaba la acción y se veía una pantalla de error.
+  try {
+    await enforceRateLimit("signup-identity", normalizedEmail, 3, 60 * 60 * 1000)
+    await enforceRateLimit("signup-ip", requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown", 5, 60 * 60 * 1000)
+  } catch (err) {
+    if (err instanceof RateLimitError) return { error: DEMASIADOS_INTENTOS }
+    throw err
+  }
   await prisma.signupIntent.upsert({ where: { email: normalizedEmail }, create: { email: normalizedEmail, name: name.trim() }, update: { name: name.trim(), status: "pending" } })
   const supabase = await createClient()
   const { data, error } = debugSignup
@@ -189,6 +198,7 @@ export async function sendPasswordReset(_prev: AuthResult, formData: FormData): 
     await authService.sendPasswordResetEmail(email.trim(), { redirectTo })
     return { success: true }
   } catch (err) {
+    if (err instanceof RateLimitError) return { error: DEMASIADOS_INTENTOS }
     console.error("[sendPasswordReset] Error:", err)
     return { error: "No fue posible enviar el correo. Verifica el correo e intenta de nuevo." }
   }

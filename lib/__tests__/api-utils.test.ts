@@ -14,6 +14,7 @@ import {
   NotFoundError,
   ValidationError,
   ForbiddenError,
+  RateLimitError,
   handleApiError,
   withApiContext,
 } from "../api-utils"
@@ -73,6 +74,13 @@ describe("handleApiError", () => {
   it("returns 500 for unknown errors", () => {
     const response = handleApiError(new Error("Unexpected"))
     expect(response.status).toBe(500)
+  })
+
+  // Antes caía en la rama de descarte: 500 KF-SYS-001.
+  it("returns 429 for RateLimitError", async () => {
+    const response = handleApiError(new RateLimitError())
+    expect(response.status).toBe(429)
+    expect((await response.json()).code).toBe("KF-RATE-001")
   })
 })
 
