@@ -184,6 +184,9 @@ export function withCurrentCycleMilestoneClaims<
 // ponytail: `insensitive` no usa el índice de email; si la tabla crece, pasar a
 // minúsculas los correos existentes y volver a igualdad exacta.
 const mismoCorreo = (email: string) => ({ equals: email, mode: "insensitive" as const })
+// Prisma puede resolver `insensitive` con ILIKE, donde `_` y `%` son comodines
+// («ana_l@» encontraría «anaxl@»). Se confirma la igualdad exacta aquí.
+const delCorreo = (correo: string) => (customer: { email: string | null }) => normalizeEmail(customer.email ?? "") === correo
 
 export async function POST(request: NextRequest) {
   const requestId = requestIdFrom(request)
@@ -219,10 +222,11 @@ export async function POST(request: NextRequest) {
     }
 
     const correo = normalizeEmail(email)
-    const existing = await prisma.customer.findFirst({
+    const candidatos = await prisma.customer.findMany({
       where: { email: mismoCorreo(correo), cardId },
+      select: { email: true },
     })
-    if (existing) {
+    if (candidatos.some(delCorreo(correo))) {
       return withRequestId(NextResponse.json({ existing: true }), requestId)
     }
 
@@ -273,14 +277,15 @@ export async function GET(request: NextRequest) {
         throw new UnauthorizedError()
       }
 
-      const where: Record<string, unknown> = { email: mismoCorreo(normalizeEmail(email)) }
+      const correo = normalizeEmail(email)
+      const where: Record<string, unknown> = { email: mismoCorreo(correo) }
       if (cardId) where.cardId = cardId
 
-      const customers = await prisma.customer.findMany({
+      const customers = (await prisma.customer.findMany({
         where,
         include: customerInclude,
         orderBy: { createdAt: "desc" },
-      })
+      })).filter(delCorreo(correo))
 
       return withRequestId(NextResponse.json({
         customers: customers.map(withCurrentCycleMilestoneClaims),
