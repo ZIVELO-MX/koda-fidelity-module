@@ -22,7 +22,9 @@ export function RestoreCardButton({ cardId, cardName }: RestoreCardButtonProps) 
     if (res.ok) {
       router.refresh()
     } else {
-      setError("No fue posible restaurar la tarjeta")
+      // Con Lite el servidor explica por qué no se puede; ese motivo es el útil.
+      const cuerpo = await res.json().catch(() => null)
+      setError(res.status === 400 && cuerpo?.error ? cuerpo.error : "No fue posible restaurar la tarjeta")
       setLoading(false)
     }
   }

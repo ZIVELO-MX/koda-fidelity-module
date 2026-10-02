@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { cuerpoJson, getBusinessFromSession, handleApiError, NotFoundError, requestIdFrom, requireRole, requireWritableBusinessPrincipal, ValidationError, withRequestId } from "@/lib/api-utils"
 import { isExpired } from "@/lib/card-utils"
-import { syncExpiredEntitlements } from "@/lib/account-lifecycle"
+import { getEntitlements, syncExpiredEntitlements } from "@/lib/account-lifecycle"
 import { resolveTheme } from "@/lib/card-themes"
 
 /**
@@ -355,11 +355,22 @@ export async function DELETE(
     }
 
     const permanent = new URL(request.url).searchParams.get("permanent") === "true"
-    if (permanent) {
-      await prisma.loyaltyCard.delete({ where: { id } })
-    } else {
-      await prisma.loyaltyCard.update({ where: { id }, data: { isActive: false, status: "ARCHIVED" } })
-    }
+    await prisma.$transaction(async (tx) => {
+      if (permanent) {
+        await tx.loyaltyCard.delete({ where: { id } })
+      } else {
+        await tx.loyaltyCard.update({ where: { id }, data: { isActive: false, status: "ARCHIVED" } })
+      }
+      // Con Lite, si se va la única activa, entra la bloqueada más antigua. Sin
+      // esto el negocio se quedaba sin ninguna tarjeta que aceptara clientes.
+      if (existing.status !== "ACTIVE") return
+      const { plan, subscription } = await getEntitlements(tx, business.id)
+      if (plan !== "LITE") return
+      if (await tx.loyaltyCard.count({ where: { businessId: business.id, status: "ACTIVE" } }) > 0) return
+      const siguiente = await tx.loyaltyCard.findFirst({ where: { businessId: business.id, status: "LOCKED_BY_PLAN" }, orderBy: { createdAt: "asc" }, select: { id: true } })
+      if (siguiente) await tx.loyaltyCard.update({ where: { id: siguiente.id }, data: { isActive: true, isLite: true, status: "ACTIVE" } })
+      if (subscription) await tx.subscription.update({ where: { id: subscription.id }, data: { liteCardId: siguiente?.id ?? null } })
+    })
 
     return withRequestId(NextResponse.json({ success: true }), requestId)
   } catch (error) {
