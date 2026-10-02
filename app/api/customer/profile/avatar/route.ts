@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase-admin"
 import { prisma } from "@/lib/prisma"
 import { getAccountPrincipal, handleApiError, NotFoundError, ValidationError, requestIdFrom, withRequestId } from "@/lib/api-utils"
-import { replaceCustomerAvatar } from "@/lib/account-lifecycle"
+import { cleanupPendingCustomerAvatars, replaceCustomerAvatar } from "@/lib/account-lifecycle"
 import { signPrivateAvatarPathWithClient, withCustomerAvatarUrl } from "@/lib/private-avatar"
 
 const MAX_BYTES = 2 * 1024 * 1024
@@ -41,6 +41,7 @@ export async function PUT(request: NextRequest) {
     const { error } = await admin.storage.from(bucket).upload(path, output, { contentType: "image/webp", upsert: false })
     if (error) throw error
     const updated = await replaceCustomerAvatar(prisma, profile.id, bucket, path)
+    await cleanupPendingCustomerAvatars(prisma, profile.id)
     const avatarUrl = await signPrivateAvatarPathWithClient(admin, path, `customer/${profile.id}`)
     const { avatarPath: _avatarPath, ...publicProfile } = updated
     return withRequestId(NextResponse.json({ profile: { ...publicProfile, avatarUrl }, signedUrl: avatarUrl }, { headers: { "Cache-Control": "private, no-store" } }), requestId)
@@ -55,6 +56,8 @@ export async function DELETE(request: NextRequest) {
     if (!profile) throw new NotFoundError("Perfil de cliente no encontrado")
     const updated = await prisma.customerProfile.update({ where: { id: profile.id }, data: { avatarPath: null } })
     if (profile.avatarPath) await prisma.avatarCleanupJob.create({ data: { profileId: profile.id, bucket: process.env.SUPABASE_PRIVATE_AVATAR_BUCKET || "avatars", storagePath: profile.avatarPath } })
+    // El cliente pidió quitar su foto: el archivo se borra ahora, no queda en el bucket.
+    await cleanupPendingCustomerAvatars(prisma, profile.id)
     return withRequestId(NextResponse.json({ profile: await withCustomerAvatarUrl(updated) }, { headers: { "Cache-Control": "private, no-store" } }), requestId)
   } catch (error) { return withRequestId(handleApiError(error, requestId), requestId) }
 }
