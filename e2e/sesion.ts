@@ -10,7 +10,12 @@ import { expect, type Page } from "@playwright/test"
  * el error y ninguno de los dos destinos aparece. Con 26 pruebas por delante eso
  * son ocho minutos de espera para un diagnóstico equivocado.
  */
-export async function entrar(page: Page, correo: string, clave: string) {
+export async function entrar(
+  page: Page,
+  correo: string,
+  clave: string,
+  destino = "/dashboard",
+) {
   await page.goto("/login")
   await page.getByLabel("Correo electrónico").fill(correo)
   await page.getByRole("button", { name: "Continuar", exact: true }).click()
@@ -44,5 +49,5 @@ export async function entrar(page: Page, correo: string, clave: string) {
 
   await contraseña.fill(clave)
   await page.getByRole("button", { name: "Iniciar Sesión" }).click()
-  await page.waitForURL("**/dashboard", { timeout: 60000 })
+  await page.waitForURL(`**${destino}`, { timeout: 60000 })
 }

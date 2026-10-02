@@ -42,7 +42,7 @@ test.describe("Alta guiada, recorrido completo", () => {
     const contexto = await browser.newContext()
     try {
       const pagina = await contexto.newPage()
-      await entrar(pagina, CORREO!, CLAVE!)
+      await entrar(pagina, CORREO!, CLAVE!, "/onboarding")
       cookies = await contexto.cookies()
     } finally { await contexto.close() }
   })
