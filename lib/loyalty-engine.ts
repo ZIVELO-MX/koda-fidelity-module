@@ -129,7 +129,9 @@ export async function executeLoyaltyOperation(db: Db, input: OperationInput): Pr
             milestoneIconName: configuredMilestone.iconName,
             probability: configuredMilestone.probability,
             randomRoll,
-            outcome: picked ? "awarded" : "no_prize",
+            // Sin el hito en la tarjeta no hay a qué ligar el premio, así que
+            // el registro no puede decir que se entregó.
+            outcome: !picked ? "no_prize" : milestone ? "awarded" : "milestone_removed",
           }
           if (milestone && picked) {
             const claim = await tx.customerMilestoneClaim.create({ data: { customerId: customer.id, milestoneId: milestone.id, cardId: customer.card.id, label: picked.label, iconName: picked.iconName } })
