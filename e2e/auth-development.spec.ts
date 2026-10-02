@@ -226,7 +226,7 @@ test.describe("FID-0016 development authentication", () => {
     await page.getByLabel("Correo electrónico").fill(`business-${unique}`)
     await page.getByLabel("Contraseña").fill("SecurePass123!")
     await page.getByRole("button", { name: "Continuar", exact: true }).click()
-    await page.getByRole("radio", { name: "Soy un negocio" }).click()
+    await page.getByText("Soy un negocio", { exact: true }).click()
     await page.getByRole("button", { name: "Crear cuenta", exact: true }).click()
     await page.waitForURL("**/onboarding", { timeout: 15000 })
 
@@ -234,7 +234,7 @@ test.describe("FID-0016 development authentication", () => {
     await page.getByLabel("Correo electrónico").fill(`customer-${unique}`)
     await page.getByLabel("Contraseña").fill("SecurePass123!")
     await page.getByRole("button", { name: "Continuar", exact: true }).click()
-    await page.getByRole("radio", { name: "Soy un cliente" }).click()
+    await page.getByText("Soy un cliente", { exact: true }).click()
     await page.getByLabel("Tu nombre").fill("Cliente E2E")
     await page.getByRole("button", { name: "Crear cuenta", exact: true }).click()
     await page.waitForURL("**/dashboard/my-cards", { timeout: 15000 })

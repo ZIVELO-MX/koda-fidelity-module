@@ -36,19 +36,19 @@ export function getFriendlyAuthError(error: string, errorCode: string): AuthErro
   if (errorCode === "otp_expired" || message.includes("expired") || message.includes("otp_expired")) {
     return {
       title: "Enlace Expirado",
-      description: "El enlace mágico que clickeaste ya no es válido. Solicita uno nuevo abajo.",
+      description: "El enlace ya no es válido. Inicia sesión para solicitar uno nuevo.",
     }
   }
   if (errorCode === "rate_limit" || message.includes("rate_limit") || message.includes("rate limit") || message.includes("over_email_send_rate_limit") || message.includes("too many")) {
     return {
       title: "Demasiados Intentos",
-      description: "El límite de enlaces por correo está agotado. Usa Google para acceder al instante o espera unos minutos.",
+      description: "El límite de correos está agotado. Usa Google para entrar o espera unos minutos.",
     }
   }
   if (message.includes("invalid") || message.includes("not found") || message.includes("token")) {
     return {
       title: "Enlace No Válido",
-      description: "El enlace que clickeaste no es válido. Es posible que ya haya sido usado o que sea incorrecto. Solicita uno nuevo abajo.",
+      description: "El enlace no es válido. Puede que ya se haya usado o que sea incorrecto. Inicia sesión para solicitar otro.",
     }
   }
   if (message.includes("email not confirmed")) {
@@ -71,10 +71,10 @@ export function getFriendlySendError(err: unknown): string {
     message.includes("over_email_send_rate_limit") ||
     message.includes("too many")
   ) {
-    return "El límite de enlaces por correo está agotado. Usa Google para acceder al instante o espera unos minutos."
+    return "El límite de correos está agotado. Usa Google para entrar o espera unos minutos."
   }
   if (message.includes("invalid") || message.includes("not found")) {
     return "Correo electrónico no válido. Verifica e intenta de nuevo."
   }
-  return "No fue posible enviar el enlace."
+  return "No fue posible enviar el correo."
 }

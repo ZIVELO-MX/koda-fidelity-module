@@ -15,7 +15,8 @@ export default function AuthErrorPage() {
 function AuthErrorContent() {
   const params = useSearchParams()
   const code = params.get("error_code") ?? ""
-  const message = params.get("error") ?? params.get("error_description") ?? ""
+  const errorDescription = params.get("error_description") ?? ""
+  const message = params.get("error") ?? errorDescription
   const expired = code === "otp_expired"
   const rateLimited = code === "rate_limit"
   const friendly = getFriendlyAuthError(message, code)
@@ -25,7 +26,7 @@ function AuthErrorContent() {
       <section className="w-full max-w-md space-y-4 rounded-2xl border border-border bg-card p-6 text-center">
         {expired ? <Clock className="mx-auto h-8 w-8 text-amber-600" /> : <AlertCircle className="mx-auto h-8 w-8 text-muted-foreground" />}
         <h1 className="text-xl font-bold">{friendly?.title ?? (expired ? "Enlace expirado" : "Error de autenticación")}</h1>
-        <p className="text-muted-foreground">{friendly?.description ?? (expired ? "El enlace ya no es válido. Inicia sesión para pedir uno nuevo." : message || "Ocurrió un error al iniciar sesión. Intenta de nuevo.")}</p>
+        <p className="text-muted-foreground">{errorDescription || friendly?.description || (expired ? "El enlace ya no es válido. Inicia sesión para pedir uno nuevo." : message || "Ocurrió un error al iniciar sesión. Intenta de nuevo.")}</p>
         {rateLimited && <GoogleButton redirectTo="/dashboard/my-cards" />}
       </section>
       <div className="flex gap-3">
