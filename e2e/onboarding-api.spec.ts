@@ -13,7 +13,7 @@ test("onboarding mutations retain the catalog and account context through the pa
   expect(password).toBeTruthy()
 
   const db = new PrismaClient()
-  let fixture: { userId: string; businessId: string; name: string; ownerName: string | null; categoryId: string | null; firstCardId: string | null } | undefined
+  let fixture: { userId: string; businessId: string; name: string; ownerName: string; categoryId: string | null; firstCardId: string | null } | undefined
   try {
     const user = await db.user.findUniqueOrThrow({ where: { email } })
     const business = await db.business.findUniqueOrThrow({ where: { id: user.businessId! } })
