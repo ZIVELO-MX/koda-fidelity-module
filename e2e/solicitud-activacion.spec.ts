@@ -36,6 +36,10 @@ test.describe.configure({ mode: "serial" })
 async function enElMuro(page: Page) {
   await page.goto("/onboarding")
   await expect(page.locator("#contenido")).toBeVisible({ timeout: 60000 })
+  await llegarAPlanes(page)
+}
+
+async function llegarAPlanes(page: Page) {
   await expect(page.getByRole("heading", { name: "Tu tarjeta está lista, pero todavía no publicada." })).toBeVisible()
   await page.getByRole("button", { name: "Continuar" }).click()
   await expect(page.getByRole("heading", { name: "Ahora sí, los planes." })).toBeVisible()
@@ -104,6 +108,7 @@ test.describe("Solicitud manual de activación", () => {
 
     await page.reload()
     await expect(page.locator("#contenido")).toBeVisible({ timeout: 60000 })
+    await llegarAPlanes(page)
     await expect(page.getByText(valor, { exact: true })).toBeVisible({ timeout: 30000 })
     expect((await leerSolicitud(page)).request).toMatchObject({ ticketNumber: valor, status: "PENDING" })
   })
@@ -157,6 +162,7 @@ test.describe("Solicitud manual de activación", () => {
     )
     await page.reload()
     await expect(page.locator("#contenido")).toBeVisible({ timeout: 60000 })
+    await llegarAPlanes(page)
 
     await page.getByRole("button", { name: /solicitar activación de pro/i }).click()
 
