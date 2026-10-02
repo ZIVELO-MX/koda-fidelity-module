@@ -304,20 +304,23 @@ export async function executeDueClosures(db: PrismaClient, now = new Date()) {
   for (const closure of candidates) {
     const claim = await db.accountClosure.updateMany({ where: { id: closure.id, status: closure.status }, data: { status: "PROCESSING" } })
     if (claim.count !== 1) continue
-    const execution = await prepareExecution(db, closure.id, closure.businessId, now)
-    const tasks = await db.accountClosureCleanupTask.findMany({ where: { executionId: execution.id, status: { not: "COMPLETED" } } })
-    const results = await Promise.all(tasks.map((task) => runCleanupTask(db, task)))
-    if (results.some((result) => !result)) {
-      await db.accountClosure.update({ where: { id: closure.id }, data: { status: "FAILED" } })
-      await db.accountClosureExecution.update({ where: { id: execution.id }, data: { status: "FAILED", lastError: "Una o más tareas de limpieza fallaron", leaseUntil: null } })
-      continue
+    // Un cierre que falla no puede cortar el lote ni quedarse en PROCESSING:
+    // antes la excepción salía del `for` y los siguientes no se procesaban.
+    try {
+      const execution = await prepareExecution(db, closure.id, closure.businessId, now)
+      const tasks = await db.accountClosureCleanupTask.findMany({ where: { executionId: execution.id, status: { not: "COMPLETED" } } })
+      const results = await Promise.all(tasks.map((task) => runCleanupTask(db, task)))
+      if (results.some((result) => !result)) throw new Error("Una o más tareas de limpieza fallaron")
+      await db.$transaction(async (tx) => {
+        await tx.stampLog.updateMany({ where: { businessId: closure.businessId }, data: { businessId: null, cardId: null, customerId: null, cycleId: null } })
+        await tx.business.delete({ where: { id: closure.businessId } })
+        await tx.accountClosureExecution.update({ where: { id: execution.id }, data: { status: "COMPLETED", completedAt: now, leaseUntil: null, lastError: null } })
+      })
+      processed += 1
+    } catch (error) {
+      await db.accountClosure.updateMany({ where: { id: closure.id }, data: { status: "FAILED" } })
+      await db.accountClosureExecution.updateMany({ where: { closureId: closure.id }, data: { status: "FAILED", lastError: error instanceof Error ? error.message : "Error al cerrar la cuenta", leaseUntil: null } })
     }
-    await db.$transaction(async (tx) => {
-      await tx.stampLog.updateMany({ where: { businessId: closure.businessId }, data: { businessId: null, cardId: null, customerId: null, cycleId: null } })
-      await tx.business.delete({ where: { id: closure.businessId } })
-      await tx.accountClosureExecution.update({ where: { id: execution.id }, data: { status: "COMPLETED", completedAt: now, leaseUntil: null, lastError: null } })
-    })
-    processed += 1
   }
   return processed
 }
