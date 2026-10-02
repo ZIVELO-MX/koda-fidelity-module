@@ -42,6 +42,7 @@ test("onboarding mutations retain the catalog and account context through the pa
     expect(initial.categories.length).toBeGreaterThan(0)
     expect(initial.themes.length).toBeGreaterThan(0)
     let current = initial
+    let expectedUser = initial.accountContext.user
     const mutate = async (method: "post" | "patch", data: Record<string, unknown>) => {
       const response = await page.request[method]("/api/onboarding", {
         data: { ...data, draftVersion: current.onboarding.onboardingProgress.draftVersion },
@@ -50,7 +51,7 @@ test("onboarding mutations retain the catalog and account context through the pa
       current = await response.json()
       expect(current.categories).toEqual(initial.categories)
       expect(current.themes).toEqual(initial.themes)
-      expect(current.accountContext.user).toEqual(initial.accountContext.user)
+      expect(current.accountContext.user).toEqual(expectedUser)
       expect(current.accountContext.plan).toBe(initial.accountContext.plan)
       expect(current.accountContext.business.id).toBe(initial.accountContext.business.id)
       expect(current.mode).toBe("live")
@@ -59,6 +60,7 @@ test("onboarding mutations retain the catalog and account context through the pa
     await mutate("post", { action: "skip_intro" })
     expect(current.onboarding.onboardingProgress.step).toBe("BUSINESS")
     await mutate("patch", { business: { ownerName: "Onboarding CI", name: "Onboarding API CI", categoryId: current.categories[0].id } })
+    expectedUser = { ...expectedUser, name: "Onboarding CI" }
     await mutate("post", { action: "complete_business" })
     expect(current.onboarding.onboardingProgress.step).toBe("CARD")
     await mutate("patch", { card: { reward: "Coffee", stampsRequired: 8 } })
