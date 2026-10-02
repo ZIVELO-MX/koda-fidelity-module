@@ -30,8 +30,8 @@ function AuthErrorContent() {
         {rateLimited && <GoogleButton redirectTo="/dashboard/my-cards" />}
       </section>
       <div className="flex gap-3">
-        <Button asChild variant="outline"><Link href="/login">Iniciar sesión</Link></Button>
-        <Button asChild><Link href="/signup">Crear cuenta</Link></Button>
+        <Button asChild variant="outline" className="h-11"><Link href="/login">Iniciar sesión</Link></Button>
+        <Button asChild className="h-11"><Link href="/signup">Crear cuenta</Link></Button>
       </div>
     </main>
   )
