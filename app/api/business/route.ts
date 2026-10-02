@@ -5,9 +5,11 @@ import { withBusinessAvatarUrl } from "@/lib/private-avatar"
 
 const noStore = { headers: { "Cache-Control": "private, no-store" } }
 const COLOR = /^#[0-9a-f]{6}$/i
-// El panel manda el logo como data URL. ponytail: viaja en cada respuesta que
-// incluye el negocio; pasarlo a storage cuando el peso se note.
-const LOGO = /^(data:image\/(png|jpeg|webp|gif|svg\+xml);base64,|https:\/\/)/
+// El panel manda el logo como data URL de cualquier `image/*`, y lo reenvía en
+// cada guardado: una lista cerrada de tipos dejaría sin poder guardar a quien ya
+// subió, por ejemplo, un AVIF. ponytail: viaja en cada respuesta que incluye el
+// negocio; pasarlo a storage cuando el peso se note.
+const LOGO = /^(data:image\/[a-z0-9.+-]+;base64,|https:\/\/)/i
 const MAX_LOGO = 2_900_000 // 2 MB en base64, con margen para la cabecera
 
 /**
@@ -105,11 +107,13 @@ export async function PUT(request: NextRequest) {
     }
     // El color y el logo se pintan en la tarjeta pública. Antes se guardaba
     // cualquier texto: el campo del color es libre y el límite de 2 MB del logo
-    // solo existía en el navegador.
-    if (body.brandColor !== undefined && (typeof body.brandColor !== "string" || !COLOR.test(body.brandColor))) {
+    // solo existía en el navegador. Solo se valida lo que cambia: el panel
+    // reenvía lo guardado, y un valor viejo no debe impedir guardar lo demás.
+    const cambia = (campo: "brandColor" | "logoUrl") => body[campo] !== undefined && body[campo] !== business[campo]
+    if (cambia("brandColor") && (typeof body.brandColor !== "string" || !COLOR.test(body.brandColor))) {
       throw new ValidationError("El color debe ser hexadecimal, como #ff6b35")
     }
-    if (body.logoUrl !== undefined && body.logoUrl !== null && body.logoUrl !== "" && (typeof body.logoUrl !== "string" || !LOGO.test(body.logoUrl) || body.logoUrl.length > MAX_LOGO)) {
+    if (cambia("logoUrl") && body.logoUrl !== null && body.logoUrl !== "" && (typeof body.logoUrl !== "string" || !LOGO.test(body.logoUrl) || body.logoUrl.length > MAX_LOGO)) {
       throw new ValidationError("El logo debe ser una imagen de hasta 2 MB")
     }
     for (const campo of ["nickname", "businessType", "address", "phone", "website", "instagram", "iconName", "stampIconName"]) {

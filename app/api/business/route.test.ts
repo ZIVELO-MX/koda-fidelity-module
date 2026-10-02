@@ -33,6 +33,16 @@ describe("PUT /api/business", () => {
     expect(update).toHaveBeenCalledWith({ where: { id: "biz1" }, data: { brandColor: "#F97316", logoUrl } })
   })
 
+  // El panel reenvía el logo guardado en cada cambio de marca.
+  it("accepts any image type the panel may have stored, such as AVIF", async () => {
+    expect((await guardar({ logoUrl: "data:image/avif;base64,AAAA" })).status).toBe(200)
+  })
+
+  it("does not block saving when the stored color is an old invalid value", async () => {
+    requireWritableBusinessPrincipal.mockResolvedValue({ business: { id: "biz1", brandColor: "orange", logoUrl: null }, user: { id: "u1", role: "admin" } })
+    expect((await guardar({ brandColor: "orange", name: "Café" })).status).toBe(200)
+  })
+
   it("still lets the logo be removed", async () => {
     expect((await guardar({ logoUrl: null })).status).toBe(200)
   })
