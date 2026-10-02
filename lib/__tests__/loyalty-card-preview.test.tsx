@@ -46,14 +46,12 @@ describe("LoyaltyCardPreview", () => {
     expect(within(container).getByText("Ana").getAttribute("style")).toContain("rgb(28, 27, 23)")
   })
 
-  it("con blanco forzado sobre un color claro, ajusta el tono para que se lea", () => {
-    // Blanco sobre ámbar crudo queda en 2.15:1. La piel oscurece el fondo hasta
-    // 4.5, así que el degradado ya no arranca en el ámbar tal cual.
+  it("con blanco forzado sobre un color claro, conserva el fondo", () => {
     const html = renderToStaticMarkup(
       <LoyaltyCardPreview businessName="Panadería" currentStamps={0} maxStamps={2} reward="Pan" brandColor="#f59e0b" textColor="LIGHT" showQR={false} />,
     )
     expect(html).toContain("radial-gradient(")
     expect(html).toContain("color:#FFFFFF")
-    expect(html).not.toMatch(/radial-gradient\([^,]*,\s*#F59E0B/i)
+    expect(html).toMatch(/radial-gradient\([^,]*,\s*#F59E0B/i)
   })
 })

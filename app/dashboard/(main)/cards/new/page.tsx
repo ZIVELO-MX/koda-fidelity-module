@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { IconPicker } from "@/components/dashboard/icon-picker"
+import { TextColorPicker } from "@/components/dashboard/text-color-picker"
 import { ArrowLeft, Check, ChevronDown, Plus, Trash2 } from "lucide-react"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { toast } from "sonner"
@@ -45,7 +46,7 @@ export default function CreateCardPage() {
   const [brandColor, setBrandColor] = useState("#f97316")
   const [iconName, setIconName] = useState<string | null>(null)
   const [stampIconName, setStampIconName] = useState<string | null>(null)
-  const [textColor, setTextColor] = useState<"AUTO" | "DARK" | "LIGHT">("AUTO")
+  const [textColor, setTextColor] = useState<"AUTO" | "DARK" | "LIGHT">("LIGHT")
   const [themeId, setThemeId] = useState("")
   const [themes, setThemes] = useState<TemaDisponible[]>([])
   const [accountPlan, setAccountPlan] = useState<"LITE" | "PRO">("LITE")
@@ -357,17 +358,13 @@ export default function CreateCardPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="textColor">Color del texto</Label>
-                <select
-                  id="textColor"
+                <Label>Color del texto</Label>
+                <TextColorPicker
                   value={textColor}
-                  onChange={(e) => setTextColor(e.target.value as "AUTO" | "DARK" | "LIGHT")}
-                  className="min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                >
-                  <option value="AUTO">Automático</option>
-                  <option value="DARK">Oscuro</option>
-                  <option value="LIGHT">Claro</option>
-                </select>
+                  onChange={setTextColor}
+                  brandColor={brandColor}
+                  themeCode={themeCode}
+                />
                 <AvisoDeColorDeTexto brandColor={brandColor} themeCode={themeCode} textColor={textColor} />
               </div>
 

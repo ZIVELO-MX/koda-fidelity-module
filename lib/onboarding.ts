@@ -117,7 +117,7 @@ function normalizar(cuerpo: unknown): EstadoDelAlta {
       stampsRequired: typeof tarjeta.stampsRequired === "number" ? tarjeta.stampsRequired : undefined,
       brandColor: texto(tarjeta.brandColor),
       themeId: texto(tarjeta.themeId),
-      textColor: tarjeta.textColor === "DARK" || tarjeta.textColor === "LIGHT" ? tarjeta.textColor : "AUTO",
+      textColor: tarjeta.textColor === "DARK" || tarjeta.textColor === "AUTO" || tarjeta.textColor === "LIGHT" ? tarjeta.textColor : "LIGHT",
       iconName: typeof tarjeta.iconName === "string" ? tarjeta.iconName : tarjeta.iconName === null ? null : undefined,
       stampIconName: typeof tarjeta.stampIconName === "string" ? tarjeta.stampIconName : tarjeta.stampIconName === null ? null : undefined,
     },

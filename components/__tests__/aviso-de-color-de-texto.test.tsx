@@ -9,16 +9,16 @@ describe("AvisoDeColorDeTexto", () => {
     const { container } = render(<AvisoDeColorDeTexto brandColor="#f59e0b" themeCode={null} textColor="AUTO" />)
     expect(container).toBeEmptyDOMElement()
   })
-  it("claro sobre ámbar avisa de que el tono se ajusta", () => {
+  it("claro sobre ámbar avisa del contraste sin ajustar el tono", () => {
     render(<AvisoDeColorDeTexto brandColor="#f59e0b" themeCode={null} textColor="LIGHT" />)
-    expect(screen.getByText(/el tono de la tarjeta se ajusta/)).toBeInTheDocument()
+    expect(screen.getByText(/El texto claro puede tener poco contraste/)).toBeInTheDocument()
   })
   it("oscuro sobre ámbar no mueve nada, así que calla", () => {
     const { container } = render(<AvisoDeColorDeTexto brandColor="#f59e0b" themeCode={null} textColor="DARK" />)
     expect(container).toBeEmptyDOMElement()
   })
-  it("oscuro sobre Gradiente vivo explica que va claro", () => {
+  it("oscuro sobre Gradiente vivo avisa del contraste sin cambiar el texto", () => {
     render(<AvisoDeColorDeTexto brandColor="#f97316" themeCode="gradiente" textColor="DARK" />)
-    expect(screen.getByText(/Gradiente vivo el texto va claro/)).toBeInTheDocument()
+    expect(screen.getByText(/El texto oscuro puede tener poco contraste con Gradiente vivo/)).toBeInTheDocument()
   })
 })

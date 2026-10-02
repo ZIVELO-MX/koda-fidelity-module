@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { IconPicker } from "@/components/dashboard/icon-picker"
+import { TextColorPicker } from "@/components/dashboard/text-color-picker"
 import { AvisoDeColorDeTexto } from "@/components/aviso-de-color-de-texto"
 import { BarraDePasos } from "@/components/onboarding/barra-de-pasos"
 import { PLANES } from "@/lib/planes"
@@ -803,22 +804,17 @@ export function Tarjeta({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="color-texto">Color del texto</Label>
-          <select
-            id="color-texto"
-            value={estado.tarjeta.textColor ?? "AUTO"}
-            onChange={(e) => {
-              const textColor = e.target.value as "AUTO" | "DARK" | "LIGHT"
+          <Label>Color del texto</Label>
+          <TextColorPicker
+            value={estado.tarjeta.textColor ?? "LIGHT"}
+            brandColor={color}
+            themeCode={elegido?.code ?? null}
+            onChange={(textColor) => {
               onCambioLocal({ ...estado, tarjeta: { ...estado.tarjeta, textColor } })
               onCambio({ card: { textColor } })
             }}
-            className="min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50"
-          >
-            <option value="AUTO">Automático</option>
-            <option value="DARK">Oscuro</option>
-            <option value="LIGHT">Claro</option>
-          </select>
-          <AvisoDeColorDeTexto brandColor={color} themeCode={elegido?.code ?? null} textColor={estado.tarjeta.textColor ?? "AUTO"} />
+          />
+          <AvisoDeColorDeTexto brandColor={color} themeCode={elegido?.code ?? null} textColor={estado.tarjeta.textColor ?? "LIGHT"} />
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -897,7 +893,7 @@ export function Tarjeta({
         </p>
         <LoyaltyCardPreview
           businessName={estado.negocio.name || "Tu negocio"}
-          currentStamps={0}
+          currentStamps={Math.min(3, sellos)}
           maxStamps={sellos}
           reward={estado.tarjeta.reward || "Tu recompensa"}
           brandColor={color}
@@ -906,7 +902,7 @@ export function Tarjeta({
           // se publica con el color del negocio. Cómo queda publicada lo enseña
           // «Tarjeta lista», con el tema efectivo.
           themeCode={elegido?.code ?? null}
-          textColor={estado.tarjeta.textColor ?? "AUTO"}
+          textColor={estado.tarjeta.textColor ?? "LIGHT"}
           iconName={estado.tarjeta.iconName}
           stampIconName={estado.tarjeta.stampIconName}
           showQR={false}
@@ -940,7 +936,7 @@ export function TarjetaLista({ estado }: { estado: EstadoDelAlta }) {
           reward={estado.tarjeta.reward || "Tu recompensa"}
           brandColor={colorDeRespaldo(estado)}
           themeCode={temaEfectivo}
-          textColor={estado.tarjeta.textColor ?? "AUTO"}
+          textColor={estado.tarjeta.textColor ?? "LIGHT"}
           iconName={estado.tarjeta.iconName}
           stampIconName={estado.tarjeta.stampIconName}
           showQR
@@ -985,7 +981,7 @@ export function Club({ estado }: { estado: EstadoDelAlta }) {
         brandColor={colorDeRespaldo(estado)}
         showQR
         qrValue={`Club ${nombre}`}
-        textColor={estado.tarjeta.textColor ?? "AUTO"}
+        textColor={estado.tarjeta.textColor ?? "LIGHT"}
         iconName={estado.tarjeta.iconName}
         stampIconName={estado.tarjeta.stampIconName}
         className="mx-auto max-w-[300px]"
@@ -1160,7 +1156,7 @@ export function TarjetaGuardada({ estado }: { estado: EstadoDelAlta }) {
           reward={estado.tarjeta.reward || "Tu recompensa"}
           brandColor={colorDeRespaldo(estado)}
           themeCode={temaEfectivo}
-          textColor={estado.tarjeta.textColor ?? "AUTO"}
+          textColor={estado.tarjeta.textColor ?? "LIGHT"}
           iconName={estado.tarjeta.iconName}
           stampIconName={estado.tarjeta.stampIconName}
           showQR={false}

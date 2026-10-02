@@ -85,84 +85,39 @@ export type PielDeTarjeta = {
   opacidadDelPatron: number
   /** El color del texto, elegido por contraste sobre este acabado. */
   texto: string
-  /** Hacia dónde tiran las placas y el pie para no restarle contraste al texto:
-   *  255 cuando el texto es tinta, 0 cuando es blanco. */
+  /** Hacia dónde tiran las placas y el pie según el contraste automático.
+   *  Este valor no cambia al forzar texto claro u oscuro. */
   aparta: number
-  /** Si el fondo se apartó del color del negocio para que el texto se lea. */
+  /** Se conserva por compatibilidad; elegir texto nunca ajusta el fondo. */
   tonoAjustado: boolean
-  /** Si se pudo usar el color de texto pedido. Solo es `false` con texto negro
-   *  sobre «Gradiente vivo»: ese acabado baja al 50% de oscuridad, y ni con el
-   *  fondo en blanco la tinta llega a 4.5 en su extremo (queda en 4.36). */
+  /** Si el texto elegido alcanza contraste AA sobre los extremos de la piel. */
   colorDeTextoRespetado: boolean
 }
 
 /**
- * El color del texto de la tarjeta. Con `AUTO` lo decide el contraste. Con
- * `DARK` o `LIGHT` lo elige el negocio, y entonces se ajusta el tono del fondo
- * lo mínimo para que ese texto llegue a AA: el texto siempre se lee, aunque el
- * color se mueva. Blanco sobre ámbar oscurece el ámbar; no lo deja en 2.15:1.
+ * El color del texto es independiente del fondo. Con `AUTO` se escoge la tinta
+ * que tenga mejor contraste; `DARK` y `LIGHT` respetan exactamente la elección
+ * del negocio y solo informan si queda por debajo de AA.
  */
 export type ColorDeTexto = "AUTO" | "DARK" | "LIGHT"
 
 const TINTA = "#1C1B17"
 const BLANCO = "#FFFFFF"
 
-/**
- * El color de texto de un acabado, y el color base que lo sostiene.
- *
- * `aclara` y `oscurece` son lo más que el acabado desplaza su fondo respecto al
- * color del negocio: el extremo del degradado y el velo. El texto blanco lo
- * tiene peor en la zona más clara y la tinta en la más oscura, así que basta
- * medir esos dos puntos. Gana el que aguante mejor su peor caso y, si no llega
- * a 4.5, se ahonda el color lo mínimo hasta que llegue.
- *
- * Las placas de «Miembro» y «Premio» y el pie no entran en la cuenta porque se
- * apartan del texto: aclaran cuando el texto es tinta y oscurecen cuando es
- * blanco. Antes tiraban las dos hacia el blanco, y por eso el texto pequeño
- * quedaba encima de la superficie más clara de la tarjeta.
- */
+/** Elige la tinta usando los extremos previstos de la piel, sin tocar la marca. */
 function legible(brandColor: string, aclara: number, oscurece: number, forzado: ColorDeTexto = "AUTO") {
-  // Cuánto hay que mover el color para que un texto dado llegue a AA. El blanco
-  // lo tiene peor en la zona más clara y la tinta en la más honda, así que a
-  // cada uno se le mide su propio extremo. El paso de 1% es para no desviar el
-  // color del negocio más de lo estrictamente necesario.
-  function ajuste(texto: string) {
-    const peor = (base: string) =>
-      texto === BLANCO
-        ? contraste(BLANCO, mezclar(base, 255, aclara))
-        : contraste(TINTA, mezclar(base, 0, oscurece))
-    for (let k = 0; k <= 0.6; k += 0.01) {
-      // El blanco quiere el color más profundo; la tinta lo quiere más claro.
-      const base = mezclar(brandColor, texto === BLANCO ? 0 : 255, k)
-      if (peor(base) >= 4.5) return { k, base, texto }
-    }
-    return null
-  }
-
-  // Gana el que conserve mejor el color, no el que arranque con más contraste:
-  // elegir primero el texto y compensar después aclaraba tanto la base que un
-  // naranja se pintaba durazno.
-  // Con el texto forzado solo se busca el tono. Si no hay tono que lo haga
-  // legible, gana la legibilidad y se elige como en automático: lo decidido es
-  // que el texto siempre se lea.
-  const forzadoAjustado = forzado === "DARK" ? ajuste(TINTA) : forzado === "LIGHT" ? ajuste(BLANCO) : null
-  let elegido = forzadoAjustado
-  if (!elegido) {
-    const conTinta = ajuste(TINTA)
-    const conBlanco = ajuste(BLANCO)
-    elegido =
-      !conTinta ? conBlanco : !conBlanco ? conTinta : conTinta.k <= conBlanco.k ? conTinta : conBlanco
-  }
-
-  // Sin salida a 4.5 en ningún sentido -- un caso que los seis presets no
-  // alcanzan -- se queda el color tal cual con el texto que menos mal quede.
-  const { base, texto } = elegido ?? { base: brandColor, texto: BLANCO }
+  const extremos = [mezclar(brandColor, 255, aclara), mezclar(brandColor, 0, oscurece)]
+  const contrasteTinta = Math.min(...extremos.map((fondo) => contraste(TINTA, fondo)))
+  const contrasteBlanco = Math.min(...extremos.map((fondo) => contraste(BLANCO, fondo)))
+  const textoAutomatico = contrasteTinta >= contrasteBlanco ? TINTA : BLANCO
+  const texto = forzado === "DARK" ? TINTA : forzado === "LIGHT" ? BLANCO : textoAutomatico
+  const contrasteTexto = texto === TINTA ? contrasteTinta : contrasteBlanco
   return {
-    base,
+    base: brandColor,
     texto,
-    aparta: texto === TINTA ? 255 : 0,
-    tonoAjustado: base.toUpperCase() !== mezclar(brandColor, 0, 0),
-    colorDeTextoRespetado: forzado === "AUTO" || forzadoAjustado !== null,
+    aparta: textoAutomatico === TINTA ? 255 : 0,
+    tonoAjustado: false,
+    colorDeTextoRespetado: contrasteTexto >= 4.5,
   }
 }
 
@@ -178,10 +133,8 @@ export function pielDeTarjeta(
   brandColor: string,
   colorDeTexto: ColorDeTexto = "AUTO",
 ): PielDeTarjeta {
-  // Cada acabado declara cuánto aclara y cuánto oscurece su fondo respecto al
-  // color del negocio, y de ahí sale el color de texto. El extremo claro ya no
-  // sube por encima del color: aclararlo por decoración era justo lo que dejaba
-  // el texto pequeño de la cabecera sobre la zona menos legible de la tarjeta.
+  // Cada acabado declara sus variaciones para calcular contraste. Esas
+  // variaciones son decorativas y nunca cambian el color base de la tarjeta.
   const OSCURO = 0.12
 
   if (!esAcabadoPro(codigo)) {

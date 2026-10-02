@@ -49,7 +49,7 @@ const options: swaggerJsdoc.Options = {
           properties: {
             id: { type: "string" }, name: { type: "string" }, reward: { type: "string" }, stampsRequired: { type: "integer" },
             isActive: { type: "boolean" }, status: { type: "string", enum: ["DRAFT", "ACTIVE", "LOCKED_BY_PLAN", "ARCHIVED"] },
-            brandColor: { type: "string" }, textColor: { type: "string", enum: ["AUTO", "DARK", "LIGHT"], default: "AUTO" },
+            brandColor: { type: "string" }, textColor: { type: "string", enum: ["AUTO", "DARK", "LIGHT"], default: "LIGHT" },
             iconName: { type: "string", nullable: true }, stampIconName: { type: "string", nullable: true },
             expiresAt: { type: "string", format: "date-time", nullable: true }, customers: { type: "integer" }, totalStamps: { type: "integer" },
           },
@@ -117,7 +117,7 @@ const options: swaggerJsdoc.Options = {
               example: 10,
             },
             brandColor: { type: "string", example: "#ff6b35" },
-            textColor: { type: "string", enum: ["AUTO", "DARK", "LIGHT"], default: "AUTO" },
+            textColor: { type: "string", enum: ["AUTO", "DARK", "LIGHT"], default: "LIGHT" },
             iconName: { type: "string", nullable: true },
             stampIconName: { type: "string", nullable: true },
             expiresAt: {

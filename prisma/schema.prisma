@@ -405,7 +405,7 @@ model LoyaltyCard {
   reward              String
   stampsRequired      Int                  @default(10)
   brandColor          String               @default("#ff6b35")
-  textColor           CardTextColor        @default(AUTO)
+  textColor           CardTextColor        @default(LIGHT)
   iconName            String?
   stampIconName       String?
   isActive            Boolean              @default(true)

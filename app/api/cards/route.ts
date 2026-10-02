@@ -66,7 +66,7 @@ import type { CardSummary } from "@/lib/fidelity-contracts"
  *               textColor:
  *                 type: string
  *                 enum: [AUTO, DARK, LIGHT]
- *                 default: AUTO
+ *                 default: LIGHT
  *               iconName:
  *                 type: string
  *                 nullable: true
@@ -210,7 +210,7 @@ export async function POST(request: NextRequest) {
         reward: body.reward.trim(),
         stampsRequired,
         brandColor: body.brandColor || business.brandColor,
-        textColor: body.textColor ?? "AUTO",
+        textColor: body.textColor ?? "LIGHT",
         iconName: body.iconName === undefined ? business.iconName || null : body.iconName || null,
         stampIconName: body.stampIconName ?? null,
         description: body.description?.trim() || null,

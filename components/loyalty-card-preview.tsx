@@ -53,7 +53,7 @@ export function LoyaltyCardPreview({
   onMemberClick,
   milestoneClaims = [],
   themeCode = null,
-  textColor = "AUTO",
+  textColor = "LIGHT",
 }: LoyaltyCardPreviewProps) {
   const stamps = Array.from({ length: maxStamps }, (_, i) => i < currentStamps)
   const milestonePositions = new Map(milestoneClaims.map(c => [c.stampNumber, c]))
@@ -66,14 +66,8 @@ export function LoyaltyCardPreview({
   const iconoDelNegocio = getCardIcon(iconName)?.Icon
   const patron = iconosDelTema(themeCode) ?? (iconoDelNegocio ? [iconoDelNegocio] : null)
 
-  // El color del texto lo decide la piel por contraste, así que aquí ya no se
-  // fija el blanco. Las capas se apartan del texto en vez de tirar siempre
-  // hacia el blanco: una placa que aclaraba el fondo debajo de una etiqueta
-  // pequeña era lo que la volvía ilegible sobre los colores claros.
-  //
-  // Un color de texto forzado también pasa por la piel, que mueve el tono del
-  // fondo lo mínimo para que se siga leyendo. Pintarlo tal cual dejaba, por
-  // ejemplo, blanco sobre ámbar en 2.15:1, justo lo que se corrigió en 1.2.0.
+  // La piel mantiene el fondo y la decoración constantes. Solo cambia la tinta;
+  // el aviso del selector informa si la combinación queda con poco contraste.
   const fg = piel.texto
   const capa = (a: number) => (piel.aparta === 255 ? `rgba(255,255,255,${a})` : `rgba(0,0,0,${a})`)
   const overlay = capa(0.12)

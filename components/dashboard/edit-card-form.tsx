@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { IconPicker } from "@/components/dashboard/icon-picker"
+import { TextColorPicker } from "@/components/dashboard/text-color-picker"
 import { ExpirationPicker } from "@/components/dashboard/expiration-picker"
 import { toast } from "sonner"
 import { getRarityColor, getRarityDescription, getRarityLabel, getRarityRange } from "@/lib/card-utils"
@@ -61,7 +62,7 @@ export function EditCardForm({
   initialIcon = null,
   initialStampIcon = null,
   initialThemeId = null,
-  initialTextColor = "AUTO",
+  initialTextColor = "LIGHT",
   initialDescription = null,
   initialExpiresAt = null,
   initialMilestones = [],
@@ -363,17 +364,13 @@ export function EditCardForm({
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-text-color">Color del texto</Label>
-                  <select
-                    id="edit-text-color"
+                  <Label>Color del texto</Label>
+                  <TextColorPicker
                     value={textColor}
-                    onChange={(e) => setTextColor(e.target.value as "AUTO" | "DARK" | "LIGHT")}
-                    className="min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                  >
-                    <option value="AUTO">Automático</option>
-                    <option value="DARK">Oscuro</option>
-                    <option value="LIGHT">Claro</option>
-                  </select>
+                    onChange={setTextColor}
+                    brandColor={color}
+                    themeCode={themeCode}
+                  />
                   <AvisoDeColorDeTexto brandColor={color} themeCode={themeCode} textColor={textColor} />
                 </div>
               </div>

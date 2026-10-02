@@ -76,9 +76,9 @@ resaltado. Los avisos con referencia de soporte incluyen la referencia y la acci
 toast; el aviso de reanudación también aparece como toast.
 
 `textColor` es una preferencia de la tarjeta con los valores `AUTO`, `DARK` y `LIGHT`; su valor por
-defecto es `AUTO`. En el borrador del alta y en `LoyaltyCard` se conserva el valor elegido. La
-interfaz resuelve `AUTO` para la vista previa; `DARK` y `LIGHT` fuerzan el tono elegido. El backend
-no debe cambiar la preferencia para ajustar contraste. Crear y editar una tarjeta también permite
+defecto es `LIGHT`. En el borrador del alta y en `LoyaltyCard` se conserva el valor elegido. La
+interfaz resuelve `AUTO` para la vista previa; `DARK` y `LIGHT` solo cambian la tinta, nunca el
+fondo de la tarjeta. Crear y editar una tarjeta también permite
 elegir el tema, el icono de la tarjeta y el icono del sello; si un `PUT` omite `themeId` o
 `textColor`, conserva el valor existente.
 
