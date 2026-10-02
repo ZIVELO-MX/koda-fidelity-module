@@ -74,7 +74,14 @@ export async function DELETE(
       throw new NotFoundError("User not found")
     }
 
-    await prisma.user.delete({ where: { id } })
+    // Las solicitudes de activación y las invitaciones se borran en cascada con
+    // quien las hizo. Pasan a quien borra, para no perder el folio que soporte
+    // puede estar atendiendo.
+    await prisma.$transaction(async (tx) => {
+      await tx.subscriptionRequest.updateMany({ where: { requestedByUserId: id }, data: { requestedByUserId: user.id } })
+      await tx.teamInvitation.updateMany({ where: { invitedById: id }, data: { invitedById: user.id } })
+      await tx.user.delete({ where: { id } })
+    })
 
     return withRequestId(NextResponse.json({ success: true }), requestId)
   } catch (error) {
