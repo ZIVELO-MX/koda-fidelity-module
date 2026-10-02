@@ -239,6 +239,17 @@ export async function cleanupAvatarJob(db: PrismaClient, jobId: string) {
   }
 }
 
+/**
+ * Borra ya las fotos que el cliente reemplazó o quitó. `cleanupAvatarJob` no
+ * tenía llamadores: los trabajos se quedaban PENDING y el archivo seguía en el
+ * bucket. Si el borrado falla, el trabajo queda FAILED con su error y se
+ * reintenta en el siguiente cambio de foto.
+ */
+export async function cleanupPendingCustomerAvatars(db: PrismaClient, profileId: string) {
+  const jobs = await db.avatarCleanupJob.findMany({ where: { profileId, status: { not: "COMPLETED" } }, select: { id: true } })
+  await Promise.all(jobs.map((job) => cleanupAvatarJob(db, job.id)))
+}
+
 export async function cleanupBusinessAvatar(db: PrismaClient, assetId: string) {
   const asset = await db.businessAvatarAsset.findUnique({ where: { id: assetId } })
   if (!asset) throw new NotFoundError("Avatar no encontrado")
