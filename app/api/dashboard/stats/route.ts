@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getBusinessFromSession, handleApiError, requestIdFrom, withRequestId } from "@/lib/api-utils"
 import { statsQuerySchema } from "@/lib/dashboard-contracts"
+import { inicioDelDia } from "@/lib/dia-local"
 
 /**
  * @openapi
@@ -26,18 +27,26 @@ export async function GET(request: NextRequest) {
     if (!parsed.success) return withRequestId(NextResponse.json({ error: "Parámetros inválidos", code: "KF-REQUEST-001", action: "Usa days entre 1 y 90.", requestId, retryable: false }, { status: 400 }), requestId)
     const days = parsed.data.days
     const periodEnd = new Date()
-    const periodStart = new Date(periodEnd.getTime() - days * 86400000)
+    // Los días son del negocio: el periodo empieza a medianoche local de hace
+    // `days - 1` días y cuenta hoy. Antes eran 24 h corridas desde ahora y la
+    // serie se armaba con fechas UTC, así que podía faltar el día de hoy.
+    const periodStart = inicioDelDia(new Date(periodEnd.getTime() - (days - 1) * 86400000), business.timezone)
+    const fechaLocal = new Intl.DateTimeFormat("en-CA", { timeZone: business.timezone })
     const [totals, daily, weekly, topCards] = await Promise.all([
       prisma.$queryRaw<Array<{ activeCards: bigint; activeCustomers: bigint; stamps: bigint; redemptions: bigint; completedCycles: bigint }>>`SELECT (SELECT count(*) FROM "LoyaltyCard" c WHERE c."businessId" = ${business.id} AND c."isActive" = true) AS "activeCards", (SELECT count(*) FROM "Customer" cu JOIN "LoyaltyCard" c ON c.id = cu."cardId" WHERE c."businessId" = ${business.id} AND cu."isActive" = true) AS "activeCustomers", count(*) FILTER (WHERE l.type = 'stamp') AS stamps, count(*) FILTER (WHERE l.type = 'redeem') AS redemptions, count(*) FILTER (WHERE l.type = 'completion') AS "completedCycles" FROM "StampLog" l WHERE l."businessId" = ${business.id} AND l."createdAt" >= ${periodStart} AND l."createdAt" < ${periodEnd}`,
-      prisma.$queryRaw<Array<{ date: string; stamps: bigint; redemptions: bigint }>>`SELECT (l."createdAt" AT TIME ZONE ${business.timezone})::date::text AS date, count(*) FILTER (WHERE l.type = 'stamp') AS stamps, count(*) FILTER (WHERE l.type = 'redeem') AS redemptions FROM "StampLog" l WHERE l."businessId" = ${business.id} AND l."createdAt" >= ${periodStart} AND l."createdAt" < ${periodEnd} GROUP BY 1 ORDER BY 1`,
-      prisma.$queryRaw<Array<{ weekStart: string; count: bigint }>>`SELECT date_trunc('week', l."createdAt" AT TIME ZONE ${business.timezone})::date::text AS "weekStart", count(*) AS count FROM "StampLog" l WHERE l."businessId" = ${business.id} AND l.type = 'customer_joined' AND l."createdAt" >= ${periodStart} AND l."createdAt" < ${periodEnd} GROUP BY 1 ORDER BY 1`,
+      // `createdAt` es TIMESTAMP sin zona y guarda UTC. Un solo `AT TIME ZONE`
+      // lo leía como hora local y lo movía al revés: lo de la tarde caía al día
+      // siguiente. Primero se declara UTC y luego se pasa a la zona del negocio.
+      prisma.$queryRaw<Array<{ date: string; stamps: bigint; redemptions: bigint }>>`SELECT ((l."createdAt" AT TIME ZONE 'UTC') AT TIME ZONE ${business.timezone})::date::text AS date, count(*) FILTER (WHERE l.type = 'stamp') AS stamps, count(*) FILTER (WHERE l.type = 'redeem') AS redemptions FROM "StampLog" l WHERE l."businessId" = ${business.id} AND l."createdAt" >= ${periodStart} AND l."createdAt" < ${periodEnd} GROUP BY 1 ORDER BY 1`,
+      prisma.$queryRaw<Array<{ weekStart: string; count: bigint }>>`SELECT date_trunc('week', (l."createdAt" AT TIME ZONE 'UTC') AT TIME ZONE ${business.timezone})::date::text AS "weekStart", count(*) AS count FROM "StampLog" l WHERE l."businessId" = ${business.id} AND l.type = 'customer_joined' AND l."createdAt" >= ${periodStart} AND l."createdAt" < ${periodEnd} GROUP BY 1 ORDER BY 1`,
       prisma.$queryRaw<Array<{ id: string; name: string; stamps: bigint; redemptions: bigint; lastActivityAt: Date | null }>>`SELECT c.id, c.name, count(l.id) FILTER (WHERE l.type = 'stamp') AS stamps, count(l.id) FILTER (WHERE l.type = 'redeem') AS redemptions, max(l."createdAt") AS "lastActivityAt" FROM "LoyaltyCard" c LEFT JOIN "StampLog" l ON l."cardId" = c.id AND l."createdAt" >= ${periodStart} AND l."createdAt" < ${periodEnd} WHERE c."businessId" = ${business.id} GROUP BY c.id, c.name ORDER BY count(l.id) DESC, c.id LIMIT 10`,
     ])
     const total = totals[0] ?? { activeCards: 0, activeCustomers: 0, stamps: 0, redemptions: 0, completedCycles: 0 }
     const completedCycles = Number(total.completedCycles)
     const dailyByDate = new Map(daily.map((row) => [row.date, row]))
     const dailySeries = Array.from({ length: days }, (_, index) => {
-      const date = new Date(periodStart.getTime() + index * 86400000).toISOString().slice(0, 10)
+      // A mediodía, para que un cambio de horario no repita ni salte un día.
+      const date = fechaLocal.format(new Date(periodStart.getTime() + index * 86400000 + 12 * 3600000))
       const row = dailyByDate.get(date)
       return { date, stamps: Number(row?.stamps ?? 0), redemptions: Number(row?.redemptions ?? 0) }
     })
