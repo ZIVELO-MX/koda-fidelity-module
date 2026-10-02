@@ -20,7 +20,7 @@ vi.mock("@/lib/prisma", () => ({ prisma: {} }))
 import { GET, POST } from "./route"
 import { UnauthorizedError } from "@/lib/api-utils"
 
-const principal = { business: { id: "business-owned", name: "Pastelería Luna" }, user: { id: "user-owned", email: "owner@test.invalid" } }
+const principal = { business: { id: "business-owned", name: "Pastelería Luna" }, user: { id: "user-owned", email: "owner@test.invalid", role: "admin" } }
 const savedRequest = {
   ticketNumber: "KF-0123456789ABCDEF",
   plan: "PRO",
@@ -81,6 +81,12 @@ describe("/api/subscription-requests", () => {
     expect(response.headers.get("Cache-Control")).toBe("private, no-store")
     expect(getLatestSubscriptionRequest).toHaveBeenCalledWith(expect.anything(), "business-owned")
     expect(await response.json()).toEqual({ request: null })
+  })
+
+  it("does not let a sellador request or change the plan", async () => {
+    getBusinessFromSession.mockResolvedValue({ ...principal, user: { ...principal.user, role: "sellador" } })
+    expect((await POST(request("POST", { plan: "PRO", billingInterval: "MONTHLY" }))).status).toBe(403)
+    expect(saveSubscriptionRequest).not.toHaveBeenCalled()
   })
 
   it("requires a session for both methods", async () => {
