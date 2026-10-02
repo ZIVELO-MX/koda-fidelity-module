@@ -43,7 +43,7 @@ const validCard = { id: "card1", businessId: "business1", expiresAt: null, isAct
 beforeEach(() => {
   vi.clearAllMocks()
   mockPrisma.loyaltyCard.findUnique.mockResolvedValue(validCard)
-  mockPrisma.customer.findFirst.mockResolvedValue(null)
+  mockPrisma.customer.findMany.mockResolvedValue([])
   mockPrisma.customer.create.mockResolvedValue({ id: "cust1" })
   mockPrisma.$transaction.mockImplementation(async (callback: (tx: typeof mockPrisma) => unknown) => callback(mockPrisma))
 })
@@ -90,7 +90,7 @@ describe("POST /api/join", () => {
   })
 
   it("returns existing:true and does NOT call create when customer already joined", async () => {
-    mockPrisma.customer.findFirst.mockResolvedValue({ id: "existing1" })
+    mockPrisma.customer.findMany.mockResolvedValue([{ email: "a@b.com" }])
     const res = await POST(makeRequest({ name: "Ana", email: "a@b.com", cardId: "card1" }))
     expect(res.status).toBe(200)
     const body = await res.json()
@@ -115,8 +115,9 @@ describe("POST /api/join", () => {
   // del enlace mágico la página repite el alta: tiene que encontrar la primera.
   it("guarda el correo en minúsculas y busca sin distinguir mayúsculas", async () => {
     await POST(makeRequest({ name: "Ana", email: "  Ana@Gmail.COM ", cardId: "card1" }))
-    expect(mockPrisma.customer.findFirst).toHaveBeenCalledWith({
+    expect(mockPrisma.customer.findMany).toHaveBeenCalledWith({
       where: { email: { equals: "ana@gmail.com", mode: "insensitive" }, cardId: "card1" },
+      select: { email: true },
     })
     expect(mockPrisma.customer.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ email: "ana@gmail.com" }) }),
@@ -135,5 +136,25 @@ describe("GET /api/join?email=", () => {
     expect(mockPrisma.customer.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { email: { equals: "ana@gmail.com", mode: "insensitive" } } }),
     )
+  })
+
+  // Si la base resuelve `insensitive` con ILIKE, `_` es comodín: no puede
+  // colarse la tarjeta de otro correo.
+  it("solo devuelve las tarjetas de ese correo exacto", async () => {
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { email: "ana_l@x.com" } } }) },
+    } as never)
+    mockPrisma.customer.findMany.mockResolvedValue([
+      { id: "propia", email: "Ana_L@x.com", milestoneClaims: [], stampsLog: [] },
+      { id: "ajena", email: "anaxl@x.com", milestoneClaims: [], stampsLog: [] },
+    ])
+    const res = await GET({ url: "http://x/api/join?email=ana_l%40x.com" } as never)
+    expect((await res.json()).customers.map((c: { id: string }) => c.id)).toEqual(["propia"])
+  })
+
+  it("no da por existente un alta de otro correo parecido", async () => {
+    mockPrisma.customer.findMany.mockResolvedValue([{ email: "anaxl@x.com" }])
+    const res = await POST(makeRequest({ name: "Ana", email: "ana_l@x.com", cardId: "card1" }))
+    expect((await res.json()).existing).toBe(false)
   })
 })
