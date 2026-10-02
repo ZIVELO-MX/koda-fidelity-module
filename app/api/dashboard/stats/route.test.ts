@@ -28,7 +28,7 @@ describe("GET /api/dashboard/stats en la zona del negocio", () => {
   // `createdAt` es TIMESTAMP sin zona: hay que declararlo UTC antes de convertir.
   it("convierte la hora guardada desde UTC antes de agrupar por día y semana", async () => {
     await pedir(7)
-    const sql = queryRaw.mock.calls.map(([partes]: [TemplateStringsArray]) => partes.join("?"))
+    const sql = queryRaw.mock.calls.map((llamada) => (llamada[0] as TemplateStringsArray).join("?"))
     expect(sql.filter((texto) => texto.includes(`AT TIME ZONE 'UTC') AT TIME ZONE`))).toHaveLength(2)
   })
 })
