@@ -83,7 +83,7 @@ test.describe("Alta guiada, recorrido completo", () => {
     await expect(page.getByRole("heading", { name: "Tu primera tarjeta" })).toBeVisible({ timeout: 30000 })
     await page.getByRole("button", { name: "8", exact: true }).click()
     await page.getByLabel("Recompensa").fill("Décimo café gratis")
-    await expect(page.getByText("0/8")).toBeVisible()
+    await expect(page.getByText("3/8")).toBeVisible()
     await page.getByRole("button", { name: "Continuar" }).click()
 
     // La tarjeta y el QR ilustrativos se muestran antes del muro de pago.

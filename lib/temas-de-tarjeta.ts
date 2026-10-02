@@ -88,24 +88,54 @@ export type PielDeTarjeta = {
   /** Hacia dónde tiran las placas y el pie según el contraste automático.
    *  Este valor no cambia al forzar texto claro u oscuro. */
   aparta: number
-  /** Se conserva por compatibilidad; elegir texto nunca ajusta el fondo. */
+  /** Se conserva por compatibilidad; siempre `false` para DARK y LIGHT. */
   tonoAjustado: boolean
   /** Si el texto elegido alcanza contraste AA sobre los extremos de la piel. */
   colorDeTextoRespetado: boolean
 }
 
 /**
- * El color del texto es independiente del fondo. Con `AUTO` se escoge la tinta
- * que tenga mejor contraste; `DARK` y `LIGHT` respetan exactamente la elección
- * del negocio y solo informan si queda por debajo de AA.
+ * Con `AUTO` se escoge la tinta que tenga mejor contraste. `DARK` y `LIGHT`
+ * respetan la elección del negocio y nunca cambian el fondo; solo informan si
+ * quedan por debajo de AA.
  */
 export type ColorDeTexto = "AUTO" | "DARK" | "LIGHT"
 
 const TINTA = "#1C1B17"
 const BLANCO = "#FFFFFF"
 
-/** Elige la tinta usando los extremos previstos de la piel, sin tocar la marca. */
+/** `AUTO` conserva la compensación de contraste existente. */
+function pielAutomatica(brandColor: string, aclara: number, oscurece: number) {
+  function ajuste(texto: string) {
+    const peor = (base: string) =>
+      texto === BLANCO
+        ? contraste(BLANCO, mezclar(base, 255, aclara))
+        : contraste(TINTA, mezclar(base, 0, oscurece))
+    for (let k = 0; k <= 0.6; k += 0.01) {
+      const base = mezclar(brandColor, texto === BLANCO ? 0 : 255, k)
+      if (peor(base) >= 4.5) return { k, base, texto }
+    }
+    return null
+  }
+
+  const conTinta = ajuste(TINTA)
+  const conBlanco = ajuste(BLANCO)
+  const elegido =
+    !conTinta ? conBlanco : !conBlanco ? conTinta : conTinta.k <= conBlanco.k ? conTinta : conBlanco
+  const { base, texto } = elegido ?? { base: brandColor, texto: BLANCO }
+  return {
+    base,
+    texto,
+    aparta: texto === TINTA ? 255 : 0,
+    tonoAjustado: base.toUpperCase() !== brandColor.toUpperCase(),
+    colorDeTextoRespetado: true,
+  }
+}
+
+/** Las opciones forzadas cambian la tinta, nunca el color de la tarjeta. */
 function legible(brandColor: string, aclara: number, oscurece: number, forzado: ColorDeTexto = "AUTO") {
+  if (forzado === "AUTO") return pielAutomatica(brandColor, aclara, oscurece)
+
   const extremos = [mezclar(brandColor, 255, aclara), mezclar(brandColor, 0, oscurece)]
   const contrasteTinta = Math.min(...extremos.map((fondo) => contraste(TINTA, fondo)))
   const contrasteBlanco = Math.min(...extremos.map((fondo) => contraste(BLANCO, fondo)))
