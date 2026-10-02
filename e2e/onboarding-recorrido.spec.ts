@@ -69,7 +69,7 @@ test.describe("Alta guiada, recorrido completo", () => {
     await expect(page.getByRole("heading", { name: "Tu negocio" })).toBeVisible()
     await page.getByRole("button", { name: "Continuar" }).click()
     // El aviso se pinta en el encabezado, sobre la barra de pasos.
-    await expect(page.getByRole("alert").filter({ hasText: /nombre y categoría/i })).toBeVisible()
+    await expect(page.getByRole("alert").filter({ hasText: /nombre y la categoría/i })).toBeVisible()
 
     await page.getByLabel("Tu nombre").fill("Responsable E2E")
     const nombre = `Café Aurora ${Date.now()}`
