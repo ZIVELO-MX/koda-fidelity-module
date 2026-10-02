@@ -61,7 +61,8 @@ export function getFriendlyAuthError(error: string, errorCode: string): AuthErro
 }
 
 export function getFriendlySendError(err: unknown): string {
-  const message = err instanceof Error ? err.message : ""
+  // En minúsculas: nuestro propio límite lanza `RATE_LIMITED`.
+  const message = err instanceof Error ? err.message.toLowerCase() : ""
   const code = (err as any)?.code ?? ""
 
   if (

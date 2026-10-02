@@ -47,6 +47,14 @@ export class ForbiddenError extends Error {
   }
 }
 
+/** El mensaje sigue siendo `RATE_LIMITED`: `classifyLoginError` lo reconoce así. */
+export class RateLimitError extends Error {
+  constructor() {
+    super("RATE_LIMITED")
+    this.name = "RateLimitError"
+  }
+}
+
 export function requestIdFrom(request?: Request) {
   return request?.headers?.get?.("x-request-id") ?? randomUUID()
 }
@@ -200,6 +208,9 @@ export function handleApiError(error: unknown, requestId: string = randomUUID())
   }
   if (error instanceof ValidationError) {
     return NextResponse.json({ error: error.message, code: "KF-REQUEST-001", action: "Corrige los datos enviados.", requestId, retryable: false }, { status: 400, headers: { "x-request-id": requestId } })
+  }
+  if (error instanceof RateLimitError) {
+    return NextResponse.json({ error: "Too many requests", code: "KF-RATE-001", action: "Espera unos minutos e inténtalo de nuevo.", requestId, retryable: true }, { status: 429, headers: { "x-request-id": requestId } })
   }
   if (error instanceof ConflictError) {
     return NextResponse.json({ error: error.message, code: "KF-REQUEST-001", action: "Recarga los datos e inténtalo de nuevo.", requestId, retryable: true }, { status: 409, headers: { "x-request-id": requestId } })
