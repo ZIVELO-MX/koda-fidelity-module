@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 const { mockPrisma } = vi.hoisted(() => {
   const mockPrisma = {
     loyaltyCard: { findUnique: vi.fn() },
-    customer: { findFirst: vi.fn(), create: vi.fn(), findUnique: vi.fn() },
+    customer: { findFirst: vi.fn(), create: vi.fn(), findUnique: vi.fn(), findMany: vi.fn() },
     stampLog: { create: vi.fn() },
     $transaction: vi.fn(),
     user: { findUnique: vi.fn() },
@@ -31,7 +31,8 @@ vi.mock("next/server", () => ({
   },
 }))
 
-import { POST } from "@/app/api/join/route"
+import { GET, POST } from "@/app/api/join/route"
+import { createClient } from "@/lib/supabase-server"
 
 function makeRequest(body: unknown) {
   return { json: async () => body } as never
@@ -107,6 +108,32 @@ describe("POST /api/join", () => {
       expect.objectContaining({
         data: expect.objectContaining({ name: "Ana", email: "a@b.com", cardId: "card1" }),
       }),
+    )
+  })
+
+  // El teclado del celular escribe «Ana@…» y Supabase guarda «ana@…». Al volver
+  // del enlace mágico la página repite el alta: tiene que encontrar la primera.
+  it("guarda el correo en minúsculas y busca sin distinguir mayúsculas", async () => {
+    await POST(makeRequest({ name: "Ana", email: "  Ana@Gmail.COM ", cardId: "card1" }))
+    expect(mockPrisma.customer.findFirst).toHaveBeenCalledWith({
+      where: { email: { equals: "ana@gmail.com", mode: "insensitive" }, cardId: "card1" },
+    })
+    expect(mockPrisma.customer.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ email: "ana@gmail.com" }) }),
+    )
+  })
+})
+
+describe("GET /api/join?email=", () => {
+  it("encuentra las tarjetas aunque el correo se haya guardado con mayúsculas", async () => {
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { email: "ana@gmail.com" } } }) },
+    } as never)
+    mockPrisma.customer.findMany.mockResolvedValue([])
+    const res = await GET({ url: "http://x/api/join?email=Ana%40Gmail.com" } as never)
+    expect(res.status).toBe(200)
+    expect(mockPrisma.customer.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { email: { equals: "ana@gmail.com", mode: "insensitive" } } }),
     )
   })
 })

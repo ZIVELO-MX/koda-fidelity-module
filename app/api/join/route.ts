@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase-server"
 import { cuerpoJson, getBusinessFromSession, handleApiError, NotFoundError, requestIdFrom, UnauthorizedError, ValidationError, withRequestId } from "@/lib/api-utils"
 import { isExpired } from "@/lib/card-utils"
 import { assertBusinessWritable, syncExpiredEntitlements } from "@/lib/account-lifecycle"
+import { normalizeEmail } from "@/lib/auth-security"
 
 /**
  * @openapi
@@ -177,6 +178,13 @@ export function withCurrentCycleMilestoneClaims<
   }
 }
 
+// Supabase guarda el correo en minúsculas y el teclado del celular suele
+// escribir «Ana@…». Comparar tal cual no encontraba al cliente al volver del
+// enlace mágico, y la página lo daba de alta otra vez.
+// ponytail: `insensitive` no usa el índice de email; si la tabla crece, pasar a
+// minúsculas los correos existentes y volver a igualdad exacta.
+const mismoCorreo = (email: string) => ({ equals: email, mode: "insensitive" as const })
+
 export async function POST(request: NextRequest) {
   const requestId = requestIdFrom(request)
   try {
@@ -210,15 +218,16 @@ export async function POST(request: NextRequest) {
       throw new ValidationError("This loyalty card has expired")
     }
 
+    const correo = normalizeEmail(email)
     const existing = await prisma.customer.findFirst({
-      where: { email, cardId },
+      where: { email: mismoCorreo(correo), cardId },
     })
     if (existing) {
       return withRequestId(NextResponse.json({ existing: true }), requestId)
     }
 
     const customer = await prisma.$transaction(async (tx) => {
-      const created = await tx.customer.create({ data: { name: name.trim(), email, cardId } })
+      const created = await tx.customer.create({ data: { name: name.trim(), email: correo, cardId } })
       await tx.stampLog.create({ data: { businessId: card.businessId, cardId: card.id, customerId: created.id, type: "customer_joined" } })
       return created
     })
@@ -260,11 +269,11 @@ export async function GET(request: NextRequest) {
     if (email) {
       const supabase = await createClient()
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user?.email || user.email !== email) {
+      if (!user?.email || normalizeEmail(user.email) !== normalizeEmail(email)) {
         throw new UnauthorizedError()
       }
 
-      const where: Record<string, unknown> = { email }
+      const where: Record<string, unknown> = { email: mismoCorreo(normalizeEmail(email)) }
       if (cardId) where.cardId = cardId
 
       const customers = await prisma.customer.findMany({
