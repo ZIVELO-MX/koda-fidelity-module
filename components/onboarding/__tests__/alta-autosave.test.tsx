@@ -76,6 +76,33 @@ afterEach(() => {
 })
 
 describe("Alta: guardado y avance en una sola cola", () => {
+  it("Plan muestra primero la tarjeta y después los planes en un segundo slide", async () => {
+    vi.mocked(leerAlta).mockResolvedValue({
+      ...INICIAL,
+      step: "PAYWALL",
+      status: "AWAITING_PAYMENT",
+      primeraTarjetaId: "card-1",
+    })
+
+    await montar()
+
+    expect(screen.getByRole("heading", { name: "Tu tarjeta está lista, pero todavía no publicada." })).toBeInTheDocument()
+    expect(screen.queryByRole("heading", { name: "Ahora sí, los planes." })).not.toBeInTheDocument()
+    expect(screen.queryByText("Solicitar activación de Lite")).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }))
+
+    expect(screen.getByRole("heading", { name: "Ahora sí, los planes." })).toBeInTheDocument()
+    expect(screen.getByText("Paso 2 de 2")).toBeInTheDocument()
+    expect(screen.queryByRole("heading", { name: "Tu tarjeta está lista, pero todavía no publicada." })).not.toBeInTheDocument()
+    expect(avanzar).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole("button", { name: "Volver a tu tarjeta" }))
+
+    expect(screen.getByRole("heading", { name: "Tu tarjeta está lista, pero todavía no publicada." })).toBeInTheDocument()
+    expect(screen.queryByRole("heading", { name: "Ahora sí, los planes." })).not.toBeInTheDocument()
+  })
+
   it.each([0, 700])("conserva la segunda edición en vuelo (su debounce ha transcurrido %i ms)", async (espera) => {
     const primera = diferida()
     const segunda = diferida()

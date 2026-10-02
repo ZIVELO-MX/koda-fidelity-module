@@ -913,7 +913,7 @@ export function Tarjeta({
   )
 }
 
-export function TarjetaLista({ estado }: { estado: EstadoDelAlta }) {
+export function TarjetaLista({ estado, soloTarjeta = false }: { estado: EstadoDelAlta; soloTarjeta?: boolean }) {
   const nombre = estado.negocio.name || estado.nombreDeLaCuenta || "Tu negocio"
   const temaElegido = estado.temas.find((t) => t.id === estado.tarjeta.themeId)
   const temaEfectivo =
@@ -921,12 +921,20 @@ export function TarjetaLista({ estado }: { estado: EstadoDelAlta }) {
 
   return (
     <section className="mx-auto w-full max-w-2xl space-y-6">
-      <div className="space-y-2 text-center">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+      {!soloTarjeta && (
+        <div className="space-y-2 text-center">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+            Tu tarjeta está lista, pero todavía no publicada.
+          </h1>
+          <p className="text-muted-foreground">Así se verá con los datos que agregaste. Elige un plan para publicarla.</p>
+        </div>
+      )}
+
+      {soloTarjeta && (
+        <h1 className="text-center text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
           Tu tarjeta está lista, pero todavía no publicada.
         </h1>
-        <p className="text-muted-foreground">Así se verá con los datos que agregaste. Elige un plan para publicarla.</p>
-      </div>
+      )}
 
       <div className="rounded-2xl border border-border bg-muted/30 p-3 sm:p-6">
         <LoyaltyCardPreview
@@ -945,9 +953,11 @@ export function TarjetaLista({ estado }: { estado: EstadoDelAlta }) {
         />
       </div>
 
-      <p className="text-center text-sm text-muted-foreground">
-        La tarjeta queda guardada como borrador. El QR es solo ilustrativo; el código público y el enlace se activan al publicar.
-      </p>
+      {!soloTarjeta && (
+        <p className="text-center text-sm text-muted-foreground">
+          La tarjeta queda guardada como borrador. El QR es solo ilustrativo; el código público y el enlace se activan al publicar.
+        </p>
+      )}
     </section>
   )
 }
@@ -1198,6 +1208,7 @@ function Paywall({
   ocupado: boolean
   onIntervalo: (intervalo: BillingInterval) => void
 }) {
+  const [slide, setSlide] = useState<"tarjeta" | "planes">("tarjeta")
   // FID-0028: no hay cobro. Se crea una solicitud con folio que soporte usa
   // para localizar la cuenta, y el correo lo manda la persona, no el sistema.
   const [solicitud, setSolicitud] = useState<Solicitud | null>(null)
@@ -1240,12 +1251,28 @@ function Paywall({
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-8">
+      {slide === "tarjeta" ? (
+        <div className="space-y-8">
+          <TarjetaLista estado={estado} soloTarjeta />
+          <div className="flex justify-center">
+            <Button className="min-h-11 px-8" disabled={ocupado} onClick={() => setSlide("planes")}>
+              Continuar
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <>
       <div className="space-y-2 text-center">
         <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Ahora sí, los planes.</h1>
         <p className="text-muted-foreground">Elige el plan que mejor acompaña a tu negocio.</p>
       </div>
 
-      <TarjetaGuardada estado={estado} />
+      <div className="flex items-center justify-between gap-3">
+        <Button variant="ghost" className="min-h-11" onClick={() => setSlide("tarjeta")}>
+          Volver a tu tarjeta
+        </Button>
+        <span className="text-sm text-muted-foreground">Paso 2 de 2</span>
+      </div>
 
       <div className="flex justify-center">
         <div
@@ -1370,6 +1397,8 @@ function Paywall({
           Sin publicar, tu tarjeta no genera código QR y tus clientes todavía no pueden unirse.
         </p>
       </div>
+        </>
+      )}
     </div>
   )
 }
