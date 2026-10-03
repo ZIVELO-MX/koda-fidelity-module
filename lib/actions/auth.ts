@@ -115,11 +115,13 @@ export async function signup(_prev: AuthResult, formData: FormData): Promise<Aut
 
   const email = formData.get("email") as string
   const password = formData.get("password") as string
+  const confirm = formData.get("confirm") as string
   const accountType = formData.get("accountType")
   const next = String(formData.get("next") ?? "")
   const name = (formData.get("name") as string | null)?.trim() || null
 
   if (!email || !email.includes("@") || !password || !["BUSINESS", "CUSTOMER"].includes(String(accountType))) return { error: "Completa todos los campos con información válida" }
+  if (!confirm || password !== confirm) return { error: "Las contraseñas no coinciden" }
   if (password.length < 8) return { error: "La contraseña debe tener al menos 8 caracteres" }
   if (accountType === "CUSTOMER" && (!name || name.length > 120)) return { error: "Ingresa tu nombre (máximo 120 caracteres)" }
 
