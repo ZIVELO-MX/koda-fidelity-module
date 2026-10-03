@@ -36,7 +36,13 @@ test.describe.configure({ mode: "serial" })
 async function enElMuro(page: Page) {
   await page.goto("/onboarding")
   await expect(page.locator("#contenido")).toBeVisible({ timeout: 60000 })
-  await expect(page.getByRole("heading", { name: "Publica tu tarjeta" })).toBeVisible()
+  await llegarAPlanes(page)
+}
+
+async function llegarAPlanes(page: Page) {
+  await expect(page.getByRole("heading", { name: "Tu tarjeta está lista, pero todavía no publicada." })).toBeVisible()
+  await page.getByRole("button", { name: "Continuar" }).click()
+  await expect(page.getByRole("heading", { name: "Ahora sí, los planes." })).toBeVisible()
 }
 
 /** ¿Está el contrato de solicitudes en esta rama? */
@@ -102,6 +108,7 @@ test.describe("Solicitud manual de activación", () => {
 
     await page.reload()
     await expect(page.locator("#contenido")).toBeVisible({ timeout: 60000 })
+    await llegarAPlanes(page)
     await expect(page.getByText(valor, { exact: true })).toBeVisible({ timeout: 30000 })
     expect((await leerSolicitud(page)).request).toMatchObject({ ticketNumber: valor, status: "PENDING" })
   })
@@ -119,9 +126,9 @@ test.describe("Solicitud manual de activación", () => {
     }
 
     // Y la tarjeta sigue sin publicar: el muro no se fue y sus acciones de QR
-    // siguen desactivadas.
-    await expect(page.getByRole("heading", { name: "Publica tu tarjeta" })).toBeVisible()
-    await expect(page.getByRole("button", { name: "Compartir", exact: true })).toHaveAttribute("aria-disabled", "true")
+    // no se pueden usar.
+    await expect(page.getByRole("heading", { name: "Ahora sí, los planes." })).toBeVisible()
+    await expect(page.getByText(/sin publicar, tu tarjeta no genera código qr/i)).toBeVisible()
   })
 
   test("el correo a soporte lleva el ticketNumber, el negocio y el correo de la cuenta", async () => {
@@ -155,6 +162,7 @@ test.describe("Solicitud manual de activación", () => {
     )
     await page.reload()
     await expect(page.locator("#contenido")).toBeVisible({ timeout: 60000 })
+    await llegarAPlanes(page)
 
     await page.getByRole("button", { name: /solicitar activación de pro/i }).click()
 

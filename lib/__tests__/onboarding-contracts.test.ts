@@ -11,4 +11,12 @@ describe("onboarding contracts", () => {
   it("requires billing interval when selecting it", () => {
     expect(advanceSchema.safeParse({ action: "select_billing_interval", draftVersion: 1 }).success).toBe(true)
   })
+
+  it("accepts and preserves first card appearance choices in the draft", () => {
+    const result = onboardingDraftSchema.parse({
+      draftVersion: 2,
+      card: { textColor: "LIGHT", themeId: "foil", iconName: "coffee", stampIconName: null },
+    })
+    expect(result.card).toEqual({ textColor: "LIGHT", themeId: "foil", iconName: "coffee", stampIconName: null })
+  })
 })

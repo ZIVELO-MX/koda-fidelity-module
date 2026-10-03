@@ -1,16 +1,21 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react"
+import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Check, Loader2 } from "lucide-react"
+import { Check, Gift, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
+import { IconPicker } from "@/components/dashboard/icon-picker"
+import { TextColorPicker } from "@/components/dashboard/text-color-picker"
+import { AvisoDeColorDeTexto } from "@/components/aviso-de-color-de-texto"
 import { BarraDePasos } from "@/components/onboarding/barra-de-pasos"
 import { PLANES } from "@/lib/planes"
-import { cuentaDelAnual, mesesGratisExactos, pesos } from "@/lib/precios"
+import { mesesGratisExactos } from "@/lib/precios"
 import {
   cuerpoDelCorreo, enlaceDeCorreo, NOMBRE_DEL_INTERVALO, NOMBRE_DEL_PLAN, solicitarActivacion,
   solicitudVigente, SOPORTE, type IntervaloSolicitado, type PlanSolicitado, type Solicitud,
@@ -40,7 +45,7 @@ const INTRO = [
     texto: "Escanean tu código y su tarjeta se abre en el navegador. Ni aplicación que bajar ni contraseña que recordar.",
   },
   {
-    titulo: "Sabes quién vuelve",
+    titulo: "¿Sabes quién vuelve?",
     texto: "Cada sello queda registrado, así que ves a cuánta gente estás fidelizando y qué premios se llevan.",
   },
 ]
@@ -71,6 +76,15 @@ function colorDeRespaldo(estado: EstadoDelAlta) {
   return estado.tarjeta.brandColor || siteConfig.defaultBrandColor
 }
 
+function enfocarCampo(elemento: HTMLElement | null) {
+  if (!elemento) return
+  elemento.focus({ preventScroll: true })
+  elemento.scrollIntoView?.({
+    block: "center",
+    behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+  })
+}
+
 export function Alta() {
   const router = useRouter()
   const [estado, setEstado] = useState<EstadoDelAlta | null>(null)
@@ -84,11 +98,16 @@ export function Alta() {
   // congela: si luego se guarda algo más, no vuelve a saltar.
   const [reanudado, setReanudado] = useState<string[] | null>(null)
   const [laminaIntro, setLaminaIntro] = useState(0)
-  // El club es un momento de llegada, no un paso del servidor: se enseña
-  // después de que la tarjeta quedó creada, antes de preguntar el origen.
-  const [enElClub, setEnElClub] = useState(false)
+  const [errorNombreNegocio, setErrorNombreNegocio] = useState(false)
+  const [errorCategoriaNegocio, setErrorCategoriaNegocio] = useState(false)
+  const [errorRecompensa, setErrorRecompensa] = useState(false)
+  const nombreNegocioRef = useRef<HTMLInputElement>(null)
+  const categoriaNegocioRef = useRef<HTMLButtonElement>(null)
+  const categoriaGrupoRef = useRef<HTMLFieldSetElement>(null)
+  const recompensaRef = useRef<HTMLInputElement>(null)
 
   const [conflicto, setConflicto] = useState(false)
+  const avisoMostrado = useRef<typeof aviso>(null)
   const confirmado = useRef<EstadoDelAlta | null>(null)
   const cola = useRef<ColaDeBorrador<EstadoDelAlta, CambiosDelBorrador> | null>(null)
   const temporizador = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -115,6 +134,25 @@ export function Alta() {
       return
     }
     const f = error.fallo
+    if (f.tipo !== "conflicto") setConflicto(false)
+    if (f.tipo === "validacion") {
+      setAviso(null)
+      toast.error(f.mensaje)
+      const actual = confirmado.current
+      if (actual?.step === "BUSINESS") {
+        const categoriaInvalida = /categor[ií]a/i.test(f.mensaje)
+        const nombreFalta = !actual.negocio.name?.trim()
+        const categoriaFalta = categoriaInvalida || !actual.negocio.categoryId
+        setErrorNombreNegocio(nombreFalta)
+        setErrorCategoriaNegocio(categoriaFalta)
+        if (nombreFalta) window.requestAnimationFrame(() => enfocarCampo(nombreNegocioRef.current))
+        else if (categoriaFalta) window.requestAnimationFrame(() => enfocarCampo(categoriaNegocioRef.current ?? categoriaGrupoRef.current))
+      } else if (actual?.step === "CARD" && /recompensa/i.test(f.mensaje)) {
+        setErrorRecompensa(true)
+        window.requestAnimationFrame(() => enfocarCampo(recompensaRef.current))
+      }
+      return
+    }
     if (f.tipo === "sesion") {
       router.replace("/login")
       return
@@ -131,8 +169,7 @@ export function Alta() {
       setAviso({ texto: "No hay conexión con el servidor.", reintentable: true })
       return
     }
-    setAviso({ texto: f.mensaje, reintentable: f.tipo === "servidor" || f.tipo === "validacion",
-      requestId: f.tipo === "servidor" ? f.requestId : undefined })
+    setAviso({ texto: f.mensaje, reintentable: true, requestId: f.requestId })
   }, [router, cancelarTemporizador])
 
   const iniciarCola = useCallback((version: number) => {
@@ -258,6 +295,32 @@ export function Alta() {
 
   const pedirAvance = useCallback(async (accion: AccionDelAlta, intervalo?: BillingInterval) => {
     if (!confirmado.current || bloqueo.current || pausado.current) return
+    if (accion === "complete_business" && estado) {
+      const faltaNombre = !estado.negocio.name?.trim()
+      const faltaCategoria = !estado.negocio.categoryId
+      setErrorNombreNegocio(faltaNombre)
+      setErrorCategoriaNegocio(faltaCategoria)
+      if (faltaNombre || faltaCategoria) {
+        setAviso(null)
+        toast.error(
+          faltaNombre && faltaCategoria
+            ? "Completa nombre y categoría del negocio."
+            : faltaNombre
+              ? "Completa el nombre del negocio."
+              : "Selecciona la categoría del negocio.",
+        )
+        enfocarCampo(faltaNombre ? nombreNegocioRef.current : categoriaNegocioRef.current ?? categoriaGrupoRef.current)
+        return
+      }
+    }
+    if (accion === "complete_card" && !recompensaRef.current?.value.trim()) {
+      setErrorRecompensa(true)
+      setAviso(null)
+      toast.error("Escribe la recompensa para continuar.")
+      enfocarCampo(recompensaRef.current)
+      return
+    }
+    if (accion === "complete_card") setErrorRecompensa(false)
     bloqueo.current = true
     setOcupado(true)
     setAviso(null)
@@ -273,13 +336,47 @@ export function Alta() {
       const siguiente = await avanzar(accion, cola.current?.version() ?? confirmado.current.draftVersion, intervalo)
       publicar(siguiente)
       cola.current?.sembrar(siguiente.draftVersion)
-      if (montado.current && accion === "complete_card") setEnElClub(true)
     } catch (error) { manejarFallo(error) }
     finally {
       bloqueo.current = false
       if (montado.current) setOcupado(false)
     }
-  }, [cancelarTemporizador, vaciarCola, publicar, manejarFallo])
+  }, [estado, cancelarTemporizador, vaciarCola, publicar, manejarFallo])
+
+  useEffect(() => {
+    if (!aviso) return
+    if (avisoMostrado.current === aviso) return
+    avisoMostrado.current = aviso
+    toast.error(aviso.texto, {
+      id: "onboarding-aviso",
+      description: aviso.requestId ? `Referencia para soporte: ${aviso.requestId}` : undefined,
+      duration: aviso.reintentable || conflicto ? Infinity : 8000,
+      action: conflicto
+        ? { label: "Reaplicar mis cambios", onClick: () => void recargar() }
+        : aviso.reintentable
+          ? { label: "Reintentar", onClick: () => void recargar() }
+          : undefined,
+      cancel: conflicto
+        ? { label: "Usar versión del servidor", onClick: () => void usarServidor() }
+        : undefined,
+    })
+  }, [aviso, conflicto, recargar, usarServidor])
+
+  useEffect(() => {
+    if (!reanudado?.length) return
+    toast.info("Retomamos donde lo dejaste.", {
+      id: "onboarding-reanudado",
+      description: `Ya tenías guardado ${enumerar(reanudado)}.`,
+      duration: 10000,
+      action: {
+        label: "Entendido",
+        onClick: () => {
+          setReanudado(null)
+          toast.dismiss("onboarding-reanudado")
+        },
+      },
+    })
+  }, [reanudado])
 
   if (cargando) {
     return (
@@ -297,10 +394,10 @@ export function Alta() {
       <div className="landing flex min-h-screen items-center justify-center bg-background p-6 forced-light">
         <div className="max-w-sm space-y-4 text-center">
           <p role="alert" className="text-foreground">
-            {aviso?.texto ?? "No pudimos cargar tu alta."}
+            No pudimos recuperar tu alta. Revisa el aviso para ver el detalle.
           </p>
           <Button className="min-h-11" onClick={() => void recargar()}>
-            Reintentar
+            Volver a intentar
           </Button>
         </div>
       </div>
@@ -343,56 +440,6 @@ export function Alta() {
             </p>
           )}
           <BarraDePasos actual={paso} />
-          {aviso && (
-            <div
-              role="alert"
-              className="mx-auto max-w-xl rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-center"
-            >
-              <p className="text-sm text-foreground">{aviso.texto}</p>
-              {aviso.requestId && (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Referencia para soporte: <span className="font-mono">{aviso.requestId}</span>
-                </p>
-              )}
-              {conflicto && (
-                <div className="mt-3 flex flex-wrap justify-center gap-2">
-                  <Button variant="outline" className="min-h-11" disabled={ocupado} onClick={() => void recargar()}>Reaplicar mis cambios</Button>
-                  <Button variant="outline" className="min-h-11" disabled={ocupado} onClick={() => void usarServidor()}>Usar versión del servidor</Button>
-                </div>
-              )}
-              {aviso.reintentable && (
-                <Button variant="outline" size="sm" className="mt-3 min-h-10" onClick={() => void recargar()}>
-                  Reintentar
-                </Button>
-              )}
-            </div>
-          )}
-          {/* Al volver, se dice qué se recuperó y se nombra campo por campo. Un
-              "tenemos tus datos" haría creer que no hay nada que revisar. Se
-              puede cerrar: pasado el primer vistazo, estorba. */}
-          {reanudado && reanudado.length > 0 && (
-            <div className="mb-3 flex flex-wrap items-start justify-between gap-2 rounded-xl border border-border bg-muted/40 px-4 py-3">
-              <p className="text-sm text-foreground">
-                Retomamos donde lo dejaste. Ya tenías guardado {enumerar(reanudado)}.
-              </p>
-              <Button
-                type="button"
-                variant="ghost"
-                className="min-h-11 px-3 text-xs"
-                onClick={() => setReanudado(null)}
-              >
-                Entendido
-              </Button>
-            </div>
-          )}
-
-          {/* Una sola región viva: quien usa lector de pantalla oye "Guardando"
-              y después "Guardado", no dos mensajes compitiendo. */}
-          <p className="text-center text-xs text-muted-foreground" aria-live="polite">
-            {guardado === "guardando" && "Guardando…"}
-            {guardado === "guardado" && "Guardado"}
-            {guardado === "sinGuardar" && "Cambios sin guardar"}
-          </p>
         </header>
 
         <main id="contenido" className="flex flex-1 flex-col justify-center py-10">
@@ -413,19 +460,37 @@ export function Alta() {
 
           {paso === "BUSINESS" && (
             <fieldset disabled={ocupado}>
-              <Datos estado={estado} onCambio={guardarPronto} onCambioLocal={setEstado} />
+              <Datos
+                estado={estado}
+                onCambio={guardarPronto}
+                onCambioLocal={setEstado}
+                errorNombre={errorNombreNegocio}
+                errorCategoria={errorCategoriaNegocio}
+                nombreRef={nombreNegocioRef}
+                categoriaRef={categoriaNegocioRef}
+                categoriaGrupoRef={categoriaGrupoRef}
+                onNombreCorregido={() => setErrorNombreNegocio(false)}
+                onCategoriaCorregida={() => setErrorCategoriaNegocio(false)}
+              />
             </fieldset>
           )}
 
           {paso === "CARD" && (
             <fieldset disabled={ocupado}>
-              <Tarjeta estado={estado} onCambio={guardarPronto} onCambioLocal={setEstado} />
+              <Tarjeta
+                estado={estado}
+                onCambio={guardarPronto}
+                onCambioLocal={setEstado}
+                errorRecompensa={errorRecompensa}
+                recompensaRef={recompensaRef}
+                onRecompensaCorregida={() => setErrorRecompensa(false)}
+              />
             </fieldset>
           )}
 
-          {paso === "ACQUISITION" && enElClub && <Club estado={estado} />}
+          {paso === "CARD_READY" && <TarjetaLista estado={estado} />}
 
-          {paso === "ACQUISITION" && !enElClub && (
+          {paso === "ACQUISITION" && (
             <fieldset disabled={ocupado}>
             <Origen
               elegido={estado.acquisitionSource}
@@ -447,13 +512,14 @@ export function Alta() {
 
         {paso !== "INTRO" && !enPaywall && (
           <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6">
-            <span className="text-xs text-muted-foreground">
+            <span role="status" aria-live="polite" className="text-xs text-muted-foreground">
               {guardado === "sinGuardar" ? "Tus cambios siguen aquí. Reintenta antes de cerrar."
-                : guardado === "guardando" ? "Guardando tus cambios. Espera antes de cerrar."
-                : "Lo que escribes se guarda solo."}
+                : guardado === "guardando" ? "Guardando…"
+                  : guardado === "guardado" ? "Guardado"
+                    : "Lo que escribes se guarda solo."}
             </span>
             <div className="flex items-center gap-3">
-              {paso === "ACQUISITION" && !enElClub && (
+              {paso === "ACQUISITION" && (
                 <Button
                   variant="outline"
                   className="min-h-11"
@@ -469,7 +535,7 @@ export function Alta() {
                 onClick={() => {
                   if (paso === "BUSINESS") return void pedirAvance("complete_business")
                   if (paso === "CARD") return void pedirAvance("complete_card")
-                  if (enElClub) return setEnElClub(false)
+                  if (paso === "CARD_READY") return void pedirAvance("complete_card_ready")
                   return void pedirAvance("complete_acquisition")
                 }}
               >
@@ -494,40 +560,81 @@ function Intro({
   onSaltar: () => void
 }) {
   return (
-    <div className="mx-auto max-w-xl space-y-8 text-center">
-      <div className="space-y-4">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">{lamina.titulo}</h1>
-        <p className="text-lg leading-relaxed text-muted-foreground">{lamina.texto}</p>
+    <div className="mx-auto w-full max-w-3xl space-y-8">
+      <div className="flex items-start gap-3 sm:gap-5">
+        <Image
+          src="/short-logo.svg"
+          alt="Logo de Koda Fidelity"
+          width={56}
+          height={56}
+          className="onboarding-mascota mt-2 size-11 shrink-0 object-contain sm:size-14"
+          priority
+        />
+        <div key={indice} className="onboarding-intro-slide relative min-w-0 flex-1 rounded-2xl border border-border bg-card p-5 text-left shadow-sm sm:p-7" aria-live="polite" aria-atomic="true">
+          <span aria-hidden="true" className="absolute -left-1.5 top-6 size-3 rotate-45 border-b border-l border-border bg-card" />
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-primary">Fidelity te cuenta</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{lamina.titulo}</h1>
+          <p className="mt-3 text-base leading-relaxed text-muted-foreground sm:text-lg">{lamina.texto}</p>
+        </div>
       </div>
 
-      <div className="flex justify-center gap-1.5" aria-hidden="true">
-        {Array.from({ length: total }).map((_, i) => (
-          <span
-            key={i}
-            className={cn("h-1.5 rounded-full transition-all", i === indice ? "w-6 bg-primary" : "w-1.5 bg-border")}
-          />
-        ))}
-      </div>
+      {indice === 2 && (
+        <div className="rounded-2xl border border-border bg-muted/40 p-4 sm:p-6">
+          <p className="mb-4 text-center text-xs font-semibold uppercase tracking-[0.09em] text-muted-foreground">
+            Así se verá la tarjeta de tu cliente
+          </p>
+          <div className="onboarding-card-float mx-auto w-full max-w-[280px]">
+            <LoyaltyCardPreview
+              businessName={siteConfig.hero.demoCard.businessName}
+              currentStamps={siteConfig.hero.demoCard.currentStamps}
+              maxStamps={siteConfig.hero.demoCard.maxStamps}
+              reward={siteConfig.hero.demoCard.reward}
+              brandColor={siteConfig.hero.demoCard.brandColor}
+              showQR={false}
+              className="max-w-[280px]"
+            />
+          </div>
+        </div>
+      )}
 
-      {/* Saltar está a la vista desde la primera lámina, no escondido al final. */}
-      <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-        <Button className="min-h-11 w-full px-8 sm:w-auto" disabled={ocupado} onClick={onSiguiente}>
-          {indice < total - 1 ? "Siguiente" : "Empezar"}
-        </Button>
-        <Button variant="ghost" className="min-h-11 w-full sm:w-auto" disabled={ocupado} onClick={onSaltar}>
-          Saltar la introducción
-        </Button>
+      <div className="space-y-5">
+        <div className="flex justify-center gap-1.5" role="group" aria-label={`Lámina ${indice + 1} de ${total}`}>
+          {Array.from({ length: total }).map((_, i) => (
+            <span
+              key={i}
+              aria-hidden="true"
+              className={cn("h-1.5 rounded-full transition-all", i === indice ? "w-6 bg-primary" : "w-1.5 bg-border")}
+            />
+          ))}
+        </div>
+
+        <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+          <Button variant="ghost" className="min-h-11 w-full sm:w-auto" disabled={ocupado} onClick={onSaltar}>
+            Saltar introducción
+          </Button>
+          <Button className="min-h-11 w-full px-8 sm:w-auto" disabled={ocupado} onClick={onSiguiente}>
+            Siguiente &gt;
+          </Button>
+        </div>
       </div>
     </div>
   )
 }
 
 function Datos({
-  estado, onCambio, onCambioLocal,
+  estado, onCambio, onCambioLocal, errorNombre, errorCategoria, nombreRef, categoriaRef,
+  categoriaGrupoRef, onNombreCorregido, onCategoriaCorregida,
 }: {
   estado: EstadoDelAlta
   onCambio: (c: { business?: { name?: string; categoryId?: string } }) => void
   onCambioLocal: (e: EstadoDelAlta) => void
+  errorNombre: boolean
+  errorCategoria: boolean
+  nombreRef: RefObject<HTMLInputElement | null>
+  categoriaRef: RefObject<HTMLButtonElement | null>
+  categoriaGrupoRef: RefObject<HTMLFieldSetElement | null>
+  onNombreCorregido: () => void
+  onCategoriaCorregida: () => void
 }) {
   return (
     <div className="mx-auto w-full max-w-md space-y-6">
@@ -540,30 +647,48 @@ function Datos({
         <Label htmlFor="negocio">Nombre del negocio</Label>
         <Input
           id="negocio"
+          ref={nombreRef}
           value={estado.negocio.name ?? ""}
           onChange={(e) => {
+            if (e.target.value.trim()) onNombreCorregido()
             onCambioLocal({ ...estado, negocio: { ...estado.negocio, name: e.target.value } })
             onCambio({ business: { name: e.target.value } })
           }}
           placeholder="Café Aurora"
           maxLength={120}
+          required
+          aria-invalid={errorNombre || undefined}
+          aria-describedby={errorNombre ? "error-negocio-nombre" : undefined}
+          aria-errormessage={errorNombre ? "error-negocio-nombre" : undefined}
           autoFocus
         />
+        {errorNombre && <span id="error-negocio-nombre" className="sr-only">Completa el nombre del negocio.</span>}
       </div>
 
       {/* Las categorías vienen del backend con su identificador: la interfaz no
           inventa una lista propia que el servidor luego no reconoce. */}
-      <fieldset className="space-y-2">
+      <fieldset
+        ref={categoriaGrupoRef}
+        tabIndex={-1}
+        aria-describedby={errorCategoria ? "error-negocio-categoria" : undefined}
+        className={cn(
+          "space-y-2 rounded-xl p-2 transition-colors",
+          errorCategoria && "bg-destructive/5 ring-2 ring-destructive ring-offset-2 ring-offset-background",
+        )}
+      >
         <legend className="text-sm font-medium text-foreground">Categoría</legend>
+        {errorCategoria && <span id="error-negocio-categoria" className="sr-only">Selecciona la categoría del negocio.</span>}
         <div className="flex flex-wrap gap-2">
-          {estado.categorias.map((categoria) => {
+          {estado.categorias.map((categoria, index) => {
             const elegida = estado.negocio.categoryId === categoria.id
             return (
               <button
                 key={categoria.id}
+                ref={index === 0 ? categoriaRef : undefined}
                 type="button"
                 aria-pressed={elegida}
                 onClick={() => {
+                  onCategoriaCorregida()
                   onCambioLocal({ ...estado, negocio: { ...estado.negocio, categoryId: categoria.id } })
                   onCambio({ business: { categoryId: categoria.id } })
                 }}
@@ -584,20 +709,20 @@ function Datos({
   )
 }
 
-function Tarjeta({
-  estado, onCambio, onCambioLocal,
+export function Tarjeta({
+  estado, onCambio, onCambioLocal, errorRecompensa, recompensaRef, onRecompensaCorregida,
 }: {
   estado: EstadoDelAlta
-  onCambio: (c: { card?: { reward?: string; stampsRequired?: number; brandColor?: string; themeId?: string } }) => void
+  onCambio: (c: { card?: { reward?: string; stampsRequired?: number; brandColor?: string; themeId?: string; textColor?: "AUTO" | "DARK" | "LIGHT"; iconName?: string | null; stampIconName?: string | null } }) => void
   onCambioLocal: (e: EstadoDelAlta) => void
+  errorRecompensa: boolean
+  recompensaRef: RefObject<HTMLInputElement | null>
+  onRecompensaCorregida: () => void
 }) {
   const sellos = estado.tarjeta.stampsRequired ?? SELLOS_POR_DEFECTO
   const color = colorDeRespaldo(estado)
 
   const elegido = estado.temas.find((t) => t.id === estado.tarjeta.themeId)
-  // El plan de la cuenta decide si el acabado Pro se llega a ver. La selección
-  // se guarda igual: probarlo es parte de lo que empuja a contratar.
-  const temaEfectivo = elegido && (elegido.plan === "LITE" || estado.plan === "PRO") ? elegido.code : null
   const proSinPlan = Boolean(elegido && elegido.plan === "PRO" && estado.plan !== "PRO")
 
   const elegirTema = (idDelTema: string) => {
@@ -644,14 +769,21 @@ function Tarjeta({
           <Label htmlFor="recompensa">Recompensa</Label>
           <Input
             id="recompensa"
+            ref={recompensaRef}
             value={estado.tarjeta.reward ?? ""}
             onChange={(e) => {
+              if (e.target.value.trim()) onRecompensaCorregida()
               onCambioLocal({ ...estado, tarjeta: { ...estado.tarjeta, reward: e.target.value } })
               onCambio({ card: { reward: e.target.value } })
             }}
             placeholder="Décimo café gratis"
             maxLength={240}
+            required
+            aria-invalid={errorRecompensa || undefined}
+            aria-describedby={errorRecompensa ? "error-recompensa" : undefined}
+            aria-errormessage={errorRecompensa ? "error-recompensa" : undefined}
           />
+          {errorRecompensa && <span id="error-recompensa" className="sr-only">Escribe la recompensa para continuar.</span>}
         </div>
 
         <div className="space-y-2">
@@ -668,6 +800,43 @@ function Tarjeta({
               className="h-10 w-16 cursor-pointer rounded-lg border border-border bg-card p-1"
             />
             <span className="font-mono text-sm text-muted-foreground">{color}</span>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Color del texto</Label>
+          <TextColorPicker
+            value={estado.tarjeta.textColor ?? "LIGHT"}
+            brandColor={color}
+            themeCode={elegido?.code ?? null}
+            onChange={(textColor) => {
+              onCambioLocal({ ...estado, tarjeta: { ...estado.tarjeta, textColor } })
+              onCambio({ card: { textColor } })
+            }}
+          />
+          <AvisoDeColorDeTexto brandColor={color} themeCode={elegido?.code ?? null} textColor={estado.tarjeta.textColor ?? "LIGHT"} />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label>Ícono de la tarjeta</Label>
+            <IconPicker
+              value={estado.tarjeta.iconName ?? null}
+              onChange={(iconName) => {
+                onCambioLocal({ ...estado, tarjeta: { ...estado.tarjeta, iconName } })
+                onCambio({ card: { iconName } })
+              }}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Ícono del sello</Label>
+            <IconPicker
+              value={estado.tarjeta.stampIconName ?? null}
+              onChange={(stampIconName) => {
+                onCambioLocal({ ...estado, tarjeta: { ...estado.tarjeta, stampIconName } })
+                onCambio({ card: { stampIconName } })
+              }}
+            />
           </div>
         </div>
 
@@ -724,16 +893,72 @@ function Tarjeta({
         </p>
         <LoyaltyCardPreview
           businessName={estado.negocio.name || "Tu negocio"}
-          currentStamps={0}
+          currentStamps={Math.min(3, sellos)}
           maxStamps={sellos}
           reward={estado.tarjeta.reward || "Tu recompensa"}
           brandColor={color}
-          themeCode={temaEfectivo}
+          // Aquí se enseña lo elegido, Pro incluido, aunque el plan sea Lite: probar
+          // el acabado es lo que empuja a contratar, y el aviso del selector dice que
+          // se publica con el color del negocio. Cómo queda publicada lo enseña
+          // «Tarjeta lista», con el tema efectivo.
+          themeCode={elegido?.code ?? null}
+          textColor={estado.tarjeta.textColor ?? "LIGHT"}
+          iconName={estado.tarjeta.iconName}
+          stampIconName={estado.tarjeta.stampIconName}
           showQR={false}
           className="mx-auto max-w-[300px]"
         />
       </div>
     </div>
+  )
+}
+
+export function TarjetaLista({ estado, soloTarjeta = false }: { estado: EstadoDelAlta; soloTarjeta?: boolean }) {
+  const nombre = estado.negocio.name || estado.nombreDeLaCuenta || "Tu negocio"
+  const temaElegido = estado.temas.find((t) => t.id === estado.tarjeta.themeId)
+  const temaEfectivo =
+    temaElegido && (temaElegido.plan === "LITE" || estado.plan === "PRO") ? temaElegido.code : null
+
+  return (
+    <section className="mx-auto w-full max-w-2xl space-y-6">
+      {!soloTarjeta && (
+        <div className="space-y-2 text-center">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+            Tu tarjeta está lista, pero todavía no publicada.
+          </h1>
+          <p className="text-muted-foreground">Así se verá con los datos que agregaste. Elige un plan para publicarla.</p>
+        </div>
+      )}
+
+      {soloTarjeta && (
+        <h1 className="text-center text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+          Tu tarjeta está lista, pero todavía no publicada.
+        </h1>
+      )}
+
+      <div className="rounded-2xl border border-border bg-muted/30 p-3 sm:p-6">
+        <LoyaltyCardPreview
+          businessName={nombre}
+          currentStamps={0}
+          maxStamps={estado.tarjeta.stampsRequired ?? SELLOS_POR_DEFECTO}
+          reward={estado.tarjeta.reward || "Tu recompensa"}
+          brandColor={colorDeRespaldo(estado)}
+          themeCode={temaEfectivo}
+          textColor={estado.tarjeta.textColor ?? "LIGHT"}
+          iconName={estado.tarjeta.iconName}
+          stampIconName={estado.tarjeta.stampIconName}
+          showQR
+          qrValue={`KODA-PREVIEW:${estado.primeraTarjetaId ?? nombre}`}
+          className="mx-auto w-full max-w-sm"
+        />
+      </div>
+
+      {!soloTarjeta && (
+        <p className="text-center text-sm text-muted-foreground">
+          La tarjeta queda guardada como borrador. El QR es solo ilustrativo; el código público y el enlace se activan al publicar.
+        </p>
+      )}
+    </section>
   )
 }
 
@@ -766,6 +991,9 @@ export function Club({ estado }: { estado: EstadoDelAlta }) {
         brandColor={colorDeRespaldo(estado)}
         showQR
         qrValue={`Club ${nombre}`}
+        textColor={estado.tarjeta.textColor ?? "LIGHT"}
+        iconName={estado.tarjeta.iconName}
+        stampIconName={estado.tarjeta.stampIconName}
         className="mx-auto max-w-[300px]"
       />
     </div>
@@ -938,6 +1166,9 @@ export function TarjetaGuardada({ estado }: { estado: EstadoDelAlta }) {
           reward={estado.tarjeta.reward || "Tu recompensa"}
           brandColor={colorDeRespaldo(estado)}
           themeCode={temaEfectivo}
+          textColor={estado.tarjeta.textColor ?? "LIGHT"}
+          iconName={estado.tarjeta.iconName}
+          stampIconName={estado.tarjeta.stampIconName}
           showQR={false}
           className="mx-auto max-w-[280px]"
         />
@@ -977,6 +1208,7 @@ function Paywall({
   ocupado: boolean
   onIntervalo: (intervalo: BillingInterval) => void
 }) {
+  const [slide, setSlide] = useState<"tarjeta" | "planes">("tarjeta")
   // FID-0028: no hay cobro. Se crea una solicitud con folio que soporte usa
   // para localizar la cuenta, y el correo lo manda la persona, no el sistema.
   const [solicitud, setSolicitud] = useState<Solicitud | null>(null)
@@ -1014,45 +1246,67 @@ function Paywall({
   const anual = (estado.selectedBillingInterval ?? "ANNUAL") === "ANNUAL"
   const lite = PLANES.find((p) => p.id === "lite")!
   const pro = PLANES.find((p) => p.id === "pro")!
-  const cuentaLite = cuentaDelAnual(lite.mensual, lite.anual)
-  const cuentaPro = cuentaDelAnual(pro.mensual, pro.anual)
   const precio = (plan: typeof lite) => (anual ? plan.anual : plan.mensual)
   const periodo = anual ? "MXN al año" : "MXN al mes"
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-8">
+      {slide === "tarjeta" ? (
+        <div className="space-y-8">
+          <TarjetaLista estado={estado} soloTarjeta />
+          <div className="flex justify-center">
+            <Button className="min-h-11 px-8" disabled={ocupado} onClick={() => setSlide("planes")}>
+              Continuar
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <>
       <div className="space-y-2 text-center">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Publica tu tarjeta</h1>
-        <p className="text-muted-foreground">
-          Tu negocio y tu tarjeta ya están guardados en tu cuenta. El plan se contrata para publicarla.
-        </p>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Ahora sí, los planes.</h1>
+        <p className="text-muted-foreground">Elige el plan que mejor acompaña a tu negocio.</p>
       </div>
 
-      <TarjetaGuardada estado={estado} />
-
       <div className="flex justify-center">
-        <div role="radiogroup" aria-label="Cómo quieres pagar" className="inline-flex rounded-full border border-border bg-card p-1">
-          {([["ANNUAL", "Al año"], ["MONTHLY", "Al mes"]] as const).map(([valor, etiqueta]) => (
-            <button
-              key={valor}
-              type="button"
-              role="radio"
-              aria-checked={(valor === "ANNUAL") === anual}
-              disabled={ocupado}
-              onClick={() => onIntervalo(valor)}
-              className={cn(
-                "inline-flex min-h-10 items-center gap-2 rounded-full px-5 text-sm font-medium transition-colors",
-                (valor === "ANNUAL") === anual ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {etiqueta}
-              {valor === "ANNUAL" && (
-                <span className={cn("rounded-full px-2 py-0.5 text-xs font-bold", anual ? "bg-white/20" : "bg-primary/15 text-primary")}>
-                  {mesesGratisExactos(lite.mensual, lite.anual)} meses gratis
-                </span>
-              )}
-            </button>
-          ))}
+        <div
+          role="radiogroup"
+          aria-label="Cómo quieres pagar"
+          className="relative isolate grid w-full max-w-[380px] grid-cols-2 rounded-full border border-border bg-card p-1"
+        >
+          <span
+            aria-hidden="true"
+            className={cn(
+              "pointer-events-none absolute inset-y-1 left-1 z-0 w-[calc(50%-0.25rem)] rounded-full bg-primary transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none",
+              anual ? "translate-x-0" : "translate-x-full",
+            )}
+          />
+          {([["ANNUAL", "Al año"], ["MONTHLY", "Al mes"]] as const).map(([valor, etiqueta]) => {
+            const seleccionado = (valor === "ANNUAL") === anual
+            return (
+              <button
+                key={valor}
+                type="button"
+                role="radio"
+                aria-checked={seleccionado}
+                disabled={ocupado}
+                onClick={() => onIntervalo(valor)}
+                className={cn(
+                  "relative z-10 inline-flex min-h-10 min-w-0 items-center justify-center gap-1 whitespace-nowrap rounded-full px-2 text-xs font-medium transition-colors duration-200 motion-reduce:transition-none focus-visible:z-20",
+                  seleccionado ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {etiqueta}
+                {valor === "ANNUAL" && (
+                  <span className={cn(
+                    "whitespace-nowrap rounded-full px-1.5 py-0.5 text-[10px] font-bold transition-colors duration-200 motion-reduce:transition-none",
+                    seleccionado ? "bg-white/20 text-primary-foreground" : "bg-muted text-muted-foreground",
+                  )}>
+                    {mesesGratisExactos(lite.mensual, lite.anual)} meses gratis
+                  </span>
+                )}
+              </button>
+            )
+          })}
         </div>
       </div>
 
@@ -1061,9 +1315,9 @@ function Paywall({
             enseña atenuado "para el mes que viene": soporte confirma las
             condiciones de cualquiera de los dos antes de activar. */}
         {([lite, pro] as const).map((plan) => {
-          const cuenta = plan.id === "lite" ? cuentaLite : cuentaPro
           const destacado = plan.id === "lite"
           const codigo: PlanSolicitado = plan.id === "lite" ? "LITE" : "PRO"
+          const beneficios = plan.incluye.filter((incluye) => incluye !== "El primer mes con todo lo de Pro")
           return (
             <div
               key={plan.id}
@@ -1078,16 +1332,20 @@ function Paywall({
                 ${PESOS.format(precio(plan))}{" "}
                 <span className="text-sm font-normal text-muted-foreground">{periodo}</span>
               </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {anual
-                  ? `Equivale a $${pesos(cuenta.porMes)} al mes, cobrado una vez al año. Ahorras $${pesos(cuenta.ahorro)} frente al pago mensual.`
-                  : `Pagando por año equivale a $${pesos(cuenta.porMes)} al mes.`}
-              </p>
               {destacado && (
-                <p className="mt-4 inline-flex w-fit rounded-full bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
-                  Incluye un mes con todo lo de Pro
-                </p>
+                <div className="mt-5 flex items-center gap-3 rounded-xl bg-foreground px-4 py-3 text-background">
+                  <Gift className="size-5 shrink-0" aria-hidden="true" />
+                  <p className="text-sm font-semibold">Incluye un mes con todo lo de Pro</p>
+                </div>
               )}
+              <ul className="mt-5 flex-1 space-y-3" aria-label={`Incluye ${plan.nombre}`}>
+                {beneficios.map((beneficio) => (
+                  <li key={beneficio} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                    <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                    <span>{beneficio}</span>
+                  </li>
+                ))}
+              </ul>
               <Button
                 className="mt-6 min-h-11 w-full"
                 variant={destacado ? "default" : "outline"}
@@ -1132,6 +1390,14 @@ function Paywall({
           Sin publicar, tu tarjeta no genera código QR y tus clientes todavía no pueden unirse.
         </p>
       </div>
+
+      <div className="flex justify-center">
+        <Button className="min-h-11 px-8" onClick={() => setSlide("tarjeta")}>
+          Volver a tu tarjeta
+        </Button>
+      </div>
+        </>
+      )}
     </div>
   )
 }

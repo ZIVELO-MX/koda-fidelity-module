@@ -44,6 +44,15 @@ import { resolveTheme } from "@/lib/card-themes"
  *                       type: integer
  *                     brandColor:
  *                       type: string
+ *                     textColor:
+ *                       type: string
+ *                       enum: [AUTO, DARK, LIGHT]
+ *                     iconName:
+ *                       type: string
+ *                       nullable: true
+ *                     stampIconName:
+ *                       type: string
+ *                       nullable: true
  *                     expiresAt:
  *                       type: string
  *                       format: date-time
@@ -90,6 +99,18 @@ import { resolveTheme } from "@/lib/card-themes"
  *                 type: integer
  *               brandColor:
  *                 type: string
+ *               textColor:
+ *                 type: string
+ *                 enum: [AUTO, DARK, LIGHT]
+ *               themeId:
+ *                 type: string
+ *                 nullable: true
+ *               iconName:
+ *                 type: string
+ *                 nullable: true
+ *               stampIconName:
+ *                 type: string
+ *                 nullable: true
  *               description:
  *                 type: string
  *                 nullable: true
@@ -200,6 +221,7 @@ export async function GET(
         stampsRequired: card.stampsRequired,
         brandColor: card.brandColor,
         iconName: card.iconName,
+        textColor: card.textColor,
         isActive: card.isActive,
         status: card.status,
         selectedTheme: card.selectedTheme,
@@ -253,6 +275,9 @@ export async function PUT(
     if (body.stampsRequired !== undefined) {
       const s = Number(body.stampsRequired)
       if (s < 1 || s > 100) throw new ValidationError("Required stamps must be between 1 and 100")
+    }
+    if (body.textColor !== undefined && !["AUTO", "DARK", "LIGHT"].includes(String(body.textColor))) {
+      throw new ValidationError("textColor must be AUTO, DARK, or LIGHT")
     }
 
     const stampsRequired = body.stampsRequired !== undefined ? Number(body.stampsRequired) : existing.stampsRequired
@@ -313,6 +338,7 @@ export async function PUT(
         ...(body.reward?.trim() && { reward: body.reward.trim() }),
         ...(body.stampsRequired !== undefined && { stampsRequired }),
         ...(body.brandColor !== undefined && { brandColor: body.brandColor }),
+        ...(body.textColor !== undefined && { textColor: body.textColor }),
         ...(body.iconName !== undefined && { iconName: body.iconName || null }),
         ...(body.stampIconName !== undefined && { stampIconName: body.stampIconName || null }),
         ...(body.description !== undefined && { description: body.description?.trim() || null }),

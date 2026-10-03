@@ -7,7 +7,7 @@ import { config } from "@/lib/config"
 
 type MockUser = { id: string; email: string; name: string; role: Role }
 type MockProgress = {
-  step: "INTRO" | "BUSINESS" | "CARD" | "ACQUISITION" | "PAYWALL"
+  step: "INTRO" | "BUSINESS" | "CARD" | "CARD_READY" | "ACQUISITION" | "PAYWALL"
   status: "IN_PROGRESS" | "AWAITING_PAYMENT" | "ACTIVE"
   draftVersion: number
   businessDraft: Record<string, unknown> | null
@@ -130,8 +130,12 @@ export async function advanceMockOnboarding(db: PrismaClient, principal: { id: s
   if (input.action === "complete_intro" || input.action === "skip_intro") next.step = "BUSINESS"
   if (input.action === "complete_business") next.step = "CARD"
   if (input.action === "complete_card") {
-    next.step = "ACQUISITION"
     next.firstCardId ??= `mock-card-${state.user.id}`
+    next.step = "CARD_READY"
+  }
+  if (input.action === "complete_card_ready") {
+    if (state.progress.step !== "CARD_READY" || !next.firstCardId) throw new ValidationError("Primero revisa la tarjeta del negocio")
+    next.step = "ACQUISITION"
   }
   if (input.action === "complete_acquisition" || input.action === "skip_acquisition") next.step = "PAYWALL"
   if (input.action === "open_paywall") {

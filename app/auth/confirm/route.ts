@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createSupabaseReqResClient } from "@/lib/supabase-req-res"
 import { isSupportedAuthType, resolveAuthRedirect } from "@/lib/auth-redirect"
+import { prisma } from "@/lib/prisma"
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
 
   const { supabase } = createSupabaseReqResClient(request, response)
 
-  const { error } = await supabase.auth.verifyOtp({
+  const { data, error } = await supabase.auth.verifyOtp({
     token_hash,
     type: type as "magiclink" | "signup" | "invite" | "recovery" | "email_change" | "email",
   })
@@ -44,6 +45,26 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(
       new URL(`/auth/error?${errorParams.toString()}`, request.url),
     )
+  }
+
+  if (type !== "recovery" && data.user) {
+    const member = await prisma.user.findUnique({
+      where: { authUserId: data.user.id },
+      select: {
+        passwordSetupRequired: true,
+        onboardingProgress: { select: { status: true } },
+      },
+    })
+    if (member?.passwordSetupRequired) {
+      const destination = NextResponse.redirect(new URL("/dashboard/update-password", request.url))
+      response.headers.getSetCookie().forEach((cookie) => destination.headers.append("Set-Cookie", cookie))
+      return destination
+    }
+    if (member?.onboardingProgress && member.onboardingProgress.status !== "ACTIVE") {
+      const destination = NextResponse.redirect(new URL("/onboarding", request.url))
+      response.headers.getSetCookie().forEach((cookie) => destination.headers.append("Set-Cookie", cookie))
+      return destination
+    }
   }
 
   return response

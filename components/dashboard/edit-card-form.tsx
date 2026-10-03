@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, ChevronDown, Loader2, Plus, Save, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -11,11 +11,16 @@ import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { IconPicker } from "@/components/dashboard/icon-picker"
+import { TextColorPicker } from "@/components/dashboard/text-color-picker"
 import { ExpirationPicker } from "@/components/dashboard/expiration-picker"
 import { toast } from "sonner"
 import { getRarityColor, getRarityDescription, getRarityLabel, getRarityRange } from "@/lib/card-utils"
 import { sorpresasQueViajan, validarBorrador } from "@/lib/tarjeta-borrador"
 import { cn } from "@/lib/utils"
+import { nombreDeTema } from "@/lib/temas-de-tarjeta"
+import { AvisoDeColorDeTexto } from "@/components/aviso-de-color-de-texto"
+
+type TemaDisponible = { id: string; code: string; plan: "LITE" | "PRO" }
 
 const colorPresets = ["#f97316", "#3b82f6", "#10b981", "#8b5cf6", "#ec4899", "#f59e0b"]
 
@@ -39,6 +44,8 @@ interface EditCardFormProps {
   initialStampsRequired: number
   initialIcon?: string | null
   initialStampIcon?: string | null
+  initialThemeId?: string | null
+  initialTextColor?: "AUTO" | "DARK" | "LIGHT"
   initialDescription?: string | null
   initialExpiresAt?: string | null
   initialMilestones?: MilestoneEdit[]
@@ -54,6 +61,8 @@ export function EditCardForm({
   initialStampsRequired,
   initialIcon = null,
   initialStampIcon = null,
+  initialThemeId = null,
+  initialTextColor = "LIGHT",
   initialDescription = null,
   initialExpiresAt = null,
   initialMilestones = [],
@@ -65,6 +74,10 @@ export function EditCardForm({
   const [stampsRequired, setStampsRequired] = useState(initialStampsRequired)
   const [iconName, setIconName] = useState<string | null>(initialIcon)
   const [stampIconName, setStampIconName] = useState<string | null>(initialStampIcon)
+  const [themeId, setThemeId] = useState(initialThemeId ?? "")
+  const [textColor, setTextColor] = useState<"AUTO" | "DARK" | "LIGHT">(initialTextColor)
+  const [themes, setThemes] = useState<TemaDisponible[]>([])
+  const [accountPlan, setAccountPlan] = useState<"LITE" | "PRO">("LITE")
   const [description, setDescription] = useState(initialDescription ?? "")
   const [expiresAt, setExpiresAt] = useState(initialExpiresAt ?? "")
   const [previewMode, setPreviewMode] = useState<"normal" | "sellada">("normal")
@@ -73,6 +86,16 @@ export function EditCardForm({
   )
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    fetch("/api/card-themes")
+      .then((res) => res.json())
+      .then((data) => {
+        setThemes(Array.isArray(data.themes) ? data.themes : [])
+        setAccountPlan(data.plan === "PRO" ? "PRO" : "LITE")
+      })
+      .catch(() => {})
+  }, [])
 
   const limpiarError = (campo: string) => setErrors((prev) => ({ ...prev, [campo]: "" }))
 
@@ -118,6 +141,8 @@ export function EditCardForm({
         brandColor: color,
         iconName,
         stampIconName,
+        themeId: themeId || null,
+        textColor,
         description: description.trim() || null,
         expiresAt: expiresAt || null,
         // Una sorpresa sin etiqueta es una fila que nadie llenó.
@@ -144,6 +169,11 @@ export function EditCardForm({
       ? `${milestones.length} sorpresa${milestones.length !== 1 ? "s" : ""}`
       : "Sin sorpresas",
   ].join(" · ")
+  const temaElegido = themes.find((theme) => theme.id === themeId)
+  // La vista previa enseña lo elegido, Pro incluido, igual que en el alta: es
+  // donde se decide, y el aviso de debajo dice que con Lite se guarda y se
+  // activa al pasar a Pro. La tarjeta publicada usa el tema efectivo.
+  const themeCode = temaElegido?.code ?? null
 
   return (
     <div className="space-y-8">
@@ -313,6 +343,38 @@ export function EditCardForm({
                 </div>
               </div>
 
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-theme">Tema de la tarjeta</Label>
+                  <select
+                    id="edit-theme"
+                    value={themeId}
+                    onChange={(e) => setThemeId(e.target.value)}
+                    className="min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                  >
+                    <option value="">Color de marca</option>
+                    {themes.map((theme) => (
+                      <option key={theme.id} value={theme.id}>
+                        {nombreDeTema(theme.code)}{theme.plan === "PRO" ? " · Pro" : ""}
+                      </option>
+                    ))}
+                  </select>
+                  {temaElegido?.plan === "PRO" && accountPlan !== "PRO" && (
+                    <p className="text-xs text-muted-foreground">El tema queda guardado y se activa al pasar a Pro.</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label>Color del texto</Label>
+                  <TextColorPicker
+                    value={textColor}
+                    onChange={setTextColor}
+                    brandColor={color}
+                    themeCode={themeCode}
+                  />
+                  <AvisoDeColorDeTexto brandColor={color} themeCode={themeCode} textColor={textColor} />
+                </div>
+              </div>
+
               <div className="space-y-3">
                 <div>
                   <Label>Recompensas sorpresa</Label>
@@ -465,6 +527,8 @@ export function EditCardForm({
                 expiresAt ? new Date(expiresAt + "T12:00:00").toLocaleDateString("es-MX") : undefined
               }
               brandColor={color}
+              themeCode={themeCode}
+              textColor={textColor}
             />
 
             <Button type="button" onClick={handleSave} disabled={saving} className="mt-6 min-h-11 w-full">

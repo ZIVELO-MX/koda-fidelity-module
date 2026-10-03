@@ -44,11 +44,15 @@ export async function advanceOnboarding(db: Db, authUserId: string, action: stri
   const cardDraft = (progress.cardDraft ?? {}) as Record<string, unknown>
   if (action === "complete_business" && (!businessDraft.name || !businessDraft.categoryId)) throw new ValidationError("Completa nombre y categoría del negocio")
   if (action === "complete_card" && (!cardDraft.reward || !cardDraft.stampsRequired)) throw new ValidationError("Completa recompensa y sellos de la tarjeta")
+  if (action === "complete_card_ready" && (progress.step !== "CARD_READY" || !progress.firstCardId)) {
+    throw new ValidationError("Primero revisa la tarjeta del negocio")
+  }
   if (action === "select_billing_interval" && !billingInterval) throw new ValidationError("Selecciona una modalidad de cobro")
   const next: Prisma.OnboardingProgressUncheckedUpdateInput = {}
   if (action === "complete_intro" || action === "skip_intro") next.step = "BUSINESS"
   if (action === "complete_business") next.step = "CARD"
-  if (action === "complete_card") next.step = "ACQUISITION"
+  if (action === "complete_card") next.step = "CARD_READY"
+  if (action === "complete_card_ready") next.step = "ACQUISITION"
   if (action === "complete_acquisition" || action === "skip_acquisition") next.step = "PAYWALL"
   if (action === "open_paywall") next.status = "AWAITING_PAYMENT"
   if (action === "skip_intro") next.introSkippedAt = new Date()
@@ -77,7 +81,7 @@ export async function advanceOnboarding(db: Db, authUserId: string, action: stri
       if (!user.businessId) await tx.user.update({ where: { id: user.id }, data: { businessId: business.id } })
       const entitlements = await getEntitlements(tx, business.id)
       const theme = await resolveTheme(tx, typeof cardDraft.themeId === "string" ? cardDraft.themeId : undefined, entitlements.plan)
-      const card = await tx.loyaltyCard.create({ data: { businessId: business.id, name: typeof cardDraft.name === "string" && cardDraft.name.trim() ? cardDraft.name.trim() : `Club ${name}`, reward: String(cardDraft.reward), stampsRequired, brandColor: typeof cardDraft.brandColor === "string" ? cardDraft.brandColor : business.brandColor, isActive: false, isLite: true, status: "DRAFT", selectedThemeId: theme.selectedThemeId, effectiveThemeId: theme.effectiveThemeId } })
+      const card = await tx.loyaltyCard.create({ data: { businessId: business.id, name: typeof cardDraft.name === "string" && cardDraft.name.trim() ? cardDraft.name.trim() : `Club ${name}`, reward: String(cardDraft.reward), stampsRequired, brandColor: typeof cardDraft.brandColor === "string" ? cardDraft.brandColor : business.brandColor, textColor: cardDraft.textColor === "DARK" || cardDraft.textColor === "LIGHT" || cardDraft.textColor === "AUTO" ? cardDraft.textColor : "LIGHT", iconName: cardDraft.iconName === null ? null : typeof cardDraft.iconName === "string" ? cardDraft.iconName : business.iconName, stampIconName: cardDraft.stampIconName === null ? null : typeof cardDraft.stampIconName === "string" ? cardDraft.stampIconName : business.stampIconName, isActive: false, isLite: true, status: "DRAFT", selectedThemeId: theme.selectedThemeId, effectiveThemeId: theme.effectiveThemeId } })
       await tx.onboardingProgress.update({ where: { id: progress.id }, data: { ...next, businessId: business.id, firstCardId: card.id } })
     })
     return getOnboarding(db, authUserId)
