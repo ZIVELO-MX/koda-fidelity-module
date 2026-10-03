@@ -14,7 +14,7 @@ export async function entrar(
   page: Page,
   correo: string,
   clave: string,
-  destino = "/dashboard",
+  destinos: string | readonly string[] = "/dashboard",
 ) {
   await page.goto("/login")
   await page.getByLabel("Correo electrónico").fill(correo)
@@ -49,5 +49,6 @@ export async function entrar(
 
   await contraseña.fill(clave)
   await page.getByRole("button", { name: "Iniciar Sesión" }).click()
-  await page.waitForURL(`**${destino}`, { timeout: 60000 })
+  const rutasEsperadas = Array.isArray(destinos) ? destinos : [destinos]
+  await page.waitForURL((url) => rutasEsperadas.includes(url.pathname), { timeout: 60000 })
 }
