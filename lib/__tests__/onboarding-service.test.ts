@@ -90,3 +90,19 @@ describe("repeating onboarding with an existing first card", () => {
     expect(db).not.toHaveProperty("loyaltyCard")
   })
 })
+
+
+describe("business onboarding identity", () => {
+  it("requires the owner name and saves it when completing the business step", async () => {
+    const progress = { id: "progress-1", draftVersion: 0, firstCardId: null, businessDraft: { ownerName: "Alex García", name: "Café", categoryId: "category-1" }, cardDraft: {} }
+    const user = { id: "user-1", authUserId: "auth-1", email: "test@invalid.dev", businessId: null, onboardingProgress: progress }
+    const tx = { onboardingProgress: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) }, user: { update: vi.fn() } }
+    const updated = { ...user, name: "Alex García", onboardingProgress: { ...progress, draftVersion: 1, step: "CARD" } }
+    const db = { user: { findUnique: vi.fn().mockResolvedValueOnce(user).mockResolvedValue(updated) }, $transaction: vi.fn(async (fn: (transaction: any) => unknown) => fn(tx)) } as any
+
+    await advanceOnboarding(db, "auth-1", "complete_business", 0)
+
+    expect(tx.user.update).toHaveBeenCalledWith({ where: { id: "user-1" }, data: { name: "Alex García" } })
+    expect(tx.onboardingProgress.updateMany).toHaveBeenCalledWith({ where: { id: "progress-1", draftVersion: 0 }, data: { step: "CARD", draftVersion: { increment: 1 } } })
+  })
+})

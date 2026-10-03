@@ -13,6 +13,11 @@ enum Role {
   sellador
 }
 
+enum SignupAccountType {
+  BUSINESS
+  CUSTOMER
+}
+
 enum LedgerEventType {
   customer_joined
   stamp
@@ -348,7 +353,8 @@ model AvatarCleanupJob {
 model SignupIntent {
   id         String   @id @default(cuid())
   email      String   @unique
-  name       String
+  name       String?
+  accountType SignupAccountType @default(BUSINESS)
   authUserId String?  @unique @db.Uuid
   status     String   @default("pending")
   createdAt  DateTime @default(now())

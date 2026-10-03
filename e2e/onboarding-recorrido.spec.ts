@@ -42,7 +42,7 @@ test.describe("Alta guiada, recorrido completo", () => {
     const contexto = await browser.newContext()
     try {
       const pagina = await contexto.newPage()
-      await entrar(pagina, CORREO!, CLAVE!)
+      await entrar(pagina, CORREO!, CLAVE!, "/onboarding")
       cookies = await contexto.cookies()
     } finally { await contexto.close() }
   })
@@ -69,8 +69,9 @@ test.describe("Alta guiada, recorrido completo", () => {
     await expect(page.getByRole("heading", { name: "Tu negocio" })).toBeVisible()
     await page.getByRole("button", { name: "Continuar" }).click()
     // El aviso se pinta en el encabezado, sobre la barra de pasos.
-    await expect(page.getByRole("alert").filter({ hasText: /nombre y categoría/i })).toBeVisible()
+    await expect(page.getByRole("alert").filter({ hasText: /nombre y la categoría/i })).toBeVisible()
 
+    await page.getByLabel("Tu nombre").fill("Responsable E2E")
     const nombre = `Café Aurora ${Date.now()}`
     await page.getByLabel("Nombre del negocio").fill(nombre)
     // Las categorías las sirve el backend: se toma la primera que pinte.
@@ -106,6 +107,7 @@ test.describe("Alta guiada, recorrido completo", () => {
     const totalAntes = await contarTarjetas()
 
     await page.getByRole("button", { name: "Saltar la introducción" }).click()
+    await page.getByLabel("Tu nombre").fill("Responsable E2E")
     await page.getByLabel("Nombre del negocio").fill("Café Aurora")
     await page.locator("fieldset button").first().click()
     await page.getByRole("button", { name: "Continuar" }).click()
@@ -174,6 +176,7 @@ test.describe("Alta guiada, recorrido completo", () => {
 
   test("al volver se dice qué se recuperó, nombrando los campos", async ({ page }) => {
     await page.getByRole("button", { name: "Saltar la introducción" }).click()
+    await page.getByLabel("Tu nombre").fill("Responsable E2E")
     const nombre = `Café Aurora ${Date.now()}`
     await page.getByLabel("Nombre del negocio").fill(nombre)
     await expect(page.getByText("Guardado", { exact: true })).toBeVisible({ timeout: 30000 })
@@ -207,6 +210,7 @@ test.describe("Alta guiada, recorrido completo", () => {
    */
   test("saltar la atribución no deja ninguna respuesta puesta", async ({ page }) => {
     await page.getByRole("button", { name: "Saltar la introducción" }).click()
+    await page.getByLabel("Tu nombre").fill("Responsable E2E")
     await page.getByLabel("Nombre del negocio").fill(`Café Aurora ${Date.now()}`)
     await page.locator("fieldset button").first().click()
     await page.getByRole("button", { name: "Continuar" }).click()
@@ -245,6 +249,7 @@ test.describe("Alta guiada, recorrido completo", () => {
     await page.getByRole("button", { name: "Saltar la introducción" }).click()
     await expect(page.getByRole("heading", { name: "Tu negocio" })).toBeVisible()
 
+    await page.getByLabel("Tu nombre").fill("Responsable E2E")
     const nombre = `Café Aurora ${Date.now()}`
     await page.getByLabel("Nombre del negocio").fill(nombre)
     // Sin esperar el "Guardado": se elige la categoría con el guardado en curso.

@@ -8,6 +8,7 @@ const SELLADOR_PASSWORD = process.env.E2E_SELLADOR_PASSWORD ?? "ci-sellador-pass
 const REQUIRED_EMAIL = process.env.E2E_REQUIRED_EMAIL ?? "fidelity.seed.required@dev.invalid"
 const REQUIRED_PASSWORD = process.env.E2E_REQUIRED_PASSWORD ?? "ci-required-password"
 const CUSTOMER_EMAIL = process.env.E2E_CUSTOMER_EMAIL ?? "fidelity.seed.customer@dev.invalid"
+const CUSTOMER_PASSWORD = process.env.E2E_CUSTOMER_PASSWORD ?? "ci-customer-password"
 const EXPIRED_EMAIL = process.env.E2E_EXPIRED_EMAIL ?? "fidelity.seed.expired@dev.invalid"
 const EXPIRED_PASSWORD = process.env.E2E_EXPIRED_PASSWORD ?? "ci-expired-password"
 const MAILPIT_URL = process.env.MAILPIT_URL ?? "http://127.0.0.1:54324"
@@ -62,26 +63,6 @@ async function waitForRecoveryLink(request: APIRequestContext, email: string, pr
   throw new Error("Timed out waiting for the recovery email in Mailpit")
 }
 
-async function waitForMagicLink(request: APIRequestContext, email: string, previousIds: Set<string>) {
-  const deadline = Date.now() + 15000
-  while (Date.now() < deadline) {
-    const search = await request.get(`${MAILPIT_URL}/api/v1/search`, { params: { query: `to:${email}`, limit: "20" } })
-    expect(search.ok()).toBeTruthy()
-    const result = await search.json() as { messages?: Array<{ ID: string }> }
-    for (const message of result.messages ?? []) {
-      if (previousIds.has(message.ID)) continue
-      const full = await request.get(`${MAILPIT_URL}/api/v1/message/${message.ID}`)
-      expect(full.ok()).toBeTruthy()
-      const body = await full.json() as { Text?: string; HTML?: string }
-      const content = `${body.Text ?? ""}\n${body.HTML ?? ""}`
-      const link = (content.match(/https?:\/\/[^\s"'<>]+/g) ?? [])
-        .find(candidate => candidate.includes("/auth/v1/verify") && candidate.includes("type=magiclink"))
-      if (link) return link.replaceAll("&amp;", "&")
-    }
-    await new Promise(resolve => setTimeout(resolve, 250))
-  }
-  throw new Error("Timed out waiting for the magic link in Mailpit")
-}
 
 async function ageRecoveryToken(email: string) {
   if (process.env.FID_0019_LOCAL_E2E !== LOCAL_E2E_FLAG) {
@@ -227,26 +208,41 @@ test.describe("FID-0016 development authentication", () => {
     await assertPasswordWorks(request, EXPIRED_EMAIL, EXPIRED_PASSWORD)
   })
 
-  test("auth-only customer reaches the portal with no cards or business", async ({ page, request }) => {
-    const magicLink = await test.step("request customer magic link", async () => {
-      await page.goto("/dashboard/my-cards")
-      await page.getByLabel("Correo Electrónico").fill(CUSTOMER_EMAIL)
-      const previousIds = await mailpitMessageIds(request, CUSTOMER_EMAIL)
-      await page.getByRole("button", { name: "Enviar enlace mágico" }).click()
-      await expect(page.getByText(`Te enviamos un enlace mágico a ${CUSTOMER_EMAIL}.`)).toBeVisible()
-      return waitForMagicLink(request, CUSTOMER_EMAIL, previousIds)
-    })
+  test("auth-only customer signs in to the portal with no cards or business", async ({ page }) => {
+    await page.goto("/login")
+    await page.getByLabel("Correo electrónico").fill(CUSTOMER_EMAIL)
+    await page.getByRole("button", { name: "Continuar", exact: true }).click()
+    await page.locator("input[name=\"password\"]").fill(CUSTOMER_PASSWORD)
+    await page.getByRole("button", { name: "Iniciar sesión" }).click()
+    await page.waitForURL("**/dashboard/my-cards", { timeout: 15000 })
+    await page.goto("/dashboard/my-cards")
+    await expect(page.getByText("No tienes tarjetas de lealtad")).toBeVisible({ timeout: 15000 })
+    await expect(page.getByRole("link", { name: "Panel del negocio" })).toHaveCount(0)
+  })
 
-    await test.step("open customer portal from magic link", async () => {
-      await page.goto(magicLink)
-      await page.waitForURL("**/dashboard/my-cards", { timeout: 15000 })
-      await expect(page.getByText("No tienes tarjetas de lealtad")).toBeVisible({ timeout: 15000 })
-    })
+  test("signup provisions a business into onboarding and a customer into My Cards", async ({ page, browser }) => {
+    const unique = `${Date.now()}@example.com`
+    await page.goto("/signup")
+    await page.getByLabel("Correo electrónico").fill(`business-${unique}`)
+    await page.getByLabel("Contraseña").fill("SecurePass123!")
+    await page.getByRole("button", { name: "Continuar", exact: true }).click()
+    await page.getByText("Soy un negocio", { exact: true }).click()
+    await page.getByRole("button", { name: "Crear cuenta", exact: true }).click()
+    await page.waitForURL("**/onboarding", { timeout: 15000 })
 
-    await test.step("verify customer has no business", async () => {
-      const response = await apiJson(page, `/api/join?email=${encodeURIComponent(CUSTOMER_EMAIL)}`, { method: "GET" })
-      expect(response.status).toBe(200)
-      expect(response.body).toEqual({ customers: [] })
-    })
+    const customerPage = await browser.newPage()
+    try {
+      await customerPage.goto("/signup")
+      await customerPage.getByLabel("Correo electrónico").fill(`customer-${unique}`)
+      await customerPage.getByLabel("Contraseña").fill("SecurePass123!")
+      await customerPage.getByRole("button", { name: "Continuar", exact: true }).click()
+      await customerPage.getByText("Soy un cliente", { exact: true }).click()
+      await customerPage.getByLabel("Tu nombre").fill("Cliente E2E")
+      await customerPage.getByRole("button", { name: "Crear cuenta", exact: true }).click()
+      await customerPage.waitForURL("**/dashboard/my-cards", { timeout: 15000 })
+      await expect(customerPage.getByText("No tienes tarjetas de lealtad")).toBeVisible({ timeout: 15000 })
+    } finally {
+      await customerPage.close()
+    }
   })
 })

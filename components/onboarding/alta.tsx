@@ -526,7 +526,7 @@ function Datos({
   estado, onCambio, onCambioLocal,
 }: {
   estado: EstadoDelAlta
-  onCambio: (c: { business?: { name?: string; categoryId?: string } }) => void
+  onCambio: (c: { business?: { ownerName?: string; name?: string; categoryId?: string } }) => void
   onCambioLocal: (e: EstadoDelAlta) => void
 }) {
   return (
@@ -534,6 +534,14 @@ function Datos({
       <div className="space-y-2 text-center">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Tu negocio</h1>
         <p className="text-muted-foreground">Dos datos y seguimos. Lo demás se configura después.</p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="nombre-responsable">Tu nombre</Label>
+        <Input id="nombre-responsable" value={estado.negocio.ownerName ?? ""} onChange={(e) => {
+          onCambioLocal({ ...estado, negocio: { ...estado.negocio, ownerName: e.target.value } })
+          onCambio({ business: { ownerName: e.target.value } })
+        }} placeholder="Alex García" autoComplete="name" maxLength={120} />
       </div>
 
       <div className="space-y-2">

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createSupabaseReqResClient } from "@/lib/supabase-req-res"
 import { isSupportedAuthType, resolveAuthRedirect } from "@/lib/auth-redirect"
+import { provisionSignup } from "@/lib/signup-provisioning"
+import { prisma } from "@/lib/prisma"
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -46,5 +48,15 @@ export async function GET(request: NextRequest) {
     )
   }
 
+  if (type === "signup") {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      await provisionSignup(user.id)
+      const business = await prisma.user.findUnique({ where: { authUserId: user.id }, select: { businessId: true, onboardingProgress: { select: { status: true } } } })
+      const customer = await prisma.customerProfile.findUnique({ where: { authUserId: user.id }, select: { id: true } })
+      if (business && (!business.businessId || business.onboardingProgress?.status === "IN_PROGRESS") && !redirect_to) response.headers.set("location", new URL("/onboarding", request.url).toString())
+      else if (customer && !redirect_to) response.headers.set("location", new URL("/dashboard/my-cards", request.url).toString())
+    }
+  }
   return response
 }

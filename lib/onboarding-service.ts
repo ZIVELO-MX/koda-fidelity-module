@@ -42,7 +42,7 @@ export async function advanceOnboarding(db: Db, authUserId: string, action: stri
   if (progress.draftVersion !== draftVersion) throw new ConflictError("El borrador cambió; recarga el onboarding")
   const businessDraft = (progress.businessDraft ?? {}) as Record<string, unknown>
   const cardDraft = (progress.cardDraft ?? {}) as Record<string, unknown>
-  if (action === "complete_business" && (!businessDraft.name || !businessDraft.categoryId)) throw new ValidationError("Completa nombre y categoría del negocio")
+  if (action === "complete_business" && (!businessDraft.ownerName || !businessDraft.name || !businessDraft.categoryId)) throw new ValidationError("Completa tu nombre, el nombre y la categoría del negocio")
   if (action === "complete_card" && (!cardDraft.reward || !cardDraft.stampsRequired)) throw new ValidationError("Completa recompensa y sellos de la tarjeta")
   if (action === "select_billing_interval" && !billingInterval) throw new ValidationError("Selecciona una modalidad de cobro")
   const next: Prisma.OnboardingProgressUncheckedUpdateInput = {}
@@ -54,6 +54,14 @@ export async function advanceOnboarding(db: Db, authUserId: string, action: stri
   if (action === "skip_intro") next.introSkippedAt = new Date()
   if (action === "skip_acquisition") next.acquisitionSkippedAt = new Date()
   if (billingInterval) next.selectedBillingInterval = billingInterval
+  if (action === "complete_business") {
+    await db.$transaction(async (tx) => {
+      const claimed = await tx.onboardingProgress.updateMany({ where: { id: progress.id, draftVersion }, data: { ...next, draftVersion: { increment: 1 } } })
+      if (claimed.count !== 1) throw new ConflictError("El borrador cambió; recarga el onboarding")
+      await tx.user.update({ where: { id: user.id }, data: { name: String(businessDraft.ownerName).trim() } })
+    })
+    return getOnboarding(db, authUserId)
+  }
   if (action === "complete_card") {
     const category = await db.businessCategory.findUnique({ where: { id: String(businessDraft.categoryId) } })
     if (!category || !category.isActive) throw new ValidationError("Categoría inválida")

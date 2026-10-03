@@ -1,19 +1,19 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { JoinCardLayout, type JoinCardData } from "@/components/join/join-card-layout"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { RedesNegocio } from "@/components/join/redes-negocio"
-import { Check, Mail, Loader2 } from "lucide-react"
-import { createBrowserSupabase } from "@/lib/supabase-browser"
-import { getFriendlySendError } from "@/lib/auth-errors"
+import { Check, Loader2 } from "lucide-react"
 import { mensajeDeAlta, type MotivoAlta } from "@/lib/alta-estados"
 import { cn } from "@/lib/utils"
+import { createBrowserSupabase } from "@/lib/supabase-browser"
+import { getFriendlySendError } from "@/lib/auth-errors"
 
-type Step = "loading" | "error" | "form" | "sent" | "ready"
+type Step = "loading" | "error" | "form" | "ready"
 
 interface JoinCustomer {
   id: string
@@ -47,6 +47,7 @@ interface JoinCustomer {
 
 export default function JoinCardPage() {
   const params = useParams()
+  const router = useRouter()
   const cardId = params.cardId as string
   const [step, setStep] = useState<Step>("loading")
   const [customer, setCustomer] = useState<JoinCustomer | null>(null)
@@ -200,7 +201,7 @@ export default function JoinCardPage() {
       const res = await fetch("/api/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), email: email.trim(), cardId }),
+        body: JSON.stringify({ name: name.trim(), email: email.trim().toLowerCase(), cardId }),
       })
 
       if (!res.ok) {
@@ -210,23 +211,13 @@ export default function JoinCardPage() {
       const { customerId } = await res.json()
       sessionStorage.setItem(`pending-${cardId}`, customerId)
 
-      const supabase = createBrowserSupabase()
-      const { error } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
-        options: {
-          shouldCreateUser: true,
-          emailRedirectTo: `${window.location.origin}/join/${cardId}`,
-        },
-      })
-      if (error) throw error
-
-      setStep("sent")
+      router.push(`/signup?accountType=CUSTOMER&next=${encodeURIComponent(`/join/${cardId}`)}&email=${encodeURIComponent(email.trim())}&name=${encodeURIComponent(name.trim())}`)
     } catch (err) {
       setSendError(getFriendlySendError(err))
     } finally {
       setSending(false)
     }
-  }, [name, email, cardId])
+  }, [name, email, cardId, router])
 
   const cardInfo = customer
     ? {
@@ -370,42 +361,6 @@ export default function JoinCardPage() {
     )
   }
 
-  if (step === "sent") {
-    return (
-      <div className="min-h-screen bg-background forced-light flex flex-col">
-        <header className="border-b border-border bg-card">
-          <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-center">
-            <span className="font-semibold text-foreground">Revisa tu correo electrónico</span>
-          </div>
-        </header>
-
-        <main className="flex-1 flex flex-col items-center justify-center px-4 py-8">
-          <div className="w-full max-w-md text-center space-y-6">
-            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-              <Mail className="h-10 w-10 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground mb-2">Revisa tu correo</h1>
-              <p className="text-muted-foreground">
-                Te enviamos un enlace mágico a <strong>{email}</strong>. Haz clic en el enlace para confirmar tu tarjeta.
-              </p>
-            </div>
-
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => {
-                setStep("form")
-                setSendError(null)
-              }}
-            >
-              Volver
-            </Button>
-          </div>
-        </main>
-      </div>
-    )
-  }
 
   return (
     <JoinCardLayout
