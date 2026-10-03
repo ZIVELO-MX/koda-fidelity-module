@@ -1267,13 +1267,6 @@ function Paywall({
         <p className="text-muted-foreground">Elige el plan que mejor acompaña a tu negocio.</p>
       </div>
 
-      <div className="flex items-center justify-between gap-3">
-        <Button variant="ghost" className="min-h-11" onClick={() => setSlide("tarjeta")}>
-          Volver a tu tarjeta
-        </Button>
-        <span className="text-sm text-muted-foreground">Paso 2 de 2</span>
-      </div>
-
       <div className="flex justify-center">
         <div
           role="radiogroup"
@@ -1396,6 +1389,12 @@ function Paywall({
         <p className="mt-2 text-xs text-muted-foreground">
           Sin publicar, tu tarjeta no genera código QR y tus clientes todavía no pueden unirse.
         </p>
+      </div>
+
+      <div className="flex justify-center">
+        <Button className="min-h-11 px-8" onClick={() => setSlide("tarjeta")}>
+          Volver a tu tarjeta
+        </Button>
       </div>
         </>
       )}
