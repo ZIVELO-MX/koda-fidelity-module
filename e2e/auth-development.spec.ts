@@ -224,7 +224,8 @@ test.describe("FID-0016 development authentication", () => {
     const unique = `${Date.now()}@example.com`
     await page.goto("/signup")
     await page.getByLabel("Correo electrónico").fill(`business-${unique}`)
-    await page.getByLabel("Contraseña").fill("SecurePass123!")
+    await page.getByLabel("Contraseña", { exact: true }).fill("SecurePass123!")
+    await page.getByLabel("Confirmar contraseña", { exact: true }).fill("SecurePass123!")
     await page.getByRole("button", { name: "Continuar", exact: true }).click()
     await page.getByText("Soy un negocio", { exact: true }).click()
     await page.getByRole("button", { name: "Crear cuenta", exact: true }).click()
@@ -234,7 +235,8 @@ test.describe("FID-0016 development authentication", () => {
     try {
       await customerPage.goto("/signup")
       await customerPage.getByLabel("Correo electrónico").fill(`customer-${unique}`)
-      await customerPage.getByLabel("Contraseña").fill("SecurePass123!")
+      await customerPage.getByLabel("Contraseña", { exact: true }).fill("SecurePass123!")
+      await customerPage.getByLabel("Confirmar contraseña", { exact: true }).fill("SecurePass123!")
       await customerPage.getByRole("button", { name: "Continuar", exact: true }).click()
       await customerPage.getByText("Soy un cliente", { exact: true }).click()
       await customerPage.getByLabel("Tu nombre").fill("Cliente E2E")
