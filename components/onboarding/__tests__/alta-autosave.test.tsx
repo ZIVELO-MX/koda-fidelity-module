@@ -90,14 +90,18 @@ describe("Alta: guardado y avance en una sola cola", () => {
     expect(screen.queryByRole("heading", { name: "Ahora sí, los planes." })).not.toBeInTheDocument()
     expect(screen.queryByText("Solicitar activación de Lite")).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }))
+    const continuar = screen.getByRole("button", { name: "Continuar" })
+    const clasesDeContinuar = continuar.className
+    fireEvent.click(continuar)
 
     expect(screen.getByRole("heading", { name: "Ahora sí, los planes." })).toBeInTheDocument()
-    expect(screen.getByText("Paso 2 de 2")).toBeInTheDocument()
+    expect(screen.queryByText("Paso 2 de 2")).not.toBeInTheDocument()
     expect(screen.queryByRole("heading", { name: "Tu tarjeta está lista, pero todavía no publicada." })).not.toBeInTheDocument()
     expect(avanzar).not.toHaveBeenCalled()
 
-    fireEvent.click(screen.getByRole("button", { name: "Volver a tu tarjeta" }))
+    const volver = screen.getByRole("button", { name: "Volver a tu tarjeta" })
+    expect(volver.className).toBe(clasesDeContinuar)
+    fireEvent.click(volver)
 
     expect(screen.getByRole("heading", { name: "Tu tarjeta está lista, pero todavía no publicada." })).toBeInTheDocument()
     expect(screen.queryByRole("heading", { name: "Ahora sí, los planes." })).not.toBeInTheDocument()
