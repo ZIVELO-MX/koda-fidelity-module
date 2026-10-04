@@ -35,8 +35,9 @@ export default async function EditCardPage({
 
   const card = await prisma.loyaltyCard.findUnique({
     where: { id },
-    include: {
-      milestoneRewards: {
+      include: {
+      selectedTheme: { select: { id: true, code: true, plan: true } },
+        milestoneRewards: {
         orderBy: { stampNumber: "asc" },
       },
     },
@@ -57,6 +58,8 @@ export default async function EditCardPage({
       initialStampsRequired={card.stampsRequired}
       initialIcon={card.iconName}
       initialStampIcon={card.stampIconName}
+      initialThemeId={card.selectedThemeId}
+      initialTextColor={card.textColor}
       initialDescription={card.description}
       initialExpiresAt={card.expiresAt ? toDateInputValue(card.expiresAt) : null}
       initialMilestones={card.milestoneRewards.map((milestone) => ({

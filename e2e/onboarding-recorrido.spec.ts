@@ -62,14 +62,15 @@ test.describe("Alta guiada, recorrido completo", () => {
 
   test("va de la intro al muro de pago guardando cada paso en el servidor", async ({ page }) => {
     // Intro: se puede saltar desde la primera lámina.
-    await expect(page.getByRole("button", { name: "Saltar la introducción" })).toBeVisible()
-    await page.getByRole("button", { name: "Saltar la introducción" }).click()
+    await expect(page.getByRole("button", { name: "Saltar introducción" })).toBeVisible()
+    await page.getByRole("button", { name: "Saltar introducción" }).click()
 
     // Datos: sin nombre ni categoría el servidor no deja avanzar, y se dice.
     await expect(page.getByRole("heading", { name: "Tu negocio" })).toBeVisible()
     await page.getByRole("button", { name: "Continuar" }).click()
-    // El aviso se pinta en el encabezado, sobre la barra de pasos.
-    await expect(page.getByRole("alert").filter({ hasText: /nombre y categoría/i })).toBeVisible()
+    // La validación se presenta como toast y señala los campos que faltan.
+    await expect(page.getByText(/Completa nombre y categoría del negocio/i)).toBeVisible()
+    await expect(page.getByLabel("Nombre del negocio")).toHaveAttribute("aria-invalid", "true")
 
     const nombre = `Café Aurora ${Date.now()}`
     await page.getByLabel("Nombre del negocio").fill(nombre)
@@ -82,20 +83,25 @@ test.describe("Alta guiada, recorrido completo", () => {
     await expect(page.getByRole("heading", { name: "Tu primera tarjeta" })).toBeVisible({ timeout: 30000 })
     await page.getByRole("button", { name: "8", exact: true }).click()
     await page.getByLabel("Recompensa").fill("Décimo café gratis")
-    await expect(page.getByText("0/8")).toBeVisible()
+    await expect(page.getByText("3/8")).toBeVisible()
     await page.getByRole("button", { name: "Continuar" }).click()
 
-    // El club, con su nombre y la tarjeta vacía. Va antes del muro.
-    await expect(page.getByRole("heading", { name: `Club ${nombre}` })).toBeVisible({ timeout: 30000 })
-    await expect(page.getByText("Así lo verán tus clientes.")).toBeVisible()
+    // La tarjeta y el QR ilustrativos se muestran antes del muro de pago.
+    await expect(page.getByRole("heading", { name: "Tu tarjeta está lista, pero todavía no publicada." })).toBeVisible({ timeout: 30000 })
+    await expect(page.getByText(nombre, { exact: true })).toBeVisible()
+    await expect(page.getByText("0/8")).toBeVisible()
     await page.getByRole("button", { name: "Continuar" }).click()
 
     // Origen: se puede saltar y nunca bloquea.
     await expect(page.getByRole("heading", { name: /cómo llegaste/i })).toBeVisible()
     await page.getByRole("button", { name: "Saltar", exact: true }).click()
 
+    // El muro de pago primero muestra la tarjeta; los planes están en el segundo slide.
+    await expect(page.getByRole("heading", { name: "Tu tarjeta está lista, pero todavía no publicada." })).toBeVisible()
+    await page.getByRole("button", { name: "Continuar" }).click()
+
     // Muro de pago.
-    await expect(page.getByRole("heading", { name: "Publica tu tarjeta" })).toBeVisible({ timeout: 30000 })
+    await expect(page.getByRole("heading", { name: "Ahora sí, los planes." })).toBeVisible({ timeout: 30000 })
     await expect(page.getByRole("radio", { name: /al año/i })).toBeChecked()
     await expect(page.getByRole("link", { name: "Salir sin publicar" })).toBeVisible()
   })
@@ -105,7 +111,7 @@ test.describe("Alta guiada, recorrido completo", () => {
     const yaHabiaTarjeta = Boolean(antes?.onboarding?.onboardingProgress?.firstCardId)
     const totalAntes = await contarTarjetas()
 
-    await page.getByRole("button", { name: "Saltar la introducción" }).click()
+    await page.getByRole("button", { name: "Saltar introducción" }).click()
     await page.getByLabel("Nombre del negocio").fill("Café Aurora")
     await page.locator("fieldset button").first().click()
     await page.getByRole("button", { name: "Continuar" }).click()
@@ -140,7 +146,7 @@ test.describe("Alta guiada, recorrido completo", () => {
   })
 
   test("un borrador viejo no pisa lo que ya se guardó", async ({ page }) => {
-    await page.getByRole("button", { name: "Saltar la introducción" }).click()
+    await page.getByRole("button", { name: "Saltar introducción" }).click()
     const guardado = page.waitForResponse((r) => r.url().includes("/api/onboarding") && r.request().method() === "PATCH" && r.ok())
     await page.getByLabel("Nombre del negocio").fill("Primero")
     await guardado
@@ -161,7 +167,7 @@ test.describe("Alta guiada, recorrido completo", () => {
    * se le promete nada que no esté.
    */
   test("al escribir se ve que guarda, y confirma que quedó", async ({ page }) => {
-    await page.getByRole("button", { name: "Saltar la introducción" }).click()
+    await page.getByRole("button", { name: "Saltar introducción" }).click()
     await expect(page.getByRole("heading", { name: "Tu negocio" })).toBeVisible()
 
     await page.getByLabel("Nombre del negocio").fill(`Café Aurora ${Date.now()}`)
@@ -173,7 +179,7 @@ test.describe("Alta guiada, recorrido completo", () => {
   })
 
   test("al volver se dice qué se recuperó, nombrando los campos", async ({ page }) => {
-    await page.getByRole("button", { name: "Saltar la introducción" }).click()
+    await page.getByRole("button", { name: "Saltar introducción" }).click()
     const nombre = `Café Aurora ${Date.now()}`
     await page.getByLabel("Nombre del negocio").fill(nombre)
     await expect(page.getByText("Guardado", { exact: true })).toBeVisible({ timeout: 30000 })
@@ -206,7 +212,7 @@ test.describe("Alta guiada, recorrido completo", () => {
    * nadie contestó es peor que un hueco, porque se cuenta igual.
    */
   test("saltar la atribución no deja ninguna respuesta puesta", async ({ page }) => {
-    await page.getByRole("button", { name: "Saltar la introducción" }).click()
+    await page.getByRole("button", { name: "Saltar introducción" }).click()
     await page.getByLabel("Nombre del negocio").fill(`Café Aurora ${Date.now()}`)
     await page.locator("fieldset button").first().click()
     await page.getByRole("button", { name: "Continuar" }).click()
@@ -214,7 +220,7 @@ test.describe("Alta guiada, recorrido completo", () => {
     await expect(page.getByRole("heading", { name: "Tu primera tarjeta" })).toBeVisible({ timeout: 30000 })
     await page.getByLabel("Recompensa").fill("Un café de recompensa")
     await page.getByRole("button", { name: "Continuar" }).click()
-    await expect(page.getByRole("heading", { name: /^Club / })).toBeVisible({ timeout: 30000 })
+    await expect(page.getByRole("heading", { name: "Tu tarjeta está lista, pero todavía no publicada." })).toBeVisible({ timeout: 30000 })
     await page.getByRole("button", { name: "Continuar" }).click()
 
     await expect(page.getByRole("heading", { name: /cómo llegaste a koda fidelity/i })).toBeVisible({ timeout: 30000 })
@@ -224,7 +230,9 @@ test.describe("Alta guiada, recorrido completo", () => {
     await expect(page.locator('button[aria-pressed="true"]')).toHaveCount(0)
 
     await page.getByRole("button", { name: "Saltar", exact: true }).click()
-    await expect(page.getByRole("heading", { name: "Publica tu tarjeta" })).toBeVisible({ timeout: 30000 })
+    await expect(page.getByRole("heading", { name: "Tu tarjeta está lista, pero todavía no publicada." })).toBeVisible()
+    await page.getByRole("button", { name: "Continuar" }).click()
+    await expect(page.getByRole("heading", { name: "Ahora sí, los planes." })).toBeVisible({ timeout: 30000 })
 
     // Y al volver sigue sin respuesta: saltar no inventó una.
     await page.goto("/onboarding")
@@ -242,7 +250,7 @@ test.describe("Alta guiada, recorrido completo", () => {
    * de lo que la persona acababa de teclear. Avanzar en vuelo fallaba igual.
    */
   test("escribir y avanzar mientras guarda no pierde nada", async ({ page }) => {
-    await page.getByRole("button", { name: "Saltar la introducción" }).click()
+    await page.getByRole("button", { name: "Saltar introducción" }).click()
     await expect(page.getByRole("heading", { name: "Tu negocio" })).toBeVisible()
 
     const nombre = `Café Aurora ${Date.now()}`

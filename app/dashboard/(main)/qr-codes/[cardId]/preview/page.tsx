@@ -26,6 +26,7 @@ export default async function QRJoinPreviewPage({
       business: {
         select: { name: true, brandColor: true, logoUrl: true, iconName: true },
       },
+      effectiveTheme: { select: { code: true } },
     },
   })
 
@@ -38,7 +39,10 @@ export default async function QRJoinPreviewPage({
     stampsRequired: card.stampsRequired,
     reward: card.reward,
     brandColor: card.brandColor,
+    textColor: card.textColor,
     iconName: card.iconName,
+    stampIconName: card.stampIconName,
+    themeCode: card.effectiveTheme?.code,
     expiresAt: card.expiresAt?.toISOString() ?? null,
     businessName: card.business.name,
     businessBrandColor: card.business.brandColor,

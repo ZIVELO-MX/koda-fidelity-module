@@ -20,11 +20,40 @@ import type { AccountContext } from "@/lib/fidelity-contracts"
  *     tags: [Onboarding]
  *     summary: Save an onboarding draft
  *     security: [{ cookieAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [draftVersion]
+ *             properties:
+ *               draftVersion: { type: integer, minimum: 0 }
+ *               card:
+ *                 type: object
+ *                 properties:
+ *                   themeId: { type: string }
+ *                   textColor: { type: string, enum: [AUTO, DARK, LIGHT] }
+ *                   iconName: { type: string, nullable: true }
+ *                   stampIconName: { type: string, nullable: true }
  *     responses: { 200: { description: Draft saved } }
  *   post:
  *     tags: [Onboarding]
  *     summary: Advance onboarding
  *     security: [{ cookieAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [action, draftVersion]
+ *             properties:
+ *               action:
+ *                 type: string
+ *                 enum: [complete_intro, skip_intro, complete_business, complete_card, complete_card_ready, complete_acquisition, skip_acquisition, select_billing_interval, open_paywall]
+ *               draftVersion: { type: integer, minimum: 0 }
+ *               billingInterval: { type: string, enum: [MONTHLY, ANNUAL] }
  *     responses: { 200: { description: Onboarding advanced } }
  */
 

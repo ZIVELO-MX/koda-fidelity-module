@@ -24,7 +24,9 @@ interface JoinCustomer {
     stampsRequired: number
     reward: string
     brandColor: string
+    textColor?: "AUTO" | "DARK" | "LIGHT"
     iconName: string | null
+    stampIconName?: string | null
     isActive: boolean
     status?: string | null
     /** El tema que de verdad se pinta. Null cuando un acabado Pro no tiene
@@ -55,7 +57,9 @@ export default function JoinCardPage() {
     stampsRequired: number
     reward: string
     brandColor: string
+    textColor?: "AUTO" | "DARK" | "LIGHT"
     iconName: string | null
+    stampIconName?: string | null
     expiresAt: string | null
     businessName: string
     businessBrandColor: string
@@ -235,7 +239,9 @@ export default function JoinCardPage() {
         reward: customer.card.reward,
         stampsRequired: customer.card.stampsRequired,
         brandColor: customer.card.brandColor,
+        textColor: customer.card.textColor,
         iconName: customer.card.iconName,
+        stampIconName: customer.card.stampIconName,
         expiresAt: customer.card.expiresAt,
         businessName: customer.card.business.name,
         businessBrandColor: customer.card.business.brandColor,
@@ -244,8 +250,9 @@ export default function JoinCardPage() {
         // El código del tema efectivo lo trae la consulta pública de la
         // tarjeta; `/api/join` solo manda los identificadores.
         temaEfectivo: cardData?.effectiveTheme?.code ?? null,
+        themeCode: cardData?.effectiveTheme?.code ?? null,
       }
-    : cardData && { ...cardData, temaEfectivo: cardData.effectiveTheme?.code ?? null }
+    : cardData && { ...cardData, temaEfectivo: cardData.effectiveTheme?.code ?? null, themeCode: cardData.effectiveTheme?.code ?? null }
 
   if (step === "loading") {
     return (
@@ -315,12 +322,14 @@ export default function JoinCardPage() {
                 businessName={cardInfo.businessName}
                 businessLogo={cardInfo.businessLogoUrl ?? undefined}
                 iconName={cardInfo.iconName ?? cardInfo.businessIconName}
+                stampIconName={cardInfo.stampIconName}
                 customerName={customer.name}
                 currentStamps={customer.stamps}
                 maxStamps={cardInfo.stampsRequired}
                 reward={cardInfo.reward}
                 expirationDate={cardInfo.expiresAt ? new Date(cardInfo.expiresAt).toLocaleDateString("es-MX") : undefined}
                 brandColor={cardInfo.brandColor}
+                textColor={cardInfo.textColor}
                 themeCode={cardInfo.temaEfectivo}
                 showQR={true}
                 qrValue={customer.id}

@@ -19,11 +19,22 @@ export async function GET(request: NextRequest) {
       const authUser = data.session?.user
       if (authUser) {
         await provisionSignup(authUser.id)
-        const member = await prisma.user.findUnique({ where: { authUserId: authUser.id }, select: { id: true } })
+        const member = await prisma.user.findUnique({
+          where: { authUserId: authUser.id },
+          select: {
+            id: true,
+            passwordSetupRequired: true,
+            onboardingProgress: { select: { status: true } },
+          },
+        })
         if (member) {
-          // A validated `next` may include a query string (for example, the
-          // recovery reason). Without one, business members go to the dashboard.
-          const destination = searchParams.has("next") ? next : "/dashboard"
+          const destination = member.passwordSetupRequired
+            ? "/dashboard/update-password"
+            : member.onboardingProgress && member.onboardingProgress.status !== "ACTIVE"
+              ? "/onboarding"
+              : searchParams.has("next") ? next : "/dashboard"
+          // Onboarding and forced password setup take priority over a generic
+          // callback destination such as `/dashboard/my-cards`.
           const bizResponse = NextResponse.redirect(`${origin}${destination}`)
           response.headers.getSetCookie().forEach((c) => bizResponse.headers.append("Set-Cookie", c))
           return bizResponse

@@ -9,12 +9,17 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { IconPicker } from "@/components/dashboard/icon-picker"
+import { TextColorPicker } from "@/components/dashboard/text-color-picker"
 import { ArrowLeft, Check, ChevronDown, Plus, Trash2 } from "lucide-react"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { toast } from "sonner"
 import { getRarityColor, getRarityLabel, getRarityDescription, getRarityRange } from "@/lib/card-utils"
 import { sorpresasQueViajan, validarBorrador, type Sorpresa } from "@/lib/tarjeta-borrador"
 import { ExpirationPicker } from "@/components/dashboard/expiration-picker"
+import { nombreDeTema } from "@/lib/temas-de-tarjeta"
+import { AvisoDeColorDeTexto } from "@/components/aviso-de-color-de-texto"
+
+type TemaDisponible = { id: string; code: string; plan: "LITE" | "PRO" }
 
 const colorPresets = [
   { name: "Naranja", value: "#f97316" },
@@ -41,6 +46,10 @@ export default function CreateCardPage() {
   const [brandColor, setBrandColor] = useState("#f97316")
   const [iconName, setIconName] = useState<string | null>(null)
   const [stampIconName, setStampIconName] = useState<string | null>(null)
+  const [textColor, setTextColor] = useState<"AUTO" | "DARK" | "LIGHT">("LIGHT")
+  const [themeId, setThemeId] = useState("")
+  const [themes, setThemes] = useState<TemaDisponible[]>([])
+  const [accountPlan, setAccountPlan] = useState<"LITE" | "PRO">("LITE")
   const [milestones, setMilestones] = useState<Sorpresa[]>([])
 
   // La marca se hereda del negocio y no se pregunta. El nombre no viaja en el
@@ -63,6 +72,13 @@ export default function CreateCardPage() {
         setIconName(data.business.iconName || null)
         setStampIconName(data.business.stampIconName || null)
         setBusinessLogo(data.business.logoUrl || null)
+      })
+      .catch(() => {})
+    fetch("/api/card-themes")
+      .then((res) => res.json())
+      .then((data) => {
+        setThemes(Array.isArray(data.themes) ? data.themes : [])
+        setAccountPlan(data.plan === "PRO" ? "PRO" : "LITE")
       })
       .catch(() => {})
   }, [])
@@ -106,8 +122,10 @@ export default function CreateCardPage() {
           reward: reward.trim(),
           stampsRequired: maxStamps,
           brandColor,
-          iconName: iconName || undefined,
-          stampIconName: stampIconName || undefined,
+          iconName,
+          stampIconName,
+          textColor,
+          themeId: themeId || undefined,
           description: description || undefined,
           expiresAt: expirationDate || undefined,
           // Una sorpresa sin etiqueta es una fila que nadie llenó.
@@ -140,6 +158,11 @@ export default function CreateCardPage() {
       ? `${milestones.length} sorpresa${milestones.length !== 1 ? "s" : ""}`
       : "Sin sorpresas",
   ].join(" · ")
+  const temaElegido = themes.find((theme) => theme.id === themeId)
+  // La vista previa enseña lo elegido, Pro incluido, igual que en el alta: es
+  // donde se decide, y el aviso de debajo dice que con Lite se guarda y se
+  // activa al pasar a Pro. La tarjeta publicada usa el tema efectivo.
+  const themeCode = temaElegido?.code ?? null
 
   return (
     <div className="min-h-[calc(100vh-100px)]">
@@ -314,6 +337,37 @@ export default function CreateCardPage() {
                 <IconPicker value={stampIconName} onChange={(v) => { setStampIconName(v); setMarcaHeredada(false) }} businessLogoUrl={businessLogo} />
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="themeId">Tema de la tarjeta</Label>
+                <select
+                  id="themeId"
+                  value={themeId}
+                  onChange={(e) => setThemeId(e.target.value)}
+                  className="min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                >
+                  <option value="">Color de marca</option>
+                  {themes.map((theme) => (
+                    <option key={theme.id} value={theme.id}>
+                      {nombreDeTema(theme.code)}{theme.plan === "PRO" ? " · Pro" : ""}
+                    </option>
+                  ))}
+                </select>
+                {temaElegido?.plan === "PRO" && accountPlan !== "PRO" && (
+                  <p className="text-xs text-muted-foreground">El tema queda guardado y se activa al pasar a Pro.</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Color del texto</Label>
+                <TextColorPicker
+                  value={textColor}
+                  onChange={setTextColor}
+                  brandColor={brandColor}
+                  themeCode={themeCode}
+                />
+                <AvisoDeColorDeTexto brandColor={brandColor} themeCode={themeCode} textColor={textColor} />
+              </div>
+
               {/* Lista de las sorpresas configuradas. Antes había una fila por
                   cada sello de la tarjeta, estuviera o no en uso. */}
               <div className="space-y-3">
@@ -471,6 +525,8 @@ export default function CreateCardPage() {
                   : undefined
               }
               brandColor={brandColor}
+              textColor={textColor}
+              themeCode={themeCode}
             />
 
             <Button

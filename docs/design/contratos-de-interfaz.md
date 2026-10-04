@@ -13,7 +13,7 @@ Los cinco estados que toda superficie confirmada entrega, no solo el caso feliz.
 | Escáner | Visor con retículo, sin pantalla previa | No aplica: siempre hay cámara o búsqueda | Permiso de cámara denegado, con la búsqueda por nombre a la vista | El rol sellador entra directo aquí | No aplica |
 | Clientes | Esqueleto de filas | "Comparte el código QR para que se unan" | Error de la fila, sin perder el resto de la tabla | Sección no disponible para el rol | No aplica |
 | Portal del cliente | Esqueleto de tarjeta | "Todavía no tienes tarjetas" | Reintentar sin perder la sesión | No aplica | No aplica |
-| Alta de negocio | Botón en estado de envío | No aplica | Error inline en el campo, con foco en el primero inválido | No aplica | No aplica |
+| Alta de negocio | Botón en estado de envío | No aplica | Toast con el error y el primer campo faltante enfocado y resaltado | No aplica | No aplica |
 
 **Regla del dato parcial.** Una cifra que el backend todavía no calcula bien se marca como parcial
 y se explica. No se presenta como cero ni se oculta en silencio.
@@ -50,19 +50,43 @@ Los códigos que la interfaz representa con pantalla propia, y no solo con un me
 
 ## 4. Estados del alta y de la tarjeta
 
-Los nombres son los del contrato, no se traducen en el código.
+Los nombres actuales son los del contrato, no se traducen en el código. Esta rama incorpora
+`CARD_READY` al flujo persistido entre `CARD` y `ACQUISITION`, junto con la acción
+`complete_card_ready` y una migración de Prisma. Esta rama añade además la migración de
+`LoyaltyCard.textColor`; ambas deben quedar aplicadas en development compartido antes de probar el
+flujo allí.
 
-`OnboardingStatus`: `IN_PROGRESS`, `AWAITING_PAYMENT`, `COMPLETED`.
+`OnboardingStatus`: `IN_PROGRESS`, `AWAITING_PAYMENT`, `ACTIVE`.
 
 - `IN_PROGRESS` solo accede al alta.
 - `AWAITING_PAYMENT` puede consultar el panel y la facturación en modo restringido. Es el estado de
   quien abandonó en el muro de pago.
-- `COMPLETED` obtiene permisos según su plan.
+- `ACTIVE` obtiene permisos según su plan.
+
+Orden del alta: `INTRO` (tres láminas), `BUSINESS`, `CARD`, `CARD_READY`, `ACQUISITION`,
+`PAYWALL`. `CARD_READY` muestra la tarjeta configurada, todavía como borrador, con un QR de vista
+previa que no apunta a un enlace público, y debe sobrevivir una recarga o el regreso desde otro
+dispositivo. La acción de avance es `complete_card_ready`; al completarla, el servidor persiste el
+siguiente paso. No usar `localStorage` como persistencia del producto.
+
+En `BUSINESS` y `CARD`, continuar con datos requeridos faltantes muestra un toast, resalta el campo o
+grupo que falta y mueve el foco al primero inválido. Los errores de validación del servidor también
+usan toast y enfocan el campo correspondiente. Corregir nombre, categoría o recompensa limpia el
+resaltado. Los avisos con referencia de soporte incluyen la referencia y la acción de reintento en el
+toast; el aviso de reanudación también aparece como toast.
+
+`textColor` es una preferencia de la tarjeta con los valores `AUTO`, `DARK` y `LIGHT`; su valor por
+defecto es `LIGHT`. En el borrador del alta y en `LoyaltyCard` se conserva el valor elegido. La
+interfaz resuelve `AUTO` para la vista previa; `DARK` y `LIGHT` solo cambian la tinta, nunca el
+fondo de la tarjeta. Crear y editar una tarjeta también permite
+elegir el tema, el icono de la tarjeta y el icono del sello; si un `PUT` omite `themeId` o
+`textColor`, conserva el valor existente.
 
 `CardStatus`: `DRAFT`, `ACTIVE`, `LOCKED_BY_PLAN`, `ARCHIVED`.
 
-- `DRAFT` **no genera QR ni enlace público**. Los accesos a compartir, descargar e imprimir se
-  muestran desactivados con su razón, no ocultos.
+- `DRAFT` **no genera QR ni enlace público funcional**. La vista de `CARD_READY` puede mostrar un QR
+  ilustrativo sin destino público. Los accesos a compartir, descargar e imprimir se muestran
+  desactivados con su razón, no ocultos.
 - `LOCKED_BY_PLAN` conserva los datos y el progreso. Quien escanee un código ya compartido de una
   tarjeta bloqueada ve que está temporalmente desactivada, y se le confirma que su progreso sigue
   guardado.
@@ -70,13 +94,17 @@ Los nombres son los del contrato, no se traducen en el código.
 
 ## 5. Facturación
 
-Lite a 149 al mes o 1,490 al año. Pro a 299 al mes o 2,990 al año. El anual equivale a doce meses
-con dos de descuento, llega preseleccionado y muestra su equivalente mensual debajo, para que nadie
-tenga que dividir.
+Lite a 149 al mes o 1,490 al año. Pro a 299 al mes o 2,990 al año. El anual llega preseleccionado;
+se muestra el importe completo y su periodo, sin la equivalencia mensual ni el cálculo de ahorro.
+Cada plan explica sus prestaciones según `lib/planes.ts`:
 
-En el muro de pago solo se puede contratar Lite. Pro aparece atenuado, con su precio y la
-explicación de cuándo estará disponible. El primer mes se cobra como Lite e incluye los beneficios
-de Pro.
+- Lite: una tarjeta activa, altas por QR y enlace, sellado y canje desde el escáner.
+- Pro: varias tarjetas activas, todos los diseños de tarjeta, altas por QR y enlace, sellado y canje
+  desde el escáner.
+
+En Lite, el beneficio de un mes con todo lo de Pro aparece al inicio de la lista, con un ícono de
+regalo y texto de alto contraste blanco/negro. Los planes siguen el mismo flujo de solicitud de
+activación disponible en el producto.
 
 Al terminar ese mes se ofrece mantener Pro o continuar con Lite, enseñando cómo queda la tarjeta con
 cada uno. Los códigos de esta área son `KF-BILLING-001` a `KF-BILLING-004`.

@@ -30,6 +30,7 @@ enum OnboardingStep {
   INTRO
   BUSINESS
   CARD
+  CARD_READY
   ACQUISITION
   PAYWALL
 }
@@ -91,6 +92,12 @@ enum CardStatus {
   ACTIVE
   LOCKED_BY_PLAN
   ARCHIVED
+}
+
+enum CardTextColor {
+  AUTO
+  DARK
+  LIGHT
 }
 
 enum ThemePlan {
@@ -398,6 +405,7 @@ model LoyaltyCard {
   reward              String
   stampsRequired      Int                  @default(10)
   brandColor          String               @default("#ff6b35")
+  textColor           CardTextColor        @default(LIGHT)
   iconName            String?
   stampIconName       String?
   isActive            Boolean              @default(true)

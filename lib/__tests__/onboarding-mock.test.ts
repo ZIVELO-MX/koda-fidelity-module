@@ -36,9 +36,14 @@ describe("onboarding mock", () => {
     const businessStep = await advanceMockOnboarding(database, principal, { action: "complete_business", draftVersion: drafted.onboarding.onboardingProgress.draftVersion })
     const cardStep = await advanceMockOnboarding(database, principal, { action: "complete_card", draftVersion: businessStep.onboarding.onboardingProgress.draftVersion })
 
-    expect(cardStep.onboarding.onboardingProgress.step).toBe("ACQUISITION")
+    expect(cardStep.onboarding.onboardingProgress.step).toBe("CARD_READY")
     expect(cardStep.onboarding.onboardingProgress.firstCardId).toBe("mock-card-user-1")
     expect(cardStep.onboarding.business).toBeNull()
+    const acquisitionStep = await advanceMockOnboarding(database, principal, {
+      action: "complete_card_ready",
+      draftVersion: cardStep.onboarding.onboardingProgress.draftVersion,
+    })
+    expect(acquisitionStep.onboarding.onboardingProgress.step).toBe("ACQUISITION")
   })
 
   it("rejects a different signed-in user from the target session", async () => {
