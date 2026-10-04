@@ -5,7 +5,7 @@ function firstCardDb(subscription: unknown, hasBusiness = true) {
   const progress = {
     id: "progress-1", draftVersion: 3, firstCardId: null,
     businessDraft: { name: "Café", categoryId: "category-1" },
-    cardDraft: { reward: "Café gratis", stampsRequired: 10, themeId: "theme-pro" },
+    cardDraft: { reward: "Café gratis", stampsRequired: 10, themeId: "theme-pro", textColor: "LIGHT", iconName: "coffee", stampIconName: "star" },
   }
   const user = {
     id: "user-1", authUserId: "auth-1", email: "test@invalid.dev",
@@ -47,6 +47,7 @@ describe("first onboarding card theme entitlements", () => {
 
     expect(tx.loyaltyCard.create).toHaveBeenCalledWith({ data: expect.objectContaining({
       selectedThemeId: "theme-pro", effectiveThemeId, status: "DRAFT", isActive: false,
+      textColor: "LIGHT", iconName: "coffee", stampIconName: "star",
     }) })
   })
 })
@@ -85,7 +86,7 @@ describe("repeating onboarding with an existing first card", () => {
     expect(result).toBe(user)
     expect(db.onboardingProgress.updateMany).toHaveBeenCalledWith({
       where: { id: "progress-1", draftVersion: 3 },
-      data: { step: "ACQUISITION", draftVersion: { increment: 1 } },
+      data: { step: "CARD_READY", draftVersion: { increment: 1 } },
     })
     expect(db).not.toHaveProperty("loyaltyCard")
   })

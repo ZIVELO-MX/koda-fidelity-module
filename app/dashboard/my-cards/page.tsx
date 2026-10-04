@@ -50,8 +50,10 @@ interface MyCard {
     stampsRequired: number
     reward: string
     brandColor: string
+    textColor?: "AUTO" | "DARK" | "LIGHT"
     iconName: string | null
     stampIconName: string | null
+    effectiveTheme?: { code: string } | null
     isActive: boolean
     expiresAt: string | null
     business: {
@@ -174,6 +176,8 @@ function ArchivedSection({
                         maxStamps={c.card.stampsRequired}
                         reward={c.card.reward}
                         brandColor={c.card.brandColor}
+                        textColor={c.card.textColor}
+                        themeCode={c.card.effectiveTheme?.code}
                         showQR={true}
                         qrValue={c.id}
                       />
@@ -435,6 +439,8 @@ export default function DashboardMyCardsPage() {
                               reward={c.card.reward}
                               expirationDate={c.card.expiresAt ? new Date(c.card.expiresAt).toLocaleDateString("es-MX") : undefined}
                               brandColor={c.card.brandColor}
+                              textColor={c.card.textColor}
+                              themeCode={c.card.effectiveTheme?.code}
                               showQR={true}
                               qrValue={c.id}
                               milestoneClaims={c.milestoneClaims.map(cl => ({ stampNumber: cl.milestone.stampNumber, iconName: cl.iconName }))}

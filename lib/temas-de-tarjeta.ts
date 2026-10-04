@@ -85,58 +85,70 @@ export type PielDeTarjeta = {
   opacidadDelPatron: number
   /** El color del texto, elegido por contraste sobre este acabado. */
   texto: string
-  /** Hacia dónde tiran las placas y el pie para no restarle contraste al texto:
-   *  255 cuando el texto es tinta, 0 cuando es blanco. */
+  /** Hacia dónde tiran las placas y el pie según el contraste automático.
+   *  Este valor no cambia al forzar texto claro u oscuro. */
   aparta: number
+  /** Se conserva por compatibilidad; siempre `false` para DARK y LIGHT. */
+  tonoAjustado: boolean
+  /** Si el texto elegido alcanza contraste AA sobre los extremos de la piel. */
+  colorDeTextoRespetado: boolean
 }
+
+/**
+ * Con `AUTO` se escoge la tinta que tenga mejor contraste. `DARK` y `LIGHT`
+ * respetan la elección del negocio y nunca cambian el fondo; solo informan si
+ * quedan por debajo de AA.
+ */
+export type ColorDeTexto = "AUTO" | "DARK" | "LIGHT"
 
 const TINTA = "#1C1B17"
 const BLANCO = "#FFFFFF"
 
-/**
- * El color de texto de un acabado, y el color base que lo sostiene.
- *
- * `aclara` y `oscurece` son lo más que el acabado desplaza su fondo respecto al
- * color del negocio: el extremo del degradado y el velo. El texto blanco lo
- * tiene peor en la zona más clara y la tinta en la más oscura, así que basta
- * medir esos dos puntos. Gana el que aguante mejor su peor caso y, si no llega
- * a 4.5, se ahonda el color lo mínimo hasta que llegue.
- *
- * Las placas de «Miembro» y «Premio» y el pie no entran en la cuenta porque se
- * apartan del texto: aclaran cuando el texto es tinta y oscurecen cuando es
- * blanco. Antes tiraban las dos hacia el blanco, y por eso el texto pequeño
- * quedaba encima de la superficie más clara de la tarjeta.
- */
-function legible(brandColor: string, aclara: number, oscurece: number) {
-  // Cuánto hay que mover el color para que un texto dado llegue a AA. El blanco
-  // lo tiene peor en la zona más clara y la tinta en la más honda, así que a
-  // cada uno se le mide su propio extremo. El paso de 1% es para no desviar el
-  // color del negocio más de lo estrictamente necesario.
+/** `AUTO` conserva la compensación de contraste existente. */
+function pielAutomatica(brandColor: string, aclara: number, oscurece: number) {
   function ajuste(texto: string) {
     const peor = (base: string) =>
       texto === BLANCO
         ? contraste(BLANCO, mezclar(base, 255, aclara))
         : contraste(TINTA, mezclar(base, 0, oscurece))
     for (let k = 0; k <= 0.6; k += 0.01) {
-      // El blanco quiere el color más profundo; la tinta lo quiere más claro.
       const base = mezclar(brandColor, texto === BLANCO ? 0 : 255, k)
       if (peor(base) >= 4.5) return { k, base, texto }
     }
     return null
   }
 
-  // Gana el que conserve mejor el color, no el que arranque con más contraste:
-  // elegir primero el texto y compensar después aclaraba tanto la base que un
-  // naranja se pintaba durazno.
   const conTinta = ajuste(TINTA)
   const conBlanco = ajuste(BLANCO)
   const elegido =
     !conTinta ? conBlanco : !conBlanco ? conTinta : conTinta.k <= conBlanco.k ? conTinta : conBlanco
-
-  // Sin salida a 4.5 en ningún sentido -- un caso que los seis presets no
-  // alcanzan -- se queda el color tal cual con el texto que menos mal quede.
   const { base, texto } = elegido ?? { base: brandColor, texto: BLANCO }
-  return { base, texto, aparta: texto === TINTA ? 255 : 0 }
+  return {
+    base,
+    texto,
+    aparta: texto === TINTA ? 255 : 0,
+    tonoAjustado: base.toUpperCase() !== brandColor.toUpperCase(),
+    colorDeTextoRespetado: true,
+  }
+}
+
+/** Las opciones forzadas cambian la tinta, nunca el color de la tarjeta. */
+function legible(brandColor: string, aclara: number, oscurece: number, forzado: ColorDeTexto = "AUTO") {
+  if (forzado === "AUTO") return pielAutomatica(brandColor, aclara, oscurece)
+
+  const extremos = [mezclar(brandColor, 255, aclara), mezclar(brandColor, 0, oscurece)]
+  const contrasteTinta = Math.min(...extremos.map((fondo) => contraste(TINTA, fondo)))
+  const contrasteBlanco = Math.min(...extremos.map((fondo) => contraste(BLANCO, fondo)))
+  const textoAutomatico = contrasteTinta >= contrasteBlanco ? TINTA : BLANCO
+  const texto = forzado === "DARK" ? TINTA : forzado === "LIGHT" ? BLANCO : textoAutomatico
+  const contrasteTexto = texto === TINTA ? contrasteTinta : contrasteBlanco
+  return {
+    base: brandColor,
+    texto,
+    aparta: textoAutomatico === TINTA ? 255 : 0,
+    tonoAjustado: false,
+    colorDeTextoRespetado: contrasteTexto >= 4.5,
+  }
 }
 
 /**
@@ -146,35 +158,39 @@ function legible(brandColor: string, aclara: number, oscurece: number) {
  * el caso de un acabado Pro sobre un plan Lite -- se devuelve el degradado del
  * color del negocio. La tarjeta nunca se queda sin identidad.
  */
-export function pielDeTarjeta(codigo: string | null | undefined, brandColor: string): PielDeTarjeta {
-  // Cada acabado declara cuánto aclara y cuánto oscurece su fondo respecto al
-  // color del negocio, y de ahí sale el color de texto. El extremo claro ya no
-  // sube por encima del color: aclararlo por decoración era justo lo que dejaba
-  // el texto pequeño de la cabecera sobre la zona menos legible de la tarjeta.
+export function pielDeTarjeta(
+  codigo: string | null | undefined,
+  brandColor: string,
+  colorDeTexto: ColorDeTexto = "AUTO",
+): PielDeTarjeta {
+  // Cada acabado declara sus variaciones para calcular contraste. Esas
+  // variaciones son decorativas y nunca cambian el color base de la tarjeta.
   const OSCURO = 0.12
 
   if (!esAcabadoPro(codigo)) {
     // Lite, y también el respaldo sin tema: el color del negocio y su patrón.
-    const { base, texto, aparta } = legible(brandColor, 0, OSCURO)
-    return { fondo: degradado(base, OSCURO), opacidadDelPatron: 0.12, texto, aparta }
+    const { base, texto, aparta, tonoAjustado, colorDeTextoRespetado } = legible(brandColor, 0, OSCURO, colorDeTexto)
+    return { fondo: degradado(base, OSCURO), opacidadDelPatron: 0.12, texto, aparta, tonoAjustado, colorDeTextoRespetado }
   }
 
   if (codigo === "gradiente") {
     // Gradiente vivo: la profundidad la da el lado oscuro, no un brillo nuevo.
     const HONDO = 0.5
-    const { base, texto, aparta } = legible(brandColor, 0, HONDO)
+    const { base, texto, aparta, tonoAjustado, colorDeTextoRespetado } = legible(brandColor, 0, HONDO, colorDeTexto)
     return {
       fondo: `linear-gradient(150deg, ${base} 0%, ${mezclar(base, 0, HONDO)} 100%)`,
       opacidadDelPatron: 0.1,
       texto,
       aparta,
+      tonoAjustado,
+      colorDeTextoRespetado,
     }
   }
 
   if (codigo === "foil") {
     // Foil holográfico: la iridiscencia sale del tono -- bandas frías y cálidas
     // alternas -- y no de subir el blanco.
-    const { base, texto, aparta } = legible(brandColor, 0.1, OSCURO + 0.06)
+    const { base, texto, aparta, tonoAjustado, colorDeTextoRespetado } = legible(brandColor, 0.1, OSCURO + 0.06, colorDeTexto)
     return {
       fondo: degradado(base, OSCURO),
       velo:
@@ -184,6 +200,8 @@ export function pielDeTarjeta(codigo: string | null | undefined, brandColor: str
       opacidadDelPatron: 0.08,
       texto,
       aparta,
+      tonoAjustado,
+      colorDeTextoRespetado,
     }
   }
 
@@ -191,7 +209,7 @@ export function pielDeTarjeta(codigo: string | null | undefined, brandColor: str
     // Patrón cinético: trazos en diagonal, alternando luz y sombra para que se
     // lea el relieve sin aclarar el conjunto. Estático a propósito: el
     // movimiento se reserva para lo que responde a una acción.
-    const { base, texto, aparta } = legible(brandColor, 0.1, OSCURO + 0.08)
+    const { base, texto, aparta, tonoAjustado, colorDeTextoRespetado } = legible(brandColor, 0.1, OSCURO + 0.08, colorDeTexto)
     return {
       fondo: degradado(base, OSCURO),
       velo:
@@ -200,12 +218,14 @@ export function pielDeTarjeta(codigo: string | null | undefined, brandColor: str
       opacidadDelPatron: 0.18,
       texto,
       aparta,
+      tonoAjustado,
+      colorDeTextoRespetado,
     }
   }
 
   // Vidrio premium: un solo destello contenido y un borde inferior en sombra,
   // que es lo que da la sensación de pieza de cristal.
-  const { base, texto, aparta } = legible(brandColor, 0.14, OSCURO + 0.18)
+  const { base, texto, aparta, tonoAjustado, colorDeTextoRespetado } = legible(brandColor, 0.14, OSCURO + 0.18, colorDeTexto)
   return {
     fondo: degradado(base, OSCURO),
     velo:
@@ -214,6 +234,8 @@ export function pielDeTarjeta(codigo: string | null | undefined, brandColor: str
     opacidadDelPatron: 0.07,
     texto,
     aparta,
+    tonoAjustado,
+    colorDeTextoRespetado,
   }
 }
 

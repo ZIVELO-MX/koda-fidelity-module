@@ -19,13 +19,15 @@ export async function GET(request: NextRequest) {
       const authUser = data.session?.user
       if (authUser) {
         await provisionSignup(authUser.id)
-        const member = await prisma.user.findUnique({ where: { authUserId: authUser.id }, select: { id: true, businessId: true, onboardingProgress: { select: { status: true } } } })
+        const member = await prisma.user.findUnique({ where: { authUserId: authUser.id }, select: { id: true, businessId: true, passwordSetupRequired: true, onboardingProgress: { select: { status: true } } } })
         const customer = await prisma.customerProfile.findUnique({ where: { authUserId: authUser.id }, select: { id: true } })
-        const signupDestination = customer ? "/dashboard/my-cards" : member && (!member.businessId || member.onboardingProgress?.status === "IN_PROGRESS") ? "/onboarding" : "/dashboard"
         if (member || customer) {
-          // A validated `next` may include a query string (for example, a
-          // recovery reason). Otherwise route each account to its own home.
-          const destination = searchParams.has("next") ? next : signupDestination
+          const signupDestination = customer ? "/dashboard/my-cards" : member && (!member.businessId || member.onboardingProgress?.status !== "ACTIVE") ? "/onboarding" : "/dashboard"
+          const destination = member?.passwordSetupRequired
+            ? "/dashboard/update-password"
+            : member?.onboardingProgress && member.onboardingProgress.status !== "ACTIVE"
+              ? "/onboarding"
+              : searchParams.has("next") ? next : signupDestination
           const accountResponse = NextResponse.redirect(`${origin}${destination}`)
           response.headers.getSetCookie().forEach((c) => accountResponse.headers.append("Set-Cookie", c))
           return accountResponse

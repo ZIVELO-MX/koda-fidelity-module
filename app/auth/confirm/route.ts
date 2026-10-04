@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
   const { supabase } = createSupabaseReqResClient(request, response)
 
-  const { error } = await supabase.auth.verifyOtp({
+  const { data, error } = await supabase.auth.verifyOtp({
     token_hash,
     type: type as "magiclink" | "signup" | "invite" | "recovery" | "email_change" | "email",
   })
@@ -48,15 +48,32 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  if (type === "signup") {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      await provisionSignup(user.id)
-      const business = await prisma.user.findUnique({ where: { authUserId: user.id }, select: { businessId: true, onboardingProgress: { select: { status: true } } } })
-      const customer = await prisma.customerProfile.findUnique({ where: { authUserId: user.id }, select: { id: true } })
-      if (business && (!business.businessId || business.onboardingProgress?.status === "IN_PROGRESS") && !redirect_to) response.headers.set("location", new URL("/onboarding", request.url).toString())
-      else if (customer && !redirect_to) response.headers.set("location", new URL("/dashboard/my-cards", request.url).toString())
+  if (type !== "recovery" && data.user) {
+    if (type === "signup") await provisionSignup(data.user.id)
+
+    const member = await prisma.user.findUnique({
+      where: { authUserId: data.user.id },
+      select: {
+        businessId: true,
+        passwordSetupRequired: true,
+        onboardingProgress: { select: { status: true } },
+      },
+    })
+    if (member?.passwordSetupRequired) {
+      const destination = NextResponse.redirect(new URL("/dashboard/update-password", request.url))
+      response.headers.getSetCookie().forEach((cookie) => destination.headers.append("Set-Cookie", cookie))
+      return destination
+    }
+    if (member && (!member.businessId || member.onboardingProgress?.status !== "ACTIVE")) {
+      const destination = NextResponse.redirect(new URL("/onboarding", request.url))
+      response.headers.getSetCookie().forEach((cookie) => destination.headers.append("Set-Cookie", cookie))
+      return destination
+    }
+    if (type === "signup" && !redirect_to && !member) {
+      const customer = await prisma.customerProfile.findUnique({ where: { authUserId: data.user.id }, select: { id: true } })
+      if (customer) response.headers.set("location", new URL("/dashboard/my-cards", request.url).toString())
     }
   }
+
   return response
 }

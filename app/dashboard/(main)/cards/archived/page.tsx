@@ -20,6 +20,7 @@ export default async function ArchivedCardsPage() {
     where: { businessId: business.id, isActive: false },
     include: {
       _count: { select: { customers: true } },
+      effectiveTheme: { select: { code: true } },
     },
     orderBy: { updatedAt: "desc" },
   })
@@ -78,6 +79,8 @@ export default async function ArchivedCardsPage() {
                   reward={card.reward}
                   showQR={false}
                   brandColor={card.brandColor}
+                  textColor={card.textColor}
+                  themeCode={card.effectiveTheme?.code}
                 />
               </div>
 

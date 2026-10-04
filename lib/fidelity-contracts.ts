@@ -14,6 +14,10 @@ export type CardSummary = {
   name: string
   reward: string
   stampsRequired: number
+  brandColor?: string
+  textColor?: "AUTO" | "DARK" | "LIGHT"
+  iconName?: string | null
+  stampIconName?: string | null
   isActive: boolean
   status?: "DRAFT" | "ACTIVE" | "LOCKED_BY_PLAN" | "ARCHIVED"
   expiresAt?: string | Date | null
