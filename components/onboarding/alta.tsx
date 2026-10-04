@@ -916,8 +916,7 @@ export function Tarjeta({
 export function TarjetaLista({ estado, soloTarjeta = false }: { estado: EstadoDelAlta; soloTarjeta?: boolean }) {
   const nombre = estado.negocio.name || estado.nombreDeLaCuenta || "Tu negocio"
   const temaElegido = estado.temas.find((t) => t.id === estado.tarjeta.themeId)
-  const temaEfectivo =
-    temaElegido && (temaElegido.plan === "LITE" || estado.plan === "PRO") ? temaElegido.code : null
+  const temaProSinPlan = temaElegido?.plan === "PRO" && estado.plan !== "PRO"
 
   return (
     <section className="mx-auto w-full max-w-2xl space-y-6">
@@ -943,7 +942,7 @@ export function TarjetaLista({ estado, soloTarjeta = false }: { estado: EstadoDe
           maxStamps={estado.tarjeta.stampsRequired ?? SELLOS_POR_DEFECTO}
           reward={estado.tarjeta.reward || "Tu recompensa"}
           brandColor={colorDeRespaldo(estado)}
-          themeCode={temaEfectivo}
+          themeCode={temaElegido?.code ?? null}
           textColor={estado.tarjeta.textColor ?? "LIGHT"}
           iconName={estado.tarjeta.iconName}
           stampIconName={estado.tarjeta.stampIconName}
@@ -952,6 +951,12 @@ export function TarjetaLista({ estado, soloTarjeta = false }: { estado: EstadoDe
           className="mx-auto w-full max-w-sm"
         />
       </div>
+
+      {temaProSinPlan && (
+        <p className="text-center text-sm text-muted-foreground">
+          Estás viendo el acabado Pro que elegiste. Se aplicará al contratar Pro; con Lite, la tarjeta se publica con el color de tu negocio.
+        </p>
+      )}
 
       {!soloTarjeta && (
         <p className="text-center text-sm text-muted-foreground">
