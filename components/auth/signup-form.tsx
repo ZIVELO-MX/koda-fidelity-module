@@ -158,6 +158,7 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
               id="confirm"
               name="confirm"
               type="password"
+              placeholder="Confirma tu contraseña"
               required
               autoComplete="new-password"
               value={confirm}
