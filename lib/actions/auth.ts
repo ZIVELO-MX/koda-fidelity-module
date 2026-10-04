@@ -11,7 +11,7 @@ import { enforceRateLimit, normalizeEmail } from "@/lib/auth-security"
 import { provisionSignup } from "@/lib/signup-provisioning"
 import { headers } from "next/headers"
 import { randomUUID } from "node:crypto"
-import { classifyLoginError } from "@/lib/auth-errors"
+import { classifyLoginError, getFriendlySignupError } from "@/lib/auth-errors"
 import { reglaQueFalta } from "@/lib/reglas-de-contrasena"
 import { safeNextPath } from "@/lib/api-utils"
 
@@ -125,17 +125,50 @@ export async function signup(_prev: AuthResult, formData: FormData): Promise<Aut
   if (password.length < 8) return { error: "La contraseña debe tener al menos 8 caracteres" }
   if (accountType === "CUSTOMER" && (!name || name.length > 120)) return { error: "Ingresa tu nombre (máximo 120 caracteres)" }
 
+  const requestId = randomUUID()
   const normalizedEmail = normalizeEmail(email)
   const debugSignup = config.isDebugEmail(normalizedEmail)
   const requestHeaders = await headers()
   await enforceRateLimit("signup-identity", normalizedEmail, 3, 60 * 60 * 1000)
   await enforceRateLimit("signup-ip", requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown", 5, 60 * 60 * 1000)
-  await prisma.signupIntent.upsert({ where: { email: normalizedEmail }, create: { email: normalizedEmail, name, accountType: accountType as "BUSINESS" | "CUSTOMER" }, update: { name, accountType: accountType as "BUSINESS" | "CUSTOMER", status: "pending" } })
-  const supabase = await createClient()
-  const { data, error } = debugSignup
-    ? await createDebugUser(normalizedEmail, password, name || normalizedEmail.split("@")[0])
-    : await supabase.auth.signUp({ email: normalizedEmail, password, options: { data: { name }, emailRedirectTo: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}${safeNextPath(next, accountType === "CUSTOMER" ? "/dashboard/my-cards" : "/onboarding")}` } })
-  if (error || !data.user) return { error: "No fue posible crear la cuenta. Revisa tus datos." }
+  try {
+    await prisma.signupIntent.upsert({ where: { email: normalizedEmail }, create: { email: normalizedEmail, name, accountType: accountType as "BUSINESS" | "CUSTOMER" }, update: { name, accountType: accountType as "BUSINESS" | "CUSTOMER", status: "pending" } })
+  } catch (error) {
+    logSignupFailure("persist_intent", requestId, error)
+    return { error: `No pudimos preparar tu registro. Inténtalo de nuevo. Código de referencia: ${requestId}` }
+  }
+
+  let data: { user: { id: string } | null; session: unknown | null }
+  let error: { name?: string; code?: string; status?: number } | null
+  try {
+    if (debugSignup) {
+      ({ data, error } = await createDebugUser(normalizedEmail, password, name || normalizedEmail.split("@")[0]))
+    } else {
+      const supabase = await createClient()
+      const result = await supabase.auth.signUp({
+        email: normalizedEmail,
+        password,
+        options: {
+          data: { name },
+          emailRedirectTo: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}${safeNextPath(next, accountType === "CUSTOMER" ? "/dashboard/my-cards" : "/onboarding")}`,
+        },
+      })
+      data = result.data
+      error = result.error
+    }
+  } catch (error) {
+    logSignupFailure("supabase_signup_exception", requestId, error)
+    return { error: `No pudimos conectar con el servicio de registro. Inténtalo de nuevo. Código de referencia: ${requestId}` }
+  }
+
+  if (error) {
+    logSignupFailure("supabase_auth_rejected", requestId, error)
+    return { error: getFriendlySignupError(error, requestId) }
+  }
+  if (!data.user) {
+    logSignupFailure("supabase_signup_missing_user", requestId)
+    return { error: getFriendlySignupError(null, requestId) }
+  }
   await prisma.signupIntent.update({ where: { email: normalizedEmail }, data: { authUserId: data.user.id } })
   if (debugSignup) {
     await authService.signIn(normalizedEmail, password)
@@ -150,6 +183,17 @@ export async function signup(_prev: AuthResult, formData: FormData): Promise<Aut
   }
 
   return { success: true }
+}
+
+function logSignupFailure(stage: string, requestId: string, error?: unknown) {
+  const details = error && typeof error === "object" ? error as { name?: unknown; code?: unknown; status?: unknown } : {}
+  console.error("[signup] registration failed", {
+    requestId,
+    stage,
+    errorName: typeof details.name === "string" ? details.name : undefined,
+    errorCode: typeof details.code === "string" ? details.code : undefined,
+    status: typeof details.status === "number" ? details.status : undefined,
+  })
 }
 
 async function createDebugUser(email: string, password: string, name: string) {
