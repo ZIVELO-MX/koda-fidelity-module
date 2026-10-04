@@ -34,19 +34,19 @@ function firstCardDb(subscription: unknown, hasBusiness = true) {
 
 describe("first onboarding card theme entitlements", () => {
   it.each([
-    { name: "a new business without a subscription", subscription: null, hasBusiness: false, effectiveThemeId: null },
-    { name: "an existing business without a subscription", subscription: null, hasBusiness: true, effectiveThemeId: null },
-    { name: "Lite without a trial", subscription: { plan: "LITE", proAccessGranted: false }, hasBusiness: true, effectiveThemeId: null },
-    { name: "Pro", subscription: { plan: "PRO" }, hasBusiness: true, effectiveThemeId: "theme-pro" },
-    { name: "Lite with a current Pro trial", subscription: { plan: "LITE", proAccessGranted: true, proTrialEndsAt: new Date(Date.now() + 86400000) }, hasBusiness: true, effectiveThemeId: "theme-pro" },
-    { name: "Lite with an expired Pro trial", subscription: { plan: "LITE", proAccessGranted: true, proTrialEndsAt: new Date(Date.now() - 86400000) }, hasBusiness: true, effectiveThemeId: null },
-  ])("uses the effective plan for $name without publishing the draft", async ({ subscription, hasBusiness, effectiveThemeId }) => {
+    { name: "a new business", subscription: null, hasBusiness: false },
+    { name: "an existing business without a subscription", subscription: null, hasBusiness: true },
+    { name: "Lite without a trial", subscription: { plan: "LITE", proAccessGranted: false }, hasBusiness: true },
+    { name: "Pro", subscription: { plan: "PRO" }, hasBusiness: true },
+    { name: "Lite with a current Pro trial", subscription: { plan: "LITE", proAccessGranted: true }, hasBusiness: true },
+    { name: "Lite with an expired Pro trial", subscription: { plan: "LITE", proAccessGranted: true }, hasBusiness: true },
+  ])("allows Pro configuration during onboarding for $name without publishing the draft", async ({ subscription, hasBusiness }) => {
     const { db, tx } = firstCardDb(subscription, hasBusiness)
 
     await advanceOnboarding(db, "auth-1", "complete_card", 3)
 
     expect(tx.loyaltyCard.create).toHaveBeenCalledWith({ data: expect.objectContaining({
-      selectedThemeId: "theme-pro", effectiveThemeId, status: "DRAFT", isActive: false,
+      selectedThemeId: "theme-pro", effectiveThemeId: "theme-pro", status: "DRAFT", isActive: false,
       textColor: "LIGHT", iconName: "coffee", stampIconName: "star",
     }) })
   })

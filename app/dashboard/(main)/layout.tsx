@@ -15,13 +15,14 @@ export default async function DashboardLayout({
 
   const userRecord = await prisma.user.findUnique({
     where: { authUserId: user.id },
-    include: { business: { select: { id: true, name: true, brandColor: true, nickname: true } } },
+    include: { business: { select: { id: true, name: true, brandColor: true, nickname: true } }, onboardingProgress: { select: { status: true } } },
   })
 
   if (!userRecord || !userRecord.business) {
     redirect("/dashboard/forbidden")
   }
   if (userRecord.passwordSetupRequired) redirect("/dashboard/update-password")
+  if (userRecord.onboardingProgress && userRecord.onboardingProgress.status !== "ACTIVE") redirect("/onboarding")
 
   const [closure] = await Promise.all([
     prisma.accountClosure.findFirst({ where: { businessId: userRecord.business.id, status: { in: ["SCHEDULED", "PROCESSING", "FAILED"] } }, orderBy: { scheduledFor: "asc" }, select: { scheduledFor: true } }),

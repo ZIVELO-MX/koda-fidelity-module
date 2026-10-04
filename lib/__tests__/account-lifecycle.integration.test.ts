@@ -87,6 +87,23 @@ integration("account lifecycle PostgreSQL integration", () => {
     expect(downgraded?.effectiveThemeId).toBeNull()
     expect(downgraded?.brandColor).toBe("#ff6b35")
     expect(refreshed.filter((card) => card.status === "LOCKED_BY_PLAN")).toHaveLength(1)
+
+    await activateManualSubscription(prisma, { businessId, plan: "PRO", idempotencyKey: randomUUID() })
+    const upgraded = await prisma.loyaltyCard.findMany({ where: { businessId }, orderBy: { createdAt: "asc" } })
+    const restored = upgraded.find((card) => card.id === cards[0].id)
+    expect(restored).toMatchObject({ selectedThemeId: proTheme.id, effectiveThemeId: proTheme.id, status: "ACTIVE", isActive: true, isLite: false })
+    expect(upgraded.every((card) => card.status === "ACTIVE" && card.isActive)).toBe(true)
+  })
+
+  it("keeps the onboarding card unpublished until support activates the plan", async () => {
+    const proTheme = await prisma.loyaltyTheme.findFirstOrThrow({ where: { plan: "PRO", isActive: true }, orderBy: { code: "asc" } })
+    const draft = await prisma.loyaltyCard.create({ data: { businessId, name: "Onboarding", reward: "R1", selectedThemeId: proTheme.id, effectiveThemeId: proTheme.id, isActive: false, isLite: true, status: "DRAFT" } })
+    expect(draft).toMatchObject({ status: "DRAFT", isActive: false, selectedThemeId: proTheme.id, effectiveThemeId: proTheme.id })
+
+    await activateManualSubscription(prisma, { businessId, plan: "PRO", idempotencyKey: randomUUID() })
+
+    await expect(prisma.loyaltyCard.findUniqueOrThrow({ where: { id: draft.id } })).resolves.toMatchObject({ status: "ACTIVE", isActive: true, selectedThemeId: proTheme.id, effectiveThemeId: proTheme.id })
+    await expect(prisma.onboardingProgress.findFirstOrThrow({ where: { businessId } })).resolves.toMatchObject({ status: "ACTIVE", step: "PAYWALL" })
   })
 
   it("seeds the real Lite and Pro theme catalog", async () => {

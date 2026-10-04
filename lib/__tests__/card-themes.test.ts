@@ -26,7 +26,7 @@ describe("card theme contract", () => {
 
   it("keeps a Pro selection while falling back to the business color for Lite", async () => {
     const findFirst = vi.fn().mockResolvedValue({ id: "theme-pro", code: "pro", plan: "PRO", isActive: true })
-    await expect(resolveTheme({ loyaltyTheme: { findFirst } } as never, "pro", "LITE")).resolves.toEqual({ selectedThemeId: "theme-pro", effectiveThemeId: null, themeLocked: true })
+    await expect(resolveTheme({ loyaltyTheme: { findFirst } } as never, "pro", "LITE")).rejects.toThrow("no puede guardarse con el plan Lite")
     expect(findFirst).toHaveBeenCalledTimes(1)
   })
 })

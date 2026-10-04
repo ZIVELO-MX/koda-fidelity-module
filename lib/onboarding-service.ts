@@ -1,7 +1,6 @@
 import { Prisma, PrismaClient } from "@prisma/client"
 import { ConflictError, NotFoundError, ValidationError } from "@/lib/api-utils"
 import { resolveTheme } from "@/lib/card-themes"
-import { getEntitlements } from "@/lib/account-lifecycle"
 
 type Db = PrismaClient
 const categories = ["Café", "Restaurante", "Retail", "Belleza", "Salud y bienestar", "Servicios profesionales", "Entretenimiento", "Otro"]
@@ -79,8 +78,9 @@ export async function advanceOnboarding(db: Db, authUserId: string, action: stri
         ? await tx.business.update({ where: { id: user.businessId }, data: { name, categoryId: category.id } })
         : await tx.business.create({ data: { name, categoryId: category.id, email: user.email } })
       if (!user.businessId) await tx.user.update({ where: { id: user.id }, data: { businessId: business.id } })
-      const entitlements = await getEntitlements(tx, business.id)
-      const theme = await resolveTheme(tx, typeof cardDraft.themeId === "string" ? cardDraft.themeId : undefined, entitlements.plan)
+      // Onboarding grants temporary Pro access for configuration. The card
+      // remains a draft until support activates the account.
+      const theme = await resolveTheme(tx, typeof cardDraft.themeId === "string" ? cardDraft.themeId : undefined, "PRO")
       const card = await tx.loyaltyCard.create({ data: { businessId: business.id, name: typeof cardDraft.name === "string" && cardDraft.name.trim() ? cardDraft.name.trim() : `Club ${name}`, reward: String(cardDraft.reward), stampsRequired, brandColor: typeof cardDraft.brandColor === "string" ? cardDraft.brandColor : business.brandColor, textColor: cardDraft.textColor === "DARK" || cardDraft.textColor === "LIGHT" || cardDraft.textColor === "AUTO" ? cardDraft.textColor : "LIGHT", iconName: cardDraft.iconName === null ? null : typeof cardDraft.iconName === "string" ? cardDraft.iconName : business.iconName, stampIconName: cardDraft.stampIconName === null ? null : typeof cardDraft.stampIconName === "string" ? cardDraft.stampIconName : business.stampIconName, isActive: false, isLite: true, status: "DRAFT", selectedThemeId: theme.selectedThemeId, effectiveThemeId: theme.effectiveThemeId } })
       await tx.onboardingProgress.update({ where: { id: progress.id }, data: { ...next, businessId: business.id, firstCardId: card.id } })
     })
