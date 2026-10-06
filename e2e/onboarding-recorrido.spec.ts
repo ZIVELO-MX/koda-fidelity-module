@@ -104,7 +104,10 @@ test.describe("Alta guiada, recorrido completo", () => {
     // Muro de pago.
     await expect(page.getByRole("heading", { name: "Ahora sí, los planes." })).toBeVisible({ timeout: 30000 })
     await expect(page.getByRole("radio", { name: /al año/i })).toBeChecked()
-    await expect(page.getByRole("link", { name: "Salir sin publicar" })).toBeVisible()
+    await page.getByRole("button", { name: "Saltar sin publicar" }).click()
+    await expect(page.getByRole("heading", { name: "Tu plan todavía no está activo" })).toBeVisible()
+    await expect(page.getByText(/no hay un botón para continuar hasta que el plan esté activo/i)).toBeVisible()
+    await expect(page.getByRole("button", { name: "Continuar" })).toHaveCount(0)
   })
 
   test("la primera tarjeta se crea una sola vez, aunque se vuelva a pasar", async ({ page }) => {
