@@ -24,6 +24,7 @@ import { daysUntilExpiry } from "@/lib/card-utils"
 import { getCardIcon } from "@/lib/card-icons"
 import { parseClientesResponse, type ClienteBuscado } from "@/lib/clientes-buscados"
 import { ejecutarSellado } from "@/lib/sellado"
+import { derivarMarca } from "@/lib/color-marca"
 
 type SearchCustomer = ClienteBuscado
 
@@ -35,6 +36,14 @@ type FalloDeBusqueda = {
 }
 
 type ScanState = "idle" | "scanning" | "found" | "stamped" | "redeemed"
+
+// En el mostrador no siempre se mira la pantalla: el sello, el canje y el error
+// se sienten en la mano en el mismo instante en que cambia la vista. Solo en
+// Android; Safari en iOS no implementa la API y la llamada no hace nada.
+const VIBRACION = { sello: 15, canje: [20, 60, 20], error: [40, 40, 40] }
+function vibrar(patron: number | number[]) {
+  if (typeof navigator !== "undefined") navigator.vibrate?.(patron)
+}
 
 function ScanPageInner() {
   const searchParams = useSearchParams()
@@ -170,14 +179,17 @@ function ScanPageInner() {
       const data = await ejecutarSellado(selectedCustomer.id, type)
 
       if (data.event === "redeem") {
+        vibrar(VIBRACION.canje)
         setSelectedCustomer({ ...selectedCustomer, stamps: 0 })
         setScanState("redeemed")
       } else {
+        vibrar(VIBRACION.sello)
         setSelectedCustomer({ ...selectedCustomer, stamps: selectedCustomer.stamps + 1 })
         setMilestoneClaim(data.milestoneClaim ?? null)
         setScanState("stamped")
       }
     } catch (err) {
+      vibrar(VIBRACION.error)
       setActionError(err instanceof Error ? err.message : "Error al procesar")
     } finally {
       setActionLoading(false)
@@ -199,6 +211,10 @@ function ScanPageInner() {
     setSelectedCustomer(customer)
     setScanState("found")
   }
+
+  // El color del negocio es libre: el texto y los íconos sobre él se calculan
+  // por contraste. Antes iban blancos fijos, y con un ámbar quedaban en 2.15:1.
+  const marca = selectedCustomer ? derivarMarca(selectedCustomer.cardBrandColor) : null
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -424,7 +440,7 @@ function ScanPageInner() {
                       <div
                         key={i}
                         className={`aspect-square rounded-lg ${i < selectedCustomer.stamps ? "" : "bg-muted border border-border"}`}
-                        style={i < selectedCustomer.stamps ? { backgroundColor: selectedCustomer.cardBrandColor } : undefined}
+                        style={i < selectedCustomer.stamps ? { backgroundColor: marca?.base } : undefined}
                       />
                     ))}
                   </div>
@@ -439,8 +455,8 @@ function ScanPageInner() {
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-xl p-4 flex items-center gap-3" style={{ backgroundColor: `${selectedCustomer.cardBrandColor}1a` }}>
-                    <Stamp className="h-6 w-6" style={{ color: selectedCustomer.cardBrandColor }} />
+                  <div className="rounded-xl p-4 flex items-center gap-3" style={{ backgroundColor: marca?.soft }}>
+                    <Stamp className="h-6 w-6" style={{ color: marca?.ink }} />
                     <div>
                       <p className="font-medium text-foreground">
                         {selectedCustomer.maxStamps - selectedCustomer.stamps} más para la meta
@@ -467,7 +483,7 @@ function ScanPageInner() {
                       size="lg"
                       variant={completa ? "outline" : "default"}
                       className="w-full h-16 text-lg"
-                      style={completa ? undefined : { backgroundColor: selectedCustomer.cardBrandColor, color: "#FFFFFF" }}
+                      style={completa ? undefined : { backgroundColor: marca?.base, color: marca?.texto }}
                     >
                       {actionLoading ? (
                         <Loader2 className="h-6 w-6 mr-3 animate-spin" />
@@ -489,7 +505,7 @@ function ScanPageInner() {
                       size="lg"
                       variant={completa ? "default" : "outline"}
                       className="w-full h-12 text-base"
-                      style={completa ? { backgroundColor: "#16a34a", color: "#FFFFFF" } : undefined}
+                      style={completa ? { backgroundColor: "#15803d", color: "#FFFFFF" } : undefined}
                     >
                       <Gift className="h-5 w-5 mr-3" />
                       Canjear Recompensa
@@ -512,13 +528,13 @@ function ScanPageInner() {
                 className="w-24 h-24 rounded-full flex items-center justify-center mx-auto"
                 style={scanState === "redeemed"
                   ? { backgroundColor: "#dcfce7" }
-                  : { backgroundColor: `${selectedCustomer.cardBrandColor}1a` }
+                  : { backgroundColor: marca?.soft }
                 }
               >
                 {scanState === "redeemed" ? (
                   <Gift className="h-12 w-12 text-green-600" />
                 ) : (
-                  <Check className="h-12 w-12" style={{ color: selectedCustomer.cardBrandColor }} />
+                  <Check className="h-12 w-12" style={{ color: marca?.ink }} />
                 )}
               </div>
 
@@ -539,10 +555,11 @@ function ScanPageInner() {
                     {Array.from({ length: selectedCustomer.maxStamps }).map((_, i) => (
                       <div
                         key={i}
-                        className={`aspect-square rounded-lg ${i >= selectedCustomer.stamps ? "bg-muted border border-border" : ""}`}
+                        // El sello nuevo «cae» en su lugar con la misma animación de la tarjeta.
+                        className={`aspect-square rounded-lg ${i >= selectedCustomer.stamps ? "bg-muted border border-border" : ""} ${i === selectedCustomer.stamps - 1 ? "stamp-filled" : ""}`}
                         style={{
-                          ...(i < selectedCustomer.stamps ? { backgroundColor: selectedCustomer.cardBrandColor } : {}),
-                          ...(i === selectedCustomer.stamps - 1 ? { outline: `2px solid ${selectedCustomer.cardBrandColor}`, outlineOffset: "2px" } : {}),
+                          ...(i < selectedCustomer.stamps ? { backgroundColor: marca?.base } : {}),
+                          ...(i === selectedCustomer.stamps - 1 ? { outline: `2px solid ${marca?.ink}`, outlineOffset: "2px" } : {}),
                         }}
                       />
                     ))}
@@ -562,12 +579,12 @@ function ScanPageInner() {
                   >
                     <div
                       className="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: selectedCustomer.cardBrandColor }}
+                      style={{ backgroundColor: marca?.base, color: marca?.texto }}
                     >
                       {MilestoneIconComp ? (
-                        <MilestoneIconComp className="h-6 w-6 text-white" />
+                        <MilestoneIconComp className="h-6 w-6" />
                       ) : (
-                        <Gift className="h-6 w-6 text-white" />
+                        <Gift className="h-6 w-6" />
                       )}
                     </div>
                     <div className="min-w-0">
@@ -600,8 +617,8 @@ function ScanPageInner() {
               <Button
                 onClick={resetScan}
                 size="lg"
-                className="w-full text-white"
-                style={{ backgroundColor: selectedCustomer.cardBrandColor }}
+                className="w-full"
+                style={{ backgroundColor: marca?.base, color: marca?.texto }}
               >
                 Escanear Siguiente Cliente
               </Button>

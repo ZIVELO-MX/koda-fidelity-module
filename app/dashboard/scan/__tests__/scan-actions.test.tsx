@@ -14,7 +14,7 @@ vi.mock("@/components/scan/qr-scanner", () => ({
   QRScanner: () => <div data-testid="qr-scanner" />,
 }))
 
-function cliente(stamps: number) {
+function cliente(stamps: number, cardBrandColor = "#FF6B35") {
   return {
     id: "cust-1",
     name: "Ana García",
@@ -22,7 +22,7 @@ function cliente(stamps: number) {
     goal: 10,
     cardName: "Café Reward",
     cardReward: "Café gratis",
-    cardBrandColor: "#FF6B35",
+    cardBrandColor,
     cardExpiresAt: null,
   }
 }
@@ -30,12 +30,12 @@ function cliente(stamps: number) {
 const fetchMock = vi.fn()
 
 /** Busca por nombre y selecciona al cliente, que deja la pantalla en "found". */
-async function seleccionar(stamps: number) {
+async function seleccionar(stamps: number, cardBrandColor?: string) {
   fetchMock.mockResolvedValueOnce({
     ok: true,
     status: 200,
     headers: new Headers(),
-    json: async () => ({ items: [cliente(stamps)], page: 1, pageSize: 20, total: 1 }),
+    json: async () => ({ items: [cliente(stamps, cardBrandColor)], page: 1, pageSize: 20, total: 1 }),
   })
   render(<ScanPage />)
   fireEvent.change(screen.getByLabelText("Buscar por nombre"), { target: { value: "Ana" } })
@@ -111,6 +111,43 @@ describe("Escáner, una sola acción primaria", () => {
     const anuncio = await screen.findByText(/bono sorpresa: postre gratis/i, {}, { timeout: 2000 })
     expect(anuncio).toBeVisible()
     expect(screen.queryByRole("alertdialog")).toBeNull()
+  })
+})
+
+describe("Escáner, el sello se lee y se siente", () => {
+  const vibrate = vi.fn()
+
+  beforeEach(() => {
+    fetchMock.mockReset()
+    vibrate.mockReset()
+    vi.stubGlobal("fetch", fetchMock)
+    Object.defineProperty(navigator, "vibrate", { value: vibrate, configurable: true })
+  })
+  afterEach(() => {
+    cleanup()
+    vi.unstubAllGlobals()
+  })
+
+  // Antes el texto iba blanco fijo: con ámbar quedaba en 2.15:1.
+  it("con un color claro, el botón de sellar lleva texto oscuro", async () => {
+    await seleccionar(3, "#F59E0B")
+    expect(screen.getByRole("button", { name: /agregar sello/i }).style.color).toBe("rgb(28, 27, 23)")
+  })
+
+  it("vibra en el mismo momento en que confirma el sello", async () => {
+    await seleccionar(3)
+    fetchMock.mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers(), json: async () => ({ event: "stamp" }) })
+    fireEvent.click(screen.getByRole("button", { name: /agregar sello/i }))
+    expect(await screen.findByText(/sello agregado/i, {}, { timeout: 2000 })).toBeVisible()
+    expect(vibrate).toHaveBeenCalledWith(15)
+  })
+
+  it("vibra distinto cuando el sellado falla", async () => {
+    await seleccionar(3)
+    fetchMock.mockResolvedValueOnce({ ok: false, status: 400, headers: new Headers(), json: async () => ({ error: "La tarjeta expiró" }) })
+    fireEvent.click(screen.getByRole("button", { name: /agregar sello/i }))
+    expect(await screen.findByText(/la tarjeta expiró/i, {}, { timeout: 2000 })).toBeVisible()
+    expect(vibrate).toHaveBeenCalledWith([40, 40, 40])
   })
 })
 
