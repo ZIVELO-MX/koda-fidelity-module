@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { ejecutarSellado } from "@/lib/sellado"
 import { Button } from "@/components/ui/button"
 import { Stamp, Loader2, Check, Gift } from "lucide-react"
-import { isLight } from "@/lib/color-utils"
+import { derivarMarca } from "@/lib/color-marca"
 
 interface StampButtonProps {
   customerId: string
@@ -15,7 +15,7 @@ interface StampButtonProps {
   brandColor?: string
 }
 
-type StampState = "idle" | "loading" | "stamped" | "redeemed" | "error"
+type StampState = "idle" | "loading" | "stamped" | "redeemed"
 
 export function StampButton({
   customerId,
@@ -41,15 +41,16 @@ export function StampButton({
 
       setTimeout(() => setState("idle"), 2000)
     } catch (err) {
-      setState("error")
+      // El error se queda hasta el siguiente intento: antes se borraba a los 3 s
+      // y en el mostrador era fácil no verlo.
+      setState("idle")
       setErrorMsg(err instanceof Error ? err.message : "Error al procesar")
-      setTimeout(() => setState("idle"), 3000)
     }
   }, [customerId, currentStamps, maxStamps, router])
 
   if (state === "stamped") {
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-600">
+      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-700">
         <Check className="h-3.5 w-3.5" />
         Sellado
       </span>
@@ -58,7 +59,7 @@ export function StampButton({
 
   if (state === "redeemed") {
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-600">
+      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-700">
         <Gift className="h-3.5 w-3.5" />
         {reward} canjeado
       </span>
@@ -72,8 +73,9 @@ export function StampButton({
         size="sm"
         onClick={handleStamp}
         disabled={state === "loading"}
-        className="gap-1.5 h-8 px-2.5 text-xs"
-        style={brandColor ? { color: isLight(brandColor) ? "#1a1a1a" : brandColor } : undefined}
+        // En pantalla táctil el blanco crece a 44 px; con ratón se queda compacto.
+        className="gap-1.5 h-8 pointer-coarse:h-11 px-2.5 text-xs"
+        style={brandColor ? { color: derivarMarca(brandColor).ink } : undefined}
       >
         {state === "loading" ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -84,8 +86,8 @@ export function StampButton({
         )}
         {currentStamps >= maxStamps ? "Canjear" : "Sellar"}
       </Button>
-      {state === "error" && errorMsg && (
-        <span className="text-xs text-red-500">{errorMsg}</span>
+      {errorMsg && (
+        <span role="alert" className="text-xs text-red-600">{errorMsg}</span>
       )}
     </div>
   )
