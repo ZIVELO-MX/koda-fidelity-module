@@ -24,4 +24,13 @@ describe("planChangeFromMetadata", () => {
     ], "PRO")).toEqual({ eventId: "upgrade", from: "LITE", to: "PRO" })
     expect(latestPlanChangeNotice([], null)).toBeNull()
   })
+
+  it("infers transitions from older audit events that only stored the selected plan", () => {
+    expect(latestPlanChangeNotice([
+      { id: "lite-now", createdAt: new Date("2026-10-06T20:21:02Z"), metadata: { plan: "LITE" } },
+      { id: "pro-before", createdAt: new Date("2026-10-06T20:01:41Z"), metadata: { plan: "PRO" } },
+      { id: "first-lite", createdAt: new Date("2026-10-06T18:59:05Z"), metadata: { plan: "LITE" } },
+      { id: "trial", createdAt: new Date("2026-10-06T01:38:35Z"), metadata: { plan: "LITE", proTrialEndsAt: "2026-11-06T01:38:31Z" } },
+    ], "LITE")).toEqual({ eventId: "lite-now", from: "PRO", to: "LITE" })
+  })
 })

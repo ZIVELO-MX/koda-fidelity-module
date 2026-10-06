@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-const { createClient, userFindUnique, userUpdate, auditFindFirst, getUser } = vi.hoisted(() => ({
+const { createClient, userFindUnique, userUpdate, auditFindFirst, auditFindMany, getUser } = vi.hoisted(() => ({
   createClient: vi.fn(),
   userFindUnique: vi.fn(),
   userUpdate: vi.fn(),
   auditFindFirst: vi.fn(),
+  auditFindMany: vi.fn(),
   getUser: vi.fn(),
 }))
 
@@ -12,7 +13,7 @@ vi.mock("@/lib/supabase-server", () => ({ createClient }))
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     user: { findUnique: userFindUnique, update: userUpdate },
-    billingAuditEvent: { findFirst: auditFindFirst },
+    billingAuditEvent: { findFirst: auditFindFirst, findMany: auditFindMany },
   },
 }))
 
@@ -25,6 +26,7 @@ describe("acknowledgePlanChangeNotice", () => {
     getUser.mockResolvedValue({ data: { user: { id: "auth-user" } } })
     userFindUnique.mockResolvedValue({ id: "member", businessId: "business", planChangeNoticeSeenAt: new Date("2026-01-01T00:00:00Z") })
     auditFindFirst.mockResolvedValue({ createdAt: new Date("2026-02-01T00:00:00Z"), metadata: { previousPlan: "PRO", effectivePlan: "LITE" } })
+    auditFindMany.mockResolvedValue([])
   })
 
   it("marks only a new plan transition for the authenticated user's business as seen", async () => {
@@ -44,5 +46,16 @@ describe("acknowledgePlanChangeNotice", () => {
     auditFindFirst.mockResolvedValue({ createdAt: new Date(), metadata: { plan: "LITE" } })
     await expect(acknowledgePlanChangeNotice("event-id")).resolves.toBe(false)
     expect(userUpdate).not.toHaveBeenCalled()
+  })
+
+  it("acknowledges legacy plan events after validating their audit history", async () => {
+    const createdAt = new Date("2026-02-01T00:00:00Z")
+    auditFindFirst.mockResolvedValue({ createdAt, metadata: { plan: "LITE" } })
+    auditFindMany.mockResolvedValue([
+      { id: "event-id", createdAt, metadata: { plan: "LITE" } },
+      { id: "previous", createdAt: new Date("2026-01-15T00:00:00Z"), metadata: { plan: "PRO" } },
+    ])
+    await expect(acknowledgePlanChangeNotice("event-id")).resolves.toBe(true)
+    expect(userUpdate).toHaveBeenCalledWith({ where: { id: "member" }, data: { planChangeNoticeSeenAt: createdAt } })
   })
 })

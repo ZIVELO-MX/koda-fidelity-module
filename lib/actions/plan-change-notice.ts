@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
-import { planChangeFromMetadata } from "@/lib/plan-change-notice"
+import { planChangeForEvent, planChangeFromMetadata } from "@/lib/plan-change-notice"
 
 export async function acknowledgePlanChangeNotice(eventId: string): Promise<boolean> {
   if (!eventId || eventId.length > 64) return false
@@ -25,7 +25,18 @@ export async function acknowledgePlanChangeNotice(eventId: string): Promise<bool
     },
     select: { createdAt: true, metadata: true },
   })
-  if (!event || !planChangeFromMetadata(event.metadata)) return false
+  if (!event) return false
+  let isTransition = Boolean(planChangeFromMetadata(event.metadata))
+  if (!isTransition) {
+    const events = await prisma.billingAuditEvent.findMany({
+      where: { businessId: member.businessId, createdAt: { lte: event.createdAt } },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: 50,
+      select: { id: true, metadata: true, createdAt: true },
+    })
+    isTransition = Boolean(planChangeForEvent(events, eventId))
+  }
+  if (!isTransition) return false
 
   await prisma.user.update({
     where: { id: member.id },

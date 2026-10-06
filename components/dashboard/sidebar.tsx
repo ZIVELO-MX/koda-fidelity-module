@@ -309,7 +309,7 @@ export function DashboardSidebar({
               )),
             )}
 
-          <div className="mt-auto shrink-0 px-2 pb-2">
+          <div className={cn("mt-auto shrink-0 pb-2", collapsed ? "flex justify-center px-2" : "px-2")}>
             <AccountPlanChangeNotice notice={planChangeNotice} collapsed={collapsed} />
           </div>
         </nav>

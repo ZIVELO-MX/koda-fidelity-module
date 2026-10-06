@@ -63,7 +63,7 @@ export async function activateManualSubscription(db: PrismaClient, input: Manual
     const subscription = await tx.subscription.create({ data: { businessId: input.businessId, plan, billingInterval, amountMinor: input.amountMinor ?? 0, currency: "MXN", activatedAt: periodStart, periodStart, periodEnd, externalReference: input.externalReference, proAccessGranted, proTrialEndsAt } })
     const effective = resolveEffectiveEntitlements(subscription, periodStart)
     const previousPlan = previousSubscription ? resolveEffectiveEntitlements(previousSubscription, periodStart).plan : null
-    const entitledCards = await applyEntitlements(tx, input.businessId, effective.plan)
+    const entitledCards = await applyEntitlements(tx, input.businessId, effective.plan, previousPlan === "PRO" && effective.plan === "LITE")
     const updatedSubscription = await tx.subscription.update({ where: { id: subscription.id }, data: { liteCardId: effective.plan === "LITE" ? (entitledCards[0]?.id ?? null) : null } })
     await tx.onboardingProgress.updateMany({ where: { businessId: input.businessId }, data: { status: "ACTIVE", step: "PAYWALL" } })
     await tx.billingAuditEvent.create({ data: { businessId: input.businessId, action, operator: input.operator ?? "internal", idempotencyKey, externalReference: input.externalReference, metadata: { plan, previousPlan, effectivePlan: effective.plan, billingInterval, amountMinor: input.amountMinor ?? 0, proTrialEndsAt: proTrialEndsAt?.toISOString() ?? null, summary: input.summary?.trim() || null } } })
@@ -128,7 +128,7 @@ export async function deactivateManualSubscription(db: PrismaClient, input: {
   })
 }
 
-export async function applyEntitlements(db: PrismaClient | Prisma.TransactionClient, businessId: string, plan: SubscriptionPlan) {
+export async function applyEntitlements(db: PrismaClient | Prisma.TransactionClient, businessId: string, plan: SubscriptionPlan, preferProTheme = false) {
   const cards = await db.loyaltyCard.findMany({ where: { businessId }, orderBy: { createdAt: "asc" } })
   if (plan === "PRO") {
     for (const card of cards.filter((candidate) => candidate.status !== "ARCHIVED")) {
@@ -136,7 +136,13 @@ export async function applyEntitlements(db: PrismaClient | Prisma.TransactionCli
     }
     return cards.filter((candidate) => candidate.status !== "ARCHIVED")
   }
-  const keep = cards.find((card) => card.isLite && card.status !== "ARCHIVED") ?? cards.find((card) => card.status !== "ARCHIVED")
+  const proThemeIds = preferProTheme
+    ? new Set((await db.loyaltyTheme.findMany({ where: { plan: "PRO" }, select: { id: true } })).map(({ id }) => id))
+    : null
+  const candidates = cards.filter((card) => card.status !== "ARCHIVED")
+  const keep = (preferProTheme ? candidates.find((card) => card.selectedThemeId && proThemeIds?.has(card.selectedThemeId)) : undefined)
+    ?? candidates.find((card) => card.isLite)
+    ?? candidates[0]
   if (!keep) return cards
   for (const card of cards.filter((candidate) => candidate.status !== "ARCHIVED")) {
     const effectiveThemeId = card.selectedThemeId
@@ -191,7 +197,7 @@ export async function syncExpiredEntitlements(db: PrismaClient, businessId: stri
     })
     if (claimed.count !== 1) return getEntitlements(tx, businessId, now)
 
-    const entitledCards = await applyEntitlements(tx, businessId, SubscriptionPlan.LITE)
+    const entitledCards = await applyEntitlements(tx, businessId, SubscriptionPlan.LITE, true)
     const updatedSubscription = await tx.subscription.update({
       where: { id: subscription.id },
       data: { liteCardId: entitledCards[0]?.id ?? null },

@@ -47,7 +47,7 @@ export default async function DashboardLayout({
     where: { businessId: userRecord.business.id, createdAt: { gt: userRecord.planChangeNoticeSeenAt } },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: 50,
-    select: { id: true, metadata: true },
+    select: { id: true, metadata: true, createdAt: true },
   }) : []
   const planChangeNotice = latestPlanChangeNotice(planChangeEvents, accountPlan)
   const { business, role } = { business: userRecord.business, role: userRecord.role }

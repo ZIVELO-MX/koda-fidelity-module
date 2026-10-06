@@ -3,6 +3,8 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { renderToString } from "react-dom/server"
 import { DashboardLayoutClient } from "../dashboard-layout-client"
 
+const { refresh } = vi.hoisted(() => ({ refresh: vi.fn() }))
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }))
 vi.mock("../sidebar", () => ({
   DashboardSidebar: ({ collapsed, onToggleCollapse, planChangeNotice }: { collapsed: boolean; onToggleCollapse: () => void; planChangeNotice: { eventId: string } | null }) =>
     <><button onClick={onToggleCollapse}>{collapsed ? "Expandir" : "Colapsar"}</button><output data-testid="notice-event">{planChangeNotice?.eventId ?? "none"}</output></>,
@@ -50,5 +52,11 @@ describe("Preferencia persistida del sidebar", () => {
   it("pasa el aviso de cambio de plan al sidebar", () => {
     render(<DashboardLayoutClient {...props} planChangeNotice={{ eventId: "event-42", from: "PRO", to: "LITE" }}>Contenido</DashboardLayoutClient>)
     expect(screen.getByTestId("notice-event")).toHaveTextContent("event-42")
+  })
+
+  it("refreshes server data when the dashboard regains focus", () => {
+    render(layout())
+    fireEvent.focus(window)
+    expect(refresh).toHaveBeenCalledOnce()
   })
 })

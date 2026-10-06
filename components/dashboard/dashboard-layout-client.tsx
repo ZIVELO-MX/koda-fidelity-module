@@ -1,6 +1,7 @@
 "use client"
 
 import { useSyncExternalStore, useEffect, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { DashboardSidebar } from "./sidebar"
 import { DashboardHeader } from "./header"
 import type { Role } from "@prisma/client"
@@ -43,11 +44,26 @@ export function DashboardLayoutClient({
   planChangeNotice,
   closureScheduledFor,
 }: DashboardLayoutClientProps) {
+  const router = useRouter()
   const sidebarCollapsed = useSyncExternalStore(subscribeSidebar, readSidebar, serverSidebar)
 
   useEffect(() => {
     document.documentElement.classList.toggle("sidebar-collapsed", sidebarCollapsed)
   }, [sidebarCollapsed])
+
+  useEffect(() => {
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") router.refresh()
+    }
+    window.addEventListener("focus", refreshWhenVisible)
+    document.addEventListener("visibilitychange", refreshWhenVisible)
+    const interval = window.setInterval(refreshWhenVisible, 30_000)
+    return () => {
+      window.removeEventListener("focus", refreshWhenVisible)
+      document.removeEventListener("visibilitychange", refreshWhenVisible)
+      window.clearInterval(interval)
+    }
+  }, [router])
 
   const toggleCollapse = useCallback(() => {
     window.localStorage.setItem(SIDEBAR_STATE_KEY, JSON.stringify(!readSidebar()))

@@ -85,6 +85,7 @@ integration("account lifecycle PostgreSQL integration", () => {
     const liteTheme = await prisma.loyaltyTheme.findFirstOrThrow({ where: { plan: "LITE", isActive: true }, orderBy: { code: "asc" } })
     const proTheme = await prisma.loyaltyTheme.findFirstOrThrow({ where: { plan: "PRO", isActive: true }, orderBy: { code: "asc" } })
     const cards = await prisma.loyaltyCard.createManyAndReturn({ data: [
+      { businessId, name: "Existing Lite card", reward: "R0", selectedThemeId: liteTheme.id, effectiveThemeId: liteTheme.id, isLite: true },
       { businessId, name: "Themed one", reward: "R1", selectedThemeId: proTheme.id, effectiveThemeId: proTheme.id },
       { businessId, name: "Themed two", reward: "R2", selectedThemeId: liteTheme.id, effectiveThemeId: liteTheme.id },
     ] })
@@ -102,10 +103,11 @@ integration("account lifecycle PostgreSQL integration", () => {
     expect(lite.liteCardId).toBeTruthy()
     expect(refreshed.filter((card) => card.status === "ACTIVE")).toHaveLength(1)
     const downgraded = refreshed.find((card) => card.selectedThemeId === proTheme.id)
+    expect(downgraded).toMatchObject({ status: "ACTIVE", isActive: true, isLite: true })
     expect(downgraded?.selectedThemeId).toBe(proTheme.id)
     expect(downgraded?.effectiveThemeId).toBeNull()
     expect(downgraded?.brandColor).toBe("#ff6b35")
-    expect(refreshed.filter((card) => card.status === "LOCKED_BY_PLAN")).toHaveLength(1)
+    expect(refreshed.filter((card) => card.status === "LOCKED_BY_PLAN")).toHaveLength(2)
 
     const restoredProKey = randomUUID()
     await activateManualSubscription(prisma, { businessId, plan: "PRO", idempotencyKey: restoredProKey })
@@ -113,7 +115,7 @@ integration("account lifecycle PostgreSQL integration", () => {
       metadata: expect.objectContaining({ previousPlan: "LITE", effectivePlan: "PRO" }),
     })
     const upgraded = await prisma.loyaltyCard.findMany({ where: { businessId }, orderBy: { createdAt: "asc" } })
-    const restored = upgraded.find((card) => card.id === cards[0].id)
+    const restored = upgraded.find((card) => card.id === cards[1].id)
     expect(restored).toMatchObject({ selectedThemeId: proTheme.id, effectiveThemeId: proTheme.id, status: "ACTIVE", isActive: true, isLite: false })
     expect(upgraded.every((card) => card.status === "ACTIVE" && card.isActive)).toBe(true)
   })
