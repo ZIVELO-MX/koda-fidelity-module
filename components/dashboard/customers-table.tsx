@@ -154,9 +154,11 @@ export function CustomersTable({
                   <div className="flex items-center gap-3">
                     <div className="flex-1 min-w-[80px] max-w-[120px]">
                       <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        {/* Se desplaza en vez de cambiar de ancho: `transform` no
+                            recalcula el layout en cada cuadro. */}
                         <div
-                          className="h-full bg-primary rounded-full transition-[width]"
-                          style={{ width: `${Math.min((customer.stamps / customer.card.stampsRequired) * 100, 100)}%` }}
+                          className="h-full w-full bg-primary rounded-full transition-transform"
+                          style={{ transform: `translateX(${Math.min((customer.stamps / customer.card.stampsRequired) * 100, 100) - 100}%)` }}
                         />
                       </div>
                     </div>
