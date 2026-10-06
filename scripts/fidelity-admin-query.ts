@@ -51,6 +51,8 @@ export type AdminLookupResult =
         proAccessGranted: boolean
       } | null
       effectivePlan: string
+      planSince: Date | null
+      daysOnPlan: number | null
       cardCounts: Record<"ACTIVE" | "DRAFT" | "LOCKED_BY_PLAN" | "ARCHIVED", number>
       pendingRequests: Array<{ ticketNumber: string; plan: string; billingInterval: string; createdAt: Date }>
     }
@@ -95,9 +97,8 @@ export async function queryAdminAccount(db: FidelityAdminReadClient, rawEmail: s
         orderBy: { createdAt: "asc" },
       },
       subscriptions: {
-        orderBy: { createdAt: "desc" },
-        take: 1,
-        select: { status: true, plan: true, billingInterval: true, periodStart: true, periodEnd: true, proTrialEndsAt: true, proAccessGranted: true },
+        orderBy: { activatedAt: "desc" },
+        select: { status: true, plan: true, billingInterval: true, activatedAt: true, periodStart: true, periodEnd: true, proTrialEndsAt: true, proAccessGranted: true },
       },
     },
   })
@@ -115,6 +116,14 @@ export async function queryAdminAccount(db: FidelityAdminReadClient, rawEmail: s
   })
 
   const subscription = business.subscriptions[0] ?? null
+  let planSince: Date | null = null
+  if (subscription?.status === "ACTIVE") {
+    for (const previous of business.subscriptions) {
+      if (previous.plan !== subscription.plan) break
+      planSince = previous.activatedAt
+    }
+  }
+  const daysOnPlan = planSince ? Math.max(0, Math.floor((now.getTime() - planSince.getTime()) / 86_400_000)) : null
   const proTrial = subscription?.plan === "LITE"
     && subscription.proAccessGranted
     && Boolean(subscription.proTrialEndsAt && subscription.proTrialEndsAt > now)
@@ -132,6 +141,8 @@ export async function queryAdminAccount(db: FidelityAdminReadClient, rawEmail: s
     invitations: business.invitations,
     subscription,
     effectivePlan,
+    planSince,
+    daysOnPlan,
     cardCounts,
     pendingRequests,
   }
@@ -166,6 +177,7 @@ export function formatAdminLookup(result: AdminLookupResult) {
     `Correo del negocio: ${business.email}`,
     `Alta del negocio: ${formatDate(business.createdAt)}`,
     subscriptionLine,
+    ...(result.planSince ? [`Plan ${subscription?.plan} desde ${formatDate(result.planSince)} · ${result.daysOnPlan} días transcurridos`] : []),
     `Miembros (${result.members.length}):`,
     ...result.members.map((member) => `  - ${member.name} <${member.email}> · ${member.role}`),
     `Invitaciones pendientes (${result.invitations.length}):`,

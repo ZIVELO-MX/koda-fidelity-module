@@ -102,7 +102,7 @@ describe("Fidelity admin query helpers", () => {
       invitations: [{ name: "Invited", email: "invite@example.com", role: "sellador", expiresAt: end }],
       subscriptions: [{
         status: "ACTIVE", plan: "LITE", billingInterval: "MONTHLY", periodStart: start,
-        periodEnd: end, proTrialEndsAt: trialEnd, proAccessGranted: true,
+        activatedAt: start, periodEnd: end, proTrialEndsAt: trialEnd, proAccessGranted: true,
       }],
     })
     methods.loyaltyCard.groupBy.mockResolvedValue([
@@ -118,6 +118,7 @@ describe("Fidelity admin query helpers", () => {
     expect(result.kind).toBe("business")
     if (result.kind !== "business") throw new Error("Expected a business summary")
     expect(result.effectivePlan).toBe("PRO")
+    expect(result.daysOnPlan).toBe(4)
     expect(result.cardCounts).toEqual({ ACTIVE: 1, DRAFT: 2, LOCKED_BY_PLAN: 0, ARCHIVED: 0 })
     expect(result.members).toHaveLength(2)
     expect(result.invitations).toHaveLength(1)
@@ -127,6 +128,7 @@ describe("Fidelity admin query helpers", () => {
 
     const output = formatAdminLookup(result)
     expect(output).toContain("Acceso efectivo: PRO")
+    expect(output).toContain("4 días transcurridos")
     expect(output).toContain("1 activas, 2 borradores")
     expect(output).toContain("KF-123")
     expect(output).not.toContain("clientes")
@@ -141,7 +143,7 @@ describe("Fidelity admin query helpers", () => {
       users: [], invitations: [],
       subscriptions: [{
         status: "ACTIVE", plan: "LITE", billingInterval: "MONTHLY", periodStart: now,
-        periodEnd: new Date("2026-12-01T00:00:00.000Z"), proTrialEndsAt: now, proAccessGranted: true,
+        activatedAt: now, periodEnd: new Date("2026-12-01T00:00:00.000Z"), proTrialEndsAt: now, proAccessGranted: true,
       }],
     })
 
@@ -149,5 +151,29 @@ describe("Fidelity admin query helpers", () => {
 
     expect(result.kind).toBe("business")
     if (result.kind === "business") expect(result.effectivePlan).toBe("LITE")
+  })
+
+  it("counts consecutive time on the current plan across renewals", async () => {
+    const { client, methods } = makeDb()
+    const now = new Date("2026-10-06T12:00:00.000Z")
+    methods.user.findFirst.mockResolvedValue({ email: "admin@example.com", name: "Admin", role: "admin", businessId: "biz-1", onboardingProgress: null })
+    const subscription = (plan: string, activatedAt: string, status: string) => ({
+      status, plan, billingInterval: "MONTHLY", activatedAt: new Date(activatedAt),
+      periodStart: new Date(activatedAt), periodEnd: now, proTrialEndsAt: null, proAccessGranted: plan === "PRO",
+    })
+    methods.business.findUnique.mockResolvedValue({
+      id: "biz-1", name: "Café Luna", email: "contact@example.com", createdAt: now,
+      users: [], invitations: [], subscriptions: [
+        subscription("PRO", "2026-10-01T12:00:00.000Z", "ACTIVE"),
+        subscription("PRO", "2026-09-01T12:00:00.000Z", "CANCELED"),
+        subscription("LITE", "2026-08-01T12:00:00.000Z", "CANCELED"),
+      ],
+    })
+    const result = await queryAdminAccount(client, "admin@example.com", now)
+    expect(result.kind).toBe("business")
+    if (result.kind === "business") {
+      expect(result.planSince).toEqual(new Date("2026-09-01T12:00:00.000Z"))
+      expect(result.daysOnPlan).toBe(35)
+    }
   })
 })
