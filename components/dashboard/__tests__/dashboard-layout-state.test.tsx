@@ -9,7 +9,7 @@ vi.mock("../sidebar", () => ({
 }))
 vi.mock("../header", () => ({ DashboardHeader: () => null }))
 
-const props = { userEmail: "admin@dev.invalid", businessName: "Negocio", brandColor: "#123456", role: "admin" as const }
+const props = { userEmail: "admin@dev.invalid", businessName: "Negocio", brandColor: "#123456", role: "admin" as const, accountPlan: "PRO" as const, planChangeNotice: null }
 const layout = () => <DashboardLayoutClient {...props}>Contenido</DashboardLayoutClient>
 
 beforeEach(() => {

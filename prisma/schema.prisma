@@ -150,6 +150,7 @@ model User {
   updatedAt             DateTime            @updatedAt
   authUserId            String?             @unique @db.Uuid
   passwordSetupRequired Boolean             @default(false)
+  planChangeNoticeSeenAt DateTime            @default(now())
   invitationsSent       TeamInvitation[]    @relation("InvitationSender")
   onboardingProgress    OnboardingProgress?
   subscriptionRequests  SubscriptionRequest[]

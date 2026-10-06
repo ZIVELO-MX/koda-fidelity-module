@@ -55,6 +55,9 @@ integration("account lifecycle PostgreSQL integration", () => {
     const expired = await prisma.subscription.findUniqueOrThrow({ where: { id: trial.id } })
     expect(expired.proAccessGranted).toBe(false)
     expect(await prisma.billingAuditEvent.count({ where: { idempotencyKey: `trial-expired:${trial.id}` } })).toBe(1)
+    await expect(prisma.billingAuditEvent.findUniqueOrThrow({ where: { idempotencyKey: `trial-expired:${trial.id}` } })).resolves.toMatchObject({
+      metadata: expect.objectContaining({ previousPlan: "PRO", effectivePlan: "LITE" }),
+    })
     expect(await prisma.loyaltyCard.count({ where: { businessId, status: "ACTIVE" } })).toBe(1)
     expect(await prisma.loyaltyCard.count({ where: { businessId, status: "LOCKED_BY_PLAN" } })).toBe(1)
 
@@ -75,10 +78,15 @@ integration("account lifecycle PostgreSQL integration", () => {
       { businessId, name: "Themed two", reward: "R2", selectedThemeId: liteTheme.id, effectiveThemeId: liteTheme.id },
     ] })
 
-    await activateManualSubscription(prisma, { businessId, plan: "PRO", idempotencyKey: randomUUID() })
+    const firstProKey = randomUUID()
+    await activateManualSubscription(prisma, { businessId, plan: "PRO", idempotencyKey: firstProKey })
     expect((await prisma.loyaltyCard.findUniqueOrThrow({ where: { id: cards[0].id } })).effectiveThemeId).toBe(proTheme.id)
 
-    const lite = await activateManualSubscription(prisma, { businessId, plan: "LITE", proAccessGranted: false, idempotencyKey: randomUUID() })
+    const liteKey = randomUUID()
+    const lite = await activateManualSubscription(prisma, { businessId, plan: "LITE", proAccessGranted: false, idempotencyKey: liteKey })
+    await expect(prisma.billingAuditEvent.findUniqueOrThrow({ where: { idempotencyKey: liteKey } })).resolves.toMatchObject({
+      metadata: expect.objectContaining({ previousPlan: "PRO", effectivePlan: "LITE" }),
+    })
     const refreshed = await prisma.loyaltyCard.findMany({ where: { businessId }, orderBy: { createdAt: "asc" } })
     expect(lite.liteCardId).toBeTruthy()
     expect(refreshed.filter((card) => card.status === "ACTIVE")).toHaveLength(1)
@@ -88,7 +96,11 @@ integration("account lifecycle PostgreSQL integration", () => {
     expect(downgraded?.brandColor).toBe("#ff6b35")
     expect(refreshed.filter((card) => card.status === "LOCKED_BY_PLAN")).toHaveLength(1)
 
-    await activateManualSubscription(prisma, { businessId, plan: "PRO", idempotencyKey: randomUUID() })
+    const restoredProKey = randomUUID()
+    await activateManualSubscription(prisma, { businessId, plan: "PRO", idempotencyKey: restoredProKey })
+    await expect(prisma.billingAuditEvent.findUniqueOrThrow({ where: { idempotencyKey: restoredProKey } })).resolves.toMatchObject({
+      metadata: expect.objectContaining({ previousPlan: "LITE", effectivePlan: "PRO" }),
+    })
     const upgraded = await prisma.loyaltyCard.findMany({ where: { businessId }, orderBy: { createdAt: "asc" } })
     const restored = upgraded.find((card) => card.id === cards[0].id)
     expect(restored).toMatchObject({ selectedThemeId: proTheme.id, effectiveThemeId: proTheme.id, status: "ACTIVE", isActive: true, isLite: false })

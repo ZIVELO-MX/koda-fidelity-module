@@ -55,13 +55,18 @@ export async function activateManualSubscription(db: PrismaClient, input: Manual
   if (proTrialEndsAt && proTrialEndsAt <= periodStart) throw new ValidationError("El trial Pro debe terminar después de iniciar")
   if (input.proTrialEndsAt && !proAccessGranted) throw new ValidationError("El trial Pro requiere acceso Pro")
   return db.$transaction(async (tx) => {
+    const previousSubscription = await tx.subscription.findFirst({
+      where: { businessId: input.businessId, status: "ACTIVE" },
+      orderBy: { createdAt: "desc" },
+    })
     await tx.subscription.updateMany({ where: { businessId: input.businessId, status: "ACTIVE" }, data: { status: "CANCELED" } })
     const subscription = await tx.subscription.create({ data: { businessId: input.businessId, plan, billingInterval, amountMinor: input.amountMinor ?? 0, currency: "MXN", activatedAt: periodStart, periodStart, periodEnd, externalReference: input.externalReference, proAccessGranted, proTrialEndsAt } })
     const effective = resolveEffectiveEntitlements(subscription, periodStart)
+    const previousPlan = previousSubscription ? resolveEffectiveEntitlements(previousSubscription, periodStart).plan : null
     const entitledCards = await applyEntitlements(tx, input.businessId, effective.plan)
     const updatedSubscription = await tx.subscription.update({ where: { id: subscription.id }, data: { liteCardId: effective.plan === "LITE" ? (entitledCards[0]?.id ?? null) : null } })
     await tx.onboardingProgress.updateMany({ where: { businessId: input.businessId }, data: { status: "ACTIVE", step: "PAYWALL" } })
-    await tx.billingAuditEvent.create({ data: { businessId: input.businessId, action, operator: input.operator ?? "internal", idempotencyKey, externalReference: input.externalReference, metadata: { plan, billingInterval, amountMinor: input.amountMinor ?? 0, proTrialEndsAt: proTrialEndsAt?.toISOString() ?? null, summary: input.summary?.trim() || null } } })
+    await tx.billingAuditEvent.create({ data: { businessId: input.businessId, action, operator: input.operator ?? "internal", idempotencyKey, externalReference: input.externalReference, metadata: { plan, previousPlan, effectivePlan: effective.plan, billingInterval, amountMinor: input.amountMinor ?? 0, proTrialEndsAt: proTrialEndsAt?.toISOString() ?? null, summary: input.summary?.trim() || null } } })
     return updatedSubscription
   }, { timeout: 30_000 })
 }
@@ -198,7 +203,7 @@ export async function syncExpiredEntitlements(db: PrismaClient, businessId: stri
         action: "expire_pro_trial",
         operator: "system",
         idempotencyKey: `trial-expired:${subscription.id}`,
-        metadata: { proTrialEndsAt: subscription.proTrialEndsAt?.toISOString() ?? null, expiredAt: now.toISOString() },
+        metadata: { previousPlan: "PRO", effectivePlan: "LITE", proTrialEndsAt: subscription.proTrialEndsAt?.toISOString() ?? null, expiredAt: now.toISOString() },
       },
       update: {},
     })

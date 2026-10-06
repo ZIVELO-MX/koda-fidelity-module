@@ -26,6 +26,8 @@ function firstCardDb(subscription: unknown, hasBusiness = true) {
   }
   const db = {
     user: { findUnique: vi.fn().mockResolvedValueOnce(user).mockResolvedValue(persisted) },
+    subscription: { findFirst: vi.fn().mockResolvedValue(subscription) },
+    onboardingProgress: { findFirst: vi.fn().mockResolvedValue(null) },
     businessCategory: { findUnique: vi.fn().mockResolvedValue({ id: "category-1", isActive: true }) },
     $transaction: vi.fn(async (callback: (transaction: typeof tx) => unknown) => callback(tx)),
   }
@@ -78,8 +80,9 @@ describe("repeating onboarding with an existing first card", () => {
     const user = { id: "user-1", authUserId: "auth-1", businessId: "business-1", email: "test@invalid.dev", onboardingProgress: progress }
     const db = {
       user: { findUnique: vi.fn().mockResolvedValueOnce(user).mockResolvedValueOnce(user) },
+      subscription: { findFirst: vi.fn().mockResolvedValue(null) },
       businessCategory: { findUnique: vi.fn().mockResolvedValue({ id: "category-1", isActive: true }) },
-      onboardingProgress: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+      onboardingProgress: { findFirst: vi.fn().mockResolvedValue(null), updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
     } as any
 
     const result = await advanceOnboarding(db, "auth-1", "complete_card", 3)

@@ -24,6 +24,7 @@ const BASE_PROPS = {
   userEmail: "test@test.com",
   businessName: "Mi Negocio",
   brandColor: "#f97316",
+  accountPlan: "PRO" as const,
   collapsed: false,
   onToggleCollapse: vi.fn(),
 }
@@ -56,6 +57,7 @@ describe("DashboardSidebar — role-based navigation", () => {
     it("shows Clientes", () => expect(hasText("Clientes")).toBe(true))
     it("shows Marca", () => expect(hasText("Marca")).toBe(true))
     it("shows Configuración", () => expect(hasText("Configuración")).toBe(true))
+    it("shows the account plan after the email", () => expect(screen.getAllByText(/· Pro/).length).toBeGreaterThan(0))
     it("shows Equipo", () => expect(hasText("Equipo")).toBe(true))
     // La ayuda dejó de ser un destino: se abre desde el encabezado, con lo de
     // la pantalla en la que estás. Ver components/dashboard/ayuda-contextual.tsx.
