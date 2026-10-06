@@ -25,6 +25,7 @@ const BASE_PROPS = {
   businessName: "Mi Negocio",
   brandColor: "#f97316",
   accountPlan: "PRO" as const,
+  planChangeNotice: null,
   collapsed: false,
   onToggleCollapse: vi.fn(),
 }

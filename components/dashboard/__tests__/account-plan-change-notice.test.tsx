@@ -11,32 +11,41 @@ afterEach(() => {
 })
 
 describe("AccountPlanChangeNotice", () => {
+  it("shows an empty state when there is no plan change", () => {
+    render(<AccountPlanChangeNotice notice={null} />)
+    fireEvent.click(screen.getByRole("button", { name: "Notificaciones" }))
+    expect(screen.getByText("No tienes notificaciones por ahora.")).toBeInTheDocument()
+  })
+
   it.each([
     ["PRO", "LITE", "Pro", "Lite"],
     ["LITE", "PRO", "Lite", "Pro"],
-  ] as const)("announces a change from %s to %s", async (_from, _to, fromLabel, toLabel) => {
-    render(<AccountPlanChangeNotice eventId="event-1" from={_from} to={_to} />)
+  ] as const)("announces a change from %s to %s", async (from, to, fromLabel, toLabel) => {
+    render(<AccountPlanChangeNotice notice={{ eventId: "event-1", from, to }} />)
+    expect(screen.getByRole("button", { name: "Notificaciones, 1 sin leer" })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Notificaciones, 1 sin leer" }))
     expect(screen.getByRole("status")).toHaveTextContent(`El plan de tu cuenta cambió de ${fromLabel} a ${toLabel}.`)
   })
 
-  it("hides and persists the notice when the user acknowledges it", async () => {
+  it("acknowledges the notice and removes its unread indicator", async () => {
     acknowledgePlanChangeNotice.mockResolvedValue(true)
-    render(<AccountPlanChangeNotice eventId="event-1" from="PRO" to="LITE" />)
-
+    render(<AccountPlanChangeNotice notice={{ eventId: "event-1", from: "PRO", to: "LITE" }} />)
+    fireEvent.click(screen.getByRole("button", { name: "Notificaciones, 1 sin leer" }))
     fireEvent.click(screen.getByRole("button", { name: "Entendido" }))
 
-    await waitFor(() => expect(screen.queryByRole("status")).not.toBeInTheDocument())
+    await waitFor(() => expect(screen.getByRole("button", { name: "Notificaciones" })).toBeInTheDocument())
     expect(acknowledgePlanChangeNotice).toHaveBeenCalledWith("event-1")
+    expect(screen.queryByRole("status")).not.toBeInTheDocument()
   })
 
-  it("keeps the notice visible if persisting the acknowledgement fails", async () => {
+  it("keeps the unread indicator and allows retry when acknowledgement fails", async () => {
     acknowledgePlanChangeNotice.mockResolvedValue(false)
-    render(<AccountPlanChangeNotice eventId="event-1" from="LITE" to="PRO" />)
-
+    render(<AccountPlanChangeNotice notice={{ eventId: "event-1", from: "LITE", to: "PRO" }} />)
+    fireEvent.click(screen.getByRole("button", { name: "Notificaciones, 1 sin leer" }))
     fireEvent.click(screen.getByRole("button", { name: "Entendido" }))
 
-    await waitFor(() => expect(acknowledgePlanChangeNotice).toHaveBeenCalled())
-    expect(screen.getByRole("status")).toBeInTheDocument()
-    expect(screen.getByRole("alert")).toHaveTextContent("No se pudo guardar el aviso")
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("No se pudo guardar el aviso"))
+    expect(screen.getByRole("button", { name: "Notificaciones, 1 sin leer" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Entendido" })).toBeEnabled()
   })
 })

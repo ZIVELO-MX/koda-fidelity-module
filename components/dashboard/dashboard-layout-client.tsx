@@ -4,7 +4,6 @@ import { useSyncExternalStore, useEffect, useCallback } from "react"
 import { DashboardSidebar } from "./sidebar"
 import { DashboardHeader } from "./header"
 import type { Role } from "@prisma/client"
-import { AccountPlanChangeNotice } from "./account-plan-change-notice"
 import type { AccountPlan } from "@/lib/plan-change-notice"
 
 const SIDEBAR_STATE_KEY = "dashboard-sidebar-state"
@@ -64,6 +63,7 @@ export function DashboardLayoutClient({
         nickname={nickname}
         role={role}
         accountPlan={accountPlan}
+        planChangeNotice={planChangeNotice}
         collapsed={sidebarCollapsed}
         onToggleCollapse={toggleCollapse}
       />
@@ -74,7 +74,6 @@ export function DashboardLayoutClient({
           businessName={businessName}
         />
         <main className="flex-1 p-4 sm:p-6 pt-4 lg:pt-6 pb-20 lg:pb-6">
-          {planChangeNotice ? <AccountPlanChangeNotice {...planChangeNotice} /> : null}
           {closureScheduledFor ? <div role="status" className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-foreground">Cuenta en sólo lectura hasta {new Date(closureScheduledFor).toLocaleDateString("es-MX")}. Puedes consultar, exportar o cancelar el cierre desde Configuración.</div> : null}
           {children}
         </main>

@@ -50,6 +50,7 @@ import { MobileSettingsPanel } from "./mobile-settings-panel"
 import { useEffect, useState } from "react"
 import type { Role } from "@prisma/client"
 import type { AccountPlan } from "@/lib/plan-change-notice"
+import { AccountPlanChangeNotice } from "./account-plan-change-notice"
 
 interface DashboardSidebarProps {
   userEmail: string
@@ -58,6 +59,7 @@ interface DashboardSidebarProps {
   nickname?: string
   role: Role
   accountPlan: AccountPlan | null
+  planChangeNotice: { eventId: string; from: AccountPlan; to: AccountPlan } | null
   collapsed: boolean
   onToggleCollapse: () => void
 }
@@ -174,6 +176,7 @@ export function DashboardSidebar({
   nickname,
   role,
   accountPlan,
+  planChangeNotice,
   collapsed,
   onToggleCollapse,
 }: DashboardSidebarProps) {
@@ -309,6 +312,9 @@ export function DashboardSidebar({
 
         {/* Perfil fijado abajo */}
         <div className="border-t border-border p-2 shrink-0">
+          <div className={cn("mb-1 flex", collapsed ? "justify-center" : "justify-end")}>
+            <AccountPlanChangeNotice notice={planChangeNotice} />
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button

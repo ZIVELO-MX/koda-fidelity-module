@@ -4,8 +4,8 @@ import { renderToString } from "react-dom/server"
 import { DashboardLayoutClient } from "../dashboard-layout-client"
 
 vi.mock("../sidebar", () => ({
-  DashboardSidebar: ({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggleCollapse: () => void }) =>
-    <button onClick={onToggleCollapse}>{collapsed ? "Expandir" : "Colapsar"}</button>,
+  DashboardSidebar: ({ collapsed, onToggleCollapse, planChangeNotice }: { collapsed: boolean; onToggleCollapse: () => void; planChangeNotice: { eventId: string } | null }) =>
+    <><button onClick={onToggleCollapse}>{collapsed ? "Expandir" : "Colapsar"}</button><output data-testid="notice-event">{planChangeNotice?.eventId ?? "none"}</output></>,
 }))
 vi.mock("../header", () => ({ DashboardHeader: () => null }))
 
@@ -45,5 +45,10 @@ describe("Preferencia persistida del sidebar", () => {
       window.dispatchEvent(new StorageEvent("storage", { key: "dashboard-sidebar-state" }))
     })
     expect(screen.getByRole("button", { name: "Expandir" })).toBeVisible()
+  })
+
+  it("pasa el aviso de cambio de plan al sidebar", () => {
+    render(<DashboardLayoutClient {...props} planChangeNotice={{ eventId: "event-42", from: "PRO", to: "LITE" }}>Contenido</DashboardLayoutClient>)
+    expect(screen.getByTestId("notice-event")).toHaveTextContent("event-42")
   })
 })
