@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createSupabaseReqResClient } from "@/lib/supabase-req-res"
 import { isSupportedAuthType, resolveAuthRedirect } from "@/lib/auth-redirect"
+import { provisionSignup } from "@/lib/signup-provisioning"
 import { prisma } from "@/lib/prisma"
 
 export async function GET(request: NextRequest) {
@@ -48,9 +49,12 @@ export async function GET(request: NextRequest) {
   }
 
   if (type !== "recovery" && data.user) {
+    if (type === "signup") await provisionSignup(data.user.id)
+
     const member = await prisma.user.findUnique({
       where: { authUserId: data.user.id },
       select: {
+        businessId: true,
         passwordSetupRequired: true,
         onboardingProgress: { select: { status: true } },
       },
@@ -60,10 +64,14 @@ export async function GET(request: NextRequest) {
       response.headers.getSetCookie().forEach((cookie) => destination.headers.append("Set-Cookie", cookie))
       return destination
     }
-    if (member?.onboardingProgress && member.onboardingProgress.status !== "ACTIVE") {
+    if (member && (!member.businessId || member.onboardingProgress?.status !== "ACTIVE")) {
       const destination = NextResponse.redirect(new URL("/onboarding", request.url))
       response.headers.getSetCookie().forEach((cookie) => destination.headers.append("Set-Cookie", cookie))
       return destination
+    }
+    if (type === "signup" && !redirect_to && !member) {
+      const customer = await prisma.customerProfile.findUnique({ where: { authUserId: data.user.id }, select: { id: true } })
+      if (customer) response.headers.set("location", new URL("/dashboard/my-cards", request.url).toString())
     }
   }
 

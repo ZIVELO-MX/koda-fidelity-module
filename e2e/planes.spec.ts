@@ -21,7 +21,7 @@ test.beforeAll(async ({ browser }) => {
   const contexto = await browser.newContext()
   try {
     const pagina = await contexto.newPage()
-    await entrar(pagina, CORREO, CLAVE)
+    await entrar(pagina, CORREO, CLAVE, ["/dashboard", "/onboarding"])
     cookies = await contexto.cookies()
   } finally { await contexto.close() }
 })

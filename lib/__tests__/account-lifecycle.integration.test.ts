@@ -38,6 +38,17 @@ integration("account lifecycle PostgreSQL integration", () => {
     expect(writes.find((result) => result.status === "rejected")?.reason).toBeInstanceOf(ConflictError)
   })
 
+  it("links a previously unclaimed card profile to its newly verified customer account", async () => {
+    const email = `signup-customer-${randomUUID()}@test.invalid`
+    const profile = await prisma.customerProfile.create({ data: { emailNormalized: email, name: "QR customer" } })
+    profileId = profile.id
+    const authUserId = randomUUID()
+
+    const linked = await createCustomerProfile(prisma, { authUserId, email: email.toUpperCase(), name: "Verified customer" })
+
+    expect(linked).toMatchObject({ id: profile.id, authUserId, emailNormalized: email, name: "Verified customer" })
+  })
+
   it("stores, expires and audits the included Pro month exactly once", async () => {
     const card = await prisma.loyaltyCard.createManyAndReturn({ data: [
       { businessId, name: "One", reward: "R1", isActive: false, isLite: true },

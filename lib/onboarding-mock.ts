@@ -120,7 +120,7 @@ export async function advanceMockOnboarding(db: PrismaClient, principal: { id: s
   const businessDraft = state.progress.businessDraft ?? {}
   const cardDraft = state.progress.cardDraft ?? {}
   if (input.action === "complete_business") {
-    if (!businessDraft.name || !businessDraft.categoryId) throw new ValidationError("Completa nombre y categoría del negocio")
+    if (!businessDraft.ownerName || !businessDraft.name || !businessDraft.categoryId) throw new ValidationError("Completa tu nombre, el nombre y la categoría del negocio")
     if (!state.categories.some((category) => category.id === businessDraft.categoryId)) throw new ValidationError("Categoría inválida")
   }
   if (input.action === "complete_card") {
