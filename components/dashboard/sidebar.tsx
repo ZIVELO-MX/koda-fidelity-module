@@ -273,7 +273,7 @@ export function DashboardSidebar({
           )}
         </div>
 
-        <nav className="flex-1 overflow-y-auto">
+        <nav className="flex min-h-0 flex-1 flex-col overflow-y-auto">
           {/* Grouped sections with Accordion */}
           {!collapsed && (
             <Accordion
@@ -308,13 +308,14 @@ export function DashboardSidebar({
                 <CollapsedNavLink key={item.name} href={item.href} icon={item.icon} label={item.name} pathname={pathname} />
               )),
             )}
+
+          <div className="mt-auto shrink-0 px-2 pb-2">
+            <AccountPlanChangeNotice notice={planChangeNotice} collapsed={collapsed} />
+          </div>
         </nav>
 
         {/* Perfil fijado abajo */}
         <div className="border-t border-border p-2 shrink-0">
-          <div className={cn("mb-1 flex", collapsed ? "justify-center" : "justify-end")}>
-            <AccountPlanChangeNotice notice={planChangeNotice} />
-          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button

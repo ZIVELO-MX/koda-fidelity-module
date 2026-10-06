@@ -11,8 +11,10 @@ const planLabel = (plan: AccountPlan) => plan === "PRO" ? "Pro" : "Lite"
 
 export function AccountPlanChangeNotice({
   notice,
+  collapsed,
 }: {
   notice: { eventId: string; from: AccountPlan; to: AccountPlan } | null
+  collapsed: boolean
 }) {
   const [acknowledgedEventId, setAcknowledgedEventId] = useState<string | null>(null)
   const [open, setOpen] = useState(false)
@@ -46,11 +48,11 @@ export function AccountPlanChangeNotice({
         <Button
           type="button"
           variant="ghost"
-          size="icon"
           aria-label={visible ? "Notificaciones, 1 sin leer" : "Notificaciones"}
-          className="relative h-11 w-11"
+          className={`relative flex h-11 min-h-11 ${collapsed ? "w-11 justify-center px-0" : "w-full justify-start gap-3 px-3"}`}
         >
           <Bell aria-hidden="true" className="h-5 w-5" />
+          {!collapsed ? <span>Notificaciones</span> : null}
           {visible ? <span aria-hidden="true" className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-background" /> : null}
         </Button>
       </PopoverTrigger>
