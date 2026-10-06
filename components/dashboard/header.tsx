@@ -12,7 +12,7 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ collapsed, onToggleCollapse, businessName }: DashboardHeaderProps) {
   return (
-    <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-sm">
+    <header className="material-translucido sticky top-0 z-30 bg-background/80 backdrop-blur-sm">
       <div className="flex min-h-12 items-center gap-2 px-4 py-2 lg:min-h-14 lg:px-6 lg:py-4">
         {/* Solo colapsa. Recuperar la barra se hace desde su propio logo, así que
             este botón sobra cuando ya está colapsada. El alto se mantiene para que
