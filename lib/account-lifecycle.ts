@@ -17,6 +17,7 @@ type ManualSubscriptionInput = {
   action?: string
   proAccessGranted?: boolean
   proTrialEndsAt?: Date | null
+  summary?: string
 }
 
 export function normalizeProfileEmail(email: string) { return email.trim().toLowerCase() }
@@ -60,8 +61,65 @@ export async function activateManualSubscription(db: PrismaClient, input: Manual
     const entitledCards = await applyEntitlements(tx, input.businessId, effective.plan)
     const updatedSubscription = await tx.subscription.update({ where: { id: subscription.id }, data: { liteCardId: effective.plan === "LITE" ? (entitledCards[0]?.id ?? null) : null } })
     await tx.onboardingProgress.updateMany({ where: { businessId: input.businessId }, data: { status: "ACTIVE", step: "PAYWALL" } })
-    await tx.billingAuditEvent.create({ data: { businessId: input.businessId, action, operator: input.operator ?? "internal", idempotencyKey, externalReference: input.externalReference, metadata: { plan, billingInterval, amountMinor: input.amountMinor ?? 0, proTrialEndsAt: proTrialEndsAt?.toISOString() ?? null } } })
+    await tx.billingAuditEvent.create({ data: { businessId: input.businessId, action, operator: input.operator ?? "internal", idempotencyKey, externalReference: input.externalReference, metadata: { plan, billingInterval, amountMinor: input.amountMinor ?? 0, proTrialEndsAt: proTrialEndsAt?.toISOString() ?? null, summary: input.summary?.trim() || null } } })
     return updatedSubscription
+  })
+}
+
+export async function deactivateManualSubscription(db: PrismaClient, input: {
+  businessId: string
+  summary: string
+  operator: string
+  idempotencyKey: string
+}) {
+  const summary = input.summary.trim()
+  const operator = input.operator.trim()
+  if (!summary) throw new ValidationError("Escribe el resumen del cambio")
+  if (!operator) throw new ValidationError("Identifica al operador")
+  if (!await db.business.findUnique({ where: { id: input.businessId }, select: { id: true } })) {
+    throw new NotFoundError("Negocio no encontrado")
+  }
+
+  const existingAudit = await db.billingAuditEvent.findUnique({ where: { idempotencyKey: input.idempotencyKey }, select: { businessId: true } })
+  if (existingAudit) {
+    if (existingAudit.businessId !== input.businessId) throw new ConflictError("La clave de operación ya pertenece a otro negocio")
+    return { businessId: input.businessId, alreadyApplied: true, canceledSubscriptions: 0, lockedCards: 0, affectedUsers: 0 }
+  }
+
+  return db.$transaction(async (tx) => {
+    const users = await tx.user.findMany({ where: { businessId: input.businessId }, select: { id: true } })
+    const canceled = await tx.subscription.updateMany({
+      where: { businessId: input.businessId, status: { in: ["ACTIVE", "PAST_DUE"] } },
+      data: { status: "CANCELED" },
+    })
+    const locked = await tx.loyaltyCard.updateMany({
+      where: { businessId: input.businessId, status: { not: "ARCHIVED" } },
+      data: { isActive: false, isLite: false, status: "LOCKED_BY_PLAN", effectiveThemeId: null },
+    })
+    if (users.length) {
+      await tx.onboardingProgress.updateMany({
+        where: { userId: { in: users.map(({ id }) => id) } },
+        data: { businessId: input.businessId, step: "PAYWALL", status: "AWAITING_PAYMENT" },
+      })
+      await tx.onboardingProgress.createMany({
+        data: users.map(({ id }) => ({ userId: id, businessId: input.businessId, step: "PAYWALL" as const, status: "AWAITING_PAYMENT" as const })),
+        skipDuplicates: true,
+      })
+    }
+    await tx.onboardingProgress.updateMany({
+      where: { businessId: input.businessId },
+      data: { step: "PAYWALL", status: "AWAITING_PAYMENT" },
+    })
+    await tx.billingAuditEvent.create({
+      data: {
+        businessId: input.businessId,
+        action: "deactivate_plan",
+        operator,
+        idempotencyKey: input.idempotencyKey,
+        metadata: { summary, canceledSubscriptions: canceled.count, lockedCards: locked.count, affectedUsers: users.length },
+      },
+    })
+    return { businessId: input.businessId, alreadyApplied: false, canceledSubscriptions: canceled.count, lockedCards: locked.count, affectedUsers: users.length }
   })
 }
 

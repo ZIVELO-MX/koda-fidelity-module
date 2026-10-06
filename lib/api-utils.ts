@@ -157,8 +157,11 @@ export async function requireWritableBusinessPrincipal() {
 }
 
 export async function requireActivatedBusiness(businessId: string) {
-  const progress = await prisma.onboardingProgress.findFirst({ where: { businessId }, select: { status: true } })
-  if (progress && progress.status !== "ACTIVE") throw new OnboardingActivationRequiredError()
+  const [activeSubscription, pendingProgress] = await Promise.all([
+    prisma.subscription.findFirst({ where: { businessId, status: "ACTIVE" }, select: { id: true } }),
+    prisma.onboardingProgress.findFirst({ where: { businessId, status: { not: "ACTIVE" } }, select: { id: true } }),
+  ])
+  if (!activeSubscription && pendingProgress) throw new OnboardingActivationRequiredError()
 }
 
 export async function requireReadyBusinessPrincipal() {

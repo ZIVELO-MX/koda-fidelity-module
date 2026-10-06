@@ -19,6 +19,19 @@ export async function getOnboarding(db: Db, authUserId: string) {
     await db.onboardingProgress.create({ data: { userId: user.id, businessId: user.businessId ?? undefined } })
     return getOnboarding(db, authUserId)
   }
+  if (user.businessId && user.onboardingProgress.status !== "AWAITING_PAYMENT") {
+    const [activeSubscription, waitingMember] = await Promise.all([
+      db.subscription.findFirst({ where: { businessId: user.businessId, status: "ACTIVE" }, select: { id: true } }),
+      db.onboardingProgress.findFirst({ where: { businessId: user.businessId, status: "AWAITING_PAYMENT" }, select: { id: true } }),
+    ])
+    if (!activeSubscription && waitingMember) {
+      await db.onboardingProgress.update({
+        where: { id: user.onboardingProgress.id },
+        data: { businessId: user.businessId, step: "PAYWALL", status: "AWAITING_PAYMENT" },
+      })
+      return getOnboarding(db, authUserId)
+    }
+  }
   return user
 }
 
