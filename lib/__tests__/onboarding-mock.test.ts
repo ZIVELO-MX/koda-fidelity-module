@@ -30,7 +30,7 @@ describe("onboarding mock", () => {
     expect((await getMockOnboarding(database, principal)).mode).toBe("mock")
     const drafted = await saveMockDraft(database, principal, {
       draftVersion: 0,
-      business: { name: "Café Aurora", categoryId: "category-1" },
+      business: { ownerName: "Alex García", name: "Café Aurora", categoryId: "category-1" },
       card: { reward: "Café gratis", stampsRequired: 8, themeId: "foil" },
     })
     const businessStep = await advanceMockOnboarding(database, principal, { action: "complete_business", draftVersion: drafted.onboarding.onboardingProgress.draftVersion })
@@ -44,6 +44,22 @@ describe("onboarding mock", () => {
       draftVersion: cardStep.onboarding.onboardingProgress.draftVersion,
     })
     expect(acquisitionStep.onboarding.onboardingProgress.step).toBe("ACQUISITION")
+
+    const paywall = await advanceMockOnboarding(database, principal, {
+      action: "complete_acquisition",
+      draftVersion: acquisitionStep.onboarding.onboardingProgress.draftVersion,
+    })
+    expect(paywall.accountContext.plan).toBe("PRO")
+    const waiting = await advanceMockOnboarding(database, principal, {
+      action: "open_paywall",
+      draftVersion: paywall.onboarding.onboardingProgress.draftVersion,
+    })
+    expect(waiting.onboarding.onboardingProgress.status).toBe("AWAITING_PAYMENT")
+    await expect(advanceMockOnboarding(database, principal, {
+      action: "select_billing_interval",
+      billingInterval: "MONTHLY",
+      draftVersion: waiting.onboarding.onboardingProgress.draftVersion,
+    })).rejects.toThrow(/todavía no está activo/i)
   })
 
   it("rejects a different signed-in user from the target session", async () => {

@@ -17,6 +17,7 @@ type ManualSubscriptionInput = {
   action?: string
   proAccessGranted?: boolean
   proTrialEndsAt?: Date | null
+  summary?: string
 }
 
 export function normalizeProfileEmail(email: string) { return email.trim().toLowerCase() }
@@ -54,18 +55,80 @@ export async function activateManualSubscription(db: PrismaClient, input: Manual
   if (proTrialEndsAt && proTrialEndsAt <= periodStart) throw new ValidationError("El trial Pro debe terminar después de iniciar")
   if (input.proTrialEndsAt && !proAccessGranted) throw new ValidationError("El trial Pro requiere acceso Pro")
   return db.$transaction(async (tx) => {
+    const previousSubscription = await tx.subscription.findFirst({
+      where: { businessId: input.businessId, status: "ACTIVE" },
+      orderBy: { createdAt: "desc" },
+    })
     await tx.subscription.updateMany({ where: { businessId: input.businessId, status: "ACTIVE" }, data: { status: "CANCELED" } })
     const subscription = await tx.subscription.create({ data: { businessId: input.businessId, plan, billingInterval, amountMinor: input.amountMinor ?? 0, currency: "MXN", activatedAt: periodStart, periodStart, periodEnd, externalReference: input.externalReference, proAccessGranted, proTrialEndsAt } })
     const effective = resolveEffectiveEntitlements(subscription, periodStart)
-    const entitledCards = await applyEntitlements(tx, input.businessId, effective.plan)
+    const previousPlan = previousSubscription ? resolveEffectiveEntitlements(previousSubscription, periodStart).plan : null
+    const entitledCards = await applyEntitlements(tx, input.businessId, effective.plan, previousPlan === "PRO" && effective.plan === "LITE")
     const updatedSubscription = await tx.subscription.update({ where: { id: subscription.id }, data: { liteCardId: effective.plan === "LITE" ? (entitledCards[0]?.id ?? null) : null } })
     await tx.onboardingProgress.updateMany({ where: { businessId: input.businessId }, data: { status: "ACTIVE", step: "PAYWALL" } })
-    await tx.billingAuditEvent.create({ data: { businessId: input.businessId, action, operator: input.operator ?? "internal", idempotencyKey, externalReference: input.externalReference, metadata: { plan, billingInterval, amountMinor: input.amountMinor ?? 0, proTrialEndsAt: proTrialEndsAt?.toISOString() ?? null } } })
+    await tx.billingAuditEvent.create({ data: { businessId: input.businessId, action, operator: input.operator ?? "internal", idempotencyKey, externalReference: input.externalReference, metadata: { plan, previousPlan, effectivePlan: effective.plan, billingInterval, amountMinor: input.amountMinor ?? 0, proTrialEndsAt: proTrialEndsAt?.toISOString() ?? null, summary: input.summary?.trim() || null } } })
     return updatedSubscription
+  }, { timeout: 30_000 })
+}
+
+export async function deactivateManualSubscription(db: PrismaClient, input: {
+  businessId: string
+  summary: string
+  operator: string
+  idempotencyKey: string
+}) {
+  const summary = input.summary.trim()
+  const operator = input.operator.trim()
+  if (!summary) throw new ValidationError("Escribe el resumen del cambio")
+  if (!operator) throw new ValidationError("Identifica al operador")
+  if (!await db.business.findUnique({ where: { id: input.businessId }, select: { id: true } })) {
+    throw new NotFoundError("Negocio no encontrado")
+  }
+
+  const existingAudit = await db.billingAuditEvent.findUnique({ where: { idempotencyKey: input.idempotencyKey }, select: { businessId: true } })
+  if (existingAudit) {
+    if (existingAudit.businessId !== input.businessId) throw new ConflictError("La clave de operación ya pertenece a otro negocio")
+    return { businessId: input.businessId, alreadyApplied: true, canceledSubscriptions: 0, lockedCards: 0, affectedUsers: 0 }
+  }
+
+  return db.$transaction(async (tx) => {
+    const users = await tx.user.findMany({ where: { businessId: input.businessId }, select: { id: true } })
+    const canceled = await tx.subscription.updateMany({
+      where: { businessId: input.businessId, status: { in: ["ACTIVE", "PAST_DUE"] } },
+      data: { status: "CANCELED" },
+    })
+    const locked = await tx.loyaltyCard.updateMany({
+      where: { businessId: input.businessId, status: { not: "ARCHIVED" } },
+      data: { isActive: false, isLite: false, status: "LOCKED_BY_PLAN", effectiveThemeId: null },
+    })
+    if (users.length) {
+      await tx.onboardingProgress.updateMany({
+        where: { userId: { in: users.map(({ id }) => id) } },
+        data: { businessId: input.businessId, step: "PAYWALL", status: "AWAITING_PAYMENT" },
+      })
+      await tx.onboardingProgress.createMany({
+        data: users.map(({ id }) => ({ userId: id, businessId: input.businessId, step: "PAYWALL" as const, status: "AWAITING_PAYMENT" as const })),
+        skipDuplicates: true,
+      })
+    }
+    await tx.onboardingProgress.updateMany({
+      where: { businessId: input.businessId },
+      data: { step: "PAYWALL", status: "AWAITING_PAYMENT" },
+    })
+    await tx.billingAuditEvent.create({
+      data: {
+        businessId: input.businessId,
+        action: "deactivate_plan",
+        operator,
+        idempotencyKey: input.idempotencyKey,
+        metadata: { summary, canceledSubscriptions: canceled.count, lockedCards: locked.count, affectedUsers: users.length },
+      },
+    })
+    return { businessId: input.businessId, alreadyApplied: false, canceledSubscriptions: canceled.count, lockedCards: locked.count, affectedUsers: users.length }
   })
 }
 
-export async function applyEntitlements(db: PrismaClient | Prisma.TransactionClient, businessId: string, plan: SubscriptionPlan) {
+export async function applyEntitlements(db: PrismaClient | Prisma.TransactionClient, businessId: string, plan: SubscriptionPlan, preferProTheme = false) {
   const cards = await db.loyaltyCard.findMany({ where: { businessId }, orderBy: { createdAt: "asc" } })
   if (plan === "PRO") {
     for (const card of cards.filter((candidate) => candidate.status !== "ARCHIVED")) {
@@ -73,7 +136,13 @@ export async function applyEntitlements(db: PrismaClient | Prisma.TransactionCli
     }
     return cards.filter((candidate) => candidate.status !== "ARCHIVED")
   }
-  const keep = cards.find((card) => card.isLite && card.status !== "ARCHIVED") ?? cards.find((card) => card.status !== "ARCHIVED")
+  const proThemeIds = preferProTheme
+    ? new Set((await db.loyaltyTheme.findMany({ where: { plan: "PRO" }, select: { id: true } })).map(({ id }) => id))
+    : null
+  const candidates = cards.filter((card) => card.status !== "ARCHIVED")
+  const keep = (preferProTheme ? candidates.find((card) => card.selectedThemeId && proThemeIds?.has(card.selectedThemeId)) : undefined)
+    ?? candidates.find((card) => card.isLite)
+    ?? candidates[0]
   if (!keep) return cards
   for (const card of cards.filter((candidate) => candidate.status !== "ARCHIVED")) {
     const effectiveThemeId = card.selectedThemeId
@@ -128,7 +197,7 @@ export async function syncExpiredEntitlements(db: PrismaClient, businessId: stri
     })
     if (claimed.count !== 1) return getEntitlements(tx, businessId, now)
 
-    const entitledCards = await applyEntitlements(tx, businessId, SubscriptionPlan.LITE)
+    const entitledCards = await applyEntitlements(tx, businessId, SubscriptionPlan.LITE, true)
     const updatedSubscription = await tx.subscription.update({
       where: { id: subscription.id },
       data: { liteCardId: entitledCards[0]?.id ?? null },
@@ -140,7 +209,7 @@ export async function syncExpiredEntitlements(db: PrismaClient, businessId: stri
         action: "expire_pro_trial",
         operator: "system",
         idempotencyKey: `trial-expired:${subscription.id}`,
-        metadata: { proTrialEndsAt: subscription.proTrialEndsAt?.toISOString() ?? null, expiredAt: now.toISOString() },
+        metadata: { previousPlan: "PRO", effectivePlan: "LITE", proTrialEndsAt: subscription.proTrialEndsAt?.toISOString() ?? null, expiredAt: now.toISOString() },
       },
       update: {},
     })
@@ -171,8 +240,9 @@ export async function createCustomerProfile(db: PrismaClient, input: { authUserI
   const byAuth = await db.customerProfile.findUnique({ where: { authUserId: input.authUserId } })
   const byEmail = await db.customerProfile.findUnique({ where: { emailNormalized } })
   if (byAuth && byEmail && byAuth.id !== byEmail.id) throw new ConflictError("La identidad y el correo pertenecen a perfiles distintos")
-  if (byEmail && byEmail.authUserId !== input.authUserId) throw new ConflictError("El correo ya pertenece a otra identidad")
+  if (byEmail?.authUserId && byEmail.authUserId !== input.authUserId) throw new ConflictError("El correo ya pertenece a otra identidad")
   if (byAuth) return db.customerProfile.update({ where: { id: byAuth.id }, data: { name: input.name.trim(), emailNormalized, avatarPath: input.avatarPath === undefined ? byAuth.avatarPath : input.avatarPath } })
+  if (byEmail && !byEmail.authUserId) return db.customerProfile.update({ where: { id: byEmail.id }, data: { authUserId: input.authUserId, name: input.name.trim(), avatarPath: input.avatarPath ?? byEmail.avatarPath } })
   return db.customerProfile.create({ data: { authUserId: input.authUserId, emailNormalized, name: input.name.trim(), avatarPath: input.avatarPath ?? null } })
 }
 

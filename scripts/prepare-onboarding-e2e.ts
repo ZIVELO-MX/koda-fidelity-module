@@ -9,7 +9,8 @@ import { exigirBaseLocal } from "./onboarding-e2e-guard"
  *
  * Reutiliza la cuenta que ya crea `prepare-auth-e2e.ts`. Solo opera sobre el
  * Supabase local: `fresh` reinicia el alta sin activar un plan, `paywall` deja
- * visible la tarjeta guardada y `expired-trial` monta la transición a Lite.
+ * visibles la tarjeta guardada y los planes antes de esperar activación, y
+ * `expired-trial` monta la transición a Lite.
  *
  * El reset se hace por Prisma y no con `pnpm onboarding:debug -- reset` a
  * propósito: ese script exige que el correo termine en `@invalid.dev` y todas
@@ -48,9 +49,9 @@ async function main() {
     const solicitudes = await prisma.subscriptionRequest.deleteMany({ where: { businessId: user.businessId } })
     await prisma.onboardingProgress.update({
       where: { id: user.onboardingProgress.id },
-      data: { step: "PAYWALL", status: "AWAITING_PAYMENT", selectedBillingInterval: "ANNUAL", draftVersion: { increment: 1 } },
+      data: { step: "PAYWALL", status: "IN_PROGRESS", selectedBillingInterval: "ANNUAL", draftVersion: { increment: 1 } },
     })
-    console.log(JSON.stringify({ email, businessId: user.businessId, modo, onboarding: "PAYWALL", solicitudesBorradas: solicitudes.count }))
+    console.log(JSON.stringify({ email, businessId: user.businessId, modo, onboarding: "PAYWALL", status: "IN_PROGRESS", solicitudesBorradas: solicitudes.count }))
     return
   }
 

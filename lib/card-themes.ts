@@ -1,5 +1,5 @@
 import { Prisma, PrismaClient, ThemePlan } from "@prisma/client"
-import { NotFoundError } from "@/lib/api-utils"
+import { NotFoundError, ProThemeRequiresProError } from "@/lib/api-utils"
 
 export const fidelityThemeCodes = [
   "panaderia", "taqueria", "cafeteria", "hamburguesas", "pizzeria", "barberia",
@@ -24,8 +24,6 @@ export async function resolveTheme(
   if (!themeId) return { selectedThemeId: null, effectiveThemeId: null, themeLocked: false }
   const theme = await db.loyaltyTheme.findFirst({ where: { isActive: true, OR: [{ id: themeId }, { code: themeId }] } })
   if (!theme) throw new NotFoundError("Tema de tarjeta no encontrado")
-  if (theme.plan !== ThemePlan.PRO || plan === "PRO") {
-    return { selectedThemeId: theme.id, effectiveThemeId: theme.id, themeLocked: false }
-  }
-  return { selectedThemeId: theme.id, effectiveThemeId: null, themeLocked: true }
+  if (theme.plan === ThemePlan.PRO && plan !== "PRO") throw new ProThemeRequiresProError()
+  return { selectedThemeId: theme.id, effectiveThemeId: theme.id, themeLocked: false }
 }

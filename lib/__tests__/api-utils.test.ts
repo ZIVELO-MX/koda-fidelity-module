@@ -14,6 +14,8 @@ import {
   NotFoundError,
   ValidationError,
   ForbiddenError,
+  ProThemeRequiresProError,
+  OnboardingActivationRequiredError,
   handleApiError,
   withApiContext,
 } from "../api-utils"
@@ -58,6 +60,18 @@ describe("handleApiError", () => {
   it("returns 403 for ForbiddenError", () => {
     const response = handleApiError(new ForbiddenError())
     expect(response.status).toBe(403)
+  })
+
+  it("returns support instructions when Lite cannot save a Pro theme", async () => {
+    const response = handleApiError(new ProThemeRequiresProError(), "request-pro-theme")
+    expect(response.status).toBe(403)
+    expect(await response.json()).toMatchObject({ code: "KF-PLAN-PRO-THEME", supportEmail: "soporte@zivelo.dev", requestId: "request-pro-theme", retryable: false })
+  })
+
+  it("sends inactive accounts back to onboarding", async () => {
+    const response = handleApiError(new OnboardingActivationRequiredError(), "request-activation")
+    expect(response.status).toBe(403)
+    expect(await response.json()).toMatchObject({ code: "KF-ACCOUNT-ACTIVATION", redirectTo: "/onboarding", requestId: "request-activation", retryable: false })
   })
 
   it("returns 404 for NotFoundError", () => {

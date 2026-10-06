@@ -198,13 +198,13 @@ export function JoinCardLayout({
                 {sending ? (
                   <Loader2 className="h-5 w-5 animate-spin mr-2" />
                 ) : (
-                  "Enviar enlace mágico"
+                  "Continuar al registro"
                 )}
               </Button>
             </form>
 
             <p className="text-xs text-muted-foreground text-center mt-4">
-              Te enviaremos un enlace por correo para confirmar tu identidad.
+              Crea una cuenta con correo y contraseña para guardar tu tarjeta.
             </p>
           </div>
         </div>

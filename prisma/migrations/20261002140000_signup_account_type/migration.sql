@@ -1,0 +1,5 @@
+CREATE TYPE "SignupAccountType" AS ENUM ('BUSINESS', 'CUSTOMER');
+
+ALTER TABLE "SignupIntent"
+  ALTER COLUMN "name" DROP NOT NULL,
+  ADD COLUMN "accountType" "SignupAccountType" NOT NULL DEFAULT 'BUSINESS';

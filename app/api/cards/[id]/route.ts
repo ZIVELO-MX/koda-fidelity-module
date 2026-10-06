@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { cuerpoJson, getBusinessFromSession, handleApiError, NotFoundError, requestIdFrom, requireRole, requireWritableBusinessPrincipal, ValidationError, withRequestId } from "@/lib/api-utils"
+import { cuerpoJson, getBusinessFromSession, handleApiError, NotFoundError, requestIdFrom, requireActivatedBusiness, requireRole, requireWritableBusinessPrincipal, ValidationError, withRequestId } from "@/lib/api-utils"
 import { isExpired } from "@/lib/card-utils"
 import { syncExpiredEntitlements } from "@/lib/account-lifecycle"
 import { resolveTheme } from "@/lib/card-themes"
@@ -253,6 +253,7 @@ export async function PUT(
   const requestId = requestIdFrom(request)
   try {
     const { business, user } = await requireWritableBusinessPrincipal()
+    await requireActivatedBusiness(business.id)
     requireRole(user, "admin")
     const { id } = await params
 
@@ -282,9 +283,10 @@ export async function PUT(
 
     const stampsRequired = body.stampsRequired !== undefined ? Number(body.stampsRequired) : existing.stampsRequired
     const entitlements = await syncExpiredEntitlements(prisma, business.id)
-    const theme = body.themeId !== undefined
-      ? await resolveTheme(prisma, typeof body.themeId === "string" ? body.themeId : undefined, entitlements.plan as "LITE" | "PRO")
-      : { selectedThemeId: existing.selectedThemeId, effectiveThemeId: existing.effectiveThemeId }
+    const themeId = body.themeId !== undefined
+      ? (typeof body.themeId === "string" ? body.themeId : undefined)
+      : existing.selectedThemeId ?? undefined
+    const theme = await resolveTheme(prisma, themeId, entitlements.plan as "LITE" | "PRO")
 
     const card = await prisma.$transaction(async tx => {
       if (body.milestoneRewards !== undefined) {

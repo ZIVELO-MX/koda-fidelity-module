@@ -41,7 +41,7 @@ export type Tema = { id: string; code: string; plan: "LITE" | "PRO" }
  */
 export type ModoDelAlta = "live" | "mock"
 
-export type BorradorDeNegocio = { name?: string; categoryId?: string }
+export type BorradorDeNegocio = { ownerName?: string; name?: string; categoryId?: string }
 export type BorradorDeTarjeta = {
   name?: string
   reward?: string
@@ -110,7 +110,7 @@ function normalizar(cuerpo: unknown): EstadoDelAlta {
     step: (texto(progreso.step) as OnboardingStep) ?? "INTRO",
     status: (texto(progreso.status) as OnboardingStatus) ?? "IN_PROGRESS",
     draftVersion: progreso.draftVersion,
-    negocio: { name: texto(negocio.name), categoryId: texto(negocio.categoryId) },
+    negocio: { ownerName: texto(negocio.ownerName), name: texto(negocio.name), categoryId: texto(negocio.categoryId) },
     tarjeta: {
       name: texto(tarjeta.name),
       reward: texto(tarjeta.reward),

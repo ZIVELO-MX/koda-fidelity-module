@@ -19,6 +19,7 @@ import { sorpresasQueViajan, validarBorrador } from "@/lib/tarjeta-borrador"
 import { cn } from "@/lib/utils"
 import { nombreDeTema } from "@/lib/temas-de-tarjeta"
 import { AvisoDeColorDeTexto } from "@/components/aviso-de-color-de-texto"
+import { TemaProRequiereProAlert } from "@/components/dashboard/tema-pro-requiere-pro-alert"
 
 type TemaDisponible = { id: string; code: string; plan: "LITE" | "PRO" }
 
@@ -86,6 +87,7 @@ export function EditCardForm({
   )
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
+  const [proThemeBlocked, setProThemeBlocked] = useState(false)
 
   useEffect(() => {
     fetch("/api/card-themes")
@@ -115,6 +117,11 @@ export function EditCardForm({
   }
 
   async function handleSave() {
+    const chosenTheme = themes.find((theme) => theme.id === themeId)
+    if (chosenTheme?.plan === "PRO" && accountPlan !== "PRO") {
+      setProThemeBlocked(true)
+      return
+    }
     // La misma validación que la creación, para que las dos pantallas exijan lo
     // mismo y expliquen igual.
     const { errores, primerCampo } = validarBorrador({
@@ -154,6 +161,14 @@ export function EditCardForm({
 
     if (!response.ok) {
       const body = await response.json().catch(() => null)
+      if (body?.code === "KF-ACCOUNT-ACTIVATION") {
+        router.push(body.redirectTo || "/onboarding")
+        return
+      }
+      if (body?.code === "KF-PLAN-PRO-THEME") {
+        setProThemeBlocked(true)
+        return
+      }
       toast.error(body?.error || "No fue posible guardar los cambios")
       return
     }
@@ -349,7 +364,7 @@ export function EditCardForm({
                   <select
                     id="edit-theme"
                     value={themeId}
-                    onChange={(e) => setThemeId(e.target.value)}
+                    onChange={(e) => { setThemeId(e.target.value); setProThemeBlocked(false) }}
                     className="min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50"
                   >
                     <option value="">Color de marca</option>
@@ -359,9 +374,7 @@ export function EditCardForm({
                       </option>
                     ))}
                   </select>
-                  {temaElegido?.plan === "PRO" && accountPlan !== "PRO" && (
-                    <p className="text-xs text-muted-foreground">El tema queda guardado y se activa al pasar a Pro.</p>
-                  )}
+                  {proThemeBlocked && <TemaProRequiereProAlert />}
                 </div>
                 <div className="space-y-2">
                   <Label>Color del texto</Label>

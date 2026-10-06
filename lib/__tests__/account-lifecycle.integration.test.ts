@@ -38,6 +38,17 @@ integration("account lifecycle PostgreSQL integration", () => {
     expect(writes.find((result) => result.status === "rejected")?.reason).toBeInstanceOf(ConflictError)
   })
 
+  it("links a previously unclaimed card profile to its newly verified customer account", async () => {
+    const email = `signup-customer-${randomUUID()}@test.invalid`
+    const profile = await prisma.customerProfile.create({ data: { emailNormalized: email, name: "QR customer" } })
+    profileId = profile.id
+    const authUserId = randomUUID()
+
+    const linked = await createCustomerProfile(prisma, { authUserId, email: email.toUpperCase(), name: "Verified customer" })
+
+    expect(linked).toMatchObject({ id: profile.id, authUserId, emailNormalized: email, name: "Verified customer" })
+  })
+
   it("stores, expires and audits the included Pro month exactly once", async () => {
     const card = await prisma.loyaltyCard.createManyAndReturn({ data: [
       { businessId, name: "One", reward: "R1", isActive: false, isLite: true },
@@ -55,6 +66,9 @@ integration("account lifecycle PostgreSQL integration", () => {
     const expired = await prisma.subscription.findUniqueOrThrow({ where: { id: trial.id } })
     expect(expired.proAccessGranted).toBe(false)
     expect(await prisma.billingAuditEvent.count({ where: { idempotencyKey: `trial-expired:${trial.id}` } })).toBe(1)
+    await expect(prisma.billingAuditEvent.findUniqueOrThrow({ where: { idempotencyKey: `trial-expired:${trial.id}` } })).resolves.toMatchObject({
+      metadata: expect.objectContaining({ previousPlan: "PRO", effectivePlan: "LITE" }),
+    })
     expect(await prisma.loyaltyCard.count({ where: { businessId, status: "ACTIVE" } })).toBe(1)
     expect(await prisma.loyaltyCard.count({ where: { businessId, status: "LOCKED_BY_PLAN" } })).toBe(1)
 
@@ -71,22 +85,50 @@ integration("account lifecycle PostgreSQL integration", () => {
     const liteTheme = await prisma.loyaltyTheme.findFirstOrThrow({ where: { plan: "LITE", isActive: true }, orderBy: { code: "asc" } })
     const proTheme = await prisma.loyaltyTheme.findFirstOrThrow({ where: { plan: "PRO", isActive: true }, orderBy: { code: "asc" } })
     const cards = await prisma.loyaltyCard.createManyAndReturn({ data: [
+      { businessId, name: "Existing Lite card", reward: "R0", selectedThemeId: liteTheme.id, effectiveThemeId: liteTheme.id, isLite: true },
       { businessId, name: "Themed one", reward: "R1", selectedThemeId: proTheme.id, effectiveThemeId: proTheme.id },
       { businessId, name: "Themed two", reward: "R2", selectedThemeId: liteTheme.id, effectiveThemeId: liteTheme.id },
     ] })
 
-    await activateManualSubscription(prisma, { businessId, plan: "PRO", idempotencyKey: randomUUID() })
+    const firstProKey = randomUUID()
+    await activateManualSubscription(prisma, { businessId, plan: "PRO", idempotencyKey: firstProKey })
     expect((await prisma.loyaltyCard.findUniqueOrThrow({ where: { id: cards[0].id } })).effectiveThemeId).toBe(proTheme.id)
 
-    const lite = await activateManualSubscription(prisma, { businessId, plan: "LITE", proAccessGranted: false, idempotencyKey: randomUUID() })
+    const liteKey = randomUUID()
+    const lite = await activateManualSubscription(prisma, { businessId, plan: "LITE", proAccessGranted: false, idempotencyKey: liteKey })
+    await expect(prisma.billingAuditEvent.findUniqueOrThrow({ where: { idempotencyKey: liteKey } })).resolves.toMatchObject({
+      metadata: expect.objectContaining({ previousPlan: "PRO", effectivePlan: "LITE" }),
+    })
     const refreshed = await prisma.loyaltyCard.findMany({ where: { businessId }, orderBy: { createdAt: "asc" } })
     expect(lite.liteCardId).toBeTruthy()
     expect(refreshed.filter((card) => card.status === "ACTIVE")).toHaveLength(1)
     const downgraded = refreshed.find((card) => card.selectedThemeId === proTheme.id)
+    expect(downgraded).toMatchObject({ status: "ACTIVE", isActive: true, isLite: true })
     expect(downgraded?.selectedThemeId).toBe(proTheme.id)
     expect(downgraded?.effectiveThemeId).toBeNull()
     expect(downgraded?.brandColor).toBe("#ff6b35")
-    expect(refreshed.filter((card) => card.status === "LOCKED_BY_PLAN")).toHaveLength(1)
+    expect(refreshed.filter((card) => card.status === "LOCKED_BY_PLAN")).toHaveLength(2)
+
+    const restoredProKey = randomUUID()
+    await activateManualSubscription(prisma, { businessId, plan: "PRO", idempotencyKey: restoredProKey })
+    await expect(prisma.billingAuditEvent.findUniqueOrThrow({ where: { idempotencyKey: restoredProKey } })).resolves.toMatchObject({
+      metadata: expect.objectContaining({ previousPlan: "LITE", effectivePlan: "PRO" }),
+    })
+    const upgraded = await prisma.loyaltyCard.findMany({ where: { businessId }, orderBy: { createdAt: "asc" } })
+    const restored = upgraded.find((card) => card.id === cards[1].id)
+    expect(restored).toMatchObject({ selectedThemeId: proTheme.id, effectiveThemeId: proTheme.id, status: "ACTIVE", isActive: true, isLite: false })
+    expect(upgraded.every((card) => card.status === "ACTIVE" && card.isActive)).toBe(true)
+  })
+
+  it("keeps the onboarding card unpublished until support activates the plan", async () => {
+    const proTheme = await prisma.loyaltyTheme.findFirstOrThrow({ where: { plan: "PRO", isActive: true }, orderBy: { code: "asc" } })
+    const draft = await prisma.loyaltyCard.create({ data: { businessId, name: "Onboarding", reward: "R1", selectedThemeId: proTheme.id, effectiveThemeId: proTheme.id, isActive: false, isLite: true, status: "DRAFT" } })
+    expect(draft).toMatchObject({ status: "DRAFT", isActive: false, selectedThemeId: proTheme.id, effectiveThemeId: proTheme.id })
+
+    await activateManualSubscription(prisma, { businessId, plan: "PRO", idempotencyKey: randomUUID() })
+
+    await expect(prisma.loyaltyCard.findUniqueOrThrow({ where: { id: draft.id } })).resolves.toMatchObject({ status: "ACTIVE", isActive: true, selectedThemeId: proTheme.id, effectiveThemeId: proTheme.id })
+    await expect(prisma.onboardingProgress.findFirstOrThrow({ where: { businessId } })).resolves.toMatchObject({ status: "ACTIVE", step: "PAYWALL" })
   })
 
   it("seeds the real Lite and Pro theme catalog", async () => {

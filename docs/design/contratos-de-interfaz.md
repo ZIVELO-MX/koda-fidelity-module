@@ -66,8 +66,11 @@ flujo allí.
 Orden del alta: `INTRO` (tres láminas), `BUSINESS`, `CARD`, `CARD_READY`, `ACQUISITION`,
 `PAYWALL`. `CARD_READY` muestra la tarjeta configurada, todavía como borrador, con un QR de vista
 previa que no apunta a un enlace público, y debe sobrevivir una recarga o el regreso desde otro
-dispositivo. La acción de avance es `complete_card_ready`; al completarla, el servidor persiste el
-siguiente paso. No usar `localStorage` como persistencia del producto.
+dispositivo. Si se eligió un tema Pro con plan Lite, la vista previa muestra ese acabado y explica
+que solo se aplica al contratar Pro; con Lite, la tarjeta se publica con el color del negocio. Esta
+vista es compartida por la primera lámina de tarjeta del paywall. La acción de avance es
+`complete_card_ready`; al completarla, el servidor persiste el siguiente paso. No usar `localStorage`
+como persistencia del producto.
 
 En `BUSINESS` y `CARD`, continuar con datos requeridos faltantes muestra un toast, resalta el campo o
 grupo que falta y mueve el foco al primero inválido. Los errores de validación del servidor también
@@ -90,7 +93,8 @@ elegir el tema, el icono de la tarjeta y el icono del sello; si un `PUT` omite `
 - `LOCKED_BY_PLAN` conserva los datos y el progreso. Quien escanee un código ya compartido de una
   tarjeta bloqueada ve que está temporalmente desactivada, y se le confirma que su progreso sigue
   guardado.
-- La tarjeta nace `DRAFT` aunque se haya elegido un tema Pro durante el alta.
+- La tarjeta nace `DRAFT` aunque se haya elegido un tema Pro durante el alta. Mostrar ese tema en la
+  vista previa no cambia el tema efectivo ni las reglas del plan al guardar o publicar.
 
 ## 5. Facturación
 

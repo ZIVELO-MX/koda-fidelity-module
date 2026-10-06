@@ -42,7 +42,7 @@ test.describe("Alta guiada, recorrido completo", () => {
     const contexto = await browser.newContext()
     try {
       const pagina = await contexto.newPage()
-      await entrar(pagina, CORREO!, CLAVE!)
+      await entrar(pagina, CORREO!, CLAVE!, "/onboarding")
       cookies = await contexto.cookies()
     } finally { await contexto.close() }
   })
@@ -72,6 +72,7 @@ test.describe("Alta guiada, recorrido completo", () => {
     await expect(page.getByText(/Completa nombre y categoría del negocio/i)).toBeVisible()
     await expect(page.getByLabel("Nombre del negocio")).toHaveAttribute("aria-invalid", "true")
 
+    await page.getByLabel("Tu nombre").fill("Responsable E2E")
     const nombre = `Café Aurora ${Date.now()}`
     await page.getByLabel("Nombre del negocio").fill(nombre)
     // Las categorías las sirve el backend: se toma la primera que pinte.
@@ -103,7 +104,10 @@ test.describe("Alta guiada, recorrido completo", () => {
     // Muro de pago.
     await expect(page.getByRole("heading", { name: "Ahora sí, los planes." })).toBeVisible({ timeout: 30000 })
     await expect(page.getByRole("radio", { name: /al año/i })).toBeChecked()
-    await expect(page.getByRole("link", { name: "Salir sin publicar" })).toBeVisible()
+    await page.getByRole("button", { name: "Saltar sin publicar" }).click()
+    await expect(page.getByRole("heading", { name: "Tu plan todavía no está activo" })).toBeVisible()
+    await expect(page.getByText(/no hay un botón para continuar hasta que el plan esté activo/i)).toBeVisible()
+    await expect(page.getByRole("button", { name: "Continuar" })).toHaveCount(0)
   })
 
   test("la primera tarjeta se crea una sola vez, aunque se vuelva a pasar", async ({ page }) => {
@@ -112,6 +116,7 @@ test.describe("Alta guiada, recorrido completo", () => {
     const totalAntes = await contarTarjetas()
 
     await page.getByRole("button", { name: "Saltar introducción" }).click()
+    await page.getByLabel("Tu nombre").fill("Responsable E2E")
     await page.getByLabel("Nombre del negocio").fill("Café Aurora")
     await page.locator("fieldset button").first().click()
     await page.getByRole("button", { name: "Continuar" }).click()
@@ -180,6 +185,7 @@ test.describe("Alta guiada, recorrido completo", () => {
 
   test("al volver se dice qué se recuperó, nombrando los campos", async ({ page }) => {
     await page.getByRole("button", { name: "Saltar introducción" }).click()
+    await page.getByLabel("Tu nombre").fill("Responsable E2E")
     const nombre = `Café Aurora ${Date.now()}`
     await page.getByLabel("Nombre del negocio").fill(nombre)
     await expect(page.getByText("Guardado", { exact: true })).toBeVisible({ timeout: 30000 })
@@ -213,6 +219,7 @@ test.describe("Alta guiada, recorrido completo", () => {
    */
   test("saltar la atribución no deja ninguna respuesta puesta", async ({ page }) => {
     await page.getByRole("button", { name: "Saltar introducción" }).click()
+    await page.getByLabel("Tu nombre").fill("Responsable E2E")
     await page.getByLabel("Nombre del negocio").fill(`Café Aurora ${Date.now()}`)
     await page.locator("fieldset button").first().click()
     await page.getByRole("button", { name: "Continuar" }).click()
@@ -253,6 +260,7 @@ test.describe("Alta guiada, recorrido completo", () => {
     await page.getByRole("button", { name: "Saltar introducción" }).click()
     await expect(page.getByRole("heading", { name: "Tu negocio" })).toBeVisible()
 
+    await page.getByLabel("Tu nombre").fill("Responsable E2E")
     const nombre = `Café Aurora ${Date.now()}`
     await page.getByLabel("Nombre del negocio").fill(nombre)
     // Sin esperar el "Guardado": se elige la categoría con el guardado en curso.

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { cuerpoJson, getBusinessFromSession, handleApiError, requestIdFrom, requireRole, requireWritableBusinessPrincipal, ValidationError, withRequestId } from "@/lib/api-utils"
+import { cuerpoJson, getBusinessFromSession, handleApiError, requestIdFrom, requireActivatedBusiness, requireRole, requireWritableBusinessPrincipal, ValidationError, withRequestId } from "@/lib/api-utils"
 import { syncExpiredEntitlements } from "@/lib/account-lifecycle"
 import { resolveTheme } from "@/lib/card-themes"
 import type { CardSummary } from "@/lib/fidelity-contracts"
@@ -157,6 +157,7 @@ export async function POST(request: NextRequest) {
   const requestId = requestIdFrom(request)
   try {
     const { business, user } = await requireWritableBusinessPrincipal()
+    await requireActivatedBusiness(business.id)
     requireRole(user, "admin")
 
     const body = await cuerpoJson(request)

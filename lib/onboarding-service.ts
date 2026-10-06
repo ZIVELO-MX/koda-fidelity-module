@@ -1,7 +1,6 @@
 import { Prisma, PrismaClient } from "@prisma/client"
 import { ConflictError, NotFoundError, ValidationError } from "@/lib/api-utils"
 import { resolveTheme } from "@/lib/card-themes"
-import { getEntitlements } from "@/lib/account-lifecycle"
 
 type Db = PrismaClient
 const categories = ["Café", "Restaurante", "Retail", "Belleza", "Salud y bienestar", "Servicios profesionales", "Entretenimiento", "Otro"]
@@ -20,6 +19,19 @@ export async function getOnboarding(db: Db, authUserId: string) {
     await db.onboardingProgress.create({ data: { userId: user.id, businessId: user.businessId ?? undefined } })
     return getOnboarding(db, authUserId)
   }
+  if (user.businessId && user.onboardingProgress.status !== "AWAITING_PAYMENT") {
+    const [activeSubscription, waitingMember] = await Promise.all([
+      db.subscription.findFirst({ where: { businessId: user.businessId, status: "ACTIVE" }, select: { id: true } }),
+      db.onboardingProgress.findFirst({ where: { businessId: user.businessId, status: "AWAITING_PAYMENT" }, select: { id: true } }),
+    ])
+    if (!activeSubscription && waitingMember) {
+      await db.onboardingProgress.update({
+        where: { id: user.onboardingProgress.id },
+        data: { businessId: user.businessId, step: "PAYWALL", status: "AWAITING_PAYMENT" },
+      })
+      return getOnboarding(db, authUserId)
+    }
+  }
   return user
 }
 
@@ -28,6 +40,7 @@ type DraftInput = { draftVersion: number; business?: Record<string, unknown>; ca
 export async function saveDraft(db: Db, authUserId: string, input: DraftInput) {
   const user = await getOnboarding(db, authUserId)
   const progress = user.onboardingProgress!
+  if (progress.status !== "IN_PROGRESS") throw new ConflictError("Tu cuenta está esperando la activación del plan y no admite cambios de onboarding")
   if (progress.draftVersion !== input.draftVersion) throw new ConflictError("El borrador cambió; recarga el onboarding")
   const business = progress.businessDraft && typeof progress.businessDraft === "object" ? progress.businessDraft as Record<string, unknown> : {}
   const card = progress.cardDraft && typeof progress.cardDraft === "object" ? progress.cardDraft as Record<string, unknown> : {}
@@ -39,15 +52,20 @@ export async function saveDraft(db: Db, authUserId: string, input: DraftInput) {
 export async function advanceOnboarding(db: Db, authUserId: string, action: string, draftVersion: number, billingInterval?: "MONTHLY" | "ANNUAL") {
   const user = await getOnboarding(db, authUserId)
   const progress = user.onboardingProgress!
+  if (progress.status === "ACTIVE") throw new ConflictError("Tu plan ya está activo; continúa desde el panel")
+  if (progress.status === "AWAITING_PAYMENT" && action !== "open_paywall") {
+    throw new ConflictError("Tu plan todavía no está activo. Espera a que soporte active tu cuenta")
+  }
   if (progress.draftVersion !== draftVersion) throw new ConflictError("El borrador cambió; recarga el onboarding")
   const businessDraft = (progress.businessDraft ?? {}) as Record<string, unknown>
   const cardDraft = (progress.cardDraft ?? {}) as Record<string, unknown>
-  if (action === "complete_business" && (!businessDraft.name || !businessDraft.categoryId)) throw new ValidationError("Completa nombre y categoría del negocio")
+  if (action === "complete_business" && (!businessDraft.ownerName || !businessDraft.name || !businessDraft.categoryId)) throw new ValidationError("Completa tu nombre, el nombre y la categoría del negocio")
   if (action === "complete_card" && (!cardDraft.reward || !cardDraft.stampsRequired)) throw new ValidationError("Completa recompensa y sellos de la tarjeta")
   if (action === "complete_card_ready" && (progress.step !== "CARD_READY" || !progress.firstCardId)) {
     throw new ValidationError("Primero revisa la tarjeta del negocio")
   }
   if (action === "select_billing_interval" && !billingInterval) throw new ValidationError("Selecciona una modalidad de cobro")
+  if (action === "open_paywall" && progress.step !== "PAYWALL") throw new ValidationError("Primero llega al paso de selección del plan")
   const next: Prisma.OnboardingProgressUncheckedUpdateInput = {}
   if (action === "complete_intro" || action === "skip_intro") next.step = "BUSINESS"
   if (action === "complete_business") next.step = "CARD"
@@ -58,6 +76,14 @@ export async function advanceOnboarding(db: Db, authUserId: string, action: stri
   if (action === "skip_intro") next.introSkippedAt = new Date()
   if (action === "skip_acquisition") next.acquisitionSkippedAt = new Date()
   if (billingInterval) next.selectedBillingInterval = billingInterval
+  if (action === "complete_business") {
+    await db.$transaction(async (tx) => {
+      const claimed = await tx.onboardingProgress.updateMany({ where: { id: progress.id, draftVersion }, data: { ...next, draftVersion: { increment: 1 } } })
+      if (claimed.count !== 1) throw new ConflictError("El borrador cambió; recarga el onboarding")
+      await tx.user.update({ where: { id: user.id }, data: { name: String(businessDraft.ownerName).trim() } })
+    })
+    return getOnboarding(db, authUserId)
+  }
   if (action === "complete_card") {
     const category = await db.businessCategory.findUnique({ where: { id: String(businessDraft.categoryId) } })
     if (!category || !category.isActive) throw new ValidationError("Categoría inválida")
@@ -79,8 +105,9 @@ export async function advanceOnboarding(db: Db, authUserId: string, action: stri
         ? await tx.business.update({ where: { id: user.businessId }, data: { name, categoryId: category.id } })
         : await tx.business.create({ data: { name, categoryId: category.id, email: user.email } })
       if (!user.businessId) await tx.user.update({ where: { id: user.id }, data: { businessId: business.id } })
-      const entitlements = await getEntitlements(tx, business.id)
-      const theme = await resolveTheme(tx, typeof cardDraft.themeId === "string" ? cardDraft.themeId : undefined, entitlements.plan)
+      // Onboarding grants temporary Pro access for configuration. The card
+      // remains a draft until support activates the account.
+      const theme = await resolveTheme(tx, typeof cardDraft.themeId === "string" ? cardDraft.themeId : undefined, "PRO")
       const card = await tx.loyaltyCard.create({ data: { businessId: business.id, name: typeof cardDraft.name === "string" && cardDraft.name.trim() ? cardDraft.name.trim() : `Club ${name}`, reward: String(cardDraft.reward), stampsRequired, brandColor: typeof cardDraft.brandColor === "string" ? cardDraft.brandColor : business.brandColor, textColor: cardDraft.textColor === "DARK" || cardDraft.textColor === "LIGHT" || cardDraft.textColor === "AUTO" ? cardDraft.textColor : "LIGHT", iconName: cardDraft.iconName === null ? null : typeof cardDraft.iconName === "string" ? cardDraft.iconName : business.iconName, stampIconName: cardDraft.stampIconName === null ? null : typeof cardDraft.stampIconName === "string" ? cardDraft.stampIconName : business.stampIconName, isActive: false, isLite: true, status: "DRAFT", selectedThemeId: theme.selectedThemeId, effectiveThemeId: theme.effectiveThemeId } })
       await tx.onboardingProgress.update({ where: { id: progress.id }, data: { ...next, businessId: business.id, firstCardId: card.id } })
     })

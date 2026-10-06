@@ -18,6 +18,7 @@ import { sorpresasQueViajan, validarBorrador, type Sorpresa } from "@/lib/tarjet
 import { ExpirationPicker } from "@/components/dashboard/expiration-picker"
 import { nombreDeTema } from "@/lib/temas-de-tarjeta"
 import { AvisoDeColorDeTexto } from "@/components/aviso-de-color-de-texto"
+import { TemaProRequiereProAlert } from "@/components/dashboard/tema-pro-requiere-pro-alert"
 
 type TemaDisponible = { id: string; code: string; plan: "LITE" | "PRO" }
 
@@ -61,6 +62,7 @@ export default function CreateCardPage() {
   const [previewMode, setPreviewMode] = useState<"normal" | "sellada">("normal")
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
+  const [proThemeBlocked, setProThemeBlocked] = useState(false)
 
   useEffect(() => {
     fetch("/api/business")
@@ -99,6 +101,11 @@ export default function CreateCardPage() {
   }
 
   const handleCreate = async () => {
+    const chosenTheme = themes.find((theme) => theme.id === themeId)
+    if (chosenTheme?.plan === "PRO" && accountPlan !== "PRO") {
+      setProThemeBlocked(true)
+      return
+    }
     const borrador = {
       nombre: cardName,
       recompensa: reward,
@@ -136,6 +143,14 @@ export default function CreateCardPage() {
       const data = await res.json().catch(() => null)
 
       if (!res.ok) {
+        if (data?.code === "KF-ACCOUNT-ACTIVATION") {
+          router.push(data.redirectTo || "/onboarding")
+          return
+        }
+        if (data?.code === "KF-PLAN-PRO-THEME") {
+          setProThemeBlocked(true)
+          return
+        }
         // El servidor ya explicó qué pasó. Sustituirlo por un texto genérico
         // dejaba a quien publica sin saber qué corregir.
         throw new Error(data?.error || "No fue posible crear la tarjeta")
@@ -342,7 +357,7 @@ export default function CreateCardPage() {
                 <select
                   id="themeId"
                   value={themeId}
-                  onChange={(e) => setThemeId(e.target.value)}
+                  onChange={(e) => { setThemeId(e.target.value); setProThemeBlocked(false) }}
                   className="min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50"
                 >
                   <option value="">Color de marca</option>
@@ -352,9 +367,7 @@ export default function CreateCardPage() {
                     </option>
                   ))}
                 </select>
-                {temaElegido?.plan === "PRO" && accountPlan !== "PRO" && (
-                  <p className="text-xs text-muted-foreground">El tema queda guardado y se activa al pasar a Pro.</p>
-                )}
+                {proThemeBlocked && <TemaProRequiereProAlert />}
               </div>
 
               <div className="space-y-2">

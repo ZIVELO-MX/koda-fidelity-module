@@ -1,9 +1,11 @@
 "use client"
 
 import { useSyncExternalStore, useEffect, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { DashboardSidebar } from "./sidebar"
 import { DashboardHeader } from "./header"
 import type { Role } from "@prisma/client"
+import type { AccountPlan } from "@/lib/plan-change-notice"
 
 const SIDEBAR_STATE_KEY = "dashboard-sidebar-state"
 
@@ -26,6 +28,8 @@ interface DashboardLayoutClientProps {
   brandColor: string
   nickname?: string
   role: Role
+  accountPlan: AccountPlan | null
+  planChangeNotice: { eventId: string; from: AccountPlan; to: AccountPlan } | null
   closureScheduledFor?: string
 }
 
@@ -36,13 +40,30 @@ export function DashboardLayoutClient({
   brandColor,
   nickname,
   role,
+  accountPlan,
+  planChangeNotice,
   closureScheduledFor,
 }: DashboardLayoutClientProps) {
+  const router = useRouter()
   const sidebarCollapsed = useSyncExternalStore(subscribeSidebar, readSidebar, serverSidebar)
 
   useEffect(() => {
     document.documentElement.classList.toggle("sidebar-collapsed", sidebarCollapsed)
   }, [sidebarCollapsed])
+
+  useEffect(() => {
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") router.refresh()
+    }
+    window.addEventListener("focus", refreshWhenVisible)
+    document.addEventListener("visibilitychange", refreshWhenVisible)
+    const interval = window.setInterval(refreshWhenVisible, 30_000)
+    return () => {
+      window.removeEventListener("focus", refreshWhenVisible)
+      document.removeEventListener("visibilitychange", refreshWhenVisible)
+      window.clearInterval(interval)
+    }
+  }, [router])
 
   const toggleCollapse = useCallback(() => {
     window.localStorage.setItem(SIDEBAR_STATE_KEY, JSON.stringify(!readSidebar()))
@@ -57,6 +78,8 @@ export function DashboardLayoutClient({
         brandColor={brandColor}
         nickname={nickname}
         role={role}
+        accountPlan={accountPlan}
+        planChangeNotice={planChangeNotice}
         collapsed={sidebarCollapsed}
         onToggleCollapse={toggleCollapse}
       />
