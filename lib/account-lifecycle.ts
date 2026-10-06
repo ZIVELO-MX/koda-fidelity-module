@@ -63,7 +63,7 @@ export async function activateManualSubscription(db: PrismaClient, input: Manual
     await tx.onboardingProgress.updateMany({ where: { businessId: input.businessId }, data: { status: "ACTIVE", step: "PAYWALL" } })
     await tx.billingAuditEvent.create({ data: { businessId: input.businessId, action, operator: input.operator ?? "internal", idempotencyKey, externalReference: input.externalReference, metadata: { plan, billingInterval, amountMinor: input.amountMinor ?? 0, proTrialEndsAt: proTrialEndsAt?.toISOString() ?? null, summary: input.summary?.trim() || null } } })
     return updatedSubscription
-  })
+  }, { timeout: 30_000 })
 }
 
 export async function deactivateManualSubscription(db: PrismaClient, input: {
