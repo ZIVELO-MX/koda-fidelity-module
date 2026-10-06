@@ -10,7 +10,7 @@ test.describe("Auth Error Handling", () => {
   test("auth/error page shows rate limit error for rate_limit code", async ({ page }) => {
     await page.goto("/auth/error?error_code=rate_limit")
     await expect(page.getByText("Demasiados Intentos")).toBeVisible()
-    await expect(page.getByText("demasiados enlaces")).toBeVisible()
+    await expect(page.getByText("límite de correos")).toBeVisible()
   })
 
   test("auth/error page shows generic error for unknown error_code", async ({ page }) => {
@@ -35,16 +35,11 @@ test.describe("Auth Error Handling", () => {
     await expect(page.getByText("Custom error detail")).toBeVisible()
   })
 
-  test("auth/error page has resend form", async ({ page }) => {
+  test("auth/error page offers password login instead of a magic link", async ({ page }) => {
     await page.goto("/auth/error?error_code=otp_expired")
-    await expect(page.getByLabel("Tu correo electrónico")).toBeVisible()
-    await expect(page.getByRole("button", { name: "Reenviar enlace mágico" })).toBeVisible()
-  })
-
-  test("auth/error page validates resend email", async ({ page }) => {
-    await page.goto("/auth/error?error_code=otp_expired")
-    await page.getByRole("button", { name: "Reenviar enlace mágico" }).click()
-    await expect(page.getByText("Ingresa un correo electrónico válido")).toBeVisible()
+    await expect(page.getByRole("link", { name: "Iniciar sesión" })).toBeVisible()
+    await expect(page.getByRole("link", { name: "Crear cuenta" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "Reenviar enlace mágico" })).toHaveCount(0)
   })
 
   test("auth/confirm redirects to error when missing params", async ({ page }) => {

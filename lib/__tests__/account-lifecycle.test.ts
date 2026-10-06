@@ -1,11 +1,22 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import type { Subscription } from "@prisma/client"
 import { AccountReadOnlyError } from "@/lib/api-utils"
-import { addCalendarMonths, assertBusinessWritable, cancelClosure, normalizeProfileEmail, periodForInterval, resolveEffectiveEntitlements } from "../account-lifecycle"
+import { addCalendarMonths, assertBusinessWritable, cancelClosure, createCustomerProfile, normalizeProfileEmail, periodForInterval, resolveEffectiveEntitlements } from "../account-lifecycle"
 
 describe("account lifecycle", () => {
   it("normalizes profile email keys", () => {
     expect(normalizeProfileEmail("  BEN@Example.COM ")).toBe("ben@example.com")
+  })
+
+  it("claims a card profile that has no auth identity yet", async () => {
+    const profile = { id: "profile-1", authUserId: null, emailNormalized: "customer@example.com", name: "QR customer", avatarPath: null }
+    const update = vi.fn().mockResolvedValue({ ...profile, authUserId: "auth-1", name: "Customer" })
+    const db = { customerProfile: { findUnique: vi.fn().mockResolvedValueOnce(null).mockResolvedValueOnce(profile), update, create: vi.fn() } } as never
+
+    const linked = await createCustomerProfile(db, { authUserId: "auth-1", email: "CUSTOMER@example.com", name: "Customer" })
+
+    expect(update).toHaveBeenCalledWith({ where: { id: "profile-1" }, data: { authUserId: "auth-1", name: "Customer", avatarPath: null } })
+    expect(linked.authUserId).toBe("auth-1")
   })
 
   it("uses calendar periods and clamps month ends", () => {

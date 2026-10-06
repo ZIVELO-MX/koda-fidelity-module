@@ -3,11 +3,17 @@ import { test, expect } from "@playwright/test"
 test.describe("Auth UI", () => {
   test("signup page shows registration form (INVITE_ONLY=false)", async ({ page }) => {
     await page.goto("/signup")
-    await expect(page.getByText("Crear Cuenta").first()).toBeVisible()
-    await expect(page.getByLabel("Nombre del negocio")).toBeVisible()
+    await expect(page.getByText("Crear cuenta").first()).toBeVisible()
     await expect(page.getByLabel("Correo electrónico")).toBeVisible()
-    await expect(page.getByLabel("Contraseña")).toBeVisible()
-    await expect(page.getByRole("button", { name: "Crear Cuenta" })).toBeVisible()
+    await expect(page.getByLabel("Contraseña", { exact: true })).toBeVisible()
+    await expect(page.getByLabel("Confirmar contraseña", { exact: true })).toBeVisible()
+    await expect(page.getByRole("button", { name: "Continuar", exact: true })).toBeVisible()
+    await page.getByLabel("Correo electrónico").fill("signup-ui@example.com")
+    await page.getByLabel("Contraseña", { exact: true }).fill("SecurePass123!")
+    await page.getByLabel("Confirmar contraseña", { exact: true }).fill("SecurePass123!")
+    await page.getByRole("button", { name: "Continuar", exact: true }).click()
+    await expect(page.getByRole("radio", { name: "Soy un negocio" })).toBeVisible()
+    await expect(page.getByRole("radio", { name: "Soy un cliente" })).toBeVisible()
   })
 
   // El acceso es de dos pasos. Cualquier correo válido llega al paso de
@@ -26,7 +32,7 @@ test.describe("Auth UI", () => {
     await page.getByRole("button", { name: "Continuar", exact: true }).click()
 
     await expect(page.locator("#password")).toBeVisible()
-    await expect(page.getByRole("button", { name: "Enviarme un enlace de acceso" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "Enviarme un enlace de acceso" })).toHaveCount(0)
   })
 
   // Con una cuenta real y la contraseña mal: así el error lo da el servidor, y

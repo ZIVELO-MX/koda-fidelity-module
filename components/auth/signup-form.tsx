@@ -2,12 +2,13 @@
 
 import { useState, useActionState } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { signup, type AuthResult } from "@/lib/actions/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Lock, Mail } from "lucide-react"
+import { Lock, Mail, Store, UserRound } from "lucide-react"
 import { PasswordRequirements } from "@/components/auth/password-requirements"
 import { cumpleLasReglas } from "@/lib/reglas-de-contrasena"
 import { cn } from "@/lib/utils"
@@ -16,9 +17,16 @@ const initialState: AuthResult = {}
 
 export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
   const [state, formAction, pending] = useActionState(signup, initialState)
+  const searchParams = useSearchParams()
   const [password, setPassword] = useState("")
+  const [confirm, setConfirm] = useState("")
+  const [email, setEmail] = useState(searchParams.get("email") ?? "")
+  const [step, setStep] = useState<1 | 2>(1)
+  const [accountType, setAccountType] = useState<"BUSINESS" | "CUSTOMER" | null>(searchParams.get("accountType") === "CUSTOMER" ? "CUSTOMER" : null)
 
   const allRequirementsMet = password.length > 0 && cumpleLasReglas(password)
+  const passwordsMatch = confirm.length > 0 && password === confirm
+  const passwordsDoNotMatch = confirm.length > 0 && password !== confirm
 
   if (isInviteOnly) {
     return (
@@ -92,7 +100,7 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
         <CardTitle asChild>
             <h1 className="text-2xl">Crear cuenta</h1>
           </CardTitle>
-        <CardDescription>Registra tu negocio en Koda Fidelity</CardDescription>
+        <CardDescription>{step === 1 ? "Crea tu cuenta para empezar" : "¿Cómo usarás Koda Fidelity?"}</CardDescription>
       </CardHeader>
       <CardContent>
         <form action={formAction} className="space-y-4">
@@ -105,23 +113,14 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
             </div>
           )}
 
-          <div className="space-y-2">
-            <Label htmlFor="name">Nombre del negocio</Label>
-            <Input
-              id="name"
-              name="name"
-              placeholder="Mi Cafetería"
-              required
-              autoComplete="organization"
-              className="[&:user-invalid]:border-destructive [&:user-valid]:border-primary transition-colors"
-            />
-          </div>
-
+          {step === 1 && <>
           <div className="space-y-2">
             <Label htmlFor="email">Correo electrónico</Label>
             <Input
               id="email"
               name="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
               type="email"
               placeholder="tu@correo.com"
               required
@@ -136,6 +135,7 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
               id="password"
               name="password"
               type="password"
+              placeholder="Tu contraseña"
               required
               autoComplete="new-password"
               value={password}
@@ -152,14 +152,49 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
               </div>
             </div>
           </div>
-
-          <Button
-            type="submit"
-            className="min-h-11 w-full active:scale-[0.97] transition-transform"
-            disabled={pending || (password.length > 0 && !allRequirementsMet)}
-          >
-            {pending ? "Creando cuenta..." : "Crear cuenta"}
+          <div className="space-y-2">
+            <Label htmlFor="confirm">Confirmar contraseña</Label>
+            <Input
+              id="confirm"
+              name="confirm"
+              type="password"
+              placeholder="Confirma tu contraseña"
+              required
+              autoComplete="new-password"
+              value={confirm}
+              onChange={(event) => setConfirm(event.target.value)}
+              aria-invalid={passwordsDoNotMatch || undefined}
+              className={cn(passwordsDoNotMatch && "border-destructive", passwordsMatch && "border-primary")}
+            />
+            {passwordsDoNotMatch && (
+              <p className="text-xs text-destructive">Las dos contraseñas no son iguales.</p>
+            )}
+          </div>
+          <Button type="button" className="min-h-11 w-full" disabled={!allRequirementsMet || !passwordsMatch} onClick={() => setStep(2)}>
+            Continuar
           </Button>
+          </>}
+          {step === 2 && <>
+            <input type="hidden" name="email" value={email} />
+            <input type="hidden" name="password" value={password} />
+            <input type="hidden" name="confirm" value={confirm} />
+            <input type="hidden" name="next" value={searchParams.get("next") ?? ""} />
+            {accountType === "CUSTOMER" && <div className="space-y-2"><Label htmlFor="name">Tu nombre</Label><Input id="name" name="name" autoComplete="name" defaultValue={searchParams.get("name") ?? ""} required maxLength={120} /></div>}
+            <fieldset className="space-y-3">
+              <legend className="text-sm font-medium">Elige una opción</legend>
+              {[{type:"BUSINESS" as const,title:"Soy un negocio",description:"Crea una tarjeta de sellos para tus clientes."},{type:"CUSTOMER" as const,title:"Soy un cliente",description:"Guarda y consulta tus tarjetas de lealtad."}].map((option) => (
+                <label key={option.type} className={cn("block w-full cursor-pointer rounded-xl border p-4 text-left transition-all focus-within:ring-2 focus-within:ring-ring hover:border-2 hover:border-primary", accountType === option.type ? "border-primary bg-primary/5" : "border-border")}>
+                  <input type="radio" name="accountType" value={option.type} required checked={accountType === option.type} onChange={() => setAccountType(option.type)} className="sr-only" />
+                  <span className="flex items-start gap-3">
+                    {option.type === "BUSINESS" ? <Store aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-primary" /> : <UserRound aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-primary" />}
+                    <span><span className="block font-semibold">{option.title}</span><span className="mt-1 block text-sm text-muted-foreground">{option.description}</span></span>
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+            <Button type="button" variant="outline" className="min-h-11 w-full" onClick={() => setStep(1)}>Atrás</Button>
+            <Button type="submit" className="min-h-11 w-full" disabled={pending || !accountType}>{pending ? "Creando cuenta..." : "Crear cuenta"}</Button>
+          </>}
         </form>
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm text-muted-foreground">

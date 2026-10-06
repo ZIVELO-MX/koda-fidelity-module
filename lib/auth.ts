@@ -17,7 +17,6 @@ export interface AuthService {
   signUp(email: string, password: string, name: string): Promise<AuthSession>
   signOut(): Promise<void>
   getUser(): Promise<AuthUser | null>
-  sendMagicLink(email: string, options?: { redirectTo?: string }): Promise<void>
   sendPasswordResetEmail(email: string, options?: { redirectTo?: string }): Promise<void>
   signInWithOAuth(provider: string, options?: { redirectTo?: string }): Promise<void>
 }
