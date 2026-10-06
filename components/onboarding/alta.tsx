@@ -506,6 +506,7 @@ export function Alta() {
               estado={estado}
               ocupado={ocupado}
               onIntervalo={(intervalo) => void pedirAvance("select_billing_interval", intervalo)}
+              onSaltar={() => void pedirAvance("open_paywall")}
             />
           )}
         </main>
@@ -1207,12 +1208,14 @@ export function TarjetaGuardada({ estado }: { estado: EstadoDelAlta }) {
 }
 
 function Paywall({
-  estado, ocupado, onIntervalo,
+  estado, ocupado, onIntervalo, onSaltar,
 }: {
   estado: EstadoDelAlta
   ocupado: boolean
   onIntervalo: (intervalo: BillingInterval) => void
+  onSaltar: () => void
 }) {
+  const router = useRouter()
   const [slide, setSlide] = useState<"tarjeta" | "planes">("tarjeta")
   // FID-0028: no hay cobro. Se crea una solicitud con folio que soporte usa
   // para localizar la cuenta, y el correo lo manda la persona, no el sistema.
@@ -1236,6 +1239,30 @@ function Paywall({
     }
   }, [])
 
+  useEffect(() => {
+    if (estado.status !== "AWAITING_PAYMENT") return
+    let vivo = true
+    let timer: ReturnType<typeof setTimeout>
+    const comprobarActivacion = async () => {
+      try {
+        const actual = await leerAlta()
+        if (!vivo) return
+        if (actual.status === "ACTIVE") {
+          router.replace("/dashboard")
+          return
+        }
+      } catch {
+        // Si no hay conexión, el muro sigue bloqueado y vuelve a consultar.
+      }
+      if (vivo) timer = setTimeout(() => void comprobarActivacion(), 5000)
+    }
+    timer = setTimeout(() => void comprobarActivacion(), 5000)
+    return () => {
+      vivo = false
+      clearTimeout(timer)
+    }
+  }, [estado.status, router])
+
   const onSolicitar = async (plan: PlanSolicitado) => {
     setEnviando(plan)
     setFallo(null)
@@ -1253,6 +1280,34 @@ function Paywall({
   const pro = PLANES.find((p) => p.id === "pro")!
   const precio = (plan: typeof lite) => (anual ? plan.anual : plan.mensual)
   const periodo = anual ? "MXN al año" : "MXN al mes"
+
+  if (estado.status === "AWAITING_PAYMENT") {
+    return (
+      <section className="mx-auto w-full max-w-xl space-y-6 rounded-2xl border border-border bg-card p-6 text-center shadow-sm sm:p-8" aria-labelledby="espera-activacion-titulo">
+        <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <Loader2 className="size-7 animate-spin" aria-hidden="true" />
+        </div>
+        <div className="space-y-2">
+          <h1 id="espera-activacion-titulo" className="text-2xl font-bold tracking-tight text-foreground">Tu plan todavía no está activo</h1>
+          <p className="text-muted-foreground">Soporte debe activar tu cuenta antes de que puedas entrar al panel o publicar la tarjeta. La revisaremos automáticamente mientras esperas.</p>
+        </div>
+        {solicitud ? (
+          <SolicitudCreada
+            solicitud={solicitud}
+            negocio={estado.nombreDeLaCuenta}
+            correo={estado.correoDeLaCuenta}
+            copiado={copiado}
+            onCopiar={setCopiado}
+          />
+        ) : (
+          <a className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border px-4 font-medium text-primary underline underline-offset-4" href={`mailto:${SOPORTE}`}>
+            Escribir a soporte
+          </a>
+        )}
+        <p role="status" className="text-xs text-muted-foreground">Tu negocio y la tarjeta siguen guardados como borrador. No hay un botón para continuar hasta que el plan esté activo.</p>
+      </section>
+    )
+  }
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-8">
@@ -1388,8 +1443,8 @@ function Paywall({
 
       {/* Salir no es un botón escondido. */}
       <div className="text-center">
-        <Button asChild variant="ghost" className="min-h-11">
-          <Link href="/dashboard">Salir sin publicar</Link>
+        <Button variant="ghost" className="min-h-11" disabled={ocupado} onClick={onSaltar}>
+          Saltar sin publicar
         </Button>
         <p className="mt-2 text-xs text-muted-foreground">
           Sin publicar, tu tarjeta no genera código QR y tus clientes todavía no pueden unirse.

@@ -85,7 +85,7 @@ function response(state: MockState) {
     user: { id: state.user.id, email: state.user.email, name: state.user.name, role: state.user.role },
     business: null,
     onboardingStatus: state.progress.status,
-    plan: "LITE",
+    plan: state.progress.status === "ACTIVE" ? "LITE" : "PRO",
   }
   return { onboarding, categories: state.categories, themes: state.themes, accountContext, mode: "mock" as const }
 }
@@ -96,6 +96,7 @@ export async function getMockOnboarding(db: PrismaClient, principal: { id: strin
 
 export async function saveMockDraft(db: PrismaClient, principal: { id: string; email?: string | null }, input: OnboardingDraftInput) {
   const state = await getMockState(db, principal)
+  if (state.progress.status !== "IN_PROGRESS") throw new ConflictError("Tu cuenta está esperando la activación del plan y no admite cambios de onboarding")
   if (state.progress.draftVersion !== input.draftVersion) throw new ConflictError("El borrador cambió; recarga el onboarding")
   state.progress = {
     ...state.progress,
@@ -110,6 +111,10 @@ export async function saveMockDraft(db: PrismaClient, principal: { id: string; e
 
 export async function advanceMockOnboarding(db: PrismaClient, principal: { id: string; email?: string | null }, input: AdvanceInput) {
   const state = await getMockState(db, principal)
+  if (state.progress.status === "ACTIVE") throw new ConflictError("Tu plan ya está activo; continúa desde el panel")
+  if (state.progress.status === "AWAITING_PAYMENT" && input.action !== "open_paywall") {
+    throw new ConflictError("Tu plan todavía no está activo. Espera a que soporte active tu cuenta")
+  }
   if (state.progress.draftVersion !== input.draftVersion) throw new ConflictError("El borrador cambió; recarga el onboarding")
 
   const businessDraft = state.progress.businessDraft ?? {}
@@ -125,6 +130,7 @@ export async function advanceMockOnboarding(db: PrismaClient, principal: { id: s
     if (cardDraft.themeId !== undefined) await resolveTheme(db, String(cardDraft.themeId), "PRO")
   }
   if (input.action === "select_billing_interval" && !input.billingInterval) throw new ValidationError("Selecciona una modalidad de cobro")
+  if (input.action === "open_paywall" && state.progress.step !== "PAYWALL") throw new ValidationError("Primero llega al paso de selección del plan")
 
   const next = { ...state.progress, draftVersion: state.progress.draftVersion + 1 }
   if (input.action === "complete_intro" || input.action === "skip_intro") next.step = "BUSINESS"

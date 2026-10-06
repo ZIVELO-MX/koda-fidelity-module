@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest"
-import { advanceOnboarding } from "../onboarding-service"
+import { advanceOnboarding, saveDraft } from "../onboarding-service"
 
 function firstCardDb(subscription: unknown, hasBusiness = true) {
   const progress = {
-    id: "progress-1", draftVersion: 3, firstCardId: null,
+    id: "progress-1", status: "IN_PROGRESS", draftVersion: 3, firstCardId: null,
     businessDraft: { name: "Café", categoryId: "category-1" },
     cardDraft: { reward: "Café gratis", stampsRequired: 10, themeId: "theme-pro", textColor: "LIGHT", iconName: "coffee", stampIconName: "star" },
   }
@@ -69,6 +69,7 @@ describe("repeating onboarding with an existing first card", () => {
   it("advances without creating a second card", async () => {
     const progress = {
       id: "progress-1",
+      status: "IN_PROGRESS",
       draftVersion: 3,
       firstCardId: "card-1",
       businessDraft: { name: "Café", categoryId: "category-1", reward: "Café gratis", stampsRequired: 10 },
@@ -89,5 +90,24 @@ describe("repeating onboarding with an existing first card", () => {
       data: { step: "CARD_READY", draftVersion: { increment: 1 } },
     })
     expect(db).not.toHaveProperty("loyaltyCard")
+  })
+})
+
+describe("onboarding activation wall", () => {
+  it("does not allow an awaiting account to advance or edit its draft", async () => {
+    const progress = {
+      id: "progress-1", status: "AWAITING_PAYMENT", step: "PAYWALL", draftVersion: 4,
+      businessDraft: {}, cardDraft: {},
+    }
+    const user = { id: "user-1", authUserId: "auth-1", businessId: "business-1", email: "test@invalid.dev", onboardingProgress: progress }
+    const db = {
+      user: { findUnique: vi.fn().mockResolvedValue(user) },
+      onboardingProgress: { updateMany: vi.fn() },
+    } as any
+
+    await expect(advanceOnboarding(db, "auth-1", "complete_acquisition", 4)).rejects.toThrow(/todavía no está activo/i)
+    await expect(advanceOnboarding(db, "auth-1", "complete_intro", 4)).rejects.toThrow(/todavía no está activo/i)
+    await expect(saveDraft(db, "auth-1", { draftVersion: 4, card: { reward: "Nueva" } })).rejects.toThrow(/esperando la activación/i)
+    expect(db.onboardingProgress.updateMany).not.toHaveBeenCalled()
   })
 })
