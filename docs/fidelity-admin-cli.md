@@ -3,6 +3,8 @@
 `pnpm fidelity:admin` consulta una cuenta desde la terminal. `pnpm fidelity:admin -- set-plan`
 consulta la misma cuenta, muestra el tiempo transcurrido en su plan actual y permite
 cambiarlo mediante `POST /api/subscription` después de revisar los datos.
+`pnpm fidelity:admin -- notify-plan-change` emite un aviso pendiente para un cambio
+anterior que carece de transición en su auditoría.
 Selecciona `DESARROLLO` o `PRODUCCION` y después ingresa el correo de un admin.
 Por ahora, el cambio de plan se ha configurado y probado solo en Desarrollo.
 
@@ -13,7 +15,7 @@ Desde la raíz del repositorio, configura `DATABASE_URL` en el archivo del entor
 - Desarrollo: `.env.development.local`
 - Producción: `.env.production.local`
 
-Para cambiar un plan en Desarrollo, el archivo también necesita
+Para cambiar un plan o emitir un aviso en Desarrollo, el archivo también necesita
 `BILLING_INTERNAL_SECRET`, `NEXT_PUBLIC_BASE_URL=http://localhost:3000` y,
 opcionalmente, `BILLING_OPERATOR`. Arranca la API local con `pnpm dev` desde el
 mismo repositorio y archivo de entorno antes de ejecutar la CLI. La API y la CLI
@@ -35,6 +37,11 @@ Para este MVP se reutiliza `DATABASE_URL`, que puede tener permisos más amplios
 usa Prisma para consultar y la API interna para cambiar el plan. Está destinada a
 operadores de soporte confiables.
 
+Un cambio efectivo Lite ↔ Pro registra `previousPlan` y `effectivePlan` en el mismo
+`BillingAuditEvent` que crea la suscripción, dentro de una transacción. Ese evento
+alimenta el aviso que ven los miembros del negocio en el panel; cada miembro puede
+confirmarlo por separado. La CLI no crea un segundo evento al cambiar el plan.
+
 ## Información consultada
 
 - Un admin sin negocio vinculado: nombre, correo y paso/estado de onboarding.
@@ -52,11 +59,21 @@ envía una clave de idempotencia y vuelve a consultar la base para verificar el 
 Si el usuario o negocio no existe, no intenta modificar datos. La activación manual
 no ejecuta un cobro.
 
+`notify-plan-change` solo ofrece la última transición hacia el plan efectivo actual si
+el evento original no la registra, incluso si después hubo renovaciones del mismo plan.
+Muestra el plan efectivo actual y la dirección del
+cambio, solicita un resumen y el nombre o correo de quien emite el aviso, y exige
+escribir `AVISAR`. La API vuelve a validar el negocio, la auditoría y el plan efectivo
+antes de crear un nuevo `BillingAuditEvent` con referencia al original. No cambia la
+suscripción ni modifica el evento anterior. Rechaza un destino distinto del plan
+efectivo y un segundo aviso para el mismo evento.
+
 ## Ejecución
 
 ```bash
 pnpm fidelity:admin
 pnpm fidelity:admin -- set-plan
+pnpm fidelity:admin -- notify-plan-change
 ```
 
 Ejemplo de consulta (el estado mostrado depende de los datos actuales):
@@ -64,7 +81,7 @@ Ejemplo de consulta (el estado mostrado depende de los datos actuales):
 ```text
 $ pnpm fidelity:admin
 Entorno (DESARROLLO|PRODUCCION): DESARROLLO
-Correo del admin: test@zivelo.dev
+Correo del admin: admin@ejemplo.dev
 Acceso efectivo: PRO · suscripción ACTIVE (PRO/MONTHLY)
 Plan PRO desde 6 oct 2026 · 0 días transcurridos
 ```
@@ -81,6 +98,20 @@ Nuevo plan (LITE|PRO): PRO
 Cambio: Mi negocio (biz-123) · LITE → PRO · MONTHLY
 Escribe CAMBIAR para aplicar: CAMBIAR
 Plan confirmado: Mi negocio · PRO/MONTHLY
+```
+
+Ejemplo de recuperación de un aviso faltante después de un cambio ya aplicado:
+
+```text
+$ pnpm fidelity:admin -- notify-plan-change
+Entorno (DESARROLLO|PRODUCCION): DESARROLLO
+Correo del admin: admin@ejemplo.dev
+Acceso efectivo: LITE · suscripción ACTIVE (LITE/MONTHLY)
+Resumen del aviso: Cambio aplicado por soporte
+Nombre o correo de quien emite el aviso: raul@zivelo.dev
+Aviso: Mi negocio (biz-123) · PRO → LITE · auditoría audit-123
+Escribe AVISAR para registrar el aviso: AVISAR
+Aviso registrado: notice-123 · PRO → LITE
 ```
 
 Si falla la conexión, comprueba que seleccionaste el entorno correcto, que su archivo

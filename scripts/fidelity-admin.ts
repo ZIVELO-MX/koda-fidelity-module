@@ -2,6 +2,7 @@ import dotenv from "dotenv"
 import { createInterface } from "node:readline/promises"
 import { stdin as input, stdout as output } from "node:process"
 import type { PrismaClient } from "@prisma/client"
+import { ConflictError, NotFoundError } from "@/lib/api-utils"
 import {
   databaseHost,
   fidelityEnvFile,
@@ -10,7 +11,8 @@ import {
   queryAdminAccount,
   type FidelityEnvironment,
 } from "./fidelity-admin-query"
-import { changePlanThroughApi, parsePlan, PlanApiError } from "./fidelity-admin-plan"
+import { changePlanThroughApi, confirmAndSendManualPlanChangeNotice, parsePlan, PlanApiError } from "./fidelity-admin-plan"
+import { previewManualPlanChangeNotice } from "../lib/manual-plan-change-notice"
 
 const readline = createInterface({ input, output })
 let prisma: PrismaClient | undefined
@@ -33,7 +35,8 @@ function safeErrorCode(error: unknown) {
 async function main() {
   const args = process.argv.slice(2).filter((arg) => arg !== "--")
   const changePlan = args[0] === "set-plan"
-  if (args.length > (changePlan ? 1 : 0)) throw new CliInputError("Uso: pnpm fidelity:admin [-- set-plan]")
+  const manualNotice = args[0] === "notify-plan-change"
+  if (args.length > (changePlan || manualNotice ? 1 : 0)) throw new CliInputError("Uso: pnpm fidelity:admin [-- set-plan|notify-plan-change]")
   let environment: FidelityEnvironment
   try {
     environment = parseFidelityEnvironment(await ask("Entorno (DESARROLLO|PRODUCCION): "))
@@ -71,9 +74,31 @@ async function main() {
   prisma = client.prisma
   const result = await queryAdminAccount(prisma, email)
   console.log(`\n${formatAdminLookup(result)}`)
-  if (!changePlan) return
+  if (!changePlan && !manualNotice) return
   if (result.kind !== "business") throw new CliInputError("El correo debe pertenecer a un admin con negocio vinculado")
   if (result.subscription?.status !== "ACTIVE") throw new CliInputError("El negocio necesita una suscripción activa")
+  if (manualNotice) {
+    const secret = process.env.BILLING_INTERNAL_SECRET?.trim()
+    if (!secret) throw new CliInputError(`BILLING_INTERNAL_SECRET no está configurado en ${envPath}`)
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL?.trim()
+    if (!baseUrl) throw new CliInputError(`NEXT_PUBLIC_BASE_URL no está configurada en ${envPath}`)
+    let candidate
+    try {
+      candidate = await previewManualPlanChangeNotice(prisma, result.business.id)
+    } catch (error) {
+      if (error instanceof ConflictError || error instanceof NotFoundError) throw new CliInputError(error.message)
+      throw error
+    }
+    const event = await confirmAndSendManualPlanChangeNotice({
+      ...candidate,
+      businessName: result.business.name,
+      currentEffectivePlan: result.effectivePlan,
+      baseUrl,
+      secret,
+    }, ask, console.log)
+    if (event) console.log(`Aviso registrado: ${event.id} · ${candidate.previousPlan} → ${candidate.effectivePlan}`)
+    return
+  }
   let plan: "LITE" | "PRO"
   try {
     plan = parsePlan(await ask("Nuevo plan (LITE|PRO): "))
