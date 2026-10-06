@@ -2,7 +2,6 @@ import dotenv from "dotenv"
 import { createInterface } from "node:readline/promises"
 import { stdin as input, stdout as output } from "node:process"
 import type { PrismaClient } from "@prisma/client"
-import { ConflictError, NotFoundError } from "@/lib/api-utils"
 import {
   databaseHost,
   fidelityEnvFile,
@@ -12,7 +11,6 @@ import {
   type FidelityEnvironment,
 } from "./fidelity-admin-query"
 import { changePlanThroughApi, confirmAndSendManualPlanChangeNotice, parsePlan, PlanApiError } from "./fidelity-admin-plan"
-import { previewManualPlanChangeNotice } from "../lib/manual-plan-change-notice"
 
 const readline = createInterface({ input, output })
 let prisma: PrismaClient | undefined
@@ -78,6 +76,10 @@ async function main() {
   if (result.kind !== "business") throw new CliInputError("El correo debe pertenecer a un admin con negocio vinculado")
   if (result.subscription?.status !== "ACTIVE") throw new CliInputError("El negocio necesita una suscripción activa")
   if (manualNotice) {
+    const [{ ConflictError, NotFoundError }, { previewManualPlanChangeNotice }] = await Promise.all([
+      import("@/lib/api-utils"),
+      import("../lib/manual-plan-change-notice"),
+    ])
     const secret = process.env.BILLING_INTERNAL_SECRET?.trim()
     if (!secret) throw new CliInputError(`BILLING_INTERNAL_SECRET no está configurado en ${envPath}`)
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL?.trim()
