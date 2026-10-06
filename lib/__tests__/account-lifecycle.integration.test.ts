@@ -92,7 +92,7 @@ integration("account lifecycle PostgreSQL integration", () => {
 
     const firstProKey = randomUUID()
     await activateManualSubscription(prisma, { businessId, plan: "PRO", idempotencyKey: firstProKey })
-    expect((await prisma.loyaltyCard.findUniqueOrThrow({ where: { id: cards[1].id } })).effectiveThemeId).toBe(proTheme.id)
+    expect((await prisma.loyaltyCard.findFirstOrThrow({ where: { businessId, selectedThemeId: proTheme.id } })).effectiveThemeId).toBe(proTheme.id)
 
     const liteKey = randomUUID()
     const lite = await activateManualSubscription(prisma, { businessId, plan: "LITE", proAccessGranted: false, idempotencyKey: liteKey })
