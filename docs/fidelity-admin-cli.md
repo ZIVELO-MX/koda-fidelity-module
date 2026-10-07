@@ -4,16 +4,15 @@
 consulta la misma cuenta, muestra el tiempo transcurrido en su plan actual y permite
 cambiarlo mediante `POST /api/subscription` después de revisar los datos.
 `pnpm fidelity:admin -- notify-plan-change` emite un aviso pendiente para un cambio
-anterior que carece de transición en su auditoría.
-Selecciona `DESARROLLO` o `PRODUCCION` y después ingresa el correo de un admin.
-Por ahora, el cambio de plan se ha configurado y probado solo en Desarrollo.
+anterior que carece de transición en su auditoría mediante `POST /api/subscription/plan-change-notice`.
+La CLI solo admite `DESARROLLO`. Rechaza `PRODUCCION` antes de cargar `.env.production.local`
+o consultar datos; la consulta, `set-plan` y `notify-plan-change` quedan limitados a Dev.
 
 ## Configuración
 
 Desde la raíz del repositorio, configura `DATABASE_URL` en el archivo del entorno:
 
 - Desarrollo: `.env.development.local`
-- Producción: `.env.production.local`
 
 Para cambiar un plan o emitir un aviso en Desarrollo, el archivo también necesita
 `BILLING_INTERNAL_SECRET`, `NEXT_PUBLIC_BASE_URL=http://localhost:3000` y,
@@ -26,8 +25,8 @@ El secreto puede ser un valor aleatorio generado para este entorno local, por ej
 con `openssl rand -hex 32`. Guárdalo solo en `.env.development.local`; nunca lo
 añadas al repositorio.
 
-Los archivos locales de entorno están excluidos de Git. La CLI carga solo el archivo
-del entorno elegido, valida la URL de PostgreSQL y muestra el nombre del entorno y el
+Los archivos locales de entorno están excluidos de Git. La CLI carga el archivo
+de Desarrollo, valida la URL de PostgreSQL y muestra el nombre del entorno y el
 host antes de consultar. No imprime la URL completa, usuarios ni contraseñas. Al usar
 Supabase desde una red sin IPv6, configura `DATABASE_URL` con el transaction pooler IPv4.
 
@@ -54,8 +53,9 @@ confirmarlo por separado. La CLI no crea un segundo evento al cambiar el plan.
 
 No muestra clientes, progreso de sellos ni datos de borradores de onboarding. La
 consulta sola no modifica datos. `set-plan` muestra el negocio, el plan y la
-periodicidad antes de pedir que escribas `CAMBIAR`; conserva la periodicidad actual,
-envía una clave de idempotencia y vuelve a consultar la base para verificar el cambio.
+periodicidad antes de pedir que escribas `CAMBIAR`; conserva la periodicidad y las fechas
+del periodo actual, envía una clave de idempotencia y vuelve a consultar la base para
+verificar el cambio.
 Si el usuario o negocio no existe, no intenta modificar datos. La activación manual
 no ejecuta un cobro.
 
@@ -80,7 +80,7 @@ Ejemplo de consulta (el estado mostrado depende de los datos actuales):
 
 ```text
 $ pnpm fidelity:admin
-Entorno (DESARROLLO|PRODUCCION): DESARROLLO
+Entorno (DESARROLLO): DESARROLLO
 Correo del admin: admin@ejemplo.dev
 Acceso efectivo: PRO · suscripción ACTIVE (PRO/MONTHLY)
 Plan PRO desde 6 oct 2026 · 0 días transcurridos
@@ -90,7 +90,7 @@ Ejemplo de cambio para una cuenta que todavía tiene Lite:
 
 ```text
 $ pnpm fidelity:admin -- set-plan
-Entorno (DESARROLLO|PRODUCCION): DESARROLLO
+Entorno (DESARROLLO): DESARROLLO
 Correo del admin: admin@ejemplo.dev
 Acceso efectivo: LITE · suscripción ACTIVE (LITE/MONTHLY)
 Plan LITE desde 1 sep 2026 · 35 días transcurridos
@@ -104,7 +104,7 @@ Ejemplo de recuperación de un aviso faltante después de un cambio ya aplicado:
 
 ```text
 $ pnpm fidelity:admin -- notify-plan-change
-Entorno (DESARROLLO|PRODUCCION): DESARROLLO
+Entorno (DESARROLLO): DESARROLLO
 Correo del admin: admin@ejemplo.dev
 Acceso efectivo: LITE · suscripción ACTIVE (LITE/MONTHLY)
 Resumen del aviso: Cambio aplicado por soporte

@@ -17,7 +17,10 @@ function makeDb(previousPlan: "LITE" | "PRO") {
     },
     loyaltyCard: { findMany: vi.fn().mockResolvedValue([]) },
     loyaltyTheme: { findMany: vi.fn().mockResolvedValue([]) },
-    onboardingProgress: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
+    onboardingProgress: {
+      findFirst: vi.fn().mockResolvedValue(null),
+      updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+    },
     billingAuditEvent: { create: vi.fn().mockResolvedValue({ id: "audit" }) },
   }
   const db = {
@@ -34,13 +37,18 @@ describe("automatic plan change audit", () => {
     ["PRO", "LITE"],
   ] as const)("writes the %s → %s transition inside the subscription transaction", async (from, to) => {
     const { db, tx } = makeDb(from)
+    const periodStart = new Date("2026-10-06T12:00:00Z")
+    const periodEnd = new Date("2027-10-06T12:00:00Z")
     await activateManualSubscription(db as unknown as PrismaClient, {
       businessId: "biz-1", action: "set_plan", plan: to, proAccessGranted: to === "PRO",
-      periodStart: new Date("2026-10-06T12:00:00Z"), idempotencyKey: `change-${from}-${to}`,
+      periodStart, periodEnd, idempotencyKey: `change-${from}-${to}`,
     })
 
     expect(db.$transaction).toHaveBeenCalledOnce()
     expect(tx.subscription.create).toHaveBeenCalledOnce()
+    const createdSubscription = tx.subscription.create.mock.calls[0][0].data
+    expect(createdSubscription).toMatchObject({ periodStart, periodEnd })
+    expect(createdSubscription.activatedAt).not.toEqual(periodStart)
     expect(tx.billingAuditEvent.create).toHaveBeenCalledOnce()
     const audit = tx.billingAuditEvent.create.mock.calls[0][0].data
     expect(audit.metadata).toMatchObject({ previousPlan: from, effectivePlan: to })

@@ -34,6 +34,8 @@ export async function changePlanThroughApi(input: {
   businessId: string
   plan: Plan
   billingInterval: "MONTHLY" | "ANNUAL"
+  periodStart: Date
+  periodEnd: Date
   operator: string
 }, request: typeof fetch = fetch) {
   const url = apiUrl(input.baseUrl, "/api/subscription")
@@ -50,6 +52,8 @@ export async function changePlanThroughApi(input: {
       action: "set_plan",
       plan: input.plan,
       billingInterval: input.billingInterval,
+      periodStart: input.periodStart,
+      periodEnd: input.periodEnd,
     }),
   })
   if (!response.ok) throw await apiError(response)

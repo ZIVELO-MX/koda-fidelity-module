@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest"
 import type { PrismaClient } from "@prisma/client"
 import {
+  assertFidelityAdminEnvironment,
   databaseHost,
   fidelityEnvFile,
   formatAdminLookup,
@@ -10,7 +11,7 @@ import {
 
 function makeDb() {
   const methods = {
-    user: { findFirst: vi.fn() },
+    user: { findUnique: vi.fn() },
     business: { findUnique: vi.fn() },
     loyaltyCard: { groupBy: vi.fn().mockResolvedValue([]) },
     subscriptionRequest: { findMany: vi.fn().mockResolvedValue([]) },
@@ -29,7 +30,12 @@ describe("Fidelity admin query helpers", () => {
   })
 
   it("rejects unknown environments", () => {
-    expect(() => parseFidelityEnvironment("preview")).toThrow("DESARROLLO o PRODUCCION")
+    expect(() => parseFidelityEnvironment("preview")).toThrow("Elige DESARROLLO")
+  })
+
+  it("allows the CLI only in development", () => {
+    expect(() => assertFidelityAdminEnvironment("development")).not.toThrow()
+    expect(() => assertFidelityAdminEnvironment("production")).toThrow("solo está habilitada en DESARROLLO")
   })
 
   it("selects a distinct local env file for each environment", () => {
@@ -42,15 +48,15 @@ describe("Fidelity admin query helpers", () => {
     expect(() => databaseHost("not a URL")).toThrow("DATABASE_URL")
   })
 
-  it("normalizes the email and reports a missing admin without further queries", async () => {
+  it("normalizes wildcard-looking email characters and uses an exact unique lookup", async () => {
     const { client, methods } = makeDb()
-    methods.user.findFirst.mockResolvedValue(null)
+    methods.user.findUnique.mockResolvedValue(null)
 
-    const result = await queryAdminAccount(client, "  OWNER@EXAMPLE.COM ")
+    const result = await queryAdminAccount(client, "  ANA_L%+EXAMPLE@EXAMPLE.COM ")
 
-    expect(result).toEqual({ kind: "not_found", email: "owner@example.com" })
-    expect(methods.user.findFirst).toHaveBeenCalledWith(expect.objectContaining({
-      where: { email: { equals: "owner@example.com", mode: "insensitive" } },
+    expect(result).toEqual({ kind: "not_found", email: "ana_l%+example@example.com" })
+    expect(methods.user.findUnique).toHaveBeenCalledWith(expect.objectContaining({
+      where: { email: "ana_l%+example@example.com" },
     }))
     expect(methods.business.findUnique).not.toHaveBeenCalled()
     expect(methods.loyaltyCard.groupBy).not.toHaveBeenCalled()
@@ -58,7 +64,7 @@ describe("Fidelity admin query helpers", () => {
 
   it("identifies a non-admin account and does not query business data", async () => {
     const { client, methods } = makeDb()
-    methods.user.findFirst.mockResolvedValue({ email: "staff@example.com", name: "Staff", role: "sellador", businessId: "biz-1", onboardingProgress: null })
+    methods.user.findUnique.mockResolvedValue({ email: "staff@example.com", name: "Staff", role: "sellador", businessId: "biz-1", onboardingProgress: null })
 
     const result = await queryAdminAccount(client, "staff@example.com")
 
@@ -69,7 +75,7 @@ describe("Fidelity admin query helpers", () => {
   it("shows onboarding progress for an admin who has no linked business", async () => {
     const { client, methods } = makeDb()
     const updatedAt = new Date("2026-10-05T12:00:00.000Z")
-    methods.user.findFirst.mockResolvedValue({
+    methods.user.findUnique.mockResolvedValue({
       email: "new@example.com", name: "New Admin", role: "admin", businessId: null,
       onboardingProgress: { step: "CARD", status: "IN_PROGRESS", updatedAt },
     })
@@ -90,7 +96,7 @@ describe("Fidelity admin query helpers", () => {
     const start = new Date("2026-10-01T00:00:00.000Z")
     const end = new Date("2026-11-01T00:00:00.000Z")
     const trialEnd = new Date("2026-10-20T00:00:00.000Z")
-    methods.user.findFirst.mockResolvedValue({
+    methods.user.findUnique.mockResolvedValue({
       email: "admin@example.com", name: "Admin", role: "admin", businessId: "biz-1", onboardingProgress: null,
     })
     methods.business.findUnique.mockResolvedValue({
@@ -137,7 +143,7 @@ describe("Fidelity admin query helpers", () => {
   it("does not grant effective Pro after the trial expires", async () => {
     const { client, methods } = makeDb()
     const now = new Date("2026-11-01T00:00:00.000Z")
-    methods.user.findFirst.mockResolvedValue({ email: "admin@example.com", name: "Admin", role: "admin", businessId: "biz-1", onboardingProgress: null })
+    methods.user.findUnique.mockResolvedValue({ email: "admin@example.com", name: "Admin", role: "admin", businessId: "biz-1", onboardingProgress: null })
     methods.business.findUnique.mockResolvedValue({
       id: "biz-1", name: "Café Luna", email: "contact@example.com", createdAt: now,
       users: [], invitations: [],
@@ -156,7 +162,7 @@ describe("Fidelity admin query helpers", () => {
   it("counts consecutive time on the current plan across renewals", async () => {
     const { client, methods } = makeDb()
     const now = new Date("2026-10-06T12:00:00.000Z")
-    methods.user.findFirst.mockResolvedValue({ email: "admin@example.com", name: "Admin", role: "admin", businessId: "biz-1", onboardingProgress: null })
+    methods.user.findUnique.mockResolvedValue({ email: "admin@example.com", name: "Admin", role: "admin", businessId: "biz-1", onboardingProgress: null })
     const subscription = (plan: string, activatedAt: string, status: string) => ({
       status, plan, billingInterval: "MONTHLY", activatedAt: new Date(activatedAt),
       periodStart: new Date(activatedAt), periodEnd: now, proTrialEndsAt: null, proAccessGranted: plan === "PRO",

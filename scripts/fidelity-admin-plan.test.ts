@@ -1,12 +1,17 @@
 import { describe, expect, it, vi } from "vitest"
 import { changePlanThroughApi, confirmAndSendManualPlanChangeNotice, parsePlan, PlanApiError, sendManualPlanChangeNotice } from "./fidelity-admin-plan"
 
+const periodStart = new Date("2026-10-01T00:00:00.000Z")
+const periodEnd = new Date("2026-11-01T00:00:00.000Z")
+
 const input = {
   baseUrl: "http://localhost:3000",
   secret: "local-secret",
   businessId: "biz-1",
   plan: "PRO" as const,
   billingInterval: "MONTHLY" as const,
+  periodStart,
+  periodEnd,
   operator: "support",
 }
 
@@ -26,7 +31,10 @@ describe("Fidelity admin plan change", () => {
     expect(String(url)).toBe("http://localhost:3000/api/subscription")
     expect(options.headers["x-billing-internal-secret"]).toBe("local-secret")
     expect(options.headers["idempotency-key"]).toMatch(/^[0-9a-f-]{36}$/)
-    expect(JSON.parse(options.body)).toEqual({ businessId: "biz-1", action: "set_plan", plan: "PRO", billingInterval: "MONTHLY" })
+    expect(JSON.parse(options.body)).toEqual({
+      businessId: "biz-1", action: "set_plan", plan: "PRO", billingInterval: "MONTHLY",
+      periodStart: periodStart.toISOString(), periodEnd: periodEnd.toISOString(),
+    })
   })
 
   it("rejects a success response that does not confirm the target account and plan", async () => {

@@ -81,6 +81,26 @@ integration("account lifecycle PostgreSQL integration", () => {
     expect(card).toHaveLength(2)
   }, 15_000)
 
+  it("preserves the current billing period when applying a plan change", async () => {
+    const periodStart = new Date("2026-10-01T00:00:00.000Z")
+    const periodEnd = new Date("2027-10-01T00:00:00.000Z")
+    await activateManualSubscription(prisma, {
+      businessId, plan: "LITE", billingInterval: "ANNUAL", proAccessGranted: false,
+      periodStart, periodEnd, idempotencyKey: randomUUID(),
+    })
+
+    const changeStartedAt = new Date()
+    const changed = await activateManualSubscription(prisma, {
+      businessId, plan: "PRO", billingInterval: "ANNUAL", action: "set_plan",
+      periodStart, periodEnd, idempotencyKey: randomUUID(),
+    })
+
+    expect(changed.periodStart).toEqual(periodStart)
+    expect(changed.periodEnd).toEqual(periodEnd)
+    expect(changed.activatedAt.getTime()).toBeGreaterThanOrEqual(changeStartedAt.getTime())
+    expect(changed.activatedAt.getTime()).toBeLessThanOrEqual(Date.now())
+  })
+
   it("keeps a Pro theme selected while clearing the effective theme on Lite", async () => {
     const liteTheme = await prisma.loyaltyTheme.findFirstOrThrow({ where: { plan: "LITE", isActive: true }, orderBy: { code: "asc" } })
     const proTheme = await prisma.loyaltyTheme.findFirstOrThrow({ where: { plan: "PRO", isActive: true }, orderBy: { code: "asc" } })

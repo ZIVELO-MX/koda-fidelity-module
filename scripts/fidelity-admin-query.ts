@@ -2,7 +2,7 @@ import type { PrismaClient } from "@prisma/client"
 import { resolve } from "node:path"
 
 export type FidelityAdminReadClient = {
-  user: Pick<PrismaClient["user"], "findFirst">
+  user: Pick<PrismaClient["user"], "findUnique">
   business: Pick<PrismaClient["business"], "findUnique">
   loyaltyCard: Pick<PrismaClient["loyaltyCard"], "groupBy">
   subscriptionRequest: Pick<PrismaClient["subscriptionRequest"], "findMany">
@@ -10,11 +10,17 @@ export type FidelityAdminReadClient = {
 
 export type FidelityEnvironment = "development" | "production"
 
+export function assertFidelityAdminEnvironment(environment: FidelityEnvironment) {
+  if (environment === "production") {
+    throw new Error("La CLI administrativa de Fidelity solo está habilitada en DESARROLLO")
+  }
+}
+
 export function parseFidelityEnvironment(value: string): FidelityEnvironment {
   const normalized = value.trim().toLowerCase()
   if (["development", "dev", "desarrollo"].includes(normalized)) return "development"
   if (["production", "prod", "produccion"].includes(normalized)) return "production"
-  throw new Error("Entorno inválido. Elige DESARROLLO o PRODUCCION")
+  throw new Error("Entorno inválido. Elige DESARROLLO")
 }
 
 export function fidelityEnvFile(environment: FidelityEnvironment, cwd: string) {
@@ -59,8 +65,8 @@ export type AdminLookupResult =
 
 export async function queryAdminAccount(db: FidelityAdminReadClient, rawEmail: string, now = new Date()): Promise<AdminLookupResult> {
   const email = rawEmail.trim().toLowerCase()
-  const account = await db.user.findFirst({
-    where: { email: { equals: email, mode: "insensitive" } },
+  const account = await db.user.findUnique({
+    where: { email },
     select: {
       email: true,
       name: true,

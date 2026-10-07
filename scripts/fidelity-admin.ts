@@ -3,6 +3,7 @@ import { createInterface } from "node:readline/promises"
 import { stdin as input, stdout as output } from "node:process"
 import type { PrismaClient } from "@prisma/client"
 import {
+  assertFidelityAdminEnvironment,
   databaseHost,
   fidelityEnvFile,
   formatAdminLookup,
@@ -37,11 +38,12 @@ async function main() {
   if (args.length > (changePlan || manualNotice ? 1 : 0)) throw new CliInputError("Uso: pnpm fidelity:admin [-- set-plan|notify-plan-change]")
   let environment: FidelityEnvironment
   try {
-    environment = parseFidelityEnvironment(await ask("Entorno (DESARROLLO|PRODUCCION): "))
+    environment = parseFidelityEnvironment(await ask("Entorno (DESARROLLO): "))
+    assertFidelityAdminEnvironment(environment)
   } catch (error) {
     throw new CliInputError(error instanceof Error ? error.message : "Entorno inválido")
   }
-  environmentName = environment === "development" ? "DESARROLLO" : "PRODUCCIÓN"
+  environmentName = "DESARROLLO"
 
   const envPath = fidelityEnvFile(environment, process.cwd())
   const loaded = dotenv.config({ path: envPath, override: true, quiet: true })
@@ -124,6 +126,8 @@ async function main() {
     businessId: result.business.id,
     plan,
     billingInterval: result.subscription.billingInterval as "MONTHLY" | "ANNUAL",
+    periodStart: result.subscription.periodStart,
+    periodEnd: result.subscription.periodEnd,
     operator,
   })
   const verified = await queryAdminAccount(prisma, email)

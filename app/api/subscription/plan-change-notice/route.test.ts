@@ -28,7 +28,7 @@ describe("POST /api/subscription/plan-change-notice", () => {
   })
 
   it("requires the internal secret and an identified operator", async () => {
-    expect((await POST(request("wrong-secret"))).status).toBe(400)
+    expect((await POST(request("wrong-secret"))).status).toBe(401)
     expect((await POST(request("local-secret", ""))).status).toBe(400)
     expect(issueManualPlanChangeNotice).not.toHaveBeenCalled()
   })

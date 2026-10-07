@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
-import { cuerpoJson, handleApiError, requestIdFrom, ValidationError, withRequestId } from "@/lib/api-utils"
+import { cuerpoJson, handleApiError, requestIdFrom, UnauthorizedError, ValidationError, withRequestId } from "@/lib/api-utils"
 import { issueManualPlanChangeNotice } from "@/lib/manual-plan-change-notice"
 
 const noticeSchema = z.object({
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
   const requestId = requestIdFrom(request)
   try {
     const expected = process.env.BILLING_INTERNAL_SECRET
-    if (!expected || request.headers.get("x-billing-internal-secret") !== expected) throw new ValidationError("Operación interna requerida")
+    if (!expected || request.headers.get("x-billing-internal-secret") !== expected) throw new UnauthorizedError()
     const operator = request.headers.get("x-operator")?.trim()
     if (!operator) throw new ValidationError("Identifica a quien emite el aviso")
     const parsed = noticeSchema.safeParse(await cuerpoJson(request))

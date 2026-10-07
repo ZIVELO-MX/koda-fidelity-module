@@ -43,6 +43,7 @@ export async function activateManualSubscription(db: PrismaClient, input: Manual
   const periodStart = input.periodStart ?? new Date()
   const periodEnd = input.periodEnd ?? periodForInterval(periodStart, billingInterval)
   const action = input.action ?? "activate"
+  const activatedAt = action === "set_plan" ? new Date() : periodStart
   if (periodEnd <= periodStart) throw new ValidationError("El periodo debe terminar después de iniciar")
   if (!await db.business.findUnique({ where: { id: input.businessId }, select: { id: true } })) throw new NotFoundError("Negocio no encontrado")
   const idempotencyKey = input.idempotencyKey ?? `manual:${input.businessId}:${periodStart.toISOString()}`
@@ -68,9 +69,9 @@ export async function activateManualSubscription(db: PrismaClient, input: Manual
       ? previousSubscription.liteCardId
       : onboardingProgress?.firstCardId ?? null
     await tx.subscription.updateMany({ where: { businessId: input.businessId, status: "ACTIVE" }, data: { status: "CANCELED" } })
-    const subscription = await tx.subscription.create({ data: { businessId: input.businessId, plan, billingInterval, amountMinor: input.amountMinor ?? 0, currency: "MXN", activatedAt: periodStart, periodStart, periodEnd, externalReference: input.externalReference, proAccessGranted, proTrialEndsAt, liteCardId: preferredCardId } })
-    const effective = resolveEffectiveEntitlements(subscription, periodStart)
-    const previousPlan = previousSubscription ? resolveEffectiveEntitlements(previousSubscription, periodStart).plan : null
+    const subscription = await tx.subscription.create({ data: { businessId: input.businessId, plan, billingInterval, amountMinor: input.amountMinor ?? 0, currency: "MXN", activatedAt, periodStart, periodEnd, externalReference: input.externalReference, proAccessGranted, proTrialEndsAt, liteCardId: preferredCardId } })
+    const effective = resolveEffectiveEntitlements(subscription, activatedAt)
+    const previousPlan = previousSubscription ? resolveEffectiveEntitlements(previousSubscription, activatedAt).plan : null
     const entitledCards = await applyEntitlements(tx, input.businessId, effective.plan, {
       preferProTheme: previousPlan === "PRO" && effective.plan === "LITE",
       preferredCardId,
