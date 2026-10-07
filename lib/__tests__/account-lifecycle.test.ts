@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest"
 import type { Subscription } from "@prisma/client"
 import { AccountReadOnlyError } from "@/lib/api-utils"
-import { addCalendarMonths, assertBusinessWritable, cancelClosure, createCustomerProfile, normalizeProfileEmail, periodForInterval, resolveEffectiveEntitlements } from "../account-lifecycle"
+import { addCalendarMonths, applyEntitlements, assertBusinessWritable, cancelClosure, createCustomerProfile, normalizeProfileEmail, periodForInterval, persistPrimaryCardPreference, resolveEffectiveEntitlements, resolveNewCardPrimarySelection } from "../account-lifecycle"
 
 describe("account lifecycle", () => {
   it("normalizes profile email keys", () => {
@@ -36,6 +36,102 @@ describe("account lifecycle", () => {
     expect(resolveEffectiveEntitlements(subscription, trialEndsAt)).toEqual({ plan: "LITE", trial: false })
     expect(resolveEffectiveEntitlements({ ...subscription, proTrialEndsAt: null }, new Date("2026-01-31T12:00:00.000Z"))).toEqual({ plan: "LITE", trial: false })
     expect(resolveEffectiveEntitlements({ ...subscription, plan: "PRO", proTrialEndsAt: null }, new Date("2027-01-01T00:00:00.000Z"))).toEqual({ plan: "PRO", trial: false })
+  })
+
+  it("keeps the chosen Lite card active, falls Pro themes back, and leaves archives and drafts untouched", async () => {
+    const cards = [
+      { id: "chosen", status: "LOCKED_BY_PLAN", isLite: false, selectedThemeId: "pro-theme" },
+      { id: "other", status: "ACTIVE", isLite: true, selectedThemeId: "lite-theme" },
+      { id: "archived", status: "ARCHIVED", isLite: false, selectedThemeId: null },
+      { id: "draft", status: "DRAFT", isLite: false, selectedThemeId: null },
+    ]
+    const updates: Array<{ id: string; data: Record<string, unknown> }> = []
+    const db = {
+      loyaltyCard: {
+        findMany: vi.fn().mockResolvedValue(cards),
+        update: vi.fn(async ({ where, data }: { where: { id: string }; data: Record<string, unknown> }) => {
+          updates.push({ id: where.id, data })
+          return { id: where.id, ...data }
+        }),
+      },
+      loyaltyTheme: {
+        findUnique: vi.fn(async ({ where }: { where: { id: string } }) => ({ plan: where.id === "pro-theme" ? "PRO" : "LITE" })),
+      },
+    } as never
+
+    const entitled = await applyEntitlements(db, "business", "LITE", { preferredCardId: "chosen", preserveDrafts: true })
+
+    expect(entitled.map(({ id }) => id)).toEqual(["chosen"])
+    expect(updates).toEqual([
+      { id: "chosen", data: { isActive: true, isLite: true, status: "ACTIVE", effectiveThemeId: null } },
+      { id: "other", data: { isActive: false, isLite: false, status: "LOCKED_BY_PLAN", effectiveThemeId: "lite-theme" } },
+    ])
+  })
+
+  it("defaults the first Lite card to primary and saves later unselected cards as plan-locked", () => {
+    expect(resolveNewCardPrimarySelection("LITE", null, false)).toEqual({ isPrimary: true, status: "ACTIVE" })
+    expect(resolveNewCardPrimarySelection("LITE", "current", false)).toEqual({ isPrimary: false, status: "LOCKED_BY_PLAN" })
+    expect(resolveNewCardPrimarySelection("LITE", "current", true)).toEqual({ isPrimary: true, status: "ACTIVE" })
+    expect(resolveNewCardPrimarySelection("PRO", null, undefined)).toEqual({ isPrimary: true, status: "ACTIVE" })
+    expect(resolveNewCardPrimarySelection("PRO", "current", false)).toEqual({ isPrimary: false, status: "ACTIVE" })
+  })
+
+  it("updates a Lite primary selection and never clears the only Lite primary", async () => {
+    const subscriptionUpdate = vi.fn().mockResolvedValue({})
+    const cardUpdate = vi.fn().mockResolvedValue({})
+    const db = {
+      subscription: { update: subscriptionUpdate },
+      loyaltyCard: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: "chosen", status: "LOCKED_BY_PLAN", isLite: false, selectedThemeId: null },
+          { id: "other", status: "ACTIVE", isLite: true, selectedThemeId: null },
+        ]),
+        update: cardUpdate,
+      },
+      loyaltyTheme: { findUnique: vi.fn().mockResolvedValue(null) },
+    } as never
+    const subscription = { id: "subscription", liteCardId: "other" }
+
+    await persistPrimaryCardPreference(db, {
+      businessId: "business",
+      subscription,
+      cardId: "chosen",
+      plan: "LITE",
+      isPrimary: true,
+    })
+
+    expect(subscriptionUpdate).toHaveBeenCalledWith({ where: { id: "subscription" }, data: { liteCardId: "chosen" } })
+    expect(cardUpdate).toHaveBeenCalledWith({
+      where: { id: "chosen" },
+      data: { isActive: true, isLite: true, status: "ACTIVE", effectiveThemeId: null },
+    })
+    expect(cardUpdate).toHaveBeenCalledWith({
+      where: { id: "other" },
+      data: { isActive: false, isLite: false, status: "LOCKED_BY_PLAN", effectiveThemeId: null },
+    })
+
+    await expect(persistPrimaryCardPreference(db, {
+      businessId: "business",
+      subscription,
+      cardId: "chosen",
+      plan: "LITE",
+      isPrimary: false,
+    })).rejects.toMatchObject({ name: "ValidationError" })
+  })
+
+  it("clears the saved primary preference when a Pro user unchecks the current card", async () => {
+    const update = vi.fn().mockResolvedValue({})
+    const db = { subscription: { update } } as never
+
+    await persistPrimaryCardPreference(db, {
+      businessId: "business",
+      subscription: { id: "subscription", liteCardId: "chosen" },
+      cardId: "chosen",
+      plan: "PRO",
+      isPrimary: false,
+    })
+
+    expect(update).toHaveBeenCalledWith({ where: { id: "subscription" }, data: { liteCardId: null } })
   })
 
   it("blocks writes while a closure is active and permits cancellation before its deadline", async () => {
