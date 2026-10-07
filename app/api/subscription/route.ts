@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { cuerpoJson, getBusinessFromSession, handleApiError, requestIdFrom, ValidationError, withApiContext, withRequestId } from "@/lib/api-utils"
-import { activateManualSubscription, applyEntitlements, assertBusinessWritable, getEntitlements, syncExpiredEntitlements } from "@/lib/account-lifecycle"
+import { activateManualSubscription, assertBusinessWritable, getEntitlements, syncExpiredEntitlements } from "@/lib/account-lifecycle"
 import { manualSubscriptionSchema } from "@/lib/onboarding-contracts"
 
 /**
@@ -40,13 +40,17 @@ export async function POST(request: NextRequest) {
     await assertBusinessWritable(prisma, businessId)
     if (parsed.data.action === "cancel" || parsed.data.action === "past_due") {
       const status = parsed.data.action === "cancel" ? "CANCELED" : "PAST_DUE"
-      // Sin suscripción activa el plan efectivo es Lite. Antes solo cambiaba el
-      // estado y las tarjetas seguían todas activas y con acabados Pro.
-      // ponytail: Lite es lo que hoy vale "sin suscripción"; si se decide exigir
-      // el pago para publicar, aquí se bloquean todas.
+      // Sin suscripción activa no hay acceso: se bloquean todas las tarjetas no
+      // archivadas, igual que `INACTIVO` en PR #152. Antes solo cambiaba el
+      // estado y las tarjetas seguían activas y con acabados Pro.
+      // ponytail: misma escritura que deactivateManualSubscription de #152;
+      // cuando ambos estén en dev, esta ruta puede llamarla directamente.
       const updated = await prisma.$transaction(async (tx) => {
         const result = await tx.subscription.updateMany({ where: { businessId, status: "ACTIVE" }, data: { status } })
-        await applyEntitlements(tx, businessId, "LITE")
+        await tx.loyaltyCard.updateMany({
+          where: { businessId, status: { not: "ARCHIVED" } },
+          data: { isActive: false, isLite: false, status: "LOCKED_BY_PLAN", effectiveThemeId: null },
+        })
         return result
       })
       return withRequestId(NextResponse.json(parsed.data.action === "cancel" ? { canceled: updated.count } : { updated: updated.count }), requestId)
