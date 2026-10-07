@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, ChevronDown, Loader2, Plus, Save, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils"
 import { nombreDeTema } from "@/lib/temas-de-tarjeta"
 import { AvisoDeColorDeTexto } from "@/components/aviso-de-color-de-texto"
 import { TemaProRequiereProAlert } from "@/components/dashboard/tema-pro-requiere-pro-alert"
+import { PrimaryCardCheckbox } from "@/components/dashboard/primary-card-checkbox"
 
 type TemaDisponible = { id: string; code: string; plan: "LITE" | "PRO" }
 
@@ -50,6 +51,9 @@ interface EditCardFormProps {
   initialDescription?: string | null
   initialExpiresAt?: string | null
   initialMilestones?: MilestoneEdit[]
+  initialIsPrimary?: boolean
+  initialPrimaryCardId?: string | null
+  initialPrimaryCardName?: string | null
 }
 
 export function EditCardForm({
@@ -67,6 +71,9 @@ export function EditCardForm({
   initialDescription = null,
   initialExpiresAt = null,
   initialMilestones = [],
+  initialIsPrimary = false,
+  initialPrimaryCardId = null,
+  initialPrimaryCardName = null,
 }: EditCardFormProps) {
   const router = useRouter()
   const [name, setName] = useState(initialName)
@@ -79,6 +86,10 @@ export function EditCardForm({
   const [textColor, setTextColor] = useState<"AUTO" | "DARK" | "LIGHT">(initialTextColor)
   const [themes, setThemes] = useState<TemaDisponible[]>([])
   const [accountPlan, setAccountPlan] = useState<"LITE" | "PRO">("LITE")
+  const [isPrimary, setIsPrimary] = useState(initialIsPrimary)
+  const [primaryCardId, setPrimaryCardId] = useState(initialPrimaryCardId)
+  const [primaryCardName, setPrimaryCardName] = useState(initialPrimaryCardName)
+  const primaryChoiceTouched = useRef(false)
   const [description, setDescription] = useState(initialDescription ?? "")
   const [expiresAt, setExpiresAt] = useState(initialExpiresAt ?? "")
   const [previewMode, setPreviewMode] = useState<"normal" | "sellada">("normal")
@@ -94,10 +105,15 @@ export function EditCardForm({
       .then((res) => res.json())
       .then((data) => {
         setThemes(Array.isArray(data.themes) ? data.themes : [])
-        setAccountPlan(data.plan === "PRO" ? "PRO" : "LITE")
+        const plan = data.plan === "PRO" ? "PRO" : "LITE"
+        setAccountPlan(plan)
+        const currentPrimaryId = typeof data.primaryCardId === "string" ? data.primaryCardId : null
+        setPrimaryCardId(currentPrimaryId)
+        setPrimaryCardName(data.primaryCardId !== cardId && typeof data.primaryCardName === "string" ? data.primaryCardName : null)
+        if (!primaryChoiceTouched.current) setIsPrimary(currentPrimaryId === cardId)
       })
       .catch(() => {})
-  }, [])
+  }, [cardId])
 
   const limpiarError = (campo: string) => setErrors((prev) => ({ ...prev, [campo]: "" }))
 
@@ -118,7 +134,8 @@ export function EditCardForm({
 
   async function handleSave() {
     const chosenTheme = themes.find((theme) => theme.id === themeId)
-    if (chosenTheme?.plan === "PRO" && accountPlan !== "PRO") {
+    const themeChanged = themeId !== (initialThemeId ?? "")
+    if (chosenTheme?.plan === "PRO" && accountPlan !== "PRO" && themeChanged) {
       setProThemeBlocked(true)
       return
     }
@@ -148,7 +165,8 @@ export function EditCardForm({
         brandColor: color,
         iconName,
         stampIconName,
-        themeId: themeId || null,
+        themeId: themeChanged ? themeId || null : undefined,
+        isPrimary,
         textColor,
         description: description.trim() || null,
         expiresAt: expiresAt || null,
@@ -202,7 +220,7 @@ export function EditCardForm({
         <div>
           <h1 className="text-2xl font-bold text-foreground text-balance">Editar tarjeta</h1>
           <p className="text-muted-foreground">
-            Las mismas tres decisiones. El resto sigue donde lo dejaste.
+            Actualiza los datos y elige si esta será la tarjeta principal.
           </p>
         </div>
       </div>
@@ -282,6 +300,21 @@ export function EditCardForm({
               )}
             </div>
           </section>
+
+          <PrimaryCardCheckbox
+            inputId="edit-card-primary"
+            checked={isPrimary}
+            onCheckedChange={(checked) => {
+              primaryChoiceTouched.current = true
+              setIsPrimary(checked)
+            }}
+            plan={accountPlan}
+            cardName={name}
+            cardId={cardId}
+            currentPrimaryCardId={primaryCardId}
+            currentPrimaryName={primaryCardName}
+            disabled={accountPlan === "LITE" && isPrimary}
+          />
 
           <details className="group rounded-2xl border border-border bg-card">
             <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 p-6 [&::-webkit-details-marker]:hidden">

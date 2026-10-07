@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -19,6 +19,7 @@ import { ExpirationPicker } from "@/components/dashboard/expiration-picker"
 import { nombreDeTema } from "@/lib/temas-de-tarjeta"
 import { AvisoDeColorDeTexto } from "@/components/aviso-de-color-de-texto"
 import { TemaProRequiereProAlert } from "@/components/dashboard/tema-pro-requiere-pro-alert"
+import { PrimaryCardCheckbox } from "@/components/dashboard/primary-card-checkbox"
 
 type TemaDisponible = { id: string; code: string; plan: "LITE" | "PRO" }
 
@@ -36,7 +37,7 @@ const SELLOS_SUGERIDOS = [5, 8, 10, 12, 15]
 export default function CreateCardPage() {
   const router = useRouter()
 
-  // Tres decisiones. Todo lo demás tiene un valor por defecto que sirve.
+  // Los datos básicos tienen valores iniciales; la tarjeta principal se elige por separado.
   const [cardName, setCardName] = useState("")
   const [reward, setReward] = useState("")
   const [maxStamps, setMaxStamps] = useState(10)
@@ -51,6 +52,10 @@ export default function CreateCardPage() {
   const [themeId, setThemeId] = useState("")
   const [themes, setThemes] = useState<TemaDisponible[]>([])
   const [accountPlan, setAccountPlan] = useState<"LITE" | "PRO">("LITE")
+  const [isPrimary, setIsPrimary] = useState(true)
+  const [primaryCardId, setPrimaryCardId] = useState<string | null>(null)
+  const [primaryCardName, setPrimaryCardName] = useState<string | null>(null)
+  const primaryChoiceTouched = useRef(false)
   const [milestones, setMilestones] = useState<Sorpresa[]>([])
 
   // La marca se hereda del negocio y no se pregunta. El nombre no viaja en el
@@ -81,6 +86,10 @@ export default function CreateCardPage() {
       .then((data) => {
         setThemes(Array.isArray(data.themes) ? data.themes : [])
         setAccountPlan(data.plan === "PRO" ? "PRO" : "LITE")
+        const currentPrimaryId = typeof data.primaryCardId === "string" ? data.primaryCardId : null
+        setPrimaryCardId(currentPrimaryId)
+        setPrimaryCardName(typeof data.primaryCardName === "string" ? data.primaryCardName : null)
+        if (!primaryChoiceTouched.current) setIsPrimary(!currentPrimaryId)
       })
       .catch(() => {})
   }, [])
@@ -133,6 +142,7 @@ export default function CreateCardPage() {
           stampIconName,
           textColor,
           themeId: themeId || undefined,
+          isPrimary,
           description: description || undefined,
           expiresAt: expirationDate || undefined,
           // Una sorpresa sin etiqueta es una fila que nadie llenó.
@@ -154,6 +164,12 @@ export default function CreateCardPage() {
         // El servidor ya explicó qué pasó. Sustituirlo por un texto genérico
         // dejaba a quien publica sin saber qué corregir.
         throw new Error(data?.error || "No fue posible crear la tarjeta")
+      }
+
+      if (data?.card?.status === "LOCKED_BY_PLAN") {
+        toast.success("Tarjeta guardada con bloqueo por Lite. Puedes activarla desde Configurar tarjeta principal.")
+        router.push("/dashboard/cards")
+        return
       }
 
       // Se termina en el código de la tarjeta, que es lo que hay que compartir
@@ -191,7 +207,7 @@ export default function CreateCardPage() {
         </Link>
         <h1 className="text-2xl font-bold text-foreground text-balance">Crear tarjeta</h1>
         <p className="text-muted-foreground">
-          Tres decisiones y ya se publica. El resto tiene valores que funcionan.
+          Define la recompensa y los sellos, revisa la tarjeta y elige si será la principal.
         </p>
       </div>
 
@@ -257,6 +273,20 @@ export default function CreateCardPage() {
               <p className="text-xs text-muted-foreground">Es lo que el cliente ve en su tarjeta.</p>
             </div>
           </div>
+
+          <PrimaryCardCheckbox
+            inputId="new-card-primary"
+            checked={isPrimary}
+            onCheckedChange={(checked) => {
+              primaryChoiceTouched.current = true
+              setIsPrimary(checked)
+            }}
+            plan={accountPlan}
+            cardName={cardName}
+            currentPrimaryCardId={primaryCardId}
+            currentPrimaryName={primaryCardName}
+            disabled={accountPlan === "LITE" && primaryCardId === null}
+          />
 
           {/* Todo lo que ya tiene un valor que sirve vive aquí, y el resumen dice
               cuál se está aplicando sin obligar a abrirlo. */}
@@ -549,7 +579,7 @@ export default function CreateCardPage() {
               className="mt-6 min-h-11 w-full"
             >
               <Check className="mr-2 h-4 w-4" />
-              {saving ? "Publicando…" : "Publicar tarjeta"}
+              {saving ? "Guardando…" : accountPlan === "LITE" && !isPrimary ? "Guardar bloqueada" : "Publicar tarjeta"}
             </Button>
             <p className="mt-2 text-center text-xs text-muted-foreground">
               Al publicar llegas al código QR que comparten tus clientes.

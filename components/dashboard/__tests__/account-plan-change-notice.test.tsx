@@ -13,7 +13,9 @@ afterEach(() => {
 describe("AccountPlanChangeNotice", () => {
   it("shows an empty state when there is no plan change", () => {
     render(<AccountPlanChangeNotice notice={null} collapsed={false} />)
-    fireEvent.click(screen.getByRole("button", { name: "Notificaciones" }))
+    const trigger = screen.getByRole("button", { name: "Notificaciones" })
+    expect(trigger.querySelector("svg")).toHaveClass("text-muted-foreground")
+    fireEvent.click(trigger)
     expect(screen.getByText("No tienes notificaciones por ahora.")).toBeInTheDocument()
   })
 
