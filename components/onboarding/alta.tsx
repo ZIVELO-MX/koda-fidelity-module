@@ -85,7 +85,7 @@ function enfocarCampo(elemento: HTMLElement | null) {
   })
 }
 
-export function Alta() {
+export function Alta({ allowPlanSelectionWhileAwaitingActivation = false }: { allowPlanSelectionWhileAwaitingActivation?: boolean } = {}) {
   const router = useRouter()
   const [estado, setEstado] = useState<EstadoDelAlta | null>(null)
   const [cargando, setCargando] = useState(true)
@@ -505,6 +505,7 @@ export function Alta() {
             <Paywall
               estado={estado}
               ocupado={ocupado}
+              allowPlanSelectionWhileAwaitingActivation={allowPlanSelectionWhileAwaitingActivation}
               onIntervalo={(intervalo) => void pedirAvance("select_billing_interval", intervalo)}
               onSaltar={() => void pedirAvance("open_paywall")}
             />
@@ -1216,10 +1217,11 @@ export function TarjetaGuardada({ estado }: { estado: EstadoDelAlta }) {
 }
 
 function Paywall({
-  estado, ocupado, onIntervalo, onSaltar,
+  estado, ocupado, allowPlanSelectionWhileAwaitingActivation, onIntervalo, onSaltar,
 }: {
   estado: EstadoDelAlta
   ocupado: boolean
+  allowPlanSelectionWhileAwaitingActivation: boolean
   onIntervalo: (intervalo: BillingInterval) => void
   onSaltar: () => void
 }) {
@@ -1289,7 +1291,7 @@ function Paywall({
   const precio = (plan: typeof lite) => (anual ? plan.anual : plan.mensual)
   const periodo = anual ? "MXN al año" : "MXN al mes"
 
-  if (estado.status === "AWAITING_PAYMENT") {
+  if (estado.status === "AWAITING_PAYMENT" && !allowPlanSelectionWhileAwaitingActivation) {
     return (
       <section className="mx-auto w-full max-w-xl space-y-6 rounded-2xl border border-border bg-card p-6 text-center shadow-sm sm:p-8" aria-labelledby="espera-activacion-titulo">
         <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
