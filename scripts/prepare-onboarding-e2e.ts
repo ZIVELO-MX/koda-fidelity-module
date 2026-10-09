@@ -37,6 +37,12 @@ async function main() {
   })
   if (!user) throw new Error(`Fixture user not found: ${email}. Run prepare-auth-e2e first.`)
   if (!user.businessId) throw new Error(`Fixture user has no business: ${email}`)
+  // El fixture de autenticación crea este usuario como sellador para probar el
+  // portal. En estos recorridos representa al admin que configura el negocio y
+  // solicita su plan.
+  if (user.role !== "admin") {
+    await prisma.user.update({ where: { id: user.id }, data: { role: "admin" } })
+  }
 
   if (modo === "paywall") {
     if (!user.onboardingProgress?.firstCardId) throw new Error("El muro exige una primera tarjeta guardada")
