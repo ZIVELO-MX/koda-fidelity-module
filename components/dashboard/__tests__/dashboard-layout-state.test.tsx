@@ -15,10 +15,14 @@ const props = { userEmail: "admin@dev.invalid", businessName: "Negocio", brandCo
 const layout = () => <DashboardLayoutClient {...props}>Contenido</DashboardLayoutClient>
 
 beforeEach(() => {
+  refresh.mockClear()
   window.localStorage.clear()
   document.documentElement.classList.remove("sidebar-collapsed")
 })
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.useRealTimers()
+})
 
 describe("Preferencia persistida del sidebar", () => {
   it("renderiza en servidor y recupera el estado guardado en el cliente", () => {
@@ -58,5 +62,21 @@ describe("Preferencia persistida del sidebar", () => {
     render(layout())
     fireEvent.focus(window)
     expect(refresh).toHaveBeenCalledOnce()
+  })
+
+  it("refreshes server data when the tab becomes visible", () => {
+    render(layout())
+    Object.defineProperty(document, "visibilityState", { configurable: true, value: "visible" })
+    act(() => document.dispatchEvent(new Event("visibilitychange")))
+
+    expect(refresh).toHaveBeenCalledOnce()
+  })
+
+  it("does not refresh the dashboard on a timer", () => {
+    vi.useFakeTimers()
+    render(layout())
+    act(() => vi.advanceTimersByTime(60_000))
+
+    expect(refresh).not.toHaveBeenCalled()
   })
 })

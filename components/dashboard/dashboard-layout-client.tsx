@@ -57,11 +57,9 @@ export function DashboardLayoutClient({
     }
     window.addEventListener("focus", refreshWhenVisible)
     document.addEventListener("visibilitychange", refreshWhenVisible)
-    const interval = window.setInterval(refreshWhenVisible, 30_000)
     return () => {
       window.removeEventListener("focus", refreshWhenVisible)
       document.removeEventListener("visibilitychange", refreshWhenVisible)
-      window.clearInterval(interval)
     }
   }, [router])
 
