@@ -22,6 +22,7 @@ vi.mock("@/lib/account-lifecycle", async () => ({
   persistPrimaryCardPreference,
 }))
 
+import { ValidationError } from "@/lib/api-utils"
 import { PUT } from "./route"
 
 const principal = {
@@ -50,7 +51,7 @@ function request(body: Record<string, unknown>) {
   }) as NextRequest
 }
 
-function transactionDb(plan: "LITE" | "PRO") {
+function transactionDb(plan: "LITE" | "PRO", liteCardId = "card-owned") {
   const subscription = {
     id: "subscription-owned",
     businessId: "business-owned",
@@ -58,10 +59,10 @@ function transactionDb(plan: "LITE" | "PRO") {
     plan,
     proAccessGranted: false,
     proTrialEndsAt: null,
-    liteCardId: "card-owned",
+    liteCardId,
   }
   const tx = {
-    subscription: { findFirst: vi.fn().mockResolvedValue(subscription) },
+    subscription: { findFirst: vi.fn().mockResolvedValue(subscription), update: vi.fn() },
     loyaltyCard: { update: vi.fn().mockResolvedValue({ ...existingCard }) },
     cardConfiguration: {
       findFirst: vi.fn().mockResolvedValue(null),
@@ -83,12 +84,26 @@ describe("PUT /api/cards/{id} primary selection", () => {
 
   it("keeps Lite from clearing its only primary card", async () => {
     const tx = transactionDb("LITE")
+    persistPrimaryCardPreference.mockRejectedValueOnce(new ValidationError("Lite necesita una tarjeta principal"))
     const response = await PUT(request({ isPrimary: false }), { params: Promise.resolve({ id: "card-owned" }) })
 
     expect(response.status).toBe(400)
     expect(await response.json()).toMatchObject({ error: expect.stringContaining("Lite necesita una tarjeta principal") })
-    expect(tx.loyaltyCard.update).not.toHaveBeenCalled()
-    expect(persistPrimaryCardPreference).not.toHaveBeenCalled()
+    expect(persistPrimaryCardPreference).toHaveBeenCalledWith(tx, expect.objectContaining({
+      cardId: "card-owned", plan: "LITE", isPrimary: false,
+    }))
+  })
+
+  it("lets Lite save an edit with isPrimary false on a different card", async () => {
+    const tx = transactionDb("LITE", "primary-card")
+    persistPrimaryCardPreference.mockResolvedValue([])
+    const response = await PUT(request({ name: "Edited card", isPrimary: false }), { params: Promise.resolve({ id: "card-owned" }) })
+
+    expect(response.status).toBe(200)
+    expect(persistPrimaryCardPreference).toHaveBeenCalledWith(tx, expect.objectContaining({
+      cardId: "card-owned", plan: "LITE", isPrimary: false,
+    }))
+    expect(tx.subscription.update).not.toHaveBeenCalled()
   })
 
   it("saves the card as the Pro preference when the checkbox is checked", async () => {

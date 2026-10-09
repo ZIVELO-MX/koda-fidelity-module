@@ -297,9 +297,6 @@ export async function PUT(
       })
       if (!subscription) throw new ForbiddenError("La cuenta necesita un plan activo para editar tarjetas")
       const plan = resolveEffectiveEntitlements(subscription).plan
-      if (body.isPrimary === false && plan === "LITE") {
-        throw new ValidationError("Lite necesita una tarjeta principal. Elige otra antes de cambiar esta selección")
-      }
       const theme = body.themeId !== undefined
         ? await resolveTheme(tx, typeof body.themeId === "string" ? body.themeId : undefined, plan)
         : null

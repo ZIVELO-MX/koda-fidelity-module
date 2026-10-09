@@ -76,7 +76,7 @@ describe("account lifecycle", () => {
     expect(resolveNewCardPrimarySelection("PRO", "current", false)).toEqual({ isPrimary: false, status: "ACTIVE" })
   })
 
-  it("updates a Lite primary selection and never clears the only Lite primary", async () => {
+  it("updates a Lite primary selection and keeps the previous card locked", async () => {
     const subscriptionUpdate = vi.fn().mockResolvedValue({})
     const cardUpdate = vi.fn().mockResolvedValue({})
     const db = {
@@ -109,14 +109,45 @@ describe("account lifecycle", () => {
       where: { id: "other" },
       data: { isActive: false, isLite: false, status: "LOCKED_BY_PLAN", effectiveThemeId: null },
     })
+  })
+
+  it("lets Lite leave a non-primary card unchecked without changing the saved primary", async () => {
+    const update = vi.fn()
+    const findFirst = vi.fn().mockResolvedValue({ id: "primary", name: "Primary" })
+    const db = { subscription: { update }, loyaltyCard: { findFirst } } as never
 
     await expect(persistPrimaryCardPreference(db, {
       businessId: "business",
-      subscription,
-      cardId: "chosen",
+      subscription: { id: "subscription", liteCardId: "primary" },
+      cardId: "other",
+      plan: "LITE",
+      isPrimary: false,
+    })).resolves.toEqual([])
+
+    expect(findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: "primary", businessId: "business", status: { in: ["ACTIVE", "LOCKED_BY_PLAN"] } },
+    }))
+    expect(update).not.toHaveBeenCalled()
+  })
+
+  it("does not let Lite uncheck its current primary, including the oldest-card fallback", async () => {
+    const findFirst = vi.fn()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: "primary", name: "Primary" })
+    const db = { subscription: { update: vi.fn() }, loyaltyCard: { findFirst } } as never
+
+    await expect(persistPrimaryCardPreference(db, {
+      businessId: "business",
+      subscription: { id: "subscription", liteCardId: "stale-card" },
+      cardId: "primary",
       plan: "LITE",
       isPrimary: false,
     })).rejects.toMatchObject({ name: "ValidationError" })
+
+    expect(findFirst).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      where: { businessId: "business", status: "ACTIVE", isActive: true },
+      orderBy: { createdAt: "asc" },
+    }))
   })
 
   it("clears the saved primary preference when a Pro user unchecks the current card", async () => {

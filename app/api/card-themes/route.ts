@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getBusinessFromSession, handleApiError, requestIdFrom, withRequestId } from "@/lib/api-utils"
-import { syncExpiredEntitlements } from "@/lib/account-lifecycle"
+import { resolvePrimaryCard, syncExpiredEntitlements } from "@/lib/account-lifecycle"
 import { listActiveThemes } from "@/lib/card-themes"
 
 /**
@@ -41,24 +41,12 @@ export async function GET(request: NextRequest) {
       listActiveThemes(prisma),
       syncExpiredEntitlements(prisma, business.id),
     ])
-    const savedPrimary = entitlements.subscription?.liteCardId
-      ? await prisma.loyaltyCard.findFirst({
-          where: {
-            id: entitlements.subscription.liteCardId,
-            businessId: business.id,
-            status: { in: ["ACTIVE", "LOCKED_BY_PLAN"] },
-          },
-          select: { id: true, name: true },
-        })
-      : null
-    const fallbackLiteCard = entitlements.plan === "LITE" && !savedPrimary
-      ? await prisma.loyaltyCard.findFirst({
-          where: { businessId: business.id, status: "ACTIVE", isActive: true },
-          select: { id: true, name: true },
-          orderBy: { createdAt: "asc" },
-        })
-      : null
-    const primaryCard = savedPrimary ?? fallbackLiteCard
+    const primaryCard = await resolvePrimaryCard(
+      prisma,
+      business.id,
+      entitlements.subscription?.liteCardId,
+      entitlements.plan,
+    )
     return withRequestId(NextResponse.json({
       themes,
       plan: entitlements.plan,

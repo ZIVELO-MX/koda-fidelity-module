@@ -217,6 +217,27 @@ export async function configurePrimaryCard(db: PrismaClient, businessId: string,
   })
 }
 
+export async function resolvePrimaryCard(
+  db: QueryDb,
+  businessId: string,
+  preferredCardId: string | null | undefined,
+  plan: SubscriptionPlan,
+) {
+  const preferredCard = preferredCardId
+    ? await db.loyaltyCard.findFirst({
+        where: { id: preferredCardId, businessId, status: { in: ["ACTIVE", "LOCKED_BY_PLAN"] } },
+        select: { id: true, name: true },
+      })
+    : null
+  if (preferredCard || plan !== SubscriptionPlan.LITE) return preferredCard
+
+  return db.loyaltyCard.findFirst({
+    where: { businessId, status: "ACTIVE", isActive: true },
+    select: { id: true, name: true },
+    orderBy: { createdAt: "asc" },
+  })
+}
+
 export async function persistPrimaryCardPreference(
   db: Prisma.TransactionClient,
   input: {
@@ -229,7 +250,11 @@ export async function persistPrimaryCardPreference(
 ) {
   if (!input.isPrimary) {
     if (input.plan === SubscriptionPlan.LITE) {
-      throw new ValidationError("Lite necesita una tarjeta principal. Elige otra antes de cambiar esta selección")
+      const currentPrimary = await resolvePrimaryCard(db, input.businessId, input.subscription.liteCardId, input.plan)
+      if (currentPrimary?.id === input.cardId) {
+        throw new ValidationError("Lite necesita una tarjeta principal. Elige otra antes de cambiar esta selección")
+      }
+      return []
     }
     if (input.subscription.liteCardId === input.cardId) {
       await db.subscription.update({ where: { id: input.subscription.id }, data: { liteCardId: null } })

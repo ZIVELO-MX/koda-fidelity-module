@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 import { EditCardForm } from "@/components/dashboard/edit-card-form"
 import { toDateInputValue } from "@/lib/card-utils"
-import { syncExpiredEntitlements } from "@/lib/account-lifecycle"
+import { resolvePrimaryCard, syncExpiredEntitlements } from "@/lib/account-lifecycle"
 
 export default async function EditCardPage({
   params,
@@ -35,7 +35,7 @@ export default async function EditCardPage({
   }
 
   const entitlements = await syncExpiredEntitlements(prisma, userRecord.business.id)
-  const [card, savedPrimary] = await Promise.all([
+  const [card, primaryCard] = await Promise.all([
     prisma.loyaltyCard.findUnique({
       where: { id },
       include: {
@@ -45,29 +45,12 @@ export default async function EditCardPage({
         },
       },
     }),
-    entitlements.subscription?.liteCardId
-      ? prisma.loyaltyCard.findFirst({
-          where: {
-            id: entitlements.subscription.liteCardId,
-            businessId: userRecord.business.id,
-            status: { in: ["ACTIVE", "LOCKED_BY_PLAN"] },
-          },
-          select: { id: true, name: true },
-        })
-      : Promise.resolve(null),
+    resolvePrimaryCard(prisma, userRecord.business.id, entitlements.subscription?.liteCardId, entitlements.plan),
   ])
 
-  if (!card || card.businessId !== userRecord.business.id || !card.isActive) {
+  if (!card || card.businessId !== userRecord.business.id || !["ACTIVE", "LOCKED_BY_PLAN"].includes(card.status)) {
     redirect("/dashboard/cards")
   }
-
-  const primaryCard = savedPrimary ?? (entitlements.plan === "LITE"
-    ? await prisma.loyaltyCard.findFirst({
-        where: { businessId: userRecord.business.id, status: "ACTIVE", isActive: true },
-        select: { id: true, name: true },
-        orderBy: { createdAt: "asc" },
-      })
-    : null)
 
   return (
     <EditCardForm

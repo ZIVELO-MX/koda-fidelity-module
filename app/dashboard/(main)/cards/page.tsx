@@ -9,6 +9,7 @@ import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { daysUntilExpiry } from "@/lib/card-utils"
 import { resolveEffectiveEntitlements, syncExpiredEntitlements } from "@/lib/account-lifecycle"
 import { PrimaryCardConfigurator } from "@/components/dashboard/primary-card-configurator"
+import type { Prisma } from "@prisma/client"
 
 const STATUS_OPTIONS = [
   { value: "all", label: "Todas" },
@@ -38,7 +39,10 @@ export default async function CardsPage({
   if (!business) redirect("/login")
   await syncExpiredEntitlements(prisma, business.id)
 
-  const where: Record<string, unknown> = { businessId: business.id, isActive: true }
+  const where: Prisma.LoyaltyCardWhereInput = {
+    businessId: business.id,
+    status: { in: ["ACTIVE", "LOCKED_BY_PLAN"] },
+  }
   if (q?.trim()) where.name = { contains: q.trim(), mode: "insensitive" }
 
   const [allCards, primaryCards, subscription] = await Promise.all([
@@ -62,12 +66,12 @@ export default async function CardsPage({
   const enriched = allCards.map((c) => ({ ...c, expired: !!(c.expiresAt && c.expiresAt < now) }))
 
   const cards = status === "active"
-    ? enriched.filter((c) => !c.expired)
+    ? enriched.filter((c) => c.status === "ACTIVE" && !c.expired)
     : status === "expired"
-    ? enriched.filter((c) => c.expired)
+    ? enriched.filter((c) => c.status === "ACTIVE" && c.expired)
     : enriched.sort((a, b) => Number(a.expired) - Number(b.expired))
 
-  const expiredCount = enriched.filter((c) => c.expired).length
+  const expiredCount = enriched.filter((c) => c.status === "ACTIVE" && c.expired).length
   const accountPlan = subscription ? resolveEffectiveEntitlements(subscription).plan : null
   const primaryCardId = subscription?.liteCardId && primaryCards.some((card) => card.id === subscription.liteCardId)
     ? subscription.liteCardId
@@ -194,12 +198,14 @@ export default async function CardsPage({
                       )}
                       <span
                         className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                          card.expired
+                          card.status === "LOCKED_BY_PLAN"
+                            ? "bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300"
+                            : card.expired
                             ? "bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300"
                             : "bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-300"
                         }`}
                       >
-                        {card.expired ? "Vencida" : "Activa"}
+                        {card.status === "LOCKED_BY_PLAN" ? "Bloqueada por plan" : card.expired ? "Vencida" : "Activa"}
                       </span>
                     </div>
                   </div>
@@ -223,7 +229,9 @@ export default async function CardsPage({
                   )}
 
                   <Button asChild variant="outline" className="min-h-11 w-full">
-                    <Link href={`/dashboard/cards/${card.id}`}>Ver tarjeta</Link>
+                    <Link href={card.status === "LOCKED_BY_PLAN" ? `/dashboard/cards/${card.id}/edit` : `/dashboard/cards/${card.id}`}>
+                      {card.status === "LOCKED_BY_PLAN" ? "Editar tarjeta" : "Ver tarjeta"}
+                    </Link>
                   </Button>
                 </div>
               </div>

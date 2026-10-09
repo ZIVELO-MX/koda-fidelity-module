@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { cuerpoJson, ForbiddenError, getBusinessFromSession, handleApiError, requestIdFrom, requireActivatedBusiness, requireRole, requireWritableBusinessPrincipal, ValidationError, withRequestId } from "@/lib/api-utils"
-import { persistPrimaryCardPreference, resolveEffectiveEntitlements, resolveNewCardPrimarySelection, syncExpiredEntitlements } from "@/lib/account-lifecycle"
+import { persistPrimaryCardPreference, resolveEffectiveEntitlements, resolveNewCardPrimarySelection, resolvePrimaryCard, syncExpiredEntitlements } from "@/lib/account-lifecycle"
 import { resolveTheme } from "@/lib/card-themes"
 import type { CardSummary } from "@/lib/fidelity-contracts"
 
@@ -217,20 +217,8 @@ export async function POST(request: NextRequest) {
       if (!subscription) throw new ForbiddenError("La cuenta necesita un plan activo para crear tarjetas")
 
       const plan = resolveEffectiveEntitlements(subscription).plan
-      const savedPrimary = subscription.liteCardId
-        ? await tx.loyaltyCard.findFirst({
-            where: { id: subscription.liteCardId, businessId: business.id, status: { in: ["ACTIVE", "LOCKED_BY_PLAN"] } },
-            select: { id: true },
-          })
-        : null
-      const activeLiteCard = plan === "LITE" && !savedPrimary
-        ? await tx.loyaltyCard.findFirst({
-            where: { businessId: business.id, status: "ACTIVE", isActive: true },
-            select: { id: true },
-            orderBy: { createdAt: "asc" },
-          })
-        : null
-      const primarySelection = resolveNewCardPrimarySelection(plan, savedPrimary?.id ?? activeLiteCard?.id ?? null, body.isPrimary)
+      const currentPrimary = await resolvePrimaryCard(tx, business.id, subscription.liteCardId, plan)
+      const primarySelection = resolveNewCardPrimarySelection(plan, currentPrimary?.id ?? null, body.isPrimary)
       const theme = await resolveTheme(tx, typeof body.themeId === "string" ? body.themeId : undefined, plan)
       const created = await tx.loyaltyCard.create({
         data: {

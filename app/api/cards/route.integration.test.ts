@@ -1,5 +1,6 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest"
 import { prisma } from "@/lib/prisma"
+import { activateManualSubscription } from "@/lib/account-lifecycle"
 
 const { getBusinessFromSession, requireWritableBusinessPrincipal } = vi.hoisted(() => ({
   getBusinessFromSession: vi.fn(),
@@ -33,6 +34,11 @@ integration("Cards API CRUD contract", () => {
       data: { name: "Cards API CRUD", email: `cards-api-${suffix}@test.invalid` },
     })
     businessIds.push(business.id)
+    await activateManualSubscription(prisma, {
+      businessId: business.id,
+      plan: "PRO",
+      idempotencyKey: `cards-crud-fixture:${suffix}`,
+    })
 
     const principal = {
       business,
