@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest"
 import { randomUUID } from "node:crypto"
 import { prisma } from "@/lib/prisma"
 import { ConflictError, NotFoundError, ValidationError } from "@/lib/api-utils"
-import { activateManualSubscription, configurePrimaryCard, createCustomerProfile, getEntitlements, scheduleClosure, syncExpiredEntitlements } from "../account-lifecycle"
+import { activateManualSubscription, configurePrimaryCard, createCustomerProfile, deactivateManualSubscription, getEntitlements, scheduleClosure, syncExpiredEntitlements } from "../account-lifecycle"
 import { ensureCategories, getOnboarding, saveDraft } from "../onboarding-service"
 
 const integration = describe.skipIf(process.env.CI !== "true")
@@ -11,6 +11,7 @@ integration("account lifecycle PostgreSQL integration", () => {
   let businessId = ""
   let userId = ""
   let profileId = ""
+  const extraBusinessIds: string[] = []
 
   beforeEach(async () => {
     const business = await prisma.business.create({ data: { name: "Lifecycle Test", email: `lifecycle-${Date.now()}-${Math.random()}@test.invalid` } })
@@ -24,6 +25,7 @@ integration("account lifecycle PostgreSQL integration", () => {
   afterAll(async () => { await prisma.$disconnect() })
   afterEach(async () => {
     if (profileId) await prisma.customerProfile.delete({ where: { id: profileId } })
+    await Promise.all(extraBusinessIds.splice(0).map((id) => prisma.business.delete({ where: { id } })))
     if (businessId) await prisma.business.delete({ where: { id: businessId } })
     businessId = ""
     userId = ""
@@ -99,6 +101,82 @@ integration("account lifecycle PostgreSQL integration", () => {
     expect(changed.periodEnd).toEqual(periodEnd)
     expect(changed.activatedAt.getTime()).toBeGreaterThanOrEqual(changeStartedAt.getTime())
     expect(changed.activatedAt.getTime()).toBeLessThanOrEqual(Date.now())
+  })
+
+  it("cancels active and past-due subscriptions, locks every non-archived card, and waits all members", async () => {
+    const now = new Date()
+    await activateManualSubscription(prisma, { businessId, plan: "PRO", idempotencyKey: randomUUID() })
+    await prisma.subscription.create({
+      data: {
+        businessId,
+        plan: "LITE",
+        billingInterval: "MONTHLY",
+        status: "PAST_DUE",
+        amountMinor: 0,
+        currency: "MXN",
+        activatedAt: now,
+        periodStart: now,
+        periodEnd: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
+      },
+    })
+    const cards = await prisma.loyaltyCard.createManyAndReturn({ data: [
+      { businessId, name: "Active", reward: "R1", status: "ACTIVE", isActive: true, isLite: true },
+      { businessId, name: "Draft", reward: "R2", status: "DRAFT", isActive: false, isLite: true },
+      { businessId, name: "Locked", reward: "R3", status: "LOCKED_BY_PLAN", isActive: false, isLite: false },
+      { businessId, name: "Archived", reward: "R4", status: "ARCHIVED", isActive: false, isLite: false },
+    ] })
+    const secondUser = await prisma.user.create({
+      data: { name: "Second member", email: `member-${randomUUID()}@test.invalid`, authUserId: randomUUID(), businessId },
+    })
+    await prisma.onboardingProgress.create({ data: { userId: secondUser.id, businessId } })
+
+    const result = await deactivateManualSubscription(prisma, {
+      businessId, summary: "Cuenta inactiva", operator: "Support", idempotencyKey: randomUUID(),
+    })
+
+    expect(result).toMatchObject({ alreadyApplied: false, canceledSubscriptions: 2, lockedCards: 3, affectedUsers: 2 })
+    expect(await prisma.subscription.count({ where: { businessId, status: "CANCELED" } })).toBe(2)
+    const storedCards = await prisma.loyaltyCard.findMany({ where: { businessId }, orderBy: { createdAt: "asc" } })
+    const archivedCardId = cards.find(({ name }) => name === "Archived")?.id
+    expect(archivedCardId).toBeDefined()
+    for (const card of storedCards.filter(({ id }) => id !== archivedCardId)) {
+      expect(card).toMatchObject({ status: "LOCKED_BY_PLAN", isActive: false, isLite: false, effectiveThemeId: null })
+    }
+    expect(storedCards.find(({ id }) => id === archivedCardId)).toMatchObject({ status: "ARCHIVED", isActive: false })
+    expect(await prisma.onboardingProgress.findMany({ where: { businessId } })).toEqual(expect.arrayContaining([
+      expect.objectContaining({ userId, step: "PAYWALL", status: "AWAITING_PAYMENT" }),
+      expect.objectContaining({ userId: secondUser.id, step: "PAYWALL", status: "AWAITING_PAYMENT" }),
+    ]))
+  })
+
+  it("does not repeat deactivation when the idempotency key is reused", async () => {
+    await activateManualSubscription(prisma, { businessId, plan: "PRO", idempotencyKey: randomUUID() })
+    await prisma.loyaltyCard.create({ data: { businessId, name: "Keep once", reward: "R1", status: "ACTIVE", isActive: true } })
+    const idempotencyKey = randomUUID()
+    const input = { businessId, summary: "Cuenta inactiva", operator: "Support", idempotencyKey }
+
+    const first = await deactivateManualSubscription(prisma, input)
+    const second = await deactivateManualSubscription(prisma, input)
+
+    expect(first.alreadyApplied).toBe(false)
+    expect(second).toMatchObject({ alreadyApplied: true, canceledSubscriptions: 0, lockedCards: 0, affectedUsers: 0 })
+    expect(await prisma.billingAuditEvent.count({ where: { businessId, idempotencyKey } })).toBe(1)
+    expect(await prisma.subscription.count({ where: { businessId, status: "CANCELED" } })).toBe(1)
+    expect(await prisma.loyaltyCard.count({ where: { businessId, status: "LOCKED_BY_PLAN" } })).toBe(1)
+  })
+
+  it("rejects a deactivation key that already belongs to another business", async () => {
+    const otherBusiness = await prisma.business.create({ data: { name: "Other business", email: `other-${randomUUID()}@test.invalid` } })
+    extraBusinessIds.push(otherBusiness.id)
+    const idempotencyKey = randomUUID()
+    await prisma.billingAuditEvent.create({
+      data: { businessId: otherBusiness.id, action: "deactivate_plan", operator: "Support", idempotencyKey },
+    })
+
+    await expect(deactivateManualSubscription(prisma, {
+      businessId, summary: "Cuenta inactiva", operator: "Support", idempotencyKey,
+    })).rejects.toBeInstanceOf(ConflictError)
+    expect(await prisma.billingAuditEvent.count({ where: { businessId, idempotencyKey } })).toBe(0)
   })
 
   it("keeps a Pro theme selected while clearing the effective theme on Lite", async () => {

@@ -1,7 +1,15 @@
 import { describe, it, expect, vi } from "vitest"
 
+const { findActiveSubscription, findPendingProgress } = vi.hoisted(() => ({
+  findActiveSubscription: vi.fn(),
+  findPendingProgress: vi.fn(),
+}))
+
 vi.mock("@/lib/supabase-server", () => ({ createClient: vi.fn() }))
-vi.mock("@/lib/prisma", () => ({ prisma: {} }))
+vi.mock("@/lib/prisma", () => ({ prisma: {
+  subscription: { findFirst: findActiveSubscription },
+  onboardingProgress: { findFirst: findPendingProgress },
+} }))
 vi.mock("next/server", () => ({
   NextResponse: {
     json: (body: unknown, init?: ResponseInit) =>
@@ -16,6 +24,7 @@ import {
   ForbiddenError,
   ProThemeRequiresProError,
   OnboardingActivationRequiredError,
+  requireActivatedBusiness,
   handleApiError,
   withApiContext,
 } from "../api-utils"
@@ -87,6 +96,29 @@ describe("handleApiError", () => {
   it("returns 500 for unknown errors", () => {
     const response = handleApiError(new Error("Unexpected"))
     expect(response.status).toBe(500)
+  })
+})
+
+describe("requireActivatedBusiness", () => {
+  it("requires activation when onboarding is pending and there is no active plan", async () => {
+    findActiveSubscription.mockResolvedValue(null)
+    findPendingProgress.mockResolvedValue({ id: "progress-1" })
+
+    await expect(requireActivatedBusiness("business-1")).rejects.toBeInstanceOf(OnboardingActivationRequiredError)
+  })
+
+  it("lets a business with an active subscription pass", async () => {
+    findActiveSubscription.mockResolvedValue({ id: "subscription-1" })
+    findPendingProgress.mockResolvedValue({ id: "progress-1" })
+
+    await expect(requireActivatedBusiness("business-1")).resolves.toBeUndefined()
+  })
+
+  it("currently lets a business with no subscription and no pending onboarding pass", async () => {
+    findActiveSubscription.mockResolvedValue(null)
+    findPendingProgress.mockResolvedValue(null)
+
+    await expect(requireActivatedBusiness("business-1")).resolves.toBeUndefined()
   })
 })
 
