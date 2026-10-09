@@ -33,6 +33,7 @@ describe("OpenAPI spec", () => {
       "/api/card-themes",
       "/api/cards/{id}",
       "/api/cards/{id}/restore",
+      "/api/cards/{id}/primary",
       "/api/billing/status",
       "/api/cron/account-closures",
       "/api/cron/subscription-entitlements",
@@ -67,6 +68,7 @@ describe("OpenAPI spec", () => {
     expect(spec.paths["/api/cards/{id}"]).toHaveProperty("get")
     expect(spec.paths["/api/cards/{id}"]).toHaveProperty("put")
     expect(spec.paths["/api/cards/{id}"]).toHaveProperty("delete")
+    expect(spec.paths["/api/cards/{id}/primary"]).toHaveProperty("post")
     expect(spec.paths["/api/card-themes"]).toHaveProperty("get")
 
     expect(spec.paths["/api/customers"]).toHaveProperty("get")

@@ -20,7 +20,7 @@ vi.mock("@/lib/prisma", () => ({ prisma: {} }))
 import { GET, POST } from "./route"
 import { UnauthorizedError } from "@/lib/api-utils"
 
-const principal = { business: { id: "business-owned", name: "Pastelería Luna" }, user: { id: "user-owned", email: "owner@test.invalid" } }
+const principal = { business: { id: "business-owned", name: "Pastelería Luna" }, user: { id: "user-owned", email: "owner@test.invalid", role: "admin" as const } }
 const savedRequest = {
   ticketNumber: "KF-0123456789ABCDEF",
   plan: "PRO",
@@ -87,6 +87,15 @@ describe("/api/subscription-requests", () => {
     getBusinessFromSession.mockRejectedValue(new UnauthorizedError())
     expect((await GET(request("GET"))).status).toBe(401)
     expect((await POST(request("POST", { plan: "LITE", billingInterval: "MONTHLY" }))).status).toBe(401)
+    expect(saveSubscriptionRequest).not.toHaveBeenCalled()
+  })
+
+  it("does not let a seller create or change the business plan request", async () => {
+    getBusinessFromSession.mockResolvedValue({ ...principal, user: { ...principal.user, role: "sellador" } })
+
+    const response = await POST(request("POST", { plan: "LITE", billingInterval: "MONTHLY" }))
+
+    expect(response.status).toBe(403)
     expect(saveSubscriptionRequest).not.toHaveBeenCalled()
   })
 })

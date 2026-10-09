@@ -58,7 +58,7 @@ test.beforeAll(async ({ browser }) => {
   if (process.env.CI) expect(Boolean(CORREO && CLAVE), "Credenciales obligatorias del fixture del alta").toBe(true)
   test.skip(!CORREO || !CLAVE, "Requiere las credenciales del fixture del alta")
   page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
-  await entrar(page, CORREO!, CLAVE!)
+  await entrar(page, CORREO!, CLAVE!, ["/dashboard", "/onboarding"])
 })
 
 test.afterAll(async () => {
