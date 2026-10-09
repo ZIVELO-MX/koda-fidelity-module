@@ -1,8 +1,9 @@
-import "dotenv/config"
+import { config as loadEnv } from "dotenv"
 import { randomUUID } from "node:crypto"
 import { createInterface } from "node:readline/promises"
 import { stdin as input, stdout as output } from "node:process"
-import { prisma } from "../lib/prisma"
+import { databaseHost, fidelityEnvFile } from "./fidelity-admin-query"
+import { assertBillingEnvironmentConfirmation, chooseBillingEnvironment, formatBillingEnvironmentSummary } from "./billing-manage-user-config"
 import {
   activateManualSubscription,
   deactivateManualSubscription,
@@ -11,10 +12,11 @@ import { completeSubscriptionRequest, saveSubscriptionRequest } from "../lib/sub
 
 type RequestedPlan = "PRO" | "LITE" | "INACTIVO"
 
-const readline = createInterface({ input, output })
-const operator = process.env.BILLING_OPERATOR?.trim()
+let readline: ReturnType<typeof createInterface> | null = null
+let disconnectDatabase: (() => Promise<void>) | null = null
 
 async function ask(label: string) {
+  if (!readline) throw new Error("La interfaz de confirmación no está disponible")
   return (await readline.question(label)).trim()
 }
 
@@ -23,6 +25,27 @@ function isRequestedPlan(value: string): value is RequestedPlan {
 }
 
 async function main() {
+  readline = createInterface({ input, output })
+  const environment = chooseBillingEnvironment(await ask("Entorno (DESARROLLO|PRODUCCION): "))
+  const environmentFile = fidelityEnvFile(environment, process.cwd())
+  const loadedEnvironment = loadEnv({ path: environmentFile, override: true })
+  if (loadedEnvironment.error) {
+    throw new Error(`No se pudo cargar ${environmentFile}: ${loadedEnvironment.error.message}`)
+  }
+  const databaseUrl = loadedEnvironment.parsed?.DATABASE_URL
+  if (!databaseUrl) throw new Error(`DATABASE_URL no está definido en ${environmentFile}`)
+  const host = databaseHost(databaseUrl)
+  console.log(`\nEntorno seleccionado: ${environment === "development" ? "DESARROLLO" : "PRODUCCION"}`)
+  console.log(`Base de datos: ${host}`)
+
+  if (environment === "production") {
+    const confirmation = await ask(`Base de producción. Escribe exactamente ${host} para continuar: `)
+    assertBillingEnvironmentConfirmation(environment, confirmation, host)
+  }
+
+  const { prisma } = await import("../lib/prisma")
+  disconnectDatabase = () => prisma.$disconnect()
+  const operator = process.env.BILLING_OPERATOR?.trim()
   if (!operator) throw new Error("Define BILLING_OPERATOR con el nombre de quien ejecuta el cambio")
 
   const email = (await ask("Correo de un usuario del negocio: ")).toLowerCase()
@@ -97,6 +120,7 @@ async function main() {
   }
   const interval = pendingRequests[0]?.billingInterval ?? activeSubscription?.billingInterval ?? business.subscriptions[0]?.billingInterval ?? "MONTHLY"
   console.log("\nResumen para confirmar")
+  console.log(formatBillingEnvironmentSummary(environment, host))
   console.log(`  Correo: ${email}`)
   console.log(`  Negocio: ${business.name} (${business.id})`)
   console.log(`  Usuarios afectados: ${business.users.length}; invitaciones pendientes: ${business.invitations.length}`)
@@ -158,6 +182,6 @@ main()
     process.exitCode = 1
   })
   .finally(async () => {
-    readline.close()
-    await prisma.$disconnect()
+    readline?.close()
+    await disconnectDatabase?.()
   })
