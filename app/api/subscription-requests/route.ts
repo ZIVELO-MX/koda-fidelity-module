@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { assertBusinessWritable } from "@/lib/account-lifecycle"
-import { cuerpoJson, getBusinessFromSession, handleApiError, requestIdFrom, ValidationError, withRequestId } from "@/lib/api-utils"
+import { cuerpoJson, getBusinessFromSession, handleApiError, requestIdFrom, requireRole, ValidationError, withRequestId } from "@/lib/api-utils"
 import { getLatestSubscriptionRequest, saveSubscriptionRequest, subscriptionRequestInputSchema } from "@/lib/subscription-requests"
 
 /**
@@ -75,6 +75,7 @@ export async function POST(request: NextRequest) {
   const requestId = requestIdFrom(request)
   try {
     const { business, user } = await getBusinessFromSession()
+    requireRole(user, "admin")
     await assertBusinessWritable(prisma, business.id)
     const parsed = subscriptionRequestInputSchema.safeParse(await cuerpoJson(request))
     if (!parsed.success) throw new ValidationError("Solicitud de activación inválida")
