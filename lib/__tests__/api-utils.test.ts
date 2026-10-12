@@ -1,7 +1,15 @@
 import { describe, it, expect, vi } from "vitest"
 
+const { findActiveSubscription, findPendingProgress } = vi.hoisted(() => ({
+  findActiveSubscription: vi.fn(),
+  findPendingProgress: vi.fn(),
+}))
+
 vi.mock("@/lib/supabase-server", () => ({ createClient: vi.fn() }))
-vi.mock("@/lib/prisma", () => ({ prisma: {} }))
+vi.mock("@/lib/prisma", () => ({ prisma: {
+  subscription: { findFirst: findActiveSubscription },
+  onboardingProgress: { findFirst: findPendingProgress },
+} }))
 vi.mock("next/server", () => ({
   NextResponse: {
     json: (body: unknown, init?: ResponseInit) =>
@@ -14,6 +22,9 @@ import {
   NotFoundError,
   ValidationError,
   ForbiddenError,
+  ProThemeRequiresProError,
+  OnboardingActivationRequiredError,
+  requireActivatedBusiness,
   handleApiError,
   withApiContext,
 } from "../api-utils"
@@ -60,6 +71,18 @@ describe("handleApiError", () => {
     expect(response.status).toBe(403)
   })
 
+  it("returns support instructions when Lite cannot save a Pro theme", async () => {
+    const response = handleApiError(new ProThemeRequiresProError(), "request-pro-theme")
+    expect(response.status).toBe(403)
+    expect(await response.json()).toMatchObject({ code: "KF-PLAN-PRO-THEME", supportEmail: "soporte@zivelo.dev", requestId: "request-pro-theme", retryable: false })
+  })
+
+  it("sends inactive accounts back to onboarding", async () => {
+    const response = handleApiError(new OnboardingActivationRequiredError(), "request-activation")
+    expect(response.status).toBe(403)
+    expect(await response.json()).toMatchObject({ code: "KF-ACCOUNT-ACTIVATION", redirectTo: "/onboarding", requestId: "request-activation", retryable: false })
+  })
+
   it("returns 404 for NotFoundError", () => {
     const response = handleApiError(new NotFoundError("Not found"))
     expect(response.status).toBe(404)
@@ -73,6 +96,29 @@ describe("handleApiError", () => {
   it("returns 500 for unknown errors", () => {
     const response = handleApiError(new Error("Unexpected"))
     expect(response.status).toBe(500)
+  })
+})
+
+describe("requireActivatedBusiness", () => {
+  it("requires activation when onboarding is pending and there is no active plan", async () => {
+    findActiveSubscription.mockResolvedValue(null)
+    findPendingProgress.mockResolvedValue({ id: "progress-1" })
+
+    await expect(requireActivatedBusiness("business-1")).rejects.toBeInstanceOf(OnboardingActivationRequiredError)
+  })
+
+  it("lets a business with an active subscription pass", async () => {
+    findActiveSubscription.mockResolvedValue({ id: "subscription-1" })
+    findPendingProgress.mockResolvedValue({ id: "progress-1" })
+
+    await expect(requireActivatedBusiness("business-1")).resolves.toBeUndefined()
+  })
+
+  it("currently lets a business with no subscription and no pending onboarding pass", async () => {
+    findActiveSubscription.mockResolvedValue(null)
+    findPendingProgress.mockResolvedValue(null)
+
+    await expect(requireActivatedBusiness("business-1")).resolves.toBeUndefined()
   })
 })
 

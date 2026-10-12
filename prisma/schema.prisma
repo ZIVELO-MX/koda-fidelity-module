@@ -13,6 +13,11 @@ enum Role {
   sellador
 }
 
+enum SignupAccountType {
+  BUSINESS
+  CUSTOMER
+}
+
 enum LedgerEventType {
   customer_joined
   stamp
@@ -30,6 +35,7 @@ enum OnboardingStep {
   INTRO
   BUSINESS
   CARD
+  CARD_READY
   ACQUISITION
   PAYWALL
 }
@@ -93,6 +99,12 @@ enum CardStatus {
   ARCHIVED
 }
 
+enum CardTextColor {
+  AUTO
+  DARK
+  LIGHT
+}
+
 enum ThemePlan {
   LITE
   PRO
@@ -143,6 +155,7 @@ model User {
   updatedAt             DateTime            @updatedAt
   authUserId            String?             @unique @db.Uuid
   passwordSetupRequired Boolean             @default(false)
+  planChangeNoticeSeenAt DateTime            @default(now())
   invitationsSent       TeamInvitation[]    @relation("InvitationSender")
   onboardingProgress    OnboardingProgress?
   subscriptionRequests  SubscriptionRequest[]
@@ -348,7 +361,8 @@ model AvatarCleanupJob {
 model SignupIntent {
   id         String   @id @default(cuid())
   email      String   @unique
-  name       String
+  name       String?
+  accountType SignupAccountType @default(BUSINESS)
   authUserId String?  @unique @db.Uuid
   status     String   @default("pending")
   createdAt  DateTime @default(now())
@@ -398,6 +412,7 @@ model LoyaltyCard {
   reward              String
   stampsRequired      Int                  @default(10)
   brandColor          String               @default("#ff6b35")
+  textColor           CardTextColor        @default(LIGHT)
   iconName            String?
   stampIconName       String?
   isActive            Boolean              @default(true)

@@ -67,6 +67,13 @@ async function main() {
     ? await admin.updateUserById(customerExisting.id, { password: customerPassword, email_confirm: true, user_metadata: { name: "Fidelity Customer Fixture", must_change_password: false } })
     : await admin.createUser({ email: customerEmail, password: customerPassword, email_confirm: true, user_metadata: { name: "Fidelity Customer Fixture", must_change_password: false } })
   if (customerResult.error) throw new Error(`Unable to prepare customer fixture: ${customerResult.error.message}`)
+  const customerAuthUserId = customerResult.data.user?.id
+  if (!customerAuthUserId) throw new Error("Customer fixture was prepared without an id")
+  await prisma.customerProfile.upsert({
+    where: { emailNormalized: customerEmail.toLowerCase() },
+    create: { authUserId: customerAuthUserId, emailNormalized: customerEmail.toLowerCase(), name: "Fidelity Customer Fixture" },
+    update: { authUserId: customerAuthUserId, name: "Fidelity Customer Fixture" },
+  })
   console.log(`Prepared auth-only customer fixture: ${customerEmail}`)
 
   if (expiredPassword.length < 8) throw new Error("E2E_EXPIRED_PASSWORD must be at least 8 characters")
