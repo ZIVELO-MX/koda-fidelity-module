@@ -68,7 +68,7 @@ async function liveContext(onboarding: Awaited<ReturnType<typeof getOnboarding>>
     user: { id: onboarding.id, email: onboarding.email, name: onboarding.name, role: onboarding.role },
     business: business ? { id: business.id, name: business.name, brandColor: business.brandColor, logoUrl: business.logoUrl, iconName: business.iconName, website: business.website, instagram: business.instagram } : null,
     onboardingStatus: onboarding.onboardingProgress?.status,
-    plan: entitlements?.plan ?? "LITE",
+    plan: onboarding.onboardingProgress?.status !== "ACTIVE" ? "PRO" : entitlements?.plan ?? "LITE",
   }
   return { onboarding, categories, themes, accountContext, mode: "live" }
 }

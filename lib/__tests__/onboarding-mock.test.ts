@@ -44,6 +44,22 @@ describe("onboarding mock", () => {
       draftVersion: cardStep.onboarding.onboardingProgress.draftVersion,
     })
     expect(acquisitionStep.onboarding.onboardingProgress.step).toBe("ACQUISITION")
+
+    const paywall = await advanceMockOnboarding(database, principal, {
+      action: "complete_acquisition",
+      draftVersion: acquisitionStep.onboarding.onboardingProgress.draftVersion,
+    })
+    expect(paywall.accountContext.plan).toBe("PRO")
+    const waiting = await advanceMockOnboarding(database, principal, {
+      action: "open_paywall",
+      draftVersion: paywall.onboarding.onboardingProgress.draftVersion,
+    })
+    expect(waiting.onboarding.onboardingProgress.status).toBe("AWAITING_PAYMENT")
+    await expect(advanceMockOnboarding(database, principal, {
+      action: "select_billing_interval",
+      billingInterval: "MONTHLY",
+      draftVersion: waiting.onboarding.onboardingProgress.draftVersion,
+    })).rejects.toThrow(/todavía no está activo/i)
   })
 
   it("rejects a different signed-in user from the target session", async () => {

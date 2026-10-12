@@ -7,6 +7,9 @@ import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { daysUntilExpiry } from "@/lib/card-utils"
+import { resolveEffectiveEntitlements, syncExpiredEntitlements } from "@/lib/account-lifecycle"
+import { PrimaryCardConfigurator } from "@/components/dashboard/primary-card-configurator"
+import type { Prisma } from "@prisma/client"
 
 const STATUS_OPTIONS = [
   { value: "all", label: "Todas" },
@@ -29,31 +32,50 @@ export default async function CardsPage({
 
   if (!user?.email) redirect("/login")
 
-  const business = await prisma.business.findFirst({ where: { users: { some: { authUserId: user.id } } } })
+  const business = await prisma.business.findFirst({
+    where: { users: { some: { authUserId: user.id } } },
+    include: { users: { where: { authUserId: user.id }, select: { role: true }, take: 1 } },
+  })
   if (!business) redirect("/login")
+  await syncExpiredEntitlements(prisma, business.id)
 
-  const where: Record<string, unknown> = { businessId: business.id, isActive: true }
+  const where: Prisma.LoyaltyCardWhereInput = {
+    businessId: business.id,
+    status: { in: ["ACTIVE", "LOCKED_BY_PLAN"] },
+  }
   if (q?.trim()) where.name = { contains: q.trim(), mode: "insensitive" }
 
-  const allCards = await prisma.loyaltyCard.findMany({
-    where,
-    include: {
-      _count: { select: { customers: { where: { isActive: true } } } },
-      effectiveTheme: { select: { code: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  })
+  const [allCards, primaryCards, subscription] = await Promise.all([
+    prisma.loyaltyCard.findMany({
+      where,
+      include: {
+        _count: { select: { customers: { where: { isActive: true } } } },
+        effectiveTheme: { select: { code: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.loyaltyCard.findMany({
+      where: { businessId: business.id, status: { in: ["ACTIVE", "LOCKED_BY_PLAN"] } },
+      select: { id: true, name: true, reward: true, status: true },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.subscription.findFirst({ where: { businessId: business.id, status: "ACTIVE" }, orderBy: { createdAt: "desc" } }),
+  ])
 
   const now = new Date()
   const enriched = allCards.map((c) => ({ ...c, expired: !!(c.expiresAt && c.expiresAt < now) }))
 
   const cards = status === "active"
-    ? enriched.filter((c) => !c.expired)
+    ? enriched.filter((c) => c.status === "ACTIVE" && !c.expired)
     : status === "expired"
-    ? enriched.filter((c) => c.expired)
+    ? enriched.filter((c) => c.status === "ACTIVE" && c.expired)
     : enriched.sort((a, b) => Number(a.expired) - Number(b.expired))
 
-  const expiredCount = enriched.filter((c) => c.expired).length
+  const expiredCount = enriched.filter((c) => c.status === "ACTIVE" && c.expired).length
+  const accountPlan = subscription ? resolveEffectiveEntitlements(subscription).plan : null
+  const primaryCardId = subscription?.liteCardId && primaryCards.some((card) => card.id === subscription.liteCardId)
+    ? subscription.liteCardId
+    : accountPlan === "LITE" ? primaryCards.find((card) => card.status === "ACTIVE")?.id ?? null : null
 
   return (
     <div className="space-y-8">
@@ -62,7 +84,14 @@ export default async function CardsPage({
           <h1 className="text-2xl font-bold text-foreground text-balance">Tarjetas de Lealtad</h1>
           <p className="text-muted-foreground">Gestiona tus campañas de tarjetas de lealtad digitales</p>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:flex">
+        <div className="grid grid-cols-1 gap-2 sm:flex">
+          {business.users[0]?.role === "admin" && subscription && primaryCards.length > 0 && (
+            <PrimaryCardConfigurator
+              cards={primaryCards.filter((card) => card.status === "ACTIVE" || card.status === "LOCKED_BY_PLAN")}
+              primaryCardId={primaryCardId}
+              plan={accountPlan!}
+            />
+          )}
           <Button variant="outline" asChild>
             <Link href="/dashboard/cards/archived">
               <Archive className="h-4 w-4 mr-2" aria-hidden="true" />
@@ -133,11 +162,14 @@ export default async function CardsPage({
             const diasParaVencer = daysUntilExpiry(card.expiresAt)
             const vencimientoRequiereAtencion =
               card.expired || (diasParaVencer !== null && diasParaVencer <= 7)
+            const isPrimary = card.id === primaryCardId
             return (
               <div
                 key={card.id}
-                className={`overflow-hidden rounded-2xl border bg-card transition-shadow hover:shadow-lg ${
-                  card.expired ? "border-border opacity-80" : "border-border"
+                className={`overflow-hidden rounded-2xl bg-card transition-[border-color,box-shadow] hover:shadow-lg ${
+                  isPrimary
+                    ? `border-2 border-primary shadow-md shadow-primary/15 ${card.expired ? "opacity-80" : ""}`
+                    : `border border-border ${card.expired ? "opacity-80" : ""}`
                 }`}
               >
                 <div className="p-5">
@@ -160,15 +192,22 @@ export default async function CardsPage({
                 <div className="space-y-3 px-5 pb-5">
                   <div className="flex items-start justify-between gap-3">
                     <h3 className="min-w-0 line-clamp-2 font-semibold text-foreground">{card.name}</h3>
-                    <span
-                      className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
-                        card.expired
-                          ? "bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300"
-                          : "bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-300"
-                      }`}
-                    >
-                      {card.expired ? "Vencida" : "Activa"}
-                    </span>
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      {isPrimary && (
+                        <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">Principal</span>
+                      )}
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                          card.status === "LOCKED_BY_PLAN"
+                            ? "bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300"
+                            : card.expired
+                            ? "bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300"
+                            : "bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-300"
+                        }`}
+                      >
+                        {card.status === "LOCKED_BY_PLAN" ? "Bloqueada por plan" : card.expired ? "Vencida" : "Activa"}
+                      </span>
+                    </div>
                   </div>
 
                   <p className="truncate text-sm text-muted-foreground">{card.reward}</p>
@@ -190,7 +229,9 @@ export default async function CardsPage({
                   )}
 
                   <Button asChild variant="outline" className="min-h-11 w-full">
-                    <Link href={`/dashboard/cards/${card.id}`}>Ver tarjeta</Link>
+                    <Link href={card.status === "LOCKED_BY_PLAN" ? `/dashboard/cards/${card.id}/edit` : `/dashboard/cards/${card.id}`}>
+                      {card.status === "LOCKED_BY_PLAN" ? "Editar tarjeta" : "Ver tarjeta"}
+                    </Link>
                   </Button>
                 </div>
               </div>

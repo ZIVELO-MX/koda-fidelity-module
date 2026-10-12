@@ -33,11 +33,14 @@ export async function POST(
     await prisma.$transaction(async (tx) => {
       await tx.loyaltyCard.update({ where: { id }, data: { isActive: true, status: "ACTIVE" } })
       const entitlements = await getEntitlements(tx, business.id)
-      const entitledCards = await applyEntitlements(tx, business.id, entitlements.plan)
+      const entitledCards = await applyEntitlements(tx, business.id, entitlements.plan, {
+        preferredCardId: entitlements.subscription?.liteCardId,
+        preserveDrafts: true,
+      })
       if (entitlements.subscription) {
         await tx.subscription.update({
           where: { id: entitlements.subscription.id },
-          data: { liteCardId: entitlements.plan === "LITE" ? (entitledCards[0]?.id ?? null) : null },
+          data: { liteCardId: entitlements.plan === "LITE" ? (entitledCards[0]?.id ?? null) : entitlements.subscription.liteCardId },
         })
       }
     })

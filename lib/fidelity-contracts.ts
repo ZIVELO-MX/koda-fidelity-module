@@ -41,4 +41,6 @@ export type ApiErrorBody = {
   action: string
   requestId: string
   retryable: boolean
+  supportEmail?: string
+  redirectTo?: string
 }

@@ -80,7 +80,7 @@ describe("Alta: guardado y avance en una sola cola", () => {
     vi.mocked(leerAlta).mockResolvedValue({
       ...INICIAL,
       step: "PAYWALL",
-      status: "AWAITING_PAYMENT",
+      status: "IN_PROGRESS",
       primeraTarjetaId: "card-1",
     })
 
@@ -105,6 +105,41 @@ describe("Alta: guardado y avance en una sola cola", () => {
 
     expect(screen.getByRole("heading", { name: "Tu tarjeta está lista, pero todavía no publicada." })).toBeInTheDocument()
     expect(screen.queryByRole("heading", { name: "Ahora sí, los planes." })).not.toBeInTheDocument()
+  })
+
+  it("Saltar sin publicar abre el muro persistente hasta que soporte active el plan", async () => {
+    vi.mocked(leerAlta).mockResolvedValue({ ...INICIAL, step: "PAYWALL", status: "IN_PROGRESS", primeraTarjetaId: "card-1" })
+    vi.mocked(avanzar).mockResolvedValue({ ...INICIAL, step: "PAYWALL", status: "AWAITING_PAYMENT", primeraTarjetaId: "card-1" })
+    await montar()
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }))
+
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Saltar sin publicar" })) })
+
+    expect(avanzar).toHaveBeenCalledWith("open_paywall", 10, undefined)
+    expect(screen.getByRole("heading", { name: "Tu plan todavía no está activo" })).toBeInTheDocument()
+    expect(screen.getByText(/no hay un botón para continuar/i)).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Escribir a soporte" })).toHaveAttribute("href", "mailto:soporte@zivelo.dev")
+    expect(screen.queryByRole("link", { name: /salir sin publicar/i })).not.toBeInTheDocument()
+  })
+
+  it("al recargar en espera muestra el muro y oculta selección de plan", async () => {
+    vi.mocked(leerAlta).mockResolvedValue({ ...INICIAL, step: "PAYWALL", status: "AWAITING_PAYMENT", primeraTarjetaId: "card-1" })
+    await montar()
+
+    expect(screen.getByRole("heading", { name: "Tu plan todavía no está activo" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Continuar" })).not.toBeInTheDocument()
+    expect(screen.queryByText("Solicitar activación de Lite")).not.toBeInTheDocument()
+  })
+
+  it("manda al panel cuando la consulta detecta la activación de soporte", async () => {
+    vi.mocked(leerAlta)
+      .mockResolvedValueOnce({ ...INICIAL, step: "PAYWALL", status: "AWAITING_PAYMENT", primeraTarjetaId: "card-1" })
+      .mockResolvedValueOnce({ ...INICIAL, step: "PAYWALL", status: "ACTIVE", primeraTarjetaId: "card-1" })
+    await montar()
+
+    await transcurrir(5000)
+
+    expect(router.replace).toHaveBeenCalledWith("/dashboard")
   })
 
   it.each([0, 700])("conserva la segunda edición en vuelo (su debounce ha transcurrido %i ms)", async (espera) => {

@@ -27,8 +27,16 @@ describe("Temas Pro en el alta", () => {
   it("la vista previa del paso de la tarjeta enseña el acabado Pro elegido con plan Lite", () => {
     expect(hayGradiente(renderToStaticMarkup(<Tarjeta estado={estado} onCambio={nada} onCambioLocal={nada} errorRecompensa={false} recompensaRef={createRef<HTMLInputElement>()} onRecompensaCorregida={nada} />))).toBe(true)
   })
-  it("«Tarjeta lista» enseña cómo queda publicada: con Lite, sin el acabado", () => {
-    expect(hayGradiente(renderToStaticMarkup(<TarjetaLista estado={{ ...estado, step: "CARD_READY" }} />))).toBe(false)
+  it("«Tarjeta lista» muestra la elección Pro como vista previa con Lite y explica cuándo se aplica", () => {
+    const estadoLite = { ...estado, step: "CARD_READY" as const }
+    const html = renderToStaticMarkup(<TarjetaLista estado={estadoLite} />)
+    expect(hayGradiente(html)).toBe(true)
+    expect(html).toContain("Estás viendo el acabado Pro que elegiste.")
+    expect(html).toContain("con Lite, la tarjeta se publica con el color de tu negocio.")
+
+    const htmlEnPaywall = renderToStaticMarkup(<TarjetaLista estado={estadoLite} soloTarjeta />)
+    expect(hayGradiente(htmlEnPaywall)).toBe(true)
+    expect(htmlEnPaywall).toContain("Estás viendo el acabado Pro que elegiste.")
   })
   it("«Tarjeta lista» con Pro sí lo pinta", () => {
     expect(hayGradiente(renderToStaticMarkup(<TarjetaLista estado={{ ...estado, step: "CARD_READY", plan: "PRO" }} />))).toBe(true)

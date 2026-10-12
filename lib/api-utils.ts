@@ -47,6 +47,20 @@ export class ForbiddenError extends Error {
   }
 }
 
+export class ProThemeRequiresProError extends Error {
+  constructor() {
+    super("Esta tarjeta usa un tema Pro y no puede guardarse con el plan Lite.")
+    this.name = "ProThemeRequiresProError"
+  }
+}
+
+export class OnboardingActivationRequiredError extends Error {
+  constructor() {
+    super("La cuenta debe ser activada por soporte antes de administrar tarjetas.")
+    this.name = "OnboardingActivationRequiredError"
+  }
+}
+
 export function requestIdFrom(request?: Request) {
   return request?.headers?.get?.("x-request-id") ?? randomUUID()
 }
@@ -142,6 +156,14 @@ export async function requireWritableBusinessPrincipal() {
   return principal
 }
 
+export async function requireActivatedBusiness(businessId: string) {
+  const [activeSubscription, pendingProgress] = await Promise.all([
+    prisma.subscription.findFirst({ where: { businessId, status: "ACTIVE" }, select: { id: true } }),
+    prisma.onboardingProgress.findFirst({ where: { businessId, status: { not: "ACTIVE" } }, select: { id: true } }),
+  ])
+  if (!activeSubscription && pendingProgress) throw new OnboardingActivationRequiredError()
+}
+
 export async function requireReadyBusinessPrincipal() {
   const principal = await getBusinessFromSession()
   if (principal.user.passwordSetupRequired) throw new ForbiddenError("Password setup required")
@@ -186,6 +208,12 @@ export async function cuerpoJson(request: { json: () => Promise<any> }): Promise
 }
 
 export function handleApiError(error: unknown, requestId: string = randomUUID()): NextResponse<ApiErrorBody> {
+  if (error instanceof ProThemeRequiresProError) {
+    return NextResponse.json({ error: error.message, code: "KF-PLAN-PRO-THEME", action: "Contacta a soporte para cambiar tu plan.", requestId, retryable: false, supportEmail: "soporte@zivelo.dev" }, { status: 403, headers: { "x-request-id": requestId } })
+  }
+  if (error instanceof OnboardingActivationRequiredError) {
+    return NextResponse.json({ error: error.message, code: "KF-ACCOUNT-ACTIVATION", action: "Continúa en el onboarding; soporte activará tu plan.", requestId, retryable: false, redirectTo: "/onboarding" }, { status: 403, headers: { "x-request-id": requestId } })
+  }
   if (error instanceof AccountReadOnlyError) {
     return NextResponse.json({ error: error.message, code: "KF-ACCOUNT-READONLY", action: `La cuenta se eliminará el ${error.scheduledFor.toISOString()}. Cancela el cierre para volver a editar.`, requestId, retryable: false }, { status: 423, headers: { "x-request-id": requestId } })
   }
