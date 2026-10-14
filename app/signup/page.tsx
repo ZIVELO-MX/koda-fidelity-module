@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { CheckCircle2 } from "lucide-react"
@@ -75,7 +76,9 @@ export default function SignupPage() {
               <span className="font-semibold text-foreground">Koda Fidelity</span>
             </Link>
           </div>
-          <SignupForm isInviteOnly={config.isInviteOnly} />
+          <Suspense fallback={<div className="w-full max-w-md" aria-busy="true">Cargando registro…</div>}>
+            <SignupForm isInviteOnly={config.isInviteOnly} />
+          </Suspense>
         </div>
 
       </div>

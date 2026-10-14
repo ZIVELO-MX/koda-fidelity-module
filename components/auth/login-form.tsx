@@ -3,7 +3,7 @@
 import { useState, useActionState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { sendLoginMagicLink, login, sendPasswordReset, type AuthResult } from "@/lib/actions/auth"
+import { login, sendPasswordReset, type AuthResult } from "@/lib/actions/auth"
 import { GoogleButton } from "@/components/auth/google-button"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Mail, Loader2, ArrowLeft, Eye, EyeOff } from "lucide-react"
 
-type LoginStep = "email" | "password" | "sent" | "recover" | "recover-sent"
+type LoginStep = "email" | "password" | "recover" | "recover-sent"
 
 const initialState: AuthResult = {}
 
@@ -36,38 +36,6 @@ export function LoginForm() {
       return
     }
     setStep("password")
-  }
-
-  if (step === "sent") {
-    return (
-      <Card className="w-full max-w-md auth-card-enter rounded-[14px] border-border/60 shadow-[0_12px_32px_rgba(28,27,23,0.12),0_2px_4px_rgba(28,27,23,0.04)]">
-        <CardHeader className="text-center">
-          <CardTitle asChild>
-            <h1 className="text-2xl">Revisa tu correo</h1>
-          </CardTitle>
-          <CardDescription>
-            Te enviamos un enlace mágico a <strong>{email}</strong>
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="text-center space-y-4">
-          <div className="mail-bounce w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-            <Mail className="h-10 w-10 text-primary" />
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Haz clic en el enlace para ver tus tarjetas de lealtad.
-          </p>
-        </CardContent>
-        <CardFooter className="flex-col gap-2 text-sm text-muted-foreground">
-          <button
-            onClick={() => { setStep("email"); setError(null) }}
-            className="inline-flex min-h-11 items-center gap-1 text-primary hover:underline"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Usar otro correo
-          </button>
-        </CardFooter>
-      </Card>
-    )
   }
 
   if (step === "recover" && !resetState?.success) {
@@ -229,6 +197,7 @@ export function LoginForm() {
           ) : (
             <form action={loginAction} className="space-y-4">
               <input type="hidden" name="email" value={email} />
+              <input type="hidden" name="next" value={searchParams.get("next") ?? ""} />
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Contraseña</Label>
@@ -267,21 +236,6 @@ export function LoginForm() {
                 disabled={loginPending}
               >
                 {loginPending ? "Iniciando sesión..." : "Iniciar sesión"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="min-h-11 w-full"
-                disabled={pending}
-                onClick={async () => {
-                  setPending(true)
-                  setError(null)
-                  const result = await sendLoginMagicLink(email)
-                  setPending(false)
-                  result.error ? setError(result.error) : setStep("sent")
-                }}
-              >
-                {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviarme un enlace de acceso"}
               </Button>
               <button
                 type="button"

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -9,12 +9,19 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { IconPicker } from "@/components/dashboard/icon-picker"
+import { TextColorPicker } from "@/components/dashboard/text-color-picker"
 import { ArrowLeft, Check, ChevronDown, Plus, Trash2 } from "lucide-react"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { toast } from "sonner"
 import { getRarityColor, getRarityLabel, getRarityDescription, getRarityRange } from "@/lib/card-utils"
 import { sorpresasQueViajan, validarBorrador, type Sorpresa } from "@/lib/tarjeta-borrador"
 import { ExpirationPicker } from "@/components/dashboard/expiration-picker"
+import { nombreDeTema } from "@/lib/temas-de-tarjeta"
+import { AvisoDeColorDeTexto } from "@/components/aviso-de-color-de-texto"
+import { TemaProRequiereProAlert } from "@/components/dashboard/tema-pro-requiere-pro-alert"
+import { PrimaryCardCheckbox } from "@/components/dashboard/primary-card-checkbox"
+
+type TemaDisponible = { id: string; code: string; plan: "LITE" | "PRO" }
 
 const colorPresets = [
   { name: "Naranja", value: "#f97316" },
@@ -30,7 +37,7 @@ const SELLOS_SUGERIDOS = [5, 8, 10, 12, 15]
 export default function CreateCardPage() {
   const router = useRouter()
 
-  // Tres decisiones. Todo lo demás tiene un valor por defecto que sirve.
+  // Los datos básicos tienen valores iniciales; la tarjeta principal se elige por separado.
   const [cardName, setCardName] = useState("")
   const [reward, setReward] = useState("")
   const [maxStamps, setMaxStamps] = useState(10)
@@ -41,6 +48,14 @@ export default function CreateCardPage() {
   const [brandColor, setBrandColor] = useState("#f97316")
   const [iconName, setIconName] = useState<string | null>(null)
   const [stampIconName, setStampIconName] = useState<string | null>(null)
+  const [textColor, setTextColor] = useState<"AUTO" | "DARK" | "LIGHT">("LIGHT")
+  const [themeId, setThemeId] = useState("")
+  const [themes, setThemes] = useState<TemaDisponible[]>([])
+  const [accountPlan, setAccountPlan] = useState<"LITE" | "PRO">("LITE")
+  const [isPrimary, setIsPrimary] = useState(true)
+  const [primaryCardId, setPrimaryCardId] = useState<string | null>(null)
+  const [primaryCardName, setPrimaryCardName] = useState<string | null>(null)
+  const primaryChoiceTouched = useRef(false)
   const [milestones, setMilestones] = useState<Sorpresa[]>([])
 
   // La marca se hereda del negocio y no se pregunta. El nombre no viaja en el
@@ -52,6 +67,7 @@ export default function CreateCardPage() {
   const [previewMode, setPreviewMode] = useState<"normal" | "sellada">("normal")
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
+  const [proThemeBlocked, setProThemeBlocked] = useState(false)
 
   useEffect(() => {
     fetch("/api/business")
@@ -63,6 +79,17 @@ export default function CreateCardPage() {
         setIconName(data.business.iconName || null)
         setStampIconName(data.business.stampIconName || null)
         setBusinessLogo(data.business.logoUrl || null)
+      })
+      .catch(() => {})
+    fetch("/api/card-themes")
+      .then((res) => res.json())
+      .then((data) => {
+        setThemes(Array.isArray(data.themes) ? data.themes : [])
+        setAccountPlan(data.plan === "PRO" ? "PRO" : "LITE")
+        const currentPrimaryId = typeof data.primaryCardId === "string" ? data.primaryCardId : null
+        setPrimaryCardId(currentPrimaryId)
+        setPrimaryCardName(typeof data.primaryCardName === "string" ? data.primaryCardName : null)
+        if (!primaryChoiceTouched.current) setIsPrimary(!currentPrimaryId)
       })
       .catch(() => {})
   }, [])
@@ -83,6 +110,11 @@ export default function CreateCardPage() {
   }
 
   const handleCreate = async () => {
+    const chosenTheme = themes.find((theme) => theme.id === themeId)
+    if (chosenTheme?.plan === "PRO" && accountPlan !== "PRO") {
+      setProThemeBlocked(true)
+      return
+    }
     const borrador = {
       nombre: cardName,
       recompensa: reward,
@@ -106,8 +138,11 @@ export default function CreateCardPage() {
           reward: reward.trim(),
           stampsRequired: maxStamps,
           brandColor,
-          iconName: iconName || undefined,
-          stampIconName: stampIconName || undefined,
+          iconName,
+          stampIconName,
+          textColor,
+          themeId: themeId || undefined,
+          isPrimary,
           description: description || undefined,
           expiresAt: expirationDate || undefined,
           // Una sorpresa sin etiqueta es una fila que nadie llenó.
@@ -118,9 +153,23 @@ export default function CreateCardPage() {
       const data = await res.json().catch(() => null)
 
       if (!res.ok) {
+        if (data?.code === "KF-ACCOUNT-ACTIVATION") {
+          router.push(data.redirectTo || "/onboarding")
+          return
+        }
+        if (data?.code === "KF-PLAN-PRO-THEME") {
+          setProThemeBlocked(true)
+          return
+        }
         // El servidor ya explicó qué pasó. Sustituirlo por un texto genérico
         // dejaba a quien publica sin saber qué corregir.
         throw new Error(data?.error || "No fue posible crear la tarjeta")
+      }
+
+      if (data?.card?.status === "LOCKED_BY_PLAN") {
+        toast.success("Tarjeta guardada con bloqueo por Lite. Puedes activarla desde Configurar tarjeta principal.")
+        router.push("/dashboard/cards")
+        return
       }
 
       // Se termina en el código de la tarjeta, que es lo que hay que compartir
@@ -140,6 +189,11 @@ export default function CreateCardPage() {
       ? `${milestones.length} sorpresa${milestones.length !== 1 ? "s" : ""}`
       : "Sin sorpresas",
   ].join(" · ")
+  const temaElegido = themes.find((theme) => theme.id === themeId)
+  // La vista previa enseña lo elegido, Pro incluido, igual que en el alta: es
+  // donde se decide, y el aviso de debajo dice que con Lite se guarda y se
+  // activa al pasar a Pro. La tarjeta publicada usa el tema efectivo.
+  const themeCode = temaElegido?.code ?? null
 
   return (
     <div className="min-h-[calc(100vh-100px)]">
@@ -153,7 +207,7 @@ export default function CreateCardPage() {
         </Link>
         <h1 className="text-2xl font-bold text-foreground text-balance">Crear tarjeta</h1>
         <p className="text-muted-foreground">
-          Tres decisiones y ya se publica. El resto tiene valores que funcionan.
+          Define la recompensa y los sellos, revisa la tarjeta y elige si será la principal.
         </p>
       </div>
 
@@ -219,6 +273,20 @@ export default function CreateCardPage() {
               <p className="text-xs text-muted-foreground">Es lo que el cliente ve en su tarjeta.</p>
             </div>
           </div>
+
+          <PrimaryCardCheckbox
+            inputId="new-card-primary"
+            checked={isPrimary}
+            onCheckedChange={(checked) => {
+              primaryChoiceTouched.current = true
+              setIsPrimary(checked)
+            }}
+            plan={accountPlan}
+            cardName={cardName}
+            currentPrimaryCardId={primaryCardId}
+            currentPrimaryName={primaryCardName}
+            disabled={accountPlan === "LITE" && primaryCardId === null}
+          />
 
           {/* Todo lo que ya tiene un valor que sirve vive aquí, y el resumen dice
               cuál se está aplicando sin obligar a abrirlo. */}
@@ -312,6 +380,35 @@ export default function CreateCardPage() {
                   Si no eliges uno, se usa un sello.
                 </p>
                 <IconPicker value={stampIconName} onChange={(v) => { setStampIconName(v); setMarcaHeredada(false) }} businessLogoUrl={businessLogo} />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="themeId">Tema de la tarjeta</Label>
+                <select
+                  id="themeId"
+                  value={themeId}
+                  onChange={(e) => { setThemeId(e.target.value); setProThemeBlocked(false) }}
+                  className="min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                >
+                  <option value="">Color de marca</option>
+                  {themes.map((theme) => (
+                    <option key={theme.id} value={theme.id}>
+                      {nombreDeTema(theme.code)}{theme.plan === "PRO" ? " · Pro" : ""}
+                    </option>
+                  ))}
+                </select>
+                {proThemeBlocked && <TemaProRequiereProAlert />}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Color del texto</Label>
+                <TextColorPicker
+                  value={textColor}
+                  onChange={setTextColor}
+                  brandColor={brandColor}
+                  themeCode={themeCode}
+                />
+                <AvisoDeColorDeTexto brandColor={brandColor} themeCode={themeCode} textColor={textColor} />
               </div>
 
               {/* Lista de las sorpresas configuradas. Antes había una fila por
@@ -471,6 +568,8 @@ export default function CreateCardPage() {
                   : undefined
               }
               brandColor={brandColor}
+              textColor={textColor}
+              themeCode={themeCode}
             />
 
             <Button
@@ -480,7 +579,7 @@ export default function CreateCardPage() {
               className="mt-6 min-h-11 w-full"
             >
               <Check className="mr-2 h-4 w-4" />
-              {saving ? "Publicando…" : "Publicar tarjeta"}
+              {saving ? "Guardando…" : accountPlan === "LITE" && !isPrimary ? "Guardar bloqueada" : "Publicar tarjeta"}
             </Button>
             <p className="mt-2 text-center text-xs text-muted-foreground">
               Al publicar llegas al código QR que comparten tus clientes.

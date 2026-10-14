@@ -20,11 +20,40 @@ import type { AccountContext } from "@/lib/fidelity-contracts"
  *     tags: [Onboarding]
  *     summary: Save an onboarding draft
  *     security: [{ cookieAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [draftVersion]
+ *             properties:
+ *               draftVersion: { type: integer, minimum: 0 }
+ *               card:
+ *                 type: object
+ *                 properties:
+ *                   themeId: { type: string }
+ *                   textColor: { type: string, enum: [AUTO, DARK, LIGHT] }
+ *                   iconName: { type: string, nullable: true }
+ *                   stampIconName: { type: string, nullable: true }
  *     responses: { 200: { description: Draft saved } }
  *   post:
  *     tags: [Onboarding]
  *     summary: Advance onboarding
  *     security: [{ cookieAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [action, draftVersion]
+ *             properties:
+ *               action:
+ *                 type: string
+ *                 enum: [complete_intro, skip_intro, complete_business, complete_card, complete_card_ready, complete_acquisition, skip_acquisition, select_billing_interval, open_paywall]
+ *               draftVersion: { type: integer, minimum: 0 }
+ *               billingInterval: { type: string, enum: [MONTHLY, ANNUAL] }
  *     responses: { 200: { description: Onboarding advanced } }
  */
 
@@ -39,7 +68,7 @@ async function liveContext(onboarding: Awaited<ReturnType<typeof getOnboarding>>
     user: { id: onboarding.id, email: onboarding.email, name: onboarding.name, role: onboarding.role },
     business: business ? { id: business.id, name: business.name, brandColor: business.brandColor, logoUrl: business.logoUrl, iconName: business.iconName, website: business.website, instagram: business.instagram } : null,
     onboardingStatus: onboarding.onboardingProgress?.status,
-    plan: entitlements?.plan ?? "LITE",
+    plan: onboarding.onboardingProgress?.status !== "ACTIVE" ? "PRO" : entitlements?.plan ?? "LITE",
   }
   return { onboarding, categories, themes, accountContext, mode: "live" }
 }

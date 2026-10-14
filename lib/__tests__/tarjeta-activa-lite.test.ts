@@ -50,6 +50,14 @@ describe("archivar la activa con Lite", () => {
     expect(tx.subscription.update).toHaveBeenCalledWith({ where: { id: "sub1" }, data: { liteCardId: "card3" } })
   })
 
+  it("no activa ninguna si el negocio no tiene suscripción activa", async () => {
+    mockCardFind.mockResolvedValue({ id: "card2", businessId: "biz1", status: "ACTIVE" })
+    mockEntitlements.mockResolvedValue({ plan: "LITE", subscription: null })
+    expect((await archivar(peticion, params)).status).toBe(200)
+    expect(tx.loyaltyCard.count).not.toHaveBeenCalled()
+    expect(tx.loyaltyCard.update).toHaveBeenCalledTimes(1)
+  })
+
   it("no activa otra si todavía queda una activa", async () => {
     mockCardFind.mockResolvedValue({ id: "card2", businessId: "biz1", status: "ACTIVE" })
     tx.loyaltyCard.count.mockResolvedValue(1)

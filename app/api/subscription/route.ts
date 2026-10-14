@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { cuerpoJson, getBusinessFromSession, handleApiError, requestIdFrom, ValidationError, withApiContext, withRequestId } from "@/lib/api-utils"
+import { cuerpoJson, getBusinessFromSession, handleApiError, requestIdFrom, UnauthorizedError, ValidationError, withApiContext, withRequestId } from "@/lib/api-utils"
 import { activateManualSubscription, assertBusinessWritable, getEntitlements, syncExpiredEntitlements } from "@/lib/account-lifecycle"
 import { manualSubscriptionSchema } from "@/lib/onboarding-contracts"
 
@@ -29,10 +29,7 @@ export async function POST(request: NextRequest) {
   const requestId = requestIdFrom(request)
   try {
     const expected = process.env.BILLING_INTERNAL_SECRET
-    // Credencial que falta o no coincide: 401, como en los cron. Antes era un 400.
-    if (!expected || request.headers.get("x-billing-internal-secret") !== expected) {
-      return withRequestId(NextResponse.json({ error: "Unauthorized", code: "KF-AUTH-001", action: "Proporciona la clave interna de facturación.", requestId, retryable: false }, { status: 401 }), requestId)
-    }
+    if (!expected || request.headers.get("x-billing-internal-secret") !== expected) throw new UnauthorizedError()
     const body = await cuerpoJson(request)
     const parsed = manualSubscriptionSchema.safeParse(body)
     if (!parsed.success) throw new ValidationError("Suscripción manual inválida")

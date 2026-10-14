@@ -30,8 +30,10 @@ describe("OpenAPI spec", () => {
       "/api/business/avatar",
       "/api/business/closure",
       "/api/cards",
+      "/api/card-themes",
       "/api/cards/{id}",
       "/api/cards/{id}/restore",
+      "/api/cards/{id}/primary",
       "/api/billing/status",
       "/api/cron/account-closures",
       "/api/cron/subscription-entitlements",
@@ -66,6 +68,8 @@ describe("OpenAPI spec", () => {
     expect(spec.paths["/api/cards/{id}"]).toHaveProperty("get")
     expect(spec.paths["/api/cards/{id}"]).toHaveProperty("put")
     expect(spec.paths["/api/cards/{id}"]).toHaveProperty("delete")
+    expect(spec.paths["/api/cards/{id}/primary"]).toHaveProperty("post")
+    expect(spec.paths["/api/card-themes"]).toHaveProperty("get")
 
     expect(spec.paths["/api/customers"]).toHaveProperty("get")
     expect(spec.paths["/api/dashboard/stats"]).toHaveProperty("get")
@@ -82,6 +86,7 @@ describe("OpenAPI spec", () => {
   it("has all required components schemas", () => {
     expect(spec.components.schemas).toHaveProperty("Business")
     expect(spec.components.schemas).toHaveProperty("LoyaltyCard")
+    expect((spec.components.schemas.LoyaltyCard as { properties: Record<string, unknown> }).properties).toHaveProperty("textColor")
     expect(spec.components.schemas).toHaveProperty("LoyaltyCardWithStats")
     expect(spec.components.schemas).toHaveProperty("Customer")
     expect(spec.components.schemas).toHaveProperty("DashboardStats")

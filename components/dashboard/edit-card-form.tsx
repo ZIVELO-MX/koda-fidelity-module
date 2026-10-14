@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, ChevronDown, Loader2, Plus, Save, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -11,11 +11,18 @@ import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { IconPicker } from "@/components/dashboard/icon-picker"
+import { TextColorPicker } from "@/components/dashboard/text-color-picker"
 import { ExpirationPicker } from "@/components/dashboard/expiration-picker"
 import { toast } from "sonner"
 import { getRarityColor, getRarityDescription, getRarityLabel, getRarityRange } from "@/lib/card-utils"
 import { sorpresasQueViajan, validarBorrador } from "@/lib/tarjeta-borrador"
 import { cn } from "@/lib/utils"
+import { nombreDeTema } from "@/lib/temas-de-tarjeta"
+import { AvisoDeColorDeTexto } from "@/components/aviso-de-color-de-texto"
+import { TemaProRequiereProAlert } from "@/components/dashboard/tema-pro-requiere-pro-alert"
+import { PrimaryCardCheckbox } from "@/components/dashboard/primary-card-checkbox"
+
+type TemaDisponible = { id: string; code: string; plan: "LITE" | "PRO" }
 
 const colorPresets = ["#f97316", "#3b82f6", "#10b981", "#8b5cf6", "#ec4899", "#f59e0b"]
 
@@ -39,9 +46,14 @@ interface EditCardFormProps {
   initialStampsRequired: number
   initialIcon?: string | null
   initialStampIcon?: string | null
+  initialThemeId?: string | null
+  initialTextColor?: "AUTO" | "DARK" | "LIGHT"
   initialDescription?: string | null
   initialExpiresAt?: string | null
   initialMilestones?: MilestoneEdit[]
+  initialIsPrimary?: boolean
+  initialPrimaryCardId?: string | null
+  initialPrimaryCardName?: string | null
 }
 
 export function EditCardForm({
@@ -54,9 +66,14 @@ export function EditCardForm({
   initialStampsRequired,
   initialIcon = null,
   initialStampIcon = null,
+  initialThemeId = null,
+  initialTextColor = "LIGHT",
   initialDescription = null,
   initialExpiresAt = null,
   initialMilestones = [],
+  initialIsPrimary = false,
+  initialPrimaryCardId = null,
+  initialPrimaryCardName = null,
 }: EditCardFormProps) {
   const router = useRouter()
   const [name, setName] = useState(initialName)
@@ -65,6 +82,14 @@ export function EditCardForm({
   const [stampsRequired, setStampsRequired] = useState(initialStampsRequired)
   const [iconName, setIconName] = useState<string | null>(initialIcon)
   const [stampIconName, setStampIconName] = useState<string | null>(initialStampIcon)
+  const [themeId, setThemeId] = useState(initialThemeId ?? "")
+  const [textColor, setTextColor] = useState<"AUTO" | "DARK" | "LIGHT">(initialTextColor)
+  const [themes, setThemes] = useState<TemaDisponible[]>([])
+  const [accountPlan, setAccountPlan] = useState<"LITE" | "PRO">("LITE")
+  const [isPrimary, setIsPrimary] = useState(initialIsPrimary)
+  const [primaryCardId, setPrimaryCardId] = useState(initialPrimaryCardId)
+  const [primaryCardName, setPrimaryCardName] = useState(initialPrimaryCardName)
+  const primaryChoiceTouched = useRef(false)
   const [description, setDescription] = useState(initialDescription ?? "")
   const [expiresAt, setExpiresAt] = useState(initialExpiresAt ?? "")
   const [previewMode, setPreviewMode] = useState<"normal" | "sellada">("normal")
@@ -73,6 +98,22 @@ export function EditCardForm({
   )
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
+  const [proThemeBlocked, setProThemeBlocked] = useState(false)
+
+  useEffect(() => {
+    fetch("/api/card-themes")
+      .then((res) => res.json())
+      .then((data) => {
+        setThemes(Array.isArray(data.themes) ? data.themes : [])
+        const plan = data.plan === "PRO" ? "PRO" : "LITE"
+        setAccountPlan(plan)
+        const currentPrimaryId = typeof data.primaryCardId === "string" ? data.primaryCardId : null
+        setPrimaryCardId(currentPrimaryId)
+        setPrimaryCardName(data.primaryCardId !== cardId && typeof data.primaryCardName === "string" ? data.primaryCardName : null)
+        if (!primaryChoiceTouched.current) setIsPrimary(currentPrimaryId === cardId)
+      })
+      .catch(() => {})
+  }, [cardId])
 
   const limpiarError = (campo: string) => setErrors((prev) => ({ ...prev, [campo]: "" }))
 
@@ -92,6 +133,12 @@ export function EditCardForm({
   }
 
   async function handleSave() {
+    const chosenTheme = themes.find((theme) => theme.id === themeId)
+    const themeChanged = themeId !== (initialThemeId ?? "")
+    if (chosenTheme?.plan === "PRO" && accountPlan !== "PRO" && themeChanged) {
+      setProThemeBlocked(true)
+      return
+    }
     // La misma validación que la creación, para que las dos pantallas exijan lo
     // mismo y expliquen igual.
     const { errores, primerCampo } = validarBorrador({
@@ -118,6 +165,9 @@ export function EditCardForm({
         brandColor: color,
         iconName,
         stampIconName,
+        themeId: themeChanged ? themeId || null : undefined,
+        isPrimary,
+        textColor,
         description: description.trim() || null,
         expiresAt: expiresAt || null,
         // Una sorpresa sin etiqueta es una fila que nadie llenó.
@@ -129,6 +179,14 @@ export function EditCardForm({
 
     if (!response.ok) {
       const body = await response.json().catch(() => null)
+      if (body?.code === "KF-ACCOUNT-ACTIVATION") {
+        router.push(body.redirectTo || "/onboarding")
+        return
+      }
+      if (body?.code === "KF-PLAN-PRO-THEME") {
+        setProThemeBlocked(true)
+        return
+      }
       toast.error(body?.error || "No fue posible guardar los cambios")
       return
     }
@@ -144,6 +202,11 @@ export function EditCardForm({
       ? `${milestones.length} sorpresa${milestones.length !== 1 ? "s" : ""}`
       : "Sin sorpresas",
   ].join(" · ")
+  const temaElegido = themes.find((theme) => theme.id === themeId)
+  // La vista previa enseña lo elegido, Pro incluido, igual que en el alta: es
+  // donde se decide, y el aviso de debajo dice que con Lite se guarda y se
+  // activa al pasar a Pro. La tarjeta publicada usa el tema efectivo.
+  const themeCode = temaElegido?.code ?? null
 
   return (
     <div className="space-y-8">
@@ -157,7 +220,7 @@ export function EditCardForm({
         <div>
           <h1 className="text-2xl font-bold text-foreground text-balance">Editar tarjeta</h1>
           <p className="text-muted-foreground">
-            Las mismas tres decisiones. El resto sigue donde lo dejaste.
+            Actualiza los datos y elige si esta será la tarjeta principal.
           </p>
         </div>
       </div>
@@ -238,6 +301,21 @@ export function EditCardForm({
             </div>
           </section>
 
+          <PrimaryCardCheckbox
+            inputId="edit-card-primary"
+            checked={isPrimary}
+            onCheckedChange={(checked) => {
+              primaryChoiceTouched.current = true
+              setIsPrimary(checked)
+            }}
+            plan={accountPlan}
+            cardName={name}
+            cardId={cardId}
+            currentPrimaryCardId={primaryCardId}
+            currentPrimaryName={primaryCardName}
+            disabled={accountPlan === "LITE" && isPrimary}
+          />
+
           <details className="group rounded-2xl border border-border bg-card">
             <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 p-6 [&::-webkit-details-marker]:hidden">
               <span className="min-w-0">
@@ -310,6 +388,36 @@ export function EditCardForm({
                 <div className="space-y-3">
                   <Label>Ícono del sello</Label>
                   <IconPicker value={stampIconName} onChange={setStampIconName} businessLogoUrl={businessLogo} />
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-theme">Tema de la tarjeta</Label>
+                  <select
+                    id="edit-theme"
+                    value={themeId}
+                    onChange={(e) => { setThemeId(e.target.value); setProThemeBlocked(false) }}
+                    className="min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                  >
+                    <option value="">Color de marca</option>
+                    {themes.map((theme) => (
+                      <option key={theme.id} value={theme.id}>
+                        {nombreDeTema(theme.code)}{theme.plan === "PRO" ? " · Pro" : ""}
+                      </option>
+                    ))}
+                  </select>
+                  {proThemeBlocked && <TemaProRequiereProAlert />}
+                </div>
+                <div className="space-y-2">
+                  <Label>Color del texto</Label>
+                  <TextColorPicker
+                    value={textColor}
+                    onChange={setTextColor}
+                    brandColor={color}
+                    themeCode={themeCode}
+                  />
+                  <AvisoDeColorDeTexto brandColor={color} themeCode={themeCode} textColor={textColor} />
                 </div>
               </div>
 
@@ -465,6 +573,8 @@ export function EditCardForm({
                 expiresAt ? new Date(expiresAt + "T12:00:00").toLocaleDateString("es-MX") : undefined
               }
               brandColor={color}
+              themeCode={themeCode}
+              textColor={textColor}
             />
 
             <Button type="button" onClick={handleSave} disabled={saving} className="mt-6 min-h-11 w-full">

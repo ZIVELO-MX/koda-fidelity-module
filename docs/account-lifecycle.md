@@ -19,6 +19,19 @@ recuperación de interrupciones, ensayo local y búsqueda de referencias de erro
 - `POST /api/account/closure`: programa o cancela el cierre; programarlo exige autenticación reciente y rol admin.
 - `POST /api/business/avatar`: carga un avatar en un bucket privado y registra su limpieza reintentable.
 
+## Cambio manual por correo
+
+Para cambiar el plan de un negocio desde soporte:
+
+```bash
+export BILLING_OPERATOR="nombre del operador"
+pnpm billing:manage-user
+```
+
+El asistente solicita correo, plan (`PRO`, `LITE` o `INACTIVO`), resumen y confirmación escrita. El correo identifica a un miembro vinculado; el plan se aplica al negocio completo. Antes de confirmar muestra a los miembros, invitaciones, tarjetas, plan actual y solicitudes pendientes.
+
+`INACTIVO` cancela suscripciones activas, bloquea las tarjetas no archivadas y manda a todos los miembros al muro de espera. No borra usuarios ni invitaciones. Al elegir `PRO` o `LITE`, se reutiliza la modalidad vigente; si hay un folio pendiente, se actualiza al plan elegido y se cierra después de activar. El resumen se guarda en la auditoría.
+
 ## Reglas de datos
 
 - La primera activación manual de Lite concede un mes Pro y persiste su límite en `proTrialEndsAt`; las renovaciones y cambios de plan siguen siendo manuales y no ejecutan cobros.

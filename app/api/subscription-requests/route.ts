@@ -75,7 +75,6 @@ export async function POST(request: NextRequest) {
   const requestId = requestIdFrom(request)
   try {
     const { business, user } = await getBusinessFromSession()
-    // Pedir o cambiar el plan es del administrador, como el resto de la cuenta.
     requireRole(user, "admin")
     await assertBusinessWritable(prisma, business.id)
     const parsed = subscriptionRequestInputSchema.safeParse(await cuerpoJson(request))

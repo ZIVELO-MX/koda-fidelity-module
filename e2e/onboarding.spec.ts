@@ -70,7 +70,7 @@ test.describe("Alta guiada", () => {
       await expect(page.locator("#contenido")).toBeVisible({ timeout: 60000 })
 
       // Llegar al paso de datos, saltando la intro si toca.
-      const saltar = page.getByRole("button", { name: "Saltar la introducción" })
+      const saltar = page.getByRole("button", { name: "Saltar introducción" })
       if (await saltar.isVisible().catch(() => false)) await saltar.click()
 
       const campo = page.getByLabel("Nombre del negocio")
