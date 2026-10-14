@@ -1,0 +1,240 @@
+import { test, expect, type Page } from "@playwright/test"
+import { verificarAreasTactiles } from "./areas-tactiles"
+
+// Recorrido de la ola 4: landing pública y alta por QR.
+//
+// Se escribe antes que la implementación, como en la ola 3. No necesita sesión:
+// las dos superficies son públicas.
+
+const ANCHOS = [
+  { nombre: "movil", width: 375, height: 812 },
+  { nombre: "tableta", width: 768, height: 1024 },
+  { nombre: "escritorio", width: 1440, height: 900 },
+]
+
+// Lo que el producto no ofrece, no se promete. Sale de la decisión de precios
+// confirmados: no hay prueba gratuita ni cobro sin tarjeta.
+// La misma intención, el alta de un negocio, se llama igual en toda la página.
+const ETIQUETA = "Empieza por solo $149 al mes"
+
+const PROMESAS_SIN_RESPALDO = [
+  /14 d[ií]as/i,
+  /catorce d[ií]as/i,
+  /prueba gratuita/i,
+  /sin tarjeta de cr[eé]dito/i,
+  /pr[oó]ximamente/i,
+  /por definir/i,
+  // Empezar no es gratis: publicar la tarjeta requiere contratar un plan.
+  /empezar gratis/i,
+  // El producto no tiene cientos de negocios: está antes de su lanzamiento.
+  /cientos de/i,
+]
+
+async function desborda(page: Page): Promise<boolean> {
+  return page.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+  )
+}
+
+test.describe("ola 4, landing pública", () => {
+  for (const ancho of ANCHOS) {
+    test.describe(`${ancho.nombre} (${ancho.width}px)`, () => {
+      test.use({ viewport: { width: ancho.width, height: ancho.height } })
+
+      test("no desborda y respeta el área táctil", async ({ page }) => {
+        await page.goto("/")
+        expect(await desborda(page), `la landing desborda en ${ancho.nombre}`).toBe(false)
+
+        await verificarAreasTactiles(page, `la landing en ${ancho.nombre}`)
+      })
+
+      test("el alta pública cabe y explica un enlace roto", async ({ page }) => {
+        await page.goto("/join/esta-tarjeta-no-existe")
+        await expect(
+          page.getByRole("heading", { name: "Este enlace no lleva a ninguna tarjeta" }),
+        ).toBeVisible({ timeout: 30000 })
+        expect(await desborda(page), `el alta desborda en ${ancho.nombre}`).toBe(false)
+
+        await verificarAreasTactiles(page, `el alta pública en ${ancho.nombre}`)
+      })
+
+      test("el hero cabe en el primer viewport, con su botón a la vista", async ({ page }) => {
+        await page.goto("/")
+        const principal = page.getByRole("link", { name: ETIQUETA }).first()
+        await expect(principal).toBeVisible()
+        const caja = await principal.boundingBox()
+        expect(caja, "el botón principal del hero no tiene caja").not.toBeNull()
+        expect(
+          caja!.y + caja!.height,
+          `el botón del hero cae fuera del primer viewport en ${ancho.nombre}`,
+        ).toBeLessThanOrEqual(ancho.height)
+      })
+    })
+  }
+
+  test.describe("lo que dice la página", () => {
+    test.use({ viewport: { width: 1440, height: 900 } })
+
+    test("publica los precios confirmados, y el descuento del anual es real", async ({ page }) => {
+      await page.goto("/")
+      const precios = page.locator("#pricing")
+
+      // El anual viene preseleccionado.
+      await expect(precios).toContainText("1,490")
+      await expect(precios).toContainText("2,990")
+
+      // La comparación es con la otra modalidad, que sigue disponible: 149 x 12
+      // y 299 x 12. Se dice, no se tacha. Un tachado se lee como precio
+      // anterior, y un precio anterior que nunca se cobró es engañoso.
+      await expect(precios).toContainText("Pagando mes a mes, el año costaría $1,788")
+      await expect(precios).toContainText("Pagando mes a mes, el año costaría $3,588")
+      await expect(precios.locator("s"), "un importe tachado se lee como precio anterior").toHaveCount(0)
+
+      await expect(precios).toContainText("Ahorras $298")
+      await expect(precios).toContainText("Ahorras $598")
+
+      // El equivalente mensual no se redondea hacia abajo: 1490/12 es 124.17, y
+      // decir 124 vendería el plan por menos de lo que cuesta.
+      await expect(precios).toContainText("Equivale a $124.17 al mes")
+      await expect(precios).toContainText("Equivale a $249.17 al mes")
+      // Y la condición que hace comparable la cifra.
+      await expect(precios).toContainText("se cobra una vez al año")
+
+      await page.getByRole("radio", { name: /Al mes/ }).click()
+      await expect(precios).toContainText("$149")
+      await expect(precios).toContainText("$299")
+      await expect(precios.locator("s")).toHaveCount(0)
+    })
+
+    test("no promete lo que el producto no ofrece", async ({ page }) => {
+      await page.goto("/")
+      const texto = await page.locator("body").innerText()
+      for (const promesa of PROMESAS_SIN_RESPALDO) {
+        expect(texto, `la landing promete ${promesa}`).not.toMatch(promesa)
+      }
+    })
+
+    test("cero em dash en el texto visible", async ({ page }) => {
+      await page.goto("/")
+      const texto = await page.locator("body").innerText()
+      expect(texto).not.toContain("—")
+      expect(texto).not.toContain("–")
+    })
+
+    test("una sola etiqueta por intención", async ({ page }) => {
+      await page.goto("/")
+      // Empezar el alta de un negocio es una intención. Todos los destinos a
+      // /signup tienen que llamarla igual.
+      const etiquetas = new Set<string>()
+      for (const enlace of await page.locator('a[href="/signup"]').all()) {
+        if (await enlace.isVisible()) etiquetas.add((await enlace.innerText()).trim())
+      }
+      expect(
+        [...etiquetas],
+        "el alta de negocio se llama de más de una forma",
+      ).toHaveLength(1)
+    })
+
+    test("un enlace de alta inválido dice qué pasó, no que no existe la tarjeta", async ({ page }) => {
+      await page.goto("/join/esta-tarjeta-no-existe")
+      await expect(
+        page.getByRole("heading", { name: "Este enlace no lleva a ninguna tarjeta" }),
+      ).toBeVisible({ timeout: 30000 })
+      // La regresión: los tres motivos salían bajo "Tarjeta no encontrada".
+      await expect(page.locator("body").getByText("Tarjeta no encontrada")).toHaveCount(0)
+      await expect(page.getByRole("link", { name: "Ir al inicio" })).toBeVisible()
+    })
+
+    test("cada campo del formulario lleva su etiqueta a la vista", async ({ page }) => {
+      await page.goto("/")
+      // Los seis campos del diseño aprobado, con sus ids, que no se cambian
+      // porque romperían analítica y autocompletado.
+      for (const id of ["nombre", "negocio", "giro", "sucursales", "contacto", "plan"]) {
+        const campo = page.locator(`#lp-form-${id}`)
+        await expect(campo, `falta el campo ${id}`).toBeVisible()
+        const etiqueta = page.locator(`label[for="lp-form-${id}"]`)
+        // getByLabel no basta: hay que ver la etiqueta, no solo asociarla.
+        await expect(etiqueta, `${id} no tiene etiqueta a la vista`).toBeVisible()
+      }
+    })
+
+    test("el contacto se valida al salir del campo", async ({ page }) => {
+      await page.goto("/")
+      const contacto = page.locator("#lp-form-contacto")
+      await contacto.fill("esto no es un contacto")
+      await contacto.blur()
+      await expect(contacto).toHaveAttribute("aria-invalid", "true")
+      await expect(page.getByText("Ingresa un correo o teléfono válido")).toBeVisible()
+
+      await contacto.fill("5512345678")
+      await contacto.blur()
+      await expect(contacto).toHaveAttribute("aria-invalid", "false")
+    })
+
+    test("los pasos no se numeran, el verbo ya los nombra", async ({ page }) => {
+      await page.goto("/")
+      const comoFunciona = page.locator("#how-it-works")
+      await expect(comoFunciona).not.toContainText("01")
+      await expect(comoFunciona).not.toContainText("02")
+      await expect(comoFunciona).not.toContainText("03")
+    })
+  })
+
+  /**
+   * El acordeón, con JavaScript realmente apagado.
+   *
+   * La versión anterior de esta prueba se llamaba "sin JavaScript" y corría con
+   * JavaScript como todas las demás, y además no abría nada: miraba que la
+   * primera trajera `open` y contaba elementos. Afirmaba dos cosas que no
+   * comprobaba, que es peor que no tenerla.
+   *
+   * Va en su propio `describe` porque `javaScriptEnabled` es una opción de
+   * contexto y no se puede cambiar dentro de una prueba.
+   */
+  test.describe("el acordeón de preguntas, con JavaScript apagado", () => {
+    test.use({ javaScriptEnabled: false, viewport: { width: 1440, height: 900 } })
+
+    test("la primera ya está abierta y las demás abren al accionarlas", async ({ page }) => {
+      await page.goto("/")
+
+      // Que los scripts de la página estén apagados de verdad. Sin esta guarda,
+      // el defecto que se corrige aquí puede volver sin que nadie lo note.
+      //
+      // No sirve `page.evaluate(() => ...)` a secas: `javaScriptEnabled: false`
+      // apaga los scripts de la página, no el runtime de Playwright, así que
+      // evaluate sigue respondiendo. La señal es `__next_f`, el global que Next
+      // llena desde los scripts en línea del documento: con JavaScript vale
+      // "object" y sin él, "undefined". Medido en las dos modalidades.
+      const scriptsDeLaPagina = await page.evaluate(
+        () => typeof (globalThis as Record<string, unknown>).__next_f,
+      )
+      expect(scriptsDeLaPagina, "los scripts de la página todavía corren").toBe("undefined")
+
+      const preguntas = page.locator("#faq details")
+      // Acordeón nativo: si alguien lo cambia por una librería, esto avisa,
+      // porque una librería no pinta `details` y sin JavaScript no abriría.
+      expect(await preguntas.count()).toBeGreaterThan(3)
+
+      // La primera llega abierta: enseña que el acordeón se abre y responde la
+      // duda más común sin pedir un clic.
+      const primera = preguntas.first()
+      await expect(primera).toHaveAttribute("open", "")
+      await expect(primera.locator("p")).toBeVisible()
+
+      // Y una cerrada se abre de verdad al accionarla, que es lo que la prueba
+      // anterior decía en su nombre y nunca hacía.
+      const segunda = preguntas.nth(1)
+      await expect(segunda).not.toHaveAttribute("open", "")
+      await expect(segunda.locator("p")).toBeHidden()
+
+      await segunda.locator("summary").click()
+
+      await expect(segunda).toHaveAttribute("open", "")
+      await expect(segunda.locator("p")).toBeVisible()
+
+      // Abrir una no cierra la otra: son `details` sueltos, no un grupo con
+      // `name`, así que quien compara dos respuestas no pierde la primera.
+      await expect(primera).toHaveAttribute("open", "")
+    })
+  })
+})

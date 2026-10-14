@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase-server"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import type { Role } from "@prisma/client"
+import { randomUUID } from "node:crypto"
+import type { ApiErrorBody } from "@/lib/fidelity-contracts"
 
 export class UnauthorizedError extends Error {
   constructor() {
@@ -24,10 +26,61 @@ export class ValidationError extends Error {
   }
 }
 
+export class ConflictError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = "ConflictError"
+  }
+}
+
+export class AccountReadOnlyError extends Error {
+  constructor(readonly scheduledFor: Date) {
+    super("La cuenta está en periodo de cierre y sólo permite consultas, exportación o cancelación")
+    this.name = "AccountReadOnlyError"
+  }
+}
+
 export class ForbiddenError extends Error {
   constructor(message = "Forbidden") {
     super(message)
     this.name = "ForbiddenError"
+  }
+}
+
+export class ProThemeRequiresProError extends Error {
+  constructor() {
+    super("Esta tarjeta usa un tema Pro y no puede guardarse con el plan Lite.")
+    this.name = "ProThemeRequiresProError"
+  }
+}
+
+export class OnboardingActivationRequiredError extends Error {
+  constructor() {
+    super("La cuenta debe ser activada por soporte antes de administrar tarjetas.")
+    this.name = "OnboardingActivationRequiredError"
+  }
+}
+
+export function requestIdFrom(request?: Request) {
+  return request?.headers?.get?.("x-request-id") ?? randomUUID()
+}
+
+export function withRequestId(response: Response, requestId: string = randomUUID()) {
+  response.headers.set("x-request-id", requestId)
+  return response
+}
+
+export function withApiContext(
+  request: Request,
+  handler: (requestId: string) => Promise<Response>,
+) {
+  return async () => {
+    const requestId = requestIdFrom(request)
+    try {
+      return withRequestId(await handler(requestId), requestId)
+    } catch (error) {
+      return withRequestId(handleApiError(error, requestId), requestId)
+    }
   }
 }
 
@@ -45,6 +98,7 @@ export type SessionBusiness = {
     phone: string | null
     website: string | null
     instagram: string | null
+    timezone: string
     createdAt: Date
     updatedAt: Date
   }
@@ -53,6 +107,7 @@ export type SessionBusiness = {
     email: string
     name: string
     role: Role
+    passwordSetupRequired: boolean
   }
 }
 
@@ -60,16 +115,16 @@ export async function getBusinessFromSession(): Promise<SessionBusiness> {
   const supabase = await createClient()
   const { data: { user: authUser }, error } = await supabase.auth.getUser()
 
-  if (error || !authUser?.email) {
+  if (error || !authUser) {
     throw new UnauthorizedError()
   }
 
   const userRecord = await prisma.user.findUnique({
-    where: { email: authUser.email },
+    where: { authUserId: authUser.id },
     include: { business: true },
   })
 
-  if (!userRecord) {
+  if (!userRecord || !userRecord.business || !userRecord.business.id) {
     throw new NotFoundError("User not found")
   }
 
@@ -80,29 +135,103 @@ export async function getBusinessFromSession(): Promise<SessionBusiness> {
       email: userRecord.email,
       name: userRecord.name,
       role: userRecord.role,
+      passwordSetupRequired: userRecord.passwordSetupRequired,
     },
   }
 }
 
-export function requireRole(user: SessionBusiness["user"], ...allowed: Role[]) {
+export const getAccountPrincipal = async () => {
+  const supabase = await createClient()
+  const { data: { user }, error } = await supabase.auth.getUser()
+  if (error || !user) throw new UnauthorizedError()
+  return user
+}
+
+export const requireBusinessPrincipal = getBusinessFromSession
+
+export async function requireWritableBusinessPrincipal() {
+  const principal = await getBusinessFromSession()
+  const closure = await prisma.accountClosure.findFirst({ where: { businessId: principal.business.id, status: { in: ["SCHEDULED", "PROCESSING", "FAILED"] } }, orderBy: { scheduledFor: "asc" } })
+  if (closure) throw new AccountReadOnlyError(closure.scheduledFor)
+  return principal
+}
+
+export async function requireActivatedBusiness(businessId: string) {
+  const [activeSubscription, pendingProgress] = await Promise.all([
+    prisma.subscription.findFirst({ where: { businessId, status: "ACTIVE" }, select: { id: true } }),
+    prisma.onboardingProgress.findFirst({ where: { businessId, status: { not: "ACTIVE" } }, select: { id: true } }),
+  ])
+  if (!activeSubscription && pendingProgress) throw new OnboardingActivationRequiredError()
+}
+
+export async function requireReadyBusinessPrincipal() {
+  const principal = await getBusinessFromSession()
+  if (principal.user.passwordSetupRequired) throw new ForbiddenError("Password setup required")
+  return principal
+}
+
+export function safeNextPath(value: string | null | undefined, fallback: string) {
+  if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("\\")) return fallback
+  return value
+}
+
+export function requireRole(user: Pick<SessionBusiness["user"], "role">, ...allowed: Role[]) {
   if (!allowed.includes(user.role)) {
     throw new ForbiddenError(`Role ${user.role} is not allowed to perform this action`)
   }
 }
 
-export function handleApiError(error: unknown) {
+/**
+ * El cuerpo JSON de una petición, o un error del cliente si viene mal formado.
+ *
+ * `request.json()` lanza un `SyntaxError`, que no es ninguna de las clases que
+ * `handleApiError` reconoce: caía en la rama de descarte y se devolvía un 500
+ * `KF-SYS-001` con `retryable: true`, así que el cliente reintentaba un cuerpo
+ * que nunca iba a parsear, y el registro «API Error» quedaba sin atribuir.
+ *
+ * El envoltorio va aquí y no en `handleApiError` a propósito: mapear todos los
+ * `SyntaxError` a 400 convertiría también los del servidor -- la clave de
+ * servicio de Google se lee con `JSON.parse` -- en «corrige los datos
+ * enviados», que sería mentirle al usuario sobre un fallo nuestro.
+ *
+ * Devuelve el mismo tipo que `request.json()` para ser un reemplazo exacto:
+ * las rutas ya leen `body.campo` sin validar. Apretar eso a `unknown` son 112
+ * errores de tipos en ocho rutas y es un trabajo aparte, no parte de este
+ * arreglo.
+ */
+export async function cuerpoJson(request: { json: () => Promise<any> }): Promise<any> {
+  try {
+    return await request.json()
+  } catch {
+    throw new ValidationError("El cuerpo de la petición no es JSON válido")
+  }
+}
+
+export function handleApiError(error: unknown, requestId: string = randomUUID()): NextResponse<ApiErrorBody> {
+  if (error instanceof ProThemeRequiresProError) {
+    return NextResponse.json({ error: error.message, code: "KF-PLAN-PRO-THEME", action: "Contacta a soporte para cambiar tu plan.", requestId, retryable: false, supportEmail: "soporte@zivelo.dev" }, { status: 403, headers: { "x-request-id": requestId } })
+  }
+  if (error instanceof OnboardingActivationRequiredError) {
+    return NextResponse.json({ error: error.message, code: "KF-ACCOUNT-ACTIVATION", action: "Continúa en el onboarding; soporte activará tu plan.", requestId, retryable: false, redirectTo: "/onboarding" }, { status: 403, headers: { "x-request-id": requestId } })
+  }
+  if (error instanceof AccountReadOnlyError) {
+    return NextResponse.json({ error: error.message, code: "KF-ACCOUNT-READONLY", action: `La cuenta se eliminará el ${error.scheduledFor.toISOString()}. Cancela el cierre para volver a editar.`, requestId, retryable: false }, { status: 423, headers: { "x-request-id": requestId } })
+  }
   if (error instanceof UnauthorizedError) {
-    return NextResponse.json({ error: error.message }, { status: 401 })
+    return NextResponse.json({ error: error.message, code: "KF-AUTH-001", action: "Inicia sesión de nuevo.", requestId, retryable: false }, { status: 401, headers: { "x-request-id": requestId } })
   }
   if (error instanceof ForbiddenError) {
-    return NextResponse.json({ error: error.message }, { status: 403 })
+    return NextResponse.json({ error: error.message, code: "KF-ACCESS-001", action: "Solicita permisos a un administrador.", requestId, retryable: false }, { status: 403, headers: { "x-request-id": requestId } })
   }
   if (error instanceof NotFoundError) {
-    return NextResponse.json({ error: error.message }, { status: 404 })
+    return NextResponse.json({ error: error.message, code: "KF-CUSTOMER-001", action: "Verifica el identificador solicitado.", requestId, retryable: false }, { status: 404, headers: { "x-request-id": requestId } })
   }
   if (error instanceof ValidationError) {
-    return NextResponse.json({ error: error.message }, { status: 400 })
+    return NextResponse.json({ error: error.message, code: "KF-REQUEST-001", action: "Corrige los datos enviados.", requestId, retryable: false }, { status: 400, headers: { "x-request-id": requestId } })
   }
-  console.error("API Error:", error)
-  return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  if (error instanceof ConflictError) {
+    return NextResponse.json({ error: error.message, code: "KF-REQUEST-001", action: "Recarga los datos e inténtalo de nuevo.", requestId, retryable: true }, { status: 409, headers: { "x-request-id": requestId } })
+  }
+  console.error("API Error", { requestId, errorName: error instanceof Error ? error.name : "UnknownError" })
+  return NextResponse.json({ error: "Internal server error", code: "KF-SYS-001", action: "Inténtalo de nuevo más tarde.", requestId, retryable: true }, { status: 500, headers: { "x-request-id": requestId } })
 }

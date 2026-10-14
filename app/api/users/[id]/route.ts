@@ -1,21 +1,29 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { createAdminClient } from "@/lib/supabase-admin"
-import {
-  getBusinessFromSession,
-  handleApiError,
-  ValidationError,
-  NotFoundError,
-  ForbiddenError,
-  requireRole,
-} from "@/lib/api-utils"
+import { cuerpoJson, ForbiddenError, getBusinessFromSession, handleApiError, NotFoundError, requestIdFrom, requireRole, requireWritableBusinessPrincipal, ValidationError, withRequestId } from "@/lib/api-utils"
+
+/**
+ * @openapi
+ * /api/users/{id}:
+ *   patch:
+ *     tags: [Users]
+ *     summary: Update a business user
+ *     security: [{ cookieAuth: [] }]
+ *     responses: { 200: { description: User updated } }
+ *   delete:
+ *     tags: [Users]
+ *     summary: Remove a business user
+ *     security: [{ cookieAuth: [] }]
+ *     responses: { 200: { description: User removed } }
+ */
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const requestId = requestIdFrom(request)
   try {
-    const { business, user } = await getBusinessFromSession()
+    const { business, user } = await requireWritableBusinessPrincipal()
     requireRole(user, "admin")
     const { id } = await params
 
@@ -28,7 +36,7 @@ export async function PUT(
       throw new NotFoundError("User not found")
     }
 
-    const body = await request.json()
+    const body = await cuerpoJson(request)
     const { role } = body
 
     if (role !== "admin" && role !== "sellador") {
@@ -41,9 +49,9 @@ export async function PUT(
       select: { id: true, email: true, name: true, role: true, createdAt: true },
     })
 
-    return NextResponse.json({ user: updated })
+    return withRequestId(NextResponse.json({ user: updated }), requestId)
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }
 
@@ -51,8 +59,9 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const requestId = requestIdFrom(_request)
   try {
-    const { business, user } = await getBusinessFromSession()
+    const { business, user } = await requireWritableBusinessPrincipal()
     requireRole(user, "admin")
     const { id } = await params
 
@@ -67,15 +76,8 @@ export async function DELETE(
 
     await prisma.user.delete({ where: { id } })
 
-    const supabase = createAdminClient()
-    const { data: { users } } = await supabase.auth.admin.listUsers()
-    const authUser = users.find((u) => u.email === target.email)
-    if (authUser) {
-      await supabase.auth.admin.deleteUser(authUser.id)
-    }
-
-    return NextResponse.json({ success: true })
+    return withRequestId(NextResponse.json({ success: true }), requestId)
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }

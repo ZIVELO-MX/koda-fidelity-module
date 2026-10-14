@@ -1,0 +1,2 @@
+ALTER TABLE "LoyaltyCard"
+ALTER COLUMN "textColor" SET DEFAULT 'LIGHT';

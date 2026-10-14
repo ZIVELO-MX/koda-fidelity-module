@@ -21,7 +21,8 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
       variant="ghost"
       size="icon"
       onClick={toggle}
-      className={cn("size-8", className)}
+      // 40px: es el mínimo de área táctil del ADN para un control. Medía 32.
+      className={cn("size-10", className)}
       aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
     >
       <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />

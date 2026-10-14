@@ -21,7 +21,7 @@ function MarqueeContent() {
       {businesses.map((name) => (
         <span key={name} className="inline-flex items-center shrink-0">
           <span className="marquee-text">{name}</span>
-          <span className="marquee-sep mx-10" aria-hidden="true">—</span>
+          <span className="marquee-sep mx-10" aria-hidden="true">·</span>
         </span>
       ))}
     </>

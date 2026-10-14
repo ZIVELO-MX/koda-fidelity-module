@@ -1,13 +1,15 @@
 import Link from "next/link"
-import Image from "next/image"
 import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Plus, QrCode, Users, Stamp, Search, Archive } from "lucide-react"
+import { Plus, Search, Archive } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
-import { getCardIcon } from "@/lib/card-icons"
-import { DeleteExpiredCardButton } from "@/components/dashboard/delete-expired-card-button"
+import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
+import { daysUntilExpiry } from "@/lib/card-utils"
+import { resolveEffectiveEntitlements, syncExpiredEntitlements } from "@/lib/account-lifecycle"
+import { PrimaryCardConfigurator } from "@/components/dashboard/primary-card-configurator"
+import type { Prisma } from "@prisma/client"
 
 const STATUS_OPTIONS = [
   { value: "all", label: "Todas" },
@@ -30,31 +32,50 @@ export default async function CardsPage({
 
   if (!user?.email) redirect("/login")
 
-  const business = await prisma.business.findUnique({ where: { email: user.email } })
+  const business = await prisma.business.findFirst({
+    where: { users: { some: { authUserId: user.id } } },
+    include: { users: { where: { authUserId: user.id }, select: { role: true }, take: 1 } },
+  })
   if (!business) redirect("/login")
+  await syncExpiredEntitlements(prisma, business.id)
 
-  const where: Record<string, unknown> = { businessId: business.id, isActive: true }
+  const where: Prisma.LoyaltyCardWhereInput = {
+    businessId: business.id,
+    status: { in: ["ACTIVE", "LOCKED_BY_PLAN"] },
+  }
   if (q?.trim()) where.name = { contains: q.trim(), mode: "insensitive" }
 
-  const allCards = await prisma.loyaltyCard.findMany({
-    where,
-    include: {
-      _count: { select: { customers: { where: { isActive: true } } } },
-      customers: { where: { isActive: true }, select: { stamps: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  })
+  const [allCards, primaryCards, subscription] = await Promise.all([
+    prisma.loyaltyCard.findMany({
+      where,
+      include: {
+        _count: { select: { customers: { where: { isActive: true } } } },
+        effectiveTheme: { select: { code: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.loyaltyCard.findMany({
+      where: { businessId: business.id, status: { in: ["ACTIVE", "LOCKED_BY_PLAN"] } },
+      select: { id: true, name: true, reward: true, status: true },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.subscription.findFirst({ where: { businessId: business.id, status: "ACTIVE" }, orderBy: { createdAt: "desc" } }),
+  ])
 
   const now = new Date()
   const enriched = allCards.map((c) => ({ ...c, expired: !!(c.expiresAt && c.expiresAt < now) }))
 
   const cards = status === "active"
-    ? enriched.filter((c) => !c.expired)
+    ? enriched.filter((c) => c.status === "ACTIVE" && !c.expired)
     : status === "expired"
-    ? enriched.filter((c) => c.expired)
+    ? enriched.filter((c) => c.status === "ACTIVE" && c.expired)
     : enriched.sort((a, b) => Number(a.expired) - Number(b.expired))
 
-  const expiredCount = enriched.filter((c) => c.expired).length
+  const expiredCount = enriched.filter((c) => c.status === "ACTIVE" && c.expired).length
+  const accountPlan = subscription ? resolveEffectiveEntitlements(subscription).plan : null
+  const primaryCardId = subscription?.liteCardId && primaryCards.some((card) => card.id === subscription.liteCardId)
+    ? subscription.liteCardId
+    : accountPlan === "LITE" ? primaryCards.find((card) => card.status === "ACTIVE")?.id ?? null : null
 
   return (
     <div className="space-y-8">
@@ -63,19 +84,26 @@ export default async function CardsPage({
           <h1 className="text-2xl font-bold text-foreground text-balance">Tarjetas de Lealtad</h1>
           <p className="text-muted-foreground">Gestiona tus campañas de tarjetas de lealtad digitales</p>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:flex">
-          <Link href="/dashboard/cards/archived">
-            <Button variant="outline">
+        <div className="grid grid-cols-1 gap-2 sm:flex">
+          {business.users[0]?.role === "admin" && subscription && primaryCards.length > 0 && (
+            <PrimaryCardConfigurator
+              cards={primaryCards.filter((card) => card.status === "ACTIVE" || card.status === "LOCKED_BY_PLAN")}
+              primaryCardId={primaryCardId}
+              plan={accountPlan!}
+            />
+          )}
+          <Button variant="outline" asChild>
+            <Link href="/dashboard/cards/archived">
               <Archive className="h-4 w-4 mr-2" aria-hidden="true" />
               Archivadas
-            </Button>
-          </Link>
-          <Link href="/dashboard/cards/new">
-            <Button>
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/dashboard/cards/new">
               <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
               Crear Tarjeta
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
 
@@ -120,143 +148,95 @@ export default async function CardsPage({
               : "Crea tu primera tarjeta de lealtad para empezar"}
           </p>
           {!q && status !== "expired" && (
-            <Link href="/dashboard/cards/new">
-              <Button><Plus className="h-4 w-4 mr-2" />Crear Tarjeta</Button>
-            </Link>
+            <Button asChild>
+              <Link href="/dashboard/cards/new"><Plus className="h-4 w-4 mr-2" />Crear Tarjeta</Link>
+            </Button>
           )}
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {cards.map((card) => (
-            <div
-              key={card.id}
-              className={`bg-card rounded-2xl border overflow-hidden hover:shadow-lg transition-shadow group ${
-                card.expired ? "border-destructive/30 opacity-80" : "border-border"
-              }`}
-            >
-              <div className="h-3" style={{ backgroundColor: card.brandColor }} />
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  {(() => {
-                    const icon = getCardIcon(card.iconName)
-                    const IconComp = icon?.Icon
-                    if (card.iconName === "logo" && business.logoUrl) {
-                      return (
-                        <div
-                          className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shrink-0"
-                          style={{ backgroundColor: card.brandColor }}
-                        >
-                          <Image src={business.logoUrl} alt="" width={32} height={32} className="object-contain" />
-                        </div>
-                      )
-                    }
-                    return (
-                      <div
-                        className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shrink-0"
-                        style={{ backgroundColor: card.brandColor }}
+          {/* La tarjeta se muestra tal como la ve el cliente. Antes era una
+              franja de color con la inicial del nombre, que no dice nada de lo
+              que se publicó. */}
+          {cards.map((card) => {
+            const diasParaVencer = daysUntilExpiry(card.expiresAt)
+            const vencimientoRequiereAtencion =
+              card.expired || (diasParaVencer !== null && diasParaVencer <= 7)
+            const isPrimary = card.id === primaryCardId
+            return (
+              <div
+                key={card.id}
+                className={`overflow-hidden rounded-2xl bg-card transition-[border-color,box-shadow] hover:shadow-lg ${
+                  isPrimary
+                    ? `border-2 border-primary shadow-md shadow-primary/15 ${card.expired ? "opacity-80" : ""}`
+                    : `border border-border ${card.expired ? "opacity-80" : ""}`
+                }`}
+              >
+                <div className="p-5">
+                  <LoyaltyCardPreview
+                    businessName={business.name}
+                    businessLogo={business.logoUrl ?? undefined}
+                    iconName={card.iconName}
+                    stampIconName={card.stampIconName}
+                    customerName="Tus clientes"
+                    currentStamps={0}
+                    maxStamps={card.stampsRequired}
+                    reward={card.reward}
+                    showQR={false}
+                    brandColor={card.brandColor}
+                    textColor={card.textColor}
+                    themeCode={card.effectiveTheme?.code}
+                  />
+                </div>
+
+                <div className="space-y-3 px-5 pb-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <h3 className="min-w-0 line-clamp-2 font-semibold text-foreground">{card.name}</h3>
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      {isPrimary && (
+                        <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">Principal</span>
+                      )}
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                          card.status === "LOCKED_BY_PLAN"
+                            ? "bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300"
+                            : card.expired
+                            ? "bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300"
+                            : "bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-300"
+                        }`}
                       >
-                        {IconComp ? <IconComp className="h-6 w-6" aria-hidden="true" /> : card.name.charAt(0)}
-                      </div>
-                    )
-                  })()}
-                  <div className="flex items-center gap-2">
-                    {card.expired ? (
-                      <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-destructive/10 text-destructive">
-                        Vencida
-                      </span>
-                    ) : (
-                      <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-green-100 text-green-700">
-                        Activa
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <h3 className="mb-1 line-clamp-2 text-lg font-semibold text-foreground">{card.name}</h3>
-                {card.description && <p className="mb-4 line-clamp-2 text-sm text-muted-foreground">{card.description}</p>}
-
-                <div className="bg-muted/50 rounded-xl p-3 mb-4">
-                  <div className="flex items-center justify-between gap-3 text-sm">
-                    <span className="shrink-0 text-muted-foreground">Recompensa</span>
-                    <span className="min-w-0 break-words text-right font-medium text-foreground">{card.reward}</span>
-                  </div>
-                  <div className="mt-1 flex items-center justify-between gap-3 text-sm">
-                    <span className="text-muted-foreground">Sellos requeridos</span>
-                    <span className="font-medium text-foreground">{card.stampsRequired}</span>
-                  </div>
-                  {card.expiresAt && (
-                    <div className="flex items-center justify-between text-sm mt-1">
-                      <span className="text-muted-foreground">{card.expired ? "Venció" : "Vence"}</span>
-                      <span className={`font-medium ${card.expired ? "text-destructive" : "text-foreground"}`}>
-                        {card.expiresAt.toLocaleDateString("es-MX")}
+                        {card.status === "LOCKED_BY_PLAN" ? "Bloqueada por plan" : card.expired ? "Vencida" : "Activa"}
                       </span>
                     </div>
-                  )}
-                </div>
+                  </div>
 
-                {card.expired && (
-                  <div className="bg-destructive/5 border border-destructive/15 rounded-xl p-3 mb-4">
-                    <p className="text-xs text-destructive font-medium">
-                      {card._count.customers} cliente{card._count.customers !== 1 ? "s" : ""} no {card._count.customers !== 1 ? "completaron" : "completó"} sus sellos
+                  <p className="truncate text-sm text-muted-foreground">{card.reward}</p>
+
+                  <p className="text-sm text-muted-foreground">
+                    <span className="font-medium text-foreground">{card._count.customers}</span>{" "}
+                    cliente{card._count.customers !== 1 ? "s" : ""}
+                  </p>
+
+                  {/* El vencimiento solo aparece cuando pide algo. */}
+                  {vencimientoRequiereAtencion && card.expiresAt && (
+                    <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                      {card.expired
+                        ? `Venció el ${card.expiresAt.toLocaleDateString("es-MX")}`
+                        : diasParaVencer === 0
+                        ? "Vence hoy"
+                        : `Vence en ${diasParaVencer} día${diasParaVencer !== 1 ? "s" : ""}`}
                     </p>
-                  </div>
-                )}
-
-                {!card.expired && (
-                  <div className="grid grid-cols-3 gap-3 mb-4">
-                    <div className="rounded-lg bg-muted/30 p-2 text-center">
-                      <Users className="mx-auto mb-1 h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                      <p className="text-sm font-semibold text-foreground">{card._count.customers}</p>
-                      <p className="text-xs text-muted-foreground">Clientes</p>
-                    </div>
-                    <div className="text-center p-2 bg-muted/30 rounded-lg">
-                      <Stamp className="mx-auto mb-1 h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                      <p className="text-sm font-semibold text-foreground">
-                        {card.customers.reduce((s, c) => s + c.stamps, 0)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Sellos</p>
-                    </div>
-                    <div className="text-center p-2 bg-muted/30 rounded-lg">
-                      <QrCode className="mx-auto mb-1 h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                      <p className="text-sm font-semibold text-foreground">1</p>
-                      <p className="text-xs text-muted-foreground">Código QR</p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {card.expired ? (
-                    <>
-                      <Link href={`/dashboard/cards/${card.id}`}>
-                        <Button variant="outline" className="w-full">Ver Detalles</Button>
-                      </Link>
-                      <DeleteExpiredCardButton
-                        cardId={card.id}
-                        cardName={card.name}
-                        affectedCustomers={card._count.customers}
-                      />
-                    </>
-                  ) : (
-                    <>
-                      <Link href={`/dashboard/cards/${card.id}`}>
-                        <Button variant="outline" className="w-full">Ver Detalles</Button>
-                      </Link>
-                      <Link href={`/dashboard/scan?cardId=${card.id}`}>
-                        <Button
-                          variant="default"
-                          className="w-full text-white"
-                          style={{ backgroundColor: card.brandColor }}
-                        >
-                          <Stamp className="h-4 w-4 mr-2" aria-hidden="true" />
-                          Sellar
-                        </Button>
-                      </Link>
-                    </>
                   )}
+
+                  <Button asChild variant="outline" className="min-h-11 w-full">
+                    <Link href={card.status === "LOCKED_BY_PLAN" ? `/dashboard/cards/${card.id}/edit` : `/dashboard/cards/${card.id}`}>
+                      {card.status === "LOCKED_BY_PLAN" ? "Editar tarjeta" : "Ver tarjeta"}
+                    </Link>
+                  </Button>
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
 
           {status !== "expired" && (
             <Link

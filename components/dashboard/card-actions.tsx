@@ -3,8 +3,15 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Archive, Loader2, Pencil, QrCode, Trash2 } from "lucide-react"
+import { Archive, Loader2, MoreHorizontal, Pencil, QrCode, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
 import {
   AlertDialog,
@@ -59,35 +66,55 @@ export function CardActions({ cardId, cardName }: CardActionsProps) {
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-        <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
-          <Link href={`/dashboard/cards/${cardId}/edit`}>
-            <Pencil className="mr-2 h-4 w-4" aria-hidden="true" />
-            Editar
-          </Link>
-        </Button>
-        <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
+      {/* Compartir el código es la acción del día a día y se queda a la vista.
+          Editar, archivar y eliminar pasan al menú: eran cuatro botones del
+          mismo peso compitiendo entre ellos y con la propia tarjeta. */}
+      <div className="flex shrink-0 items-center gap-2">
+        <Button asChild variant="outline" className="min-h-11">
           <Link href={`/dashboard/qr-codes/${cardId}`}>
             <QrCode className="mr-2 h-4 w-4" aria-hidden="true" />
             Código QR
           </Link>
         </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => setArchiveOpen(true)} disabled={archiving} className="w-full sm:w-auto">
-          {archiving ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-          ) : (
-            <Archive className="mr-2 h-4 w-4" aria-hidden="true" />
-          )}
-          Archivar
-        </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => setDeleteOpen(true)} disabled={deleting} className="w-full border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive sm:w-auto">
-          {deleting ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-          ) : (
-            <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
-          )}
-          Eliminar
-        </Button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label={`Más acciones para ${cardName}`}
+              className="min-h-11 min-w-11 text-muted-foreground data-[state=open]:bg-muted"
+              disabled={archiving || deleting}
+            >
+              {archiving || deleting ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuItem asChild className="cursor-pointer gap-2">
+              <Link href={`/dashboard/cards/${cardId}/edit`}>
+                <Pencil className="h-4 w-4" aria-hidden="true" />
+                Editar
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setArchiveOpen(true)} className="cursor-pointer gap-2">
+              <Archive className="h-4 w-4" aria-hidden="true" />
+              Archivar
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => setDeleteOpen(true)}
+              className="cursor-pointer gap-2 text-destructive focus:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
+              Eliminar
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <AlertDialog open={archiveOpen} onOpenChange={setArchiveOpen}>

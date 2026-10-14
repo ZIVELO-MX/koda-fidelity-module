@@ -44,14 +44,14 @@ describe("BrandingPage — logo upload", () => {
   it("renders the logo upload section after loading", async () => {
     render(<BrandingPage />)
     await waitFor(() =>
-      expect(screen.getByText("Logo del Negocio")).toBeInTheDocument()
+      expect(screen.getByText("Logo del negocio")).toBeInTheDocument()
     )
     expect(screen.getByRole("button", { name: /subir logo/i })).toBeInTheDocument()
   })
 
   it("shows error when file exceeds 2 MB", async () => {
     render(<BrandingPage />)
-    await waitFor(() => screen.getByText("Logo del Negocio"))
+    await waitFor(() => screen.getByText("Logo del negocio"))
 
     triggerFileInput(makeFile(3 * 1024 * 1024)) // 3 MB
 
@@ -61,7 +61,7 @@ describe("BrandingPage — logo upload", () => {
 
   it("does not show error for file exactly at 2 MB limit", async () => {
     render(<BrandingPage />)
-    await waitFor(() => screen.getByText("Logo del Negocio"))
+    await waitFor(() => screen.getByText("Logo del negocio"))
 
     triggerFileInput(makeFile(2 * 1024 * 1024)) // exactly 2 MB
 
@@ -70,7 +70,7 @@ describe("BrandingPage — logo upload", () => {
 
   it("does not show error for file under 2 MB", async () => {
     render(<BrandingPage />)
-    await waitFor(() => screen.getByText("Logo del Negocio"))
+    await waitFor(() => screen.getByText("Logo del negocio"))
 
     triggerFileInput(makeFile(500 * 1024)) // 500 KB
 
@@ -79,7 +79,7 @@ describe("BrandingPage — logo upload", () => {
 
   it("clears error when a valid file is selected after a rejected one", async () => {
     render(<BrandingPage />)
-    await waitFor(() => screen.getByText("Logo del Negocio"))
+    await waitFor(() => screen.getByText("Logo del negocio"))
 
     triggerFileInput(makeFile(5 * 1024 * 1024)) // 5 MB — rejected
     expect(screen.getByText(/demasiado grande/i)).toBeInTheDocument()

@@ -29,12 +29,12 @@ export default function DashboardError({
             <RefreshCw className="h-4 w-4 mr-2" />
             Reintentar
           </Button>
-          <Link href="/dashboard/my-cards">
-            <Button variant="outline">
+          <Button variant="outline" asChild>
+            <Link href="/dashboard/my-cards">
               <Smartphone className="h-4 w-4 mr-2" />
               Mis Tarjetas
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <form action={logout}>
             <Button type="submit" variant="ghost">
               <LogOut className="h-4 w-4 mr-2" />

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
-import { Geist } from 'next/font/google'
+import { JetBrains_Mono, Playfair_Display } from 'next/font/google'
+import localFont from 'next/font/local'
 import { Analytics } from '@vercel/analytics/next'
 import { ServiceWorkerRegister } from '@/components/service-worker-register'
 import { ThemeProvider } from '@/components/theme-provider'
@@ -7,15 +8,45 @@ import { Toaster } from '@/components/ui/sonner'
 import { siteConfig } from '@/lib/site-config'
 import './globals.css'
 
-const geist = Geist({
+// Switzer es la tipografía del ADN de KODA. Vive en Fontshare, no en Google
+// Fonts, así que se sirve desde el propio proyecto.
+const switzer = localFont({
+  src: [
+    { path: '../public/fonts/switzer-400.woff2', weight: '400', style: 'normal' },
+    { path: '../public/fonts/switzer-500.woff2', weight: '500', style: 'normal' },
+    { path: '../public/fonts/switzer-600.woff2', weight: '600', style: 'normal' },
+    { path: '../public/fonts/switzer-700.woff2', weight: '700', style: 'normal' },
+  ],
+  variable: '--font-switzer',
+  display: 'swap',
+  fallback: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'ui-sans-serif'],
+})
+
+// Para cifras que se alinean en columna.
+const jetbrains = JetBrains_Mono({
   subsets: ['latin'],
-  variable: '--font-sans',
+  variable: '--font-jetbrains',
+  display: 'swap',
+  // Sin precarga: la mono solo se usa en las cifras del panel, y se precargaba
+  // también en la landing, que no tiene una sola. Se descarga cuando alguna
+  // pantalla la pide.
+  preload: false,
+})
+
+// Playfair en cursiva es el acento del diseño aprobado de la landing. No se
+// usa en el panel: ahí manda Switzer sola.
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  style: ['italic'],
+  weight: ['700'],
+  variable: '--font-playfair',
+  display: 'swap',
 })
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   title: {
-    default: `${siteConfig.name} - Tarjetas de Fidelidad Digitales`,
+    default: siteConfig.metaTitle,
     template: `%s | ${siteConfig.name}`,
   },
   description: siteConfig.description,
@@ -39,7 +70,7 @@ export const metadata: Metadata = {
     apple: '/apple-icon.png',
   },
   openGraph: {
-    title: `${siteConfig.name} - Tarjetas de Fidelidad Digitales`,
+    title: siteConfig.metaTitle,
     description: siteConfig.description,
     url: siteConfig.url,
     siteName: siteConfig.name,
@@ -56,7 +87,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: `${siteConfig.name} - Tarjetas de Fidelidad Digitales`,
+    title: siteConfig.metaTitle,
     description: siteConfig.description,
     images: [siteConfig.ogImage],
     creator: siteConfig.creator,
@@ -82,9 +113,12 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  // data-scroll-behavior: el CSS declara scroll-behavior smooth, y sin este
+  // atributo Next lo aplica también al cambiar de ruta, donde el desplazamiento
+  // suave hasta el inicio se ve como un salto raro.
   return (
-    <html lang="es" className="bg-background" suppressHydrationWarning>
-      <body className={`${geist.variable} font-sans antialiased`}>
+    <html lang="es-MX" className="bg-background" data-scroll-behavior="smooth" suppressHydrationWarning>
+      <body className={`${switzer.variable} ${jetbrains.variable} ${playfair.variable} font-sans antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange>
           {children}
         </ThemeProvider>

@@ -4,7 +4,8 @@ import { createAdminClient } from "@/lib/supabase-admin"
 import { redirect } from "next/navigation"
 import { TeamClient } from "./team-client"
 
-export const metadata = { title: "Equipo — Koda Fidelity" }
+// El sufijo lo pone la plantilla de app/layout.tsx.
+export const metadata = { title: "Equipo" }
 
 export default async function TeamPage() {
   const supabase = await createClient()
@@ -12,11 +13,11 @@ export default async function TeamPage() {
   if (!user?.email) redirect("/login")
 
   const userRecord = await prisma.user.findUnique({
-    where: { email: user.email },
+    where: { authUserId: user.id },
     select: { id: true, name: true, role: true, businessId: true, business: { select: { name: true } } },
   })
 
-  if (!userRecord || userRecord.role !== "admin") redirect("/dashboard")
+  if (!userRecord || !userRecord.businessId || !userRecord.business || userRecord.role !== "admin") redirect("/dashboard")
 
   const dbUsers = await prisma.user.findMany({
     where: { businessId: userRecord.businessId },

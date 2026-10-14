@@ -14,8 +14,8 @@ export default async function CardQRPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user?.email) redirect("/login")
 
-  const business = await prisma.business.findUnique({
-    where: { email: user.email },
+  const business = await prisma.business.findFirst({
+    where: { users: { some: { authUserId: user.id } } },
     select: { id: true, name: true, logoUrl: true },
   })
   if (!business) redirect("/login")

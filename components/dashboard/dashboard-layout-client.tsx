@@ -1,11 +1,25 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useSyncExternalStore, useEffect, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { DashboardSidebar } from "./sidebar"
 import { DashboardHeader } from "./header"
 import type { Role } from "@prisma/client"
+import type { AccountPlan } from "@/lib/plan-change-notice"
 
 const SIDEBAR_STATE_KEY = "dashboard-sidebar-state"
+
+function subscribeSidebar(onChange: () => void) {
+  window.addEventListener("storage", onChange)
+  window.addEventListener(SIDEBAR_STATE_KEY, onChange)
+  return () => {
+    window.removeEventListener("storage", onChange)
+    window.removeEventListener(SIDEBAR_STATE_KEY, onChange)
+  }
+}
+
+const readSidebar = () => window.localStorage.getItem(SIDEBAR_STATE_KEY) === "true"
+const serverSidebar = () => false
 
 interface DashboardLayoutClientProps {
   children: React.ReactNode
@@ -14,6 +28,9 @@ interface DashboardLayoutClientProps {
   brandColor: string
   nickname?: string
   role: Role
+  accountPlan: AccountPlan | null
+  planChangeNotice: { eventId: string; from: AccountPlan; to: AccountPlan } | null
+  closureScheduledFor?: string
 }
 
 export function DashboardLayoutClient({
@@ -23,31 +40,33 @@ export function DashboardLayoutClient({
   brandColor,
   nickname,
   role,
+  accountPlan,
+  planChangeNotice,
+  closureScheduledFor,
 }: DashboardLayoutClientProps) {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    if (typeof window === "undefined") return false
-    const stored = window.localStorage.getItem(SIDEBAR_STATE_KEY)
-    if (stored === "true") {
-      document.documentElement.classList.add("sidebar-collapsed")
-      return true
+  const router = useRouter()
+  const sidebarCollapsed = useSyncExternalStore(subscribeSidebar, readSidebar, serverSidebar)
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("sidebar-collapsed", sidebarCollapsed)
+  }, [sidebarCollapsed])
+
+  useEffect(() => {
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") router.refresh()
     }
-    return false
-  })
+    window.addEventListener("focus", refreshWhenVisible)
+    document.addEventListener("visibilitychange", refreshWhenVisible)
+    return () => {
+      window.removeEventListener("focus", refreshWhenVisible)
+      document.removeEventListener("visibilitychange", refreshWhenVisible)
+    }
+  }, [router])
 
   const toggleCollapse = useCallback(() => {
-    setSidebarCollapsed((prev) => {
-      const next = !prev
-      window.localStorage.setItem(SIDEBAR_STATE_KEY, JSON.stringify(next))
-      document.documentElement.classList.toggle("sidebar-collapsed", next)
-      return next
-    })
+    window.localStorage.setItem(SIDEBAR_STATE_KEY, JSON.stringify(!readSidebar()))
+    window.dispatchEvent(new Event(SIDEBAR_STATE_KEY))
   }, [])
-
-  const [ready, setReady] = useState(
-    typeof window !== "undefined" ? document.documentElement.classList.contains("sidebar-collapsed") : false
-  )
-  useEffect(() => { setReady(true) }, [])
-  if (!ready) return null
 
   return (
     <div className="lg:flex min-h-screen">
@@ -57,6 +76,8 @@ export function DashboardLayoutClient({
         brandColor={brandColor}
         nickname={nickname}
         role={role}
+        accountPlan={accountPlan}
+        planChangeNotice={planChangeNotice}
         collapsed={sidebarCollapsed}
         onToggleCollapse={toggleCollapse}
       />
@@ -64,8 +85,12 @@ export function DashboardLayoutClient({
         <DashboardHeader
           collapsed={sidebarCollapsed}
           onToggleCollapse={toggleCollapse}
+          businessName={businessName}
         />
-        <main className="flex-1 p-4 sm:p-6 pt-4 lg:pt-6 pb-20 lg:pb-6">{children}</main>
+        <main className="flex-1 p-4 sm:p-6 pt-4 lg:pt-6 pb-20 lg:pb-6">
+          {closureScheduledFor ? <div role="status" className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-foreground">Cuenta en sólo lectura hasta {new Date(closureScheduledFor).toLocaleDateString("es-MX")}. Puedes consultar, exportar o cancelar el cierre desde Configuración.</div> : null}
+          {children}
+        </main>
       </div>
     </div>
   )

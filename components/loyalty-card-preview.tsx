@@ -3,7 +3,11 @@
 import { QRCodeSVG } from "qrcode.react"
 import { Stamp } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { mezclar } from "@/lib/color-marca"
 import { getCardIcon } from "@/lib/card-icons"
+import { PatronDeIconos } from "@/components/patron-de-iconos"
+import { iconosDelTema, pielDeTarjeta } from "@/lib/temas-de-tarjeta"
+
 
 
 interface LoyaltyCardPreviewProps {
@@ -22,6 +26,14 @@ interface LoyaltyCardPreviewProps {
   qrValue?: string
   onMemberClick?: () => void
   milestoneClaims?: { stampNumber: number; iconName: string | null }[]
+  /**
+   * Código del tema **efectivo**, no del elegido. Cuando el negocio tiene un
+   * acabado Pro sin plan que lo sostenga, el servidor manda `effectiveThemeId`
+   * en null y aquí llega null: la tarjeta se pinta con el color del negocio,
+   * que es lo que pide el diseño. La selección no se pierde, solo no se aplica.
+   */
+  themeCode?: string | null
+  textColor?: "AUTO" | "DARK" | "LIGHT"
 }
 
 export function LoyaltyCardPreview({
@@ -40,18 +52,29 @@ export function LoyaltyCardPreview({
   qrValue = "https://fidelity.zivelo.dev/card/demo",
   onMemberClick,
   milestoneClaims = [],
+  themeCode = null,
+  textColor = "LIGHT",
 }: LoyaltyCardPreviewProps) {
   const stamps = Array.from({ length: maxStamps }, (_, i) => i < currentStamps)
   const milestonePositions = new Map(milestoneClaims.map(c => [c.stampNumber, c]))
 
-  const fg = "#ffffff"
-  const fgMuted = "rgba(255,255,255,0.6)"
-  const fgMuted2 = "rgba(255,255,255,0.7)"
-  const overlay = "rgba(255,255,255,0.12)"
-  const overlayIcon = "rgba(255,255,255,0.2)"
+  // La piel sale del tema efectivo. Sin tema, el color del negocio.
+  const piel = pielDeTarjeta(themeCode, brandColor, textColor)
+
+  // El patrón: el del giro cuando el tema lo define, y si no el ícono del
+  // negocio. Sin ninguno de los dos, la tarjeta va limpia.
+  const iconoDelNegocio = getCardIcon(iconName)?.Icon
+  const patron = iconosDelTema(themeCode) ?? (iconoDelNegocio ? [iconoDelNegocio] : null)
+
+  // La piel mantiene el fondo y la decoración constantes. Solo cambia la tinta;
+  // el aviso del selector informa si la combinación queda con poco contraste.
+  const fg = piel.texto
+  const capa = (a: number) => (piel.aparta === 255 ? `rgba(255,255,255,${a})` : `rgba(0,0,0,${a})`)
+  const overlay = capa(0.12)
+  const overlayIcon = capa(0.2)
   const stampBg = "rgba(255,255,255,0.95)"
-  const stampBorder = "rgba(255,255,255,0.3)"
-  const footerBg = "rgba(0,0,0,0.1)"
+  const stampBorder = capa(0.3)
+  const footerBg = capa(0.1)
 
   return (
     <div
@@ -59,8 +82,18 @@ export function LoyaltyCardPreview({
         "relative w-full max-w-sm mx-auto rounded-3xl overflow-hidden shadow-xl dark:ring-1 dark:ring-white/10",
         className,
       )}
-      style={{ backgroundColor: brandColor }}
+      style={{ backgroundImage: piel.fondo, backgroundColor: brandColor }}
     >
+      {/* El acabado, si el tema lo pide: va encima del fondo y debajo de todo
+          lo demás, así que no toca la forma de la tarjeta. */}
+      {piel.velo && (
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ backgroundImage: piel.velo }} />
+      )}
+
+      {/* El patrón. Sin él la tarjeta es un color plano, y era la pieza que
+          separaba la landing del producto. */}
+      {patron && <PatronDeIconos iconos={patron} opacidad={piel.opacidadDelPatron} columnas={4} filas={5} />}
+
       {/* Hero section */}
       <div className="relative px-6 pt-6 pb-4">
         <div className="flex items-center gap-3 mb-4">
@@ -83,8 +116,8 @@ export function LoyaltyCardPreview({
             )
           })()}
           <div>
-            <p className="text-xs uppercase tracking-wide" style={{ color: fgMuted }}>Tarjeta de Lealtad</p>
-            <h3 className="font-semibold text-lg leading-tight" style={{ color: fg }}>{businessName}</h3>
+            <p className="text-xs uppercase tracking-wide" style={{ color: fg }}>Tarjeta de Lealtad</p>
+            <p className="font-semibold text-lg leading-tight" style={{ color: fg }}>{businessName}</p>
           </div>
         </div>
 
@@ -97,7 +130,7 @@ export function LoyaltyCardPreview({
           tabIndex={onMemberClick ? 0 : undefined}
           onKeyDown={onMemberClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onMemberClick() } } : undefined}
         >
-          <p className="text-xs mb-0.5" style={{ color: fgMuted }}>Miembro</p>
+          <p className="text-xs mb-0.5" style={{ color: fg }}>Miembro</p>
           <p className="font-medium" style={{ color: fg }}>{customerName}</p>
         </div>
       </div>
@@ -106,7 +139,7 @@ export function LoyaltyCardPreview({
       <div className="px-6 pb-4">
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm font-medium" style={{ color: fg }}>Tu Progreso</p>
-          <p className="text-sm" style={{ color: fgMuted2 }}>
+          <p className="text-sm" style={{ color: fg }}>
             {currentStamps}/{maxStamps}
           </p>
         </div>
@@ -144,11 +177,14 @@ export function LoyaltyCardPreview({
                     const MilestoneIconComp = milestoneIcon?.Icon ?? Stamp
                     return <MilestoneIconComp className="w-5 h-5" style={{ color: "#ffffff" }} strokeWidth={2} />
                   }
-                  const effectiveStampIcon = stampIconName ?? iconName
-                  if (effectiveStampIcon === "logo" && businessLogo) {
+                  // El sello no hereda el ícono de la tarjeta: son dos decisiones
+                  // distintas, y heredarlo hacía que elegir el ícono de la
+                  // tarjeta cambiara los sellos sin pedirlo. Sin elección propia,
+                  // un sello es un sello.
+                  if (stampIconName === "logo" && businessLogo) {
                     return <img src={businessLogo} alt="" className="w-5 h-5 object-contain rounded" />
                   }
-                  const cardIcon = getCardIcon(effectiveStampIcon)
+                  const cardIcon = getCardIcon(stampIconName)
                   const StampIcon = cardIcon?.Icon ?? Stamp
                   return <StampIcon className="w-5 h-5" style={{ color: brandColor }} strokeWidth={2} />
                 })()}
@@ -164,7 +200,7 @@ export function LoyaltyCardPreview({
           className="rounded-xl px-4 py-3 text-center"
           style={{ backgroundColor: overlay }}
         >
-          <p className="text-xs mb-0.5" style={{ color: fgMuted }}>Premio</p>
+          <p className="text-xs mb-0.5" style={{ color: fg }}>Premio</p>
           <p className="font-semibold" style={{ color: fg }}>{reward}</p>
         </div>
       </div>
@@ -191,8 +227,8 @@ export function LoyaltyCardPreview({
         className="flex items-center justify-between px-6 py-3 text-xs"
         style={{ backgroundColor: footerBg }}
       >
-        {expirationDate && <span style={{ color: fgMuted }}>Vence: {expirationDate}</span>}
-        <span className="ml-auto" style={{ color: fgMuted }}>Con tecnología de Koda</span>
+        {expirationDate && <span style={{ color: fg }}>Vence: {expirationDate}</span>}
+        <span className="ml-auto" style={{ color: fg }}>Con tecnología de Koda</span>
       </div>
     </div>
   )

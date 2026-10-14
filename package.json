@@ -10,11 +10,11 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "db:push": "prisma db push",
-    "db:studio": "prisma studio",
-    "db:seed": "prisma db seed",
+    "db:generate": "node scripts/prisma-dev.mjs generate",
+    "db:migrate": "node scripts/prisma-dev.mjs migrate dev",
+    "db:push": "node scripts/prisma-dev.mjs db push",
+    "db:studio": "node scripts/prisma-dev.mjs studio",
+    "db:seed": "node scripts/prisma-dev.mjs db seed",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
     "e2e:debug": "playwright test --debug",
@@ -23,7 +23,15 @@
     "create:user": "pnpm tsx scripts/create-user.ts",
     "reset:password": "pnpm tsx scripts/reset-password.ts",
     "send:invite": "pnpm tsx scripts/send-invite.ts",
-    "generate:pass-images": "tsx scripts/generate-pass-images.ts"
+    "generate:pass-images": "tsx scripts/generate-pass-images.ts",
+    "auth:backfill": "tsx scripts/backfill-auth-user-ids.ts",
+    "billing:set-plan": "tsx scripts/billing-set-plan.ts",
+    "billing:manage-user": "tsx scripts/billing-manage-user.ts",
+    "billing:ticket": "tsx scripts/billing-ticket.ts",
+    "fidelity:admin": "node --import tsx scripts/fidelity-admin.ts",
+    "onboarding:debug": "tsx scripts/onboarding-debug.ts",
+    "prepare:onboarding-e2e": "tsx scripts/prepare-onboarding-e2e.ts",
+    "onboarding:mock": "tsx scripts/onboarding-mock.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

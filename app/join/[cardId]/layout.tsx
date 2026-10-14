@@ -16,7 +16,7 @@ export async function generateMetadata({
 
   if (!card) {
     return {
-      title: "Tarjeta no encontrada",
+      title: "Este enlace no lleva a ninguna tarjeta",
     }
   }
 

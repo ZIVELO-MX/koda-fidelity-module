@@ -228,6 +228,7 @@ export default async function Image({
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <img
+            alt=""
             src={`${siteConfig.url}/short-logo.svg`}
             width={20}
             height={20}

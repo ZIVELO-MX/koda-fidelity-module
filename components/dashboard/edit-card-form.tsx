@@ -1,31 +1,32 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Check, ChevronDown, ChevronRight, Gift, Loader2, Save } from "lucide-react"
+import { ArrowLeft, ChevronDown, Loader2, Plus, Save, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Switch } from "@/components/ui/switch"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { IconPicker } from "@/components/dashboard/icon-picker"
+import { TextColorPicker } from "@/components/dashboard/text-color-picker"
 import { ExpirationPicker } from "@/components/dashboard/expiration-picker"
 import { toast } from "sonner"
 import { getRarityColor, getRarityDescription, getRarityLabel, getRarityRange } from "@/lib/card-utils"
+import { sorpresasQueViajan, validarBorrador } from "@/lib/tarjeta-borrador"
 import { cn } from "@/lib/utils"
+import { nombreDeTema } from "@/lib/temas-de-tarjeta"
+import { AvisoDeColorDeTexto } from "@/components/aviso-de-color-de-texto"
+import { TemaProRequiereProAlert } from "@/components/dashboard/tema-pro-requiere-pro-alert"
+import { PrimaryCardCheckbox } from "@/components/dashboard/primary-card-checkbox"
 
-const colorPresets = [
-  "#f97316",
-  "#3b82f6",
-  "#10b981",
-  "#8b5cf6",
-  "#ec4899",
-  "#f59e0b",
-]
+type TemaDisponible = { id: string; code: string; plan: "LITE" | "PRO" }
+
+const colorPresets = ["#f97316", "#3b82f6", "#10b981", "#8b5cf6", "#ec4899", "#f59e0b"]
+
+const SELLOS_SUGERIDOS = [5, 8, 10, 12, 15]
 
 type MilestoneEdit = {
   id?: string
@@ -45,9 +46,14 @@ interface EditCardFormProps {
   initialStampsRequired: number
   initialIcon?: string | null
   initialStampIcon?: string | null
+  initialThemeId?: string | null
+  initialTextColor?: "AUTO" | "DARK" | "LIGHT"
   initialDescription?: string | null
   initialExpiresAt?: string | null
   initialMilestones?: MilestoneEdit[]
+  initialIsPrimary?: boolean
+  initialPrimaryCardId?: string | null
+  initialPrimaryCardName?: string | null
 }
 
 export function EditCardForm({
@@ -60,9 +66,14 @@ export function EditCardForm({
   initialStampsRequired,
   initialIcon = null,
   initialStampIcon = null,
+  initialThemeId = null,
+  initialTextColor = "LIGHT",
   initialDescription = null,
   initialExpiresAt = null,
   initialMilestones = [],
+  initialIsPrimary = false,
+  initialPrimaryCardId = null,
+  initialPrimaryCardName = null,
 }: EditCardFormProps) {
   const router = useRouter()
   const [name, setName] = useState(initialName)
@@ -71,34 +82,78 @@ export function EditCardForm({
   const [stampsRequired, setStampsRequired] = useState(initialStampsRequired)
   const [iconName, setIconName] = useState<string | null>(initialIcon)
   const [stampIconName, setStampIconName] = useState<string | null>(initialStampIcon)
+  const [themeId, setThemeId] = useState(initialThemeId ?? "")
+  const [textColor, setTextColor] = useState<"AUTO" | "DARK" | "LIGHT">(initialTextColor)
+  const [themes, setThemes] = useState<TemaDisponible[]>([])
+  const [accountPlan, setAccountPlan] = useState<"LITE" | "PRO">("LITE")
+  const [isPrimary, setIsPrimary] = useState(initialIsPrimary)
+  const [primaryCardId, setPrimaryCardId] = useState(initialPrimaryCardId)
+  const [primaryCardName, setPrimaryCardName] = useState(initialPrimaryCardName)
+  const primaryChoiceTouched = useRef(false)
   const [description, setDescription] = useState(initialDescription ?? "")
   const [expiresAt, setExpiresAt] = useState(initialExpiresAt ?? "")
   const [previewMode, setPreviewMode] = useState<"normal" | "sellada">("normal")
-  const [milestonesOpen, setMilestonesOpen] = useState(true)
   const [milestones, setMilestones] = useState<MilestoneEdit[]>(
-    initialMilestones.map((milestone) => ({
-      id: milestone.id,
-      stampNumber: milestone.stampNumber,
-      label: milestone.label,
-      iconName: milestone.iconName,
-      probability: milestone.probability,
-    })),
+    initialMilestones.map((m) => ({ ...m })),
   )
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
+  const [proThemeBlocked, setProThemeBlocked] = useState(false)
+
+  useEffect(() => {
+    fetch("/api/card-themes")
+      .then((res) => res.json())
+      .then((data) => {
+        setThemes(Array.isArray(data.themes) ? data.themes : [])
+        const plan = data.plan === "PRO" ? "PRO" : "LITE"
+        setAccountPlan(plan)
+        const currentPrimaryId = typeof data.primaryCardId === "string" ? data.primaryCardId : null
+        setPrimaryCardId(currentPrimaryId)
+        setPrimaryCardName(data.primaryCardId !== cardId && typeof data.primaryCardName === "string" ? data.primaryCardName : null)
+        if (!primaryChoiceTouched.current) setIsPrimary(currentPrimaryId === cardId)
+      })
+      .catch(() => {})
+  }, [cardId])
+
+  const limpiarError = (campo: string) => setErrors((prev) => ({ ...prev, [campo]: "" }))
+
+  const cambiarSorpresa = (i: number, cambios: Partial<MilestoneEdit>) => {
+    setMilestones((prev) => prev.map((s, j) => (j === i ? { ...s, ...cambios } : s)))
+    limpiarError(`sorpresa-${i}`)
+  }
+
+  const añadirSorpresa = () => {
+    setMilestones((prev) => {
+      const ocupados = new Set(prev.map((s) => s.stampNumber))
+      const libre = Array.from({ length: stampsRequired }, (_, i) => i + 1).find(
+        (n) => !ocupados.has(n),
+      )
+      return [...prev, { stampNumber: libre ?? 1, label: "", iconName: null, probability: 100 }]
+    })
+  }
 
   async function handleSave() {
-    if (!name.trim()) {
-      toast.error("El nombre es obligatorio")
+    const chosenTheme = themes.find((theme) => theme.id === themeId)
+    const themeChanged = themeId !== (initialThemeId ?? "")
+    if (chosenTheme?.plan === "PRO" && accountPlan !== "PRO" && themeChanged) {
+      setProThemeBlocked(true)
       return
     }
-    if (!reward.trim()) {
-      toast.error("La recompensa es obligatoria")
+    // La misma validación que la creación, para que las dos pantallas exijan lo
+    // mismo y expliquen igual.
+    const { errores, primerCampo } = validarBorrador({
+      nombre: name,
+      recompensa: reward,
+      sellosRequeridos: stampsRequired,
+      sorpresas: milestones,
+    })
+    setErrors(errores)
+    if (primerCampo) {
+      document.getElementById(`edit-${primerCampo}`)?.focus()
       return
     }
 
     setSaving(true)
-    setSaved(false)
 
     const response = await fetch(`/api/cards/${cardId}`, {
       method: "PUT",
@@ -110,15 +165,13 @@ export function EditCardForm({
         brandColor: color,
         iconName,
         stampIconName,
+        themeId: themeChanged ? themeId || null : undefined,
+        isPrimary,
+        textColor,
         description: description.trim() || null,
         expiresAt: expiresAt || null,
-        milestoneRewards: milestones.map((milestone) => ({
-          id: milestone.id,
-          stampNumber: milestone.stampNumber,
-          label: milestone.label,
-          iconName: milestone.iconName,
-          probability: milestone.probability,
-        })),
+        // Una sorpresa sin etiqueta es una fila que nadie llenó.
+        milestoneRewards: sorpresasQueViajan(milestones),
       }),
     })
 
@@ -126,314 +179,414 @@ export function EditCardForm({
 
     if (!response.ok) {
       const body = await response.json().catch(() => null)
+      if (body?.code === "KF-ACCOUNT-ACTIVATION") {
+        router.push(body.redirectTo || "/onboarding")
+        return
+      }
+      if (body?.code === "KF-PLAN-PRO-THEME") {
+        setProThemeBlocked(true)
+        return
+      }
       toast.error(body?.error || "No fue posible guardar los cambios")
       return
     }
 
-    setSaved(true)
     router.push(`/dashboard/cards/${cardId}`)
     router.refresh()
   }
 
+  const resumenDeDefectos = [
+    expiresAt ? "Con vencimiento" : "Sin vencimiento",
+    description.trim() ? "Con descripción" : "Sin descripción",
+    milestones.length > 0
+      ? `${milestones.length} sorpresa${milestones.length !== 1 ? "s" : ""}`
+      : "Sin sorpresas",
+  ].join(" · ")
+  const temaElegido = themes.find((theme) => theme.id === themeId)
+  // La vista previa enseña lo elegido, Pro incluido, igual que en el alta: es
+  // donde se decide, y el aviso de debajo dice que con Lite se guarda y se
+  // activa al pasar a Pro. La tarjeta publicada usa el tema efectivo.
+  const themeCode = temaElegido?.code ?? null
+
   return (
     <div className="space-y-8">
       <div className="space-y-3">
-        <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit gap-2 text-muted-foreground">
+        <Button asChild variant="ghost" className="-ml-2 min-h-11 w-fit gap-2 text-muted-foreground">
           <Link href={`/dashboard/cards/${cardId}`}>
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Volver a la tarjeta
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-foreground text-balance">Editar Tarjeta</h1>
-          <p className="text-muted-foreground">Ajusta contenido, diseño y recompensas sorpresa en una vista amplia.</p>
+          <h1 className="text-2xl font-bold text-foreground text-balance">Editar tarjeta</h1>
+          <p className="text-muted-foreground">
+            Actualiza los datos y elige si esta será la tarjeta principal.
+          </p>
         </div>
       </div>
 
       <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_24rem]">
-        <section className="space-y-6 rounded-2xl border border-border bg-card p-6">
-          <div className="grid gap-6 lg:grid-cols-2">
+        <div className="space-y-6">
+          <section className="space-y-5 rounded-2xl border border-border bg-card p-6">
             <div className="space-y-2">
-              <Label htmlFor="edit-name">Nombre</Label>
-              <Input id="edit-name" name="edit-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Nombre de la tarjeta…" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-reward">Recompensa</Label>
-              <Input id="edit-reward" name="edit-reward" value={reward} onChange={(event) => setReward(event.target.value)} placeholder="Ej.: Café gratis" />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="edit-description">
-              Descripción <span className="text-xs font-normal text-muted-foreground">(opcional)</span>
-            </Label>
-            <Textarea
-              id="edit-description"
-              name="edit-description"
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              placeholder="Ayuda a tus clientes a identificar esta tarjeta…"
-              className="resize-none"
-              rows={3}
-              maxLength={200}
-            />
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="edit-stamps-required">Sellos requeridos</Label>
+              <Label htmlFor="edit-recompensa">¿Qué se lleva el cliente?</Label>
               <Input
-                id="edit-stamps-required"
-                name="edit-stamps-required"
-                type="number"
-                min={1}
-                max={100}
-                value={stampsRequired}
-                onChange={(event) => setStampsRequired(Math.min(100, Math.max(1, Number(event.target.value) || 1)))}
-                className="max-w-28"
+                id="edit-recompensa"
+                name="edit-reward"
+                value={reward}
+                onChange={(e) => { setReward(e.target.value); limpiarError("recompensa") }}
+                placeholder="Ej.: un café gratis"
+                aria-invalid={!!errors.recompensa}
               />
+              {errors.recompensa && (
+                <p role="alert" className="text-sm text-destructive">{errors.recompensa}</p>
+              )}
             </div>
-            <div className="space-y-2">
-              <Label>
-                Fecha de vencimiento <span className="text-xs font-normal text-muted-foreground">(opcional)</span>
-              </Label>
-              <ExpirationPicker value={expiresAt} onChange={setExpiresAt} />
-            </div>
-          </div>
 
-          <div className="space-y-3">
-            <Label>Color</Label>
-            <div className="flex flex-wrap gap-2">
-              {colorPresets.map((presetColor) => (
-                <button
-                  key={presetColor}
-                  type="button"
-                  onClick={() => setColor(presetColor)}
-                  aria-label={`Usar color ${presetColor}`}
-                  aria-pressed={color === presetColor}
-                  className={cn(
-                    "h-10 w-10 rounded-xl transition-transform focus-visible:ring-[3px] focus-visible:ring-ring/50",
-                    color === presetColor ? "scale-110 ring-2 ring-foreground ring-offset-2" : "hover:scale-105",
-                  )}
-                  style={{ backgroundColor: presetColor }}
+            <div className="space-y-2">
+              <Label htmlFor="edit-sellosRequeridos">¿Cuántos sellos hacen falta?</Label>
+              <div className="grid grid-cols-5 gap-2 sm:flex sm:items-center sm:gap-3">
+                {SELLOS_SUGERIDOS.map((num, i) => (
+                  <button
+                    key={num}
+                    id={i === 0 ? "edit-sellosRequeridos" : undefined}
+                    type="button"
+                    aria-pressed={stampsRequired === num}
+                    onClick={() => setStampsRequired(num)}
+                    className={cn(
+                      "min-h-11 rounded-xl font-semibold transition-[background-color,color,box-shadow] focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:w-12",
+                      stampsRequired === num
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-foreground hover:bg-muted/80",
+                    )}
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
+              {/* La tarjeta pudo publicarse con un número que no está entre los
+                  sugeridos, así que se puede escribir. */}
+              <div className="flex items-center gap-2">
+                <Label htmlFor="edit-stamps-otro" className="text-xs text-muted-foreground">
+                  Otro:
+                </Label>
+                <Input
+                  id="edit-stamps-otro"
+                  name="edit-stamps-required"
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={stampsRequired}
+                  onChange={(e) =>
+                    setStampsRequired(Math.min(100, Math.max(1, Number(e.target.value) || 1)))
+                  }
+                  className="w-24"
                 />
-              ))}
-              <input
-                type="color"
-                name="edit-color"
-                aria-label="Color personalizado"
-                value={color}
-                onChange={(event) => setColor(event.target.value)}
-                className="h-10 w-10 cursor-pointer rounded-xl border border-border"
-              />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-nombre">¿Cómo se llama la tarjeta?</Label>
               <Input
-                name="edit-color-text"
-                value={color}
-                onChange={(event) => setColor(event.target.value)}
-                className="w-28 font-mono text-sm"
+                id="edit-nombre"
+                name="edit-name"
+                value={name}
+                onChange={(e) => { setName(e.target.value); limpiarError("nombre") }}
+                placeholder="Nombre de la tarjeta"
+                aria-invalid={!!errors.nombre}
               />
+              {errors.nombre && (
+                <p role="alert" className="text-sm text-destructive">{errors.nombre}</p>
+              )}
             </div>
-          </div>
+          </section>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            <div className="space-y-3">
-              <Label>Ícono de tarjeta <span className="text-xs font-normal text-muted-foreground">(opcional)</span></Label>
-              <IconPicker value={iconName} onChange={setIconName} businessLogoUrl={businessLogo} />
-            </div>
-            <div className="space-y-3">
-              <Label>Ícono del sello <span className="text-xs font-normal text-muted-foreground">(opcional — por defecto igual al de tarjeta)</span></Label>
-              <IconPicker value={stampIconName} onChange={setStampIconName} businessLogoUrl={businessLogo} />
-            </div>
-          </div>
+          <PrimaryCardCheckbox
+            inputId="edit-card-primary"
+            checked={isPrimary}
+            onCheckedChange={(checked) => {
+              primaryChoiceTouched.current = true
+              setIsPrimary(checked)
+            }}
+            plan={accountPlan}
+            cardName={name}
+            cardId={cardId}
+            currentPrimaryCardId={primaryCardId}
+            currentPrimaryName={primaryCardName}
+            disabled={accountPlan === "LITE" && isPrimary}
+          />
 
-          <div className="border-t border-border pt-6">
-            <Collapsible open={milestonesOpen} onOpenChange={setMilestonesOpen}>
-              <div className="mb-4 flex items-center justify-between gap-4">
-                <div>
-                  <h2 className="flex items-center gap-2 font-semibold text-foreground">
-                    <Gift className="h-4 w-4 text-primary" aria-hidden="true" />
-                    Recompensas sorpresa
-                  </h2>
-                  <p className="text-sm text-muted-foreground">Bonos configurables por posición del sello.</p>
-                </div>
-                <CollapsibleTrigger asChild>
-                  <Button type="button" variant="ghost" size="sm" aria-label={milestonesOpen ? "Ocultar recompensas sorpresa" : "Mostrar recompensas sorpresa"}>
-                    {milestonesOpen ? <ChevronDown className="h-4 w-4" aria-hidden="true" /> : <ChevronRight className="h-4 w-4" aria-hidden="true" />}
-                  </Button>
-                </CollapsibleTrigger>
+          <details className="group rounded-2xl border border-border bg-card">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 p-6 [&::-webkit-details-marker]:hidden">
+              <span className="min-w-0">
+                <span className="block font-medium text-foreground">Opciones adicionales</span>
+                <span className="block text-xs text-muted-foreground">{resumenDeDefectos}</span>
+              </span>
+              <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+            </summary>
+
+            <div className="space-y-6 border-t border-border p-6">
+              <div className="space-y-2">
+                <Label htmlFor="edit-description">Descripción</Label>
+                <Textarea
+                  id="edit-description"
+                  name="edit-description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Ayuda a tus clientes a identificar esta tarjeta"
+                  className="resize-none"
+                  rows={3}
+                  maxLength={200}
+                />
               </div>
 
-              <CollapsibleContent className="space-y-2">
-                {Array.from({ length: stampsRequired }, (_, i) => i + 1).map((pos) => {
-                  const mi = milestones.findIndex((ms) => ms.stampNumber === pos)
-                  const isActive = mi !== -1
-                  const m = isActive ? milestones[mi] : null
-                  return (
-                    <div key={pos} className="overflow-hidden rounded-xl border border-border">
-                      <button
+              <div className="space-y-2">
+                <Label>Vencimiento</Label>
+                <ExpirationPicker value={expiresAt} onChange={setExpiresAt} />
+              </div>
+
+              <div className="space-y-3">
+                <Label>Color</Label>
+                <div className="flex flex-wrap gap-2">
+                  {colorPresets.map((presetColor) => (
+                    <button
+                      key={presetColor}
+                      type="button"
+                      onClick={() => setColor(presetColor)}
+                      aria-label={`Usar color ${presetColor}`}
+                      aria-pressed={color === presetColor}
+                      className={cn(
+                        "h-10 w-10 rounded-xl transition-transform focus-visible:ring-[3px] focus-visible:ring-ring/50",
+                        color === presetColor ? "scale-110 ring-2 ring-foreground ring-offset-2" : "hover:scale-105",
+                      )}
+                      style={{ backgroundColor: presetColor }}
+                    />
+                  ))}
+                  <input
+                    type="color"
+                    name="edit-color"
+                    aria-label="Color personalizado"
+                    value={color}
+                    onChange={(e) => setColor(e.target.value)}
+                    className="h-10 w-10 cursor-pointer rounded-xl border border-border"
+                  />
+                  <Input
+                    name="edit-color-text"
+                    aria-label="Color en hexadecimal"
+                    value={color}
+                    onChange={(e) => setColor(e.target.value)}
+                    className="w-28 font-mono text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-6 lg:grid-cols-2">
+                <div className="space-y-3">
+                  <Label>Ícono de la tarjeta</Label>
+                  <IconPicker value={iconName} onChange={setIconName} businessLogoUrl={businessLogo} />
+                </div>
+                <div className="space-y-3">
+                  <Label>Ícono del sello</Label>
+                  <IconPicker value={stampIconName} onChange={setStampIconName} businessLogoUrl={businessLogo} />
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-theme">Tema de la tarjeta</Label>
+                  <select
+                    id="edit-theme"
+                    value={themeId}
+                    onChange={(e) => { setThemeId(e.target.value); setProThemeBlocked(false) }}
+                    className="min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                  >
+                    <option value="">Color de marca</option>
+                    {themes.map((theme) => (
+                      <option key={theme.id} value={theme.id}>
+                        {nombreDeTema(theme.code)}{theme.plan === "PRO" ? " · Pro" : ""}
+                      </option>
+                    ))}
+                  </select>
+                  {proThemeBlocked && <TemaProRequiereProAlert />}
+                </div>
+                <div className="space-y-2">
+                  <Label>Color del texto</Label>
+                  <TextColorPicker
+                    value={textColor}
+                    onChange={setTextColor}
+                    brandColor={color}
+                    themeCode={themeCode}
+                  />
+                  <AvisoDeColorDeTexto brandColor={color} themeCode={themeCode} textColor={textColor} />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <Label>Recompensas sorpresa</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Bonos que caen con probabilidad al llegar a un sello.
+                  </p>
+                </div>
+
+                {milestones.length === 0 && (
+                  <p className="text-sm text-muted-foreground">Ninguna configurada.</p>
+                )}
+
+                {milestones.map((m, i) => (
+                  <div key={m.id ?? `nueva-${i}`} className="space-y-3 rounded-xl border border-border p-4">
+                    <div className="flex items-end justify-between gap-3">
+                      <div className="space-y-1.5">
+                        <Label htmlFor={`edit-sorpresa-${i}`} className="text-xs">En el sello</Label>
+                        <select
+                          id={`edit-sorpresa-${i}`}
+                          value={m.stampNumber}
+                          onChange={(e) => cambiarSorpresa(i, { stampNumber: Number(e.target.value) })}
+                          aria-invalid={!!errors[`sorpresa-${i}`]}
+                          className="min-h-11 rounded-lg border border-input bg-background px-3 text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                        >
+                          {Array.from({ length: stampsRequired }, (_, k) => k + 1).map((n) => (
+                            <option key={n} value={n}>{n}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <Button
                         type="button"
-                        onClick={() => {
-                          if (isActive) {
-                            setMilestones((prev) => prev.filter((x) => x.stampNumber !== pos))
-                          } else {
-                            setMilestones((prev) => {
-                              if (prev.some((x) => x.stampNumber === pos)) return prev
-                              return [...prev, { stampNumber: pos, label: "", iconName: null, probability: 100 }]
-                            })
-                          }
-                        }}
-                        className="flex w-full cursor-pointer items-center justify-between px-4 py-3 text-sm transition-colors hover:bg-muted/50"
+                        variant="ghost"
+                        onClick={() => setMilestones((prev) => prev.filter((_, j) => j !== i))}
+                        aria-label={`Quitar la sorpresa del sello ${m.stampNumber}`}
+                        className="min-h-11 text-muted-foreground"
                       >
-                        <span className="font-medium">Sello #{pos}</span>
-                        <Switch
-                          checked={isActive}
-                          onClick={(e) => e.stopPropagation()}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setMilestones((prev) => {
-                                if (prev.some((x) => x.stampNumber === pos)) return prev
-                                return [...prev, { stampNumber: pos, label: "", iconName: null, probability: 100 }]
-                              })
-                            } else {
-                              setMilestones((prev) => prev.filter((x) => x.stampNumber !== pos))
-                            }
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {errors[`sorpresa-${i}`] && (
+                      <p role="alert" className="text-sm text-destructive">{errors[`sorpresa-${i}`]}</p>
+                    )}
+
+                    <div className="space-y-1.5">
+                      <Label htmlFor={`edit-sorpresa-${i}-label`} className="text-xs">Recompensa</Label>
+                      <Input
+                        id={`edit-sorpresa-${i}-label`}
+                        value={m.label}
+                        onChange={(e) => cambiarSorpresa(i, { label: e.target.value })}
+                        placeholder="Ej.: postre gratis"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Ícono</Label>
+                      <IconPicker
+                        value={m.iconName}
+                        onChange={(v) => cambiarSorpresa(i, { iconName: v })}
+                        businessLogoUrl={businessLogo}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label htmlFor={`edit-sorpresa-${i}-prob`} className="text-xs">Probabilidad</Label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          id={`edit-sorpresa-${i}-prob`}
+                          type="range"
+                          min={0}
+                          max={100}
+                          value={m.probability}
+                          onChange={(e) => cambiarSorpresa(i, { probability: Number(e.target.value) })}
+                          className="h-2 flex-1 cursor-pointer appearance-none rounded-full border-2"
+                          style={{
+                            accentColor: getRarityColor(m.probability),
+                            borderColor: getRarityColor(m.probability),
                           }}
                         />
-                      </button>
-                      <div
-                        className={`grid transition-all duration-300 ${
-                          isActive ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-                        }`}
-                      >
-                        <div className="overflow-hidden">
-                          <div className="space-y-3 border-t border-border px-4 pb-4 pt-3">
-                            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_minmax(11rem,1fr)] sm:items-end">
-                              <div className="min-w-[120px] flex-1 space-y-1.5">
-                                <Label className="text-xs">Recompensa</Label>
-                                <Input
-                                  value={m?.label ?? ""}
-                                  onChange={(event) =>
-                                    setMilestones((prev) =>
-                                      prev.map((x, j) => (j === mi ? { ...x, label: event.target.value } : x)),
-                                    )
-                                  }
-                                  placeholder="Ej.: Café gratis"
-                                />
-                              </div>
-                              <div className="space-y-1.5">
-                                <Label className="text-xs">Ícono</Label>
-                                <IconPicker
-                                  value={m?.iconName ?? null}
-                                  onChange={(v) =>
-                                    setMilestones((prev) =>
-                                      prev.map((x, j) => (j === mi ? { ...x, iconName: v } : x)),
-                                    )
-                                  }
-                                  businessLogoUrl={businessLogo}
-                                />
-                              </div>
-                              <div className="min-w-[180px] space-y-1.5">
-                                <Label className="text-xs">Probabilidad</Label>
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    type="range"
-                                    min={0}
-                                    max={100}
-                                    value={m?.probability ?? 100}
-                                    onChange={(event) =>
-                                      setMilestones((prev) =>
-                                        prev.map((x, j) =>
-                                          j === mi ? { ...x, probability: Number(event.target.value) } : x,
-                                        ),
-                                      )
-                                    }
-                                    className="h-2 flex-1 cursor-pointer appearance-none rounded-full border-2"
-                                    style={{
-                                      accentColor: getRarityColor(m?.probability ?? 100),
-                                      borderColor: getRarityColor(m?.probability ?? 100),
-                                    }}
-                                  />
-                                  <span className="w-10 text-right font-mono text-sm">{m?.probability ?? 100}%</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-xs">
-                                  <span className="inline-block h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: getRarityColor(m?.probability ?? 100) }} />
-                                  <span className="w-20 shrink-0 font-medium">{getRarityLabel(m?.probability ?? 100)}</span>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <span className="w-14 shrink-0 text-right text-muted-foreground">
-                                        {getRarityRange(m?.probability ?? 100)}
-                                      </span>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top">{getRarityDescription(m?.probability ?? 100)}</TooltipContent>
-                                  </Tooltip>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                        <span className="w-10 text-right font-mono text-sm">{m.probability}%</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <span
+                          className="inline-block h-3 w-3 shrink-0 rounded-full"
+                          style={{ backgroundColor: getRarityColor(m.probability) }}
+                        />
+                        <span className="w-20 shrink-0 font-medium">{getRarityLabel(m.probability)}</span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="w-14 shrink-0 text-right text-muted-foreground">
+                              {getRarityRange(m.probability)}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top">{getRarityDescription(m.probability)}</TooltipContent>
+                        </Tooltip>
                       </div>
                     </div>
-                  )
-                })}
-              </CollapsibleContent>
-            </Collapsible>
-          </div>
+                  </div>
+                ))}
 
-          <div className="flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <Button asChild variant="outline">
-              <Link href={`/dashboard/cards/${cardId}`}>Cancelar</Link>
-            </Button>
-            <Button type="button" onClick={handleSave} disabled={saving}>
-              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" /> : saved ? <Check className="mr-2 h-4 w-4" aria-hidden="true" /> : <Save className="mr-2 h-4 w-4" aria-hidden="true" />}
-              {saving ? "Guardando…" : saved ? "Guardado" : "Guardar cambios"}
-            </Button>
-          </div>
-        </section>
-
-        <aside className="h-fit space-y-4 xl:sticky xl:top-24">
-          <section className="rounded-2xl border border-border bg-muted/30 p-6">
-            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between xl:flex-col xl:items-stretch">
-              <h2 className="text-sm font-medium text-muted-foreground">Vista previa</h2>
-              <div className="flex overflow-hidden rounded-lg border border-border text-xs">
-                <button
+                <Button
                   type="button"
-                  aria-pressed={previewMode === "normal"}
-                  onClick={() => setPreviewMode("normal")}
-                  className={cn(
-                    "flex-1 px-3 py-1.5 transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50",
-                    previewMode === "normal" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground",
-                  )}
+                  variant="outline"
+                  onClick={añadirSorpresa}
+                  disabled={milestones.length >= stampsRequired}
+                  className="min-h-11 w-full"
                 >
-                  Normal
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={previewMode === "sellada"}
-                  onClick={() => setPreviewMode("sellada")}
-                  className={cn(
-                    "flex-1 px-3 py-1.5 transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50",
-                    previewMode === "sellada" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  Sellada
-                </button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Añadir sorpresa
+                </Button>
               </div>
             </div>
+          </details>
+        </div>
+
+        <div className="h-fit xl:sticky xl:top-24">
+          <div className="rounded-2xl border border-border bg-muted/30 p-6">
+            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="text-sm font-medium text-muted-foreground">Así queda</h2>
+              <div className="flex w-full overflow-hidden rounded-lg border border-border text-xs sm:w-auto">
+                {(["normal", "sellada"] as const).map((modo) => (
+                  <button
+                    key={modo}
+                    type="button"
+                    aria-pressed={previewMode === modo}
+                    onClick={() => setPreviewMode(modo)}
+                    className={cn(
+                      "min-h-10 flex-1 px-3 transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:flex-none",
+                      previewMode === modo
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-card text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {modo === "normal" ? "A medias" : "Completa"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <LoyaltyCardPreview
               businessName={businessName}
               businessLogo={businessLogo ?? undefined}
               iconName={iconName}
               stampIconName={stampIconName}
-              brandColor={color}
-              reward={reward || "Tu recompensa"}
-              currentStamps={previewMode === "sellada" ? stampsRequired : Math.ceil(stampsRequired / 2)}
+              customerName="Cliente Feliz"
+              currentStamps={previewMode === "sellada" ? stampsRequired : Math.floor(stampsRequired * 0.6)}
               maxStamps={stampsRequired}
-              expirationDate={expiresAt ? new Date(`${expiresAt}T12:00:00`).toLocaleDateString("es-MX") : undefined}
-              showQR={false}
-              className="text-sm"
+              reward={reward || "Tu recompensa"}
+              expirationDate={
+                expiresAt ? new Date(expiresAt + "T12:00:00").toLocaleDateString("es-MX") : undefined
+              }
+              brandColor={color}
+              themeCode={themeCode}
+              textColor={textColor}
             />
-          </section>
-        </aside>
+
+            <Button type="button" onClick={handleSave} disabled={saving} className="mt-6 min-h-11 w-full">
+              {saving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              {saving ? "Guardando…" : "Guardar cambios"}
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   )

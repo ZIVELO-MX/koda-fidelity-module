@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getBusinessFromSession, handleApiError, NotFoundError, requireRole } from "@/lib/api-utils"
+import { requireWritableBusinessPrincipal, handleApiError, NotFoundError, requireRole, requestIdFrom, withRequestId } from "@/lib/api-utils"
 
 /**
  * @openapi
@@ -43,11 +43,12 @@ import { getBusinessFromSession, handleApiError, NotFoundError, requireRole } fr
  *               $ref: '#/components/schemas/Error'
  */
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const requestId = requestIdFrom(request)
   try {
-    const { business, user } = await getBusinessFromSession()
+    const { business, user } = await requireWritableBusinessPrincipal()
     requireRole(user, "admin")
     const { id } = await params
 
@@ -60,13 +61,17 @@ export async function DELETE(
       throw new NotFoundError("Customer not found")
     }
 
-    await prisma.customer.update({
-      where: { id },
-      data: { isActive: false },
-    })
+    const permanent = new URL(request.url).searchParams.get("permanent") === "true"
+    if (permanent) {
+      await prisma.$transaction(async (tx) => {
+        await tx.customer.delete({ where: { id } })
+      })
+    } else {
+      await prisma.customer.update({ where: { id }, data: { isActive: false } })
+    }
 
-    return NextResponse.json({ success: true })
+    return withRequestId(NextResponse.json({ success: true }), requestId)
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }

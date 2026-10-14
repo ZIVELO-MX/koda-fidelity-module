@@ -1,11 +1,10 @@
 import Link from "next/link"
-import Image from "next/image"
 import { redirect } from "next/navigation"
 import { ArrowLeft, ArchiveRestore, Trash2, Archive } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
-import { getCardIcon } from "@/lib/card-icons"
+import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { RestoreCardButton } from "@/components/dashboard/restore-card-button"
 
 export default async function ArchivedCardsPage() {
@@ -14,13 +13,14 @@ export default async function ArchivedCardsPage() {
 
   if (!user?.email) redirect("/login")
 
-  const business = await prisma.business.findUnique({ where: { email: user.email } })
+  const business = await prisma.business.findFirst({ where: { users: { some: { authUserId: user.id } } } })
   if (!business) redirect("/login")
 
   const cards = await prisma.loyaltyCard.findMany({
-    where: { businessId: business.id, isActive: false },
+    where: { businessId: business.id, status: "ARCHIVED" },
     include: {
       _count: { select: { customers: true } },
+      effectiveTheme: { select: { code: true } },
     },
     orderBy: { updatedAt: "desc" },
   })
@@ -28,12 +28,12 @@ export default async function ArchivedCardsPage() {
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-4">
-        <Link href="/dashboard/cards">
-          <Button variant="ghost" size="sm">
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/dashboard/cards">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver
-          </Button>
-        </Link>
+          </Link>
+        </Button>
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Archive className="h-6 w-6 text-muted-foreground" />
@@ -54,66 +54,51 @@ export default async function ArchivedCardsPage() {
           <p className="text-muted-foreground mb-6">
             Las tarjetas que archives aparecerán aquí. Podrás restaurarlas en cualquier momento.
           </p>
-          <Link href="/dashboard/cards">
-            <Button variant="outline">Ver tarjetas activas</Button>
-          </Link>
+          <Button variant="outline" asChild>
+            <Link href="/dashboard/cards">Ver tarjetas activas</Link>
+          </Button>
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {cards.map((card) => (
             <div
               key={card.id}
-              className="bg-card rounded-2xl border border-border overflow-hidden opacity-75 hover:opacity-100 transition-opacity"
+              className="overflow-hidden rounded-2xl border border-border bg-card opacity-75 transition-opacity hover:opacity-100"
             >
-              <div className="h-3 bg-muted" />
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  {(() => {
-                    const icon = getCardIcon(card.iconName)
-                    const IconComp = icon?.Icon
-                    if (card.iconName === "logo" && business.logoUrl) {
-                      return (
-                        <div
-                          className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shrink-0 grayscale"
-                          style={{ backgroundColor: card.brandColor }}
-                        >
-                          <Image src={business.logoUrl} alt="" width={32} height={32} className="object-contain" />
-                        </div>
-                      )
-                    }
-                    return (
-                      <div
-                        className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shrink-0 grayscale"
-                        style={{ backgroundColor: card.brandColor }}
-                      >
-                        {IconComp ? <IconComp className="h-6 w-6" /> : card.name.charAt(0)}
-                      </div>
-                    )
-                  })()}
-                  <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-muted text-muted-foreground">
+              {/* La misma tarjeta que en el listado activo, en gris: archivar no
+                  la borra, y quien la busca la reconoce por su diseño. */}
+              <div className="p-5 grayscale">
+                <LoyaltyCardPreview
+                  businessName={business.name}
+                  businessLogo={business.logoUrl ?? undefined}
+                  iconName={card.iconName}
+                  stampIconName={card.stampIconName}
+                  customerName="Tus clientes"
+                  currentStamps={0}
+                  maxStamps={card.stampsRequired}
+                  reward={card.reward}
+                  showQR={false}
+                  brandColor={card.brandColor}
+                  textColor={card.textColor}
+                  themeCode={card.effectiveTheme?.code}
+                />
+              </div>
+
+              <div className="space-y-3 px-5 pb-5">
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="min-w-0 line-clamp-2 font-semibold text-foreground">{card.name}</h3>
+                  <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
                     Archivada
                   </span>
                 </div>
 
-                <h3 className="font-semibold text-lg text-foreground mb-1">{card.name}</h3>
-                {card.description && (
-                  <p className="text-sm text-muted-foreground mb-4">{card.description}</p>
-                )}
+                <p className="truncate text-sm text-muted-foreground">{card.reward}</p>
 
-                <div className="bg-muted/50 rounded-xl p-3 mb-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Recompensa</span>
-                    <span className="font-medium text-foreground">{card.reward}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm mt-1">
-                    <span className="text-muted-foreground">Sellos requeridos</span>
-                    <span className="font-medium text-foreground">{card.stampsRequired}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm mt-1">
-                    <span className="text-muted-foreground">Clientes (total)</span>
-                    <span className="font-medium text-foreground">{card._count.customers}</span>
-                  </div>
-                </div>
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">{card._count.customers}</span>{" "}
+                  cliente{card._count.customers !== 1 ? "s" : ""} conserva
+                  {card._count.customers !== 1 ? "n" : ""} su progreso
+                </p>
 
                 <RestoreCardButton cardId={card.id} cardName={card.name} />
               </div>

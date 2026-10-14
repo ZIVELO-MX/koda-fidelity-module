@@ -2,18 +2,19 @@
 
 import { useState, useCallback, useMemo, useEffect } from "react"
 import Link from "next/link"
+import type { Session } from "@supabase/supabase-js"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
+import { RedesNegocio } from "@/components/join/redes-negocio"
 import { GoogleButton } from "@/components/auth/google-button"
 import {
   ArrowLeft, Mail, Loader2, Smartphone, ChevronDown, LogOut,
-  Wallet, Download, Trash2, Search, RefreshCw, AlertTriangle, Clock,
+  Trash2, Search, RefreshCw, AlertTriangle, Clock,
 } from "lucide-react"
 import { CustomerCardListIcon } from "@/components/dashboard/customer-card-list-icon"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
-import { getFriendlySendError } from "@/lib/auth-errors"
 import { logout } from "@/lib/actions/auth"
 import { isExpired, daysUntilExpiry } from "@/lib/card-utils"
 import {
@@ -49,20 +50,30 @@ interface MyCard {
     stampsRequired: number
     reward: string
     brandColor: string
+    textColor?: "AUTO" | "DARK" | "LIGHT"
     iconName: string | null
     stampIconName: string | null
+    effectiveTheme?: { code: string } | null
     isActive: boolean
     expiresAt: string | null
-    business: { name: string; brandColor: string; logoUrl: string | null }
+    business: {
+      name: string
+      brandColor: string
+      logoUrl: string | null
+      // Opcionales del contrato FID-C1 v1. Hasta que la consulta pública los
+      // mande llegan indefinidos y no se pinta nada.
+      website?: string | null
+      instagram?: string | null
+    }
   }
 }
 
-type PageState = "loading" | "email" | "sent" | "cards"
+type PageState = "loading" | "email" | "cards"
 
 function expiredMessage(stamps: number, required: number): string {
   if (stamps === 0) return "Esta tarjeta venció antes de comenzar 🤷"
   if (stamps >= required - 1) return "¡Tan cerca y tan lejos! Solo te faltó 1 sello 😅"
-  return `¡Ups! No alcanzaste los ${required} sellos — llegaste a ${stamps} 🫠`
+  return `¡Ups! No alcanzaste los ${required} sellos, llegaste a ${stamps} 🫠`
 }
 
 function ExpiryBadge({ expiresAt }: { expiresAt: string | null }) {
@@ -71,7 +82,8 @@ function ExpiryBadge({ expiresAt }: { expiresAt: string | null }) {
   if (days <= 0) return null // expired — handled separately
   if (days <= 1)
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-destructive/15 text-destructive">
+      // Ámbar y no rojo: vencer no es un error de quien trae la tarjeta.
+      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
         <Clock className="h-2.5 w-2.5" />
         Vence hoy
       </span>
@@ -164,6 +176,8 @@ function ArchivedSection({
                         maxStamps={c.card.stampsRequired}
                         reward={c.card.reward}
                         brandColor={c.card.brandColor}
+                        textColor={c.card.textColor}
+                        themeCode={c.card.effectiveTheme?.code}
                         showQR={true}
                         qrValue={c.id}
                       />
@@ -185,10 +199,6 @@ function ArchivedSection({
 export default function DashboardMyCardsPage() {
   const [state, setState] = useState<PageState>("loading")
   const [cards, setCards] = useState<MyCard[]>([])
-  const [email, setEmail] = useState("")
-  const [sending, setSending] = useState(false)
-  const [emailError, setEmailError] = useState(false)
-  const [sendError, setSendError] = useState<string | null>(null)
   const [sessionEmail, setSessionEmail] = useState<string | null>(null)
   const [hasDashboard, setHasDashboard] = useState(false)
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set())
@@ -213,10 +223,7 @@ export default function DashboardMyCardsPage() {
     })
   }, [])
 
-  const loadCards = useCallback(async () => {
-    const supabase = createBrowserSupabase()
-    const { data: { session } } = await supabase.auth.getSession()
-
+  const loadCards = useCallback(async (session: Session | null) => {
     if (session?.user?.email) {
       setSessionEmail(session.user.email)
       try {
@@ -236,14 +243,21 @@ export default function DashboardMyCardsPage() {
       } catch { /* fall through */ }
     }
 
-    setState(session?.user?.email ? "cards" : "email")
+    if (session?.user?.email) setState("cards")
+    else window.location.replace("/login?next=%2Fdashboard%2Fmy-cards")
   }, [])
 
-  useEffect(() => { loadCards() }, [loadCards])
+  useEffect(() => {
+    const supabase = createBrowserSupabase()
+    void supabase.auth.getSession().then(({ data }) => loadCards(data.session))
+  }, [loadCards])
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true)
-    loadCards().finally(() => setRefreshing(false))
+    const supabase = createBrowserSupabase()
+    void supabase.auth.getSession()
+      .then(({ data }) => loadCards(data.session))
+      .finally(() => setRefreshing(false))
   }, [loadCards])
 
   const activeCards = useMemo(() => cards.filter((c) => c.isActive && c.card.isActive && !isExpired(c.card.expiresAt)), [cards])
@@ -265,29 +279,15 @@ export default function DashboardMyCardsPage() {
       group.push(c)
       groups.set(key, group)
     }
+    // Dentro de cada negocio, primero la que está más cerca del premio.
+    for (const group of groups.values()) {
+      group.sort(
+        (a, b) => (a.card.stampsRequired - a.stamps) - (b.card.stampsRequired - b.stamps),
+      )
+    }
     return Array.from(groups.entries())
   }, [filteredActive])
 
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSendError(null)
-    if (!email.trim() || !email.includes("@")) { setEmailError(true); return }
-    setEmailError(false)
-    setSending(true)
-    try {
-      const supabase = createBrowserSupabase()
-      const { error } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
-        options: { shouldCreateUser: true, emailRedirectTo: `${window.location.origin}/dashboard/my-cards` },
-      })
-      if (error) throw error
-      setState("sent")
-    } catch (err) {
-      setSendError(getFriendlySendError(err))
-    } finally {
-      setSending(false)
-    }
-  }, [email])
 
   if (state === "loading") {
     return (
@@ -298,63 +298,9 @@ export default function DashboardMyCardsPage() {
   }
 
   if (state === "email") {
-    return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <main className="flex-1 flex flex-col items-center justify-center px-4 py-8">
-          <div className="w-full max-w-md bg-card rounded-2xl p-6 border border-border space-y-6">
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                <Smartphone className="h-8 w-8 text-primary" />
-              </div>
-              <h1 className="text-xl font-bold text-foreground mb-1">Mis Tarjetas de Lealtad</h1>
-              <p className="text-sm text-muted-foreground">Inicia sesión para ver todas tus tarjetas</p>
-            </div>
-            <GoogleButton redirectTo="/dashboard/my-cards" />
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">o con correo electrónico</span>
-              </div>
-            </div>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Correo Electrónico</Label>
-                <Input id="email" type="email" placeholder="ejemplo@correo.com" value={email}
-                  onChange={(e) => { setEmail(e.target.value); setEmailError(false) }}
-                  className="text-base" aria-invalid={emailError}
-                />
-                {emailError && <p className="text-sm text-red-500">Ingresa un correo electrónico válido</p>}
-              </div>
-              {sendError && <p className="text-sm text-red-500 text-center">{sendError}</p>}
-              <Button type="submit" className="w-full" size="lg" disabled={sending}>
-                {sending ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : "Enviar enlace mágico"}
-              </Button>
-            </form>
-          </div>
-        </main>
-      </div>
-    )
+    return <div className="min-h-screen flex items-center justify-center p-4"><p>Redirigiendo al inicio de sesión…</p></div>
   }
 
-  if (state === "sent") {
-    return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <main className="flex-1 flex flex-col items-center justify-center px-4 py-8">
-          <div className="w-full max-w-md text-center space-y-6">
-            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-              <Mail className="h-10 w-10 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground mb-2">Revisa tu correo</h1>
-              <p className="text-muted-foreground">
-                Te enviamos un enlace mágico a <strong>{email}</strong>. Haz clic para ver tus tarjetas.
-              </p>
-            </div>
-          </div>
-        </main>
-      </div>
-    )
-  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -362,7 +308,7 @@ export default function DashboardMyCardsPage() {
         <div className="max-w-lg mx-auto space-y-6">
           {hasDashboard && (
             <div className="flex items-center justify-between mb-2">
-              <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <Link href="/dashboard" className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
                 <ArrowLeft className="h-4 w-4" />
                 Volver al dashboard
               </Link>
@@ -380,7 +326,7 @@ export default function DashboardMyCardsPage() {
               onClick={handleRefresh}
               disabled={refreshing}
               aria-label="Recargar tarjetas"
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+              className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
             >
               <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
             </button>
@@ -441,21 +387,25 @@ export default function DashboardMyCardsPage() {
                 <div className={`grid transition-all duration-300 ease-in-out ${isGroupCollapsed ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"}`}>
                   <div className="overflow-hidden space-y-3">
                     {businessCards.map((c) => {
-                      const isExpanded = expandedCards.has(c.id)
                       const days = daysUntilExpiry(c.card.expiresAt)
+                      const faltan = Math.max(c.card.stampsRequired - c.stamps, 0)
                       return (
                         <div key={c.id} className="bg-card rounded-2xl border border-border overflow-hidden">
-                          {/* Near-expiry banner */}
+                          {/* Aviso de vencimiento cercano. En ámbar también el
+                              último día: que una tarjeta venza no es un error de
+                              quien la trae. */}
                           {days !== null && days > 0 && days <= 7 && (
-                            <div className={`px-4 py-2 text-xs font-medium flex items-center gap-1.5 ${days <= 1 ? "bg-destructive/10 text-destructive" : "bg-amber-50 text-amber-700"}`}>
-                              {days <= 1 ? <Clock className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
-                              {days <= 1 ? "Esta tarjeta vence hoy o mañana — úsala antes de que expire" : `Esta tarjeta vence en ${days} días`}
+                            <div className="px-4 py-2 text-xs font-medium flex items-center gap-1.5 bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400">
+                              <AlertTriangle className="h-3.5 w-3.5" />
+                              {days <= 1
+                                ? "Esta tarjeta vence hoy o mañana, úsala antes de que expire"
+                                : `Esta tarjeta vence en ${days} días`}
                             </div>
                           )}
-                          <button onClick={() => toggleCard(c.id)}
-                            className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
-                            aria-expanded={isExpanded}
-                          >
+
+                          {/* La tarjeta está a la vista. Antes vivía detrás de un
+                              acordeón, y es lo único que se viene a ver aquí. */}
+                          <div className="p-4 space-y-4">
                             <div className="flex items-center gap-3 min-w-0">
                               <CustomerCardListIcon
                                 iconName={c.card.iconName}
@@ -469,46 +419,38 @@ export default function DashboardMyCardsPage() {
                                   <ExpiryBadge expiresAt={c.card.expiresAt} />
                                 </div>
                                 <p className="text-sm text-muted-foreground truncate">
-                                  {c.stamps}/{c.card.stampsRequired} sellos
+                                  {faltan === 0
+                                    ? "Ya puedes canjear tu recompensa"
+                                    : `Te faltan ${faltan} sello${faltan !== 1 ? "s" : ""}`}
+                                  {" · "}
+                                  {c.stamps}/{c.card.stampsRequired}
                                 </p>
                               </div>
                             </div>
-                            <ChevronDown className={`h-5 w-5 text-muted-foreground shrink-0 transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`} />
-                          </button>
-                          <div className={`grid transition-all duration-300 ease-in-out ${isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
-                            <div className="overflow-hidden">
-                              <div className="px-4 pb-4 space-y-4">
-                                <LoyaltyCardPreview
-                                  businessName={c.card.business.name}
-                                  businessLogo={c.card.business.logoUrl ?? undefined}
-                                  iconName={c.card.iconName}
-                                  stampIconName={c.card.stampIconName}
-                                  customerName={c.name}
-                                  currentStamps={c.stamps}
-                                  maxStamps={c.card.stampsRequired}
-                                  reward={c.card.reward}
-                                  expirationDate={c.card.expiresAt ? new Date(c.card.expiresAt).toLocaleDateString("es-MX") : undefined}
-                                  brandColor={c.card.brandColor}
-                                  showQR={true}
-                                  qrValue={c.id}
-                                  milestoneClaims={c.milestoneClaims.map(cl => ({ stampNumber: cl.milestone.stampNumber, iconName: cl.iconName }))}
-                                />
-                                <p className="text-xs text-muted-foreground text-center">
-                                  Muestra este código QR en el negocio para acumular sellos
-                                </p>
-                                <div className="flex flex-col gap-2 pt-2">
-                                  <Button variant="outline" size="sm" disabled className="w-full text-muted-foreground/50 border-dashed gap-2">
-                                    <Wallet className="h-4 w-4" />Agregar a Wallet — Próximamente
-                                  </Button>
-                                  <Button variant="outline" size="sm" disabled className="w-full text-muted-foreground/50 border-dashed gap-2">
-                                    <Download className="h-4 w-4" />Descargar Tarjeta — Próximamente
-                                  </Button>
-                                  <Button variant="outline" size="sm" disabled className="w-full text-muted-foreground/50 border-dashed gap-2">
-                                    <Trash2 className="h-4 w-4" />Eliminar Tarjeta — Próximamente
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
+
+                            <LoyaltyCardPreview
+                              businessName={c.card.business.name}
+                              businessLogo={c.card.business.logoUrl ?? undefined}
+                              iconName={c.card.iconName}
+                              stampIconName={c.card.stampIconName}
+                              customerName={c.name}
+                              currentStamps={c.stamps}
+                              maxStamps={c.card.stampsRequired}
+                              reward={c.card.reward}
+                              expirationDate={c.card.expiresAt ? new Date(c.card.expiresAt).toLocaleDateString("es-MX") : undefined}
+                              brandColor={c.card.brandColor}
+                              textColor={c.card.textColor}
+                              themeCode={c.card.effectiveTheme?.code}
+                              showQR={true}
+                              qrValue={c.id}
+                              milestoneClaims={c.milestoneClaims.map(cl => ({ stampNumber: cl.milestone.stampNumber, iconName: cl.iconName }))}
+                            />
+
+                            <p className="text-xs text-muted-foreground text-center">
+                              Muestra este código QR en el negocio para acumular sellos
+                            </p>
+
+                            <RedesNegocio negocio={c.card.business} className="pt-1" />
                           </div>
                         </div>
                       )

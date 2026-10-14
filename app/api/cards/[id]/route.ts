@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getBusinessFromSession, handleApiError, NotFoundError, ValidationError, requireRole } from "@/lib/api-utils"
+import { cuerpoJson, ForbiddenError, getBusinessFromSession, handleApiError, NotFoundError, requestIdFrom, requireActivatedBusiness, requireRole, requireWritableBusinessPrincipal, ValidationError, withRequestId } from "@/lib/api-utils"
 import { isExpired } from "@/lib/card-utils"
+import { persistPrimaryCardPreference, resolveEffectiveEntitlements, syncExpiredEntitlements } from "@/lib/account-lifecycle"
+import { resolveTheme } from "@/lib/card-themes"
 
 /**
  * @openapi
@@ -42,6 +44,15 @@ import { isExpired } from "@/lib/card-utils"
  *                       type: integer
  *                     brandColor:
  *                       type: string
+ *                     textColor:
+ *                       type: string
+ *                       enum: [AUTO, DARK, LIGHT]
+ *                     iconName:
+ *                       type: string
+ *                       nullable: true
+ *                     stampIconName:
+ *                       type: string
+ *                       nullable: true
  *                     expiresAt:
  *                       type: string
  *                       format: date-time
@@ -88,6 +99,21 @@ import { isExpired } from "@/lib/card-utils"
  *                 type: integer
  *               brandColor:
  *                 type: string
+ *               textColor:
+ *                 type: string
+ *                 enum: [AUTO, DARK, LIGHT]
+ *               themeId:
+ *                 type: string
+ *                 nullable: true
+ *               isPrimary:
+ *                 type: boolean
+ *                 description: Save or clear the preferred Lite card. Lite accounts must always keep a primary card.
+ *               iconName:
+ *                 type: string
+ *                 nullable: true
+ *               stampIconName:
+ *                 type: string
+ *                 nullable: true
  *               description:
  *                 type: string
  *                 nullable: true
@@ -161,9 +187,10 @@ import { isExpired } from "@/lib/card-utils"
  *               $ref: '#/components/schemas/Error'
  */
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const requestId = requestIdFrom(request)
   try {
     const { id } = await params
 
@@ -171,19 +198,24 @@ export async function GET(
       where: { id },
       include: {
         business: {
-          select: { name: true, brandColor: true, logoUrl: true, iconName: true },
+          select: { name: true, brandColor: true, logoUrl: true, iconName: true, website: true, instagram: true },
         },
         milestoneRewards: {
           orderBy: { stampNumber: "asc" },
         },
+        selectedTheme: { select: { id: true, code: true, plan: true } },
+        effectiveTheme: { select: { id: true, code: true, plan: true } },
       },
     })
 
     if (!card) {
       throw new NotFoundError("Loyalty card not found")
     }
+    if (card.status === "DRAFT") {
+      throw new NotFoundError("Loyalty card not found")
+    }
 
-    return NextResponse.json({
+    return withRequestId(NextResponse.json({
       card: {
         id: card.id,
         name: card.name,
@@ -192,7 +224,12 @@ export async function GET(
         stampsRequired: card.stampsRequired,
         brandColor: card.brandColor,
         iconName: card.iconName,
+        textColor: card.textColor,
         isActive: card.isActive,
+        status: card.status,
+        selectedTheme: card.selectedTheme,
+        effectiveTheme: card.effectiveTheme,
+        themeLocked: Boolean(card.selectedTheme && card.selectedTheme.plan === "PRO" && card.selectedThemeId !== card.effectiveThemeId),
         stampIconName: card.stampIconName,
         expiresAt: card.expiresAt,
         expired: isExpired(card.expiresAt),
@@ -200,13 +237,15 @@ export async function GET(
         businessBrandColor: card.business.brandColor,
         businessLogoUrl: card.business.logoUrl,
         businessIconName: card.business.iconName,
+        businessWebsite: card.business.website,
+        businessInstagram: card.business.instagram,
         milestoneRewards: card.milestoneRewards.map(m => ({
           id: m.id, stampNumber: m.stampNumber, label: m.label, iconName: m.iconName, probability: m.probability,
         })),
       },
-    })
+    }), requestId)
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }
 
@@ -214,8 +253,10 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const requestId = requestIdFrom(request)
   try {
-    const { business, user } = await getBusinessFromSession()
+    const { business, user } = await requireWritableBusinessPrincipal()
+    await requireActivatedBusiness(business.id)
     requireRole(user, "admin")
     const { id } = await params
 
@@ -227,7 +268,7 @@ export async function PUT(
       throw new NotFoundError("Loyalty card not found")
     }
 
-    const body = await request.json()
+    const body = await cuerpoJson(request)
 
     if (body.name !== undefined && (!body.name || typeof body.name !== "string" || !body.name.trim())) {
       throw new ValidationError("Card name is required")
@@ -239,10 +280,28 @@ export async function PUT(
       const s = Number(body.stampsRequired)
       if (s < 1 || s > 100) throw new ValidationError("Required stamps must be between 1 and 100")
     }
+    if (body.textColor !== undefined && !["AUTO", "DARK", "LIGHT"].includes(String(body.textColor))) {
+      throw new ValidationError("textColor must be AUTO, DARK, or LIGHT")
+    }
+    if (body.isPrimary !== undefined && typeof body.isPrimary !== "boolean") {
+      throw new ValidationError("isPrimary must be a boolean")
+    }
 
     const stampsRequired = body.stampsRequired !== undefined ? Number(body.stampsRequired) : existing.stampsRequired
+    await syncExpiredEntitlements(prisma, business.id)
 
-    if (body.milestoneRewards !== undefined) {
+    const card = await prisma.$transaction(async tx => {
+      const subscription = await tx.subscription.findFirst({
+        where: { businessId: business.id, status: "ACTIVE" },
+        orderBy: { createdAt: "desc" },
+      })
+      if (!subscription) throw new ForbiddenError("La cuenta necesita un plan activo para editar tarjetas")
+      const plan = resolveEffectiveEntitlements(subscription).plan
+      const theme = body.themeId !== undefined
+        ? await resolveTheme(tx, typeof body.themeId === "string" ? body.themeId : undefined, plan)
+        : null
+
+      if (body.milestoneRewards !== undefined) {
       if (!Array.isArray(body.milestoneRewards)) {
         throw new ValidationError("milestoneRewards must be an array")
       }
@@ -268,47 +327,65 @@ export async function PUT(
       const incomingIds = body.milestoneRewards.filter((m: { id?: string }) => m.id).map((m: { id: string }) => m.id)
       const toDelete = existing.milestoneRewards.filter(m => !incomingIds.includes(m.id)).map(m => m.id)
 
-      await prisma.$transaction(async tx => {
         if (toDelete.length > 0) {
           await tx.milestoneReward.deleteMany({ where: { id: { in: toDelete }, cardId: id } })
         }
         for (const m of body.milestoneRewards) {
           if (m.id && incomingIds.includes(m.id)) {
-            await tx.milestoneReward.update({
-              where: { id: m.id },
+            const updated = await tx.milestoneReward.updateMany({
+              where: { id: m.id, cardId: id },
               data: { stampNumber: m.stampNumber, label: m.label.trim(), iconName: m.iconName || null, probability: m.probability },
             })
+            if (updated.count !== 1) throw new NotFoundError("Milestone not found")
           } else {
             await tx.milestoneReward.create({
               data: { cardId: id, stampNumber: m.stampNumber, label: m.label.trim(), iconName: m.iconName || null, probability: m.probability },
             })
           }
         }
-      })
-    }
+      }
 
-    const card = await prisma.loyaltyCard.update({
+      const updatedCard = await tx.loyaltyCard.update({
       where: { id },
       data: {
         ...(body.name?.trim() && { name: body.name.trim() }),
         ...(body.reward?.trim() && { reward: body.reward.trim() }),
         ...(body.stampsRequired !== undefined && { stampsRequired }),
         ...(body.brandColor !== undefined && { brandColor: body.brandColor }),
+        ...(body.textColor !== undefined && { textColor: body.textColor }),
         ...(body.iconName !== undefined && { iconName: body.iconName || null }),
         ...(body.stampIconName !== undefined && { stampIconName: body.stampIconName || null }),
         ...(body.description !== undefined && { description: body.description?.trim() || null }),
         ...(body.expiresAt !== undefined && { expiresAt: body.expiresAt ? new Date(body.expiresAt) : null }),
+        ...(theme && { selectedThemeId: theme.selectedThemeId, effectiveThemeId: theme.effectiveThemeId }),
       },
+      include: { milestoneRewards: { orderBy: { stampNumber: "asc" } } },
     })
 
-    const milestones = await prisma.milestoneReward.findMany({
-      where: { cardId: id },
-      orderBy: { stampNumber: "asc" },
+      if (body.isPrimary !== undefined) {
+        await persistPrimaryCardPreference(tx, {
+          businessId: business.id,
+          subscription,
+          cardId: id,
+          plan,
+          isPrimary: body.isPrimary,
+        })
+      }
+
+      const latest = await tx.cardConfiguration.findFirst({ where: { cardId: id }, orderBy: { version: "desc" } })
+      const milestones = updatedCard.milestoneRewards.map(m => ({ stampNumber: m.stampNumber, label: m.label, iconName: m.iconName, probability: m.probability }))
+      const changed = !latest || latest.stampsRequired !== updatedCard.stampsRequired || latest.reward !== updatedCard.reward || JSON.stringify(latest.milestones) !== JSON.stringify(milestones)
+      if (changed) {
+        await tx.cardConfiguration.create({
+          data: { cardId: id, version: (latest?.version ?? 0) + 1, stampsRequired: updatedCard.stampsRequired, reward: updatedCard.reward, milestones },
+        })
+      }
+      return updatedCard
     })
 
-    return NextResponse.json({ card, milestoneRewards: milestones })
+    return withRequestId(NextResponse.json({ card: { ...card, themeLocked: Boolean(card.selectedThemeId && card.selectedThemeId !== card.effectiveThemeId) }, milestoneRewards: card.milestoneRewards }), requestId)
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }
 
@@ -316,8 +393,9 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const requestId = requestIdFrom(request)
   try {
-    const { business, user } = await getBusinessFromSession()
+    const { business, user } = await requireWritableBusinessPrincipal()
     requireRole(user, "admin")
     const { id } = await params
 
@@ -330,11 +408,11 @@ export async function DELETE(
     if (permanent) {
       await prisma.loyaltyCard.delete({ where: { id } })
     } else {
-      await prisma.loyaltyCard.update({ where: { id }, data: { isActive: false } })
+      await prisma.loyaltyCard.update({ where: { id }, data: { isActive: false, status: "ARCHIVED" } })
     }
 
-    return NextResponse.json({ success: true })
+    return withRequestId(NextResponse.json({ success: true }), requestId)
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }

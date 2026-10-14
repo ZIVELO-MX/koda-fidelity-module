@@ -1,16 +1,19 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { JoinCardLayout, type JoinCardData } from "@/components/join/join-card-layout"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
-import { Check, Mail, Loader2 } from "lucide-react"
+import { RedesNegocio } from "@/components/join/redes-negocio"
+import { Check, Loader2 } from "lucide-react"
+import { mensajeDeAlta, type MotivoAlta } from "@/lib/alta-estados"
+import { cn } from "@/lib/utils"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
 import { getFriendlySendError } from "@/lib/auth-errors"
 
-type Step = "loading" | "error" | "form" | "sent" | "ready"
+type Step = "loading" | "error" | "form" | "ready"
 
 interface JoinCustomer {
   id: string
@@ -21,16 +24,32 @@ interface JoinCustomer {
     stampsRequired: number
     reward: string
     brandColor: string
+    textColor?: "AUTO" | "DARK" | "LIGHT"
     iconName: string | null
+    stampIconName?: string | null
     isActive: boolean
+    status?: string | null
+    /** El tema que de verdad se pinta. Null cuando un acabado Pro no tiene
+     *  plan que lo sostenga: entonces manda el color del negocio. */
+    effectiveTheme?: { code: string } | null
     expiresAt: string | null
     expired: boolean
-    business: { name: string; brandColor: string; logoUrl: string | null; iconName: string | null }
+    business: {
+      name: string
+      brandColor: string
+      logoUrl: string | null
+      iconName: string | null
+      // Opcionales del contrato FID-C1 v1. Hasta que la consulta pública los
+      // mande llegan indefinidos y no se pinta nada.
+      website?: string | null
+      instagram?: string | null
+    }
   }
 }
 
 export default function JoinCardPage() {
   const params = useParams()
+  const router = useRouter()
   const cardId = params.cardId as string
   const [step, setStep] = useState<Step>("loading")
   const [customer, setCustomer] = useState<JoinCustomer | null>(null)
@@ -39,14 +58,20 @@ export default function JoinCardPage() {
     stampsRequired: number
     reward: string
     brandColor: string
+    textColor?: "AUTO" | "DARK" | "LIGHT"
     iconName: string | null
+    stampIconName?: string | null
     expiresAt: string | null
     businessName: string
     businessBrandColor: string
     businessLogoUrl: string | null
     businessIconName: string | null
+    status?: string | null
+    /** El tema que de verdad se pinta. Null cuando un acabado Pro no tiene plan
+     *  que lo sostenga: entonces manda el color del negocio. */
+    effectiveTheme?: { code: string } | null
   } | null>(null)
-  const [cardError, setCardError] = useState<string | null>(null)
+  const [motivo, setMotivo] = useState<MotivoAlta>("no-encontrada")
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [sending, setSending] = useState(false)
@@ -60,13 +85,13 @@ export default function JoinCardPage() {
     const init = async () => {
       const cardRes = await fetch(`/api/cards/${cardId}`)
       if (!cardRes.ok) {
-        setCardError("Tarjeta no encontrada")
+        setMotivo("no-encontrada")
         setStep("error")
         return
       }
       const cardJson = await cardRes.json()
       if (cardJson.card.expired) {
-        setCardError("Esta tarjeta de lealtad ha vencido y ya no acepta nuevos participantes.")
+        setMotivo("vencida")
         setStep("error")
         return
       }
@@ -75,10 +100,12 @@ export default function JoinCardPage() {
       const supabase = createBrowserSupabase()
       const { data: { session } } = await supabase.auth.getSession()
 
-      // Archived cards: existing members can still view; new members cannot join
+      // Una tarjeta que estuvo activa y se desactivó por cambio de plan no es
+      // lo mismo que una cerrada a nuevas altas: sus códigos ya andan impresos,
+      // y quien escanea merece saber que sus sellos siguen ahí.
       if (!cardJson.card.isActive) {
         if (!session?.user?.email) {
-          setCardError("Esta tarjeta ya no acepta nuevos miembros.")
+          setMotivo(cardJson.card.status === "LOCKED_BY_PLAN" ? "desactivada" : "cerrada")
           setStep("error")
           return
         }
@@ -137,7 +164,7 @@ export default function JoinCardPage() {
       }
 
       if (!cardJson.card.isActive) {
-        setCardError("Esta tarjeta ya no acepta nuevos miembros.")
+        setMotivo("cerrada")
         setStep("error")
       } else {
         setStep("form")
@@ -178,7 +205,7 @@ export default function JoinCardPage() {
       const res = await fetch("/api/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), email: email.trim(), cardId }),
+        body: JSON.stringify({ name: name.trim(), email: email.trim().toLowerCase(), cardId }),
       })
 
       if (!res.ok) {
@@ -188,23 +215,13 @@ export default function JoinCardPage() {
       const { customerId } = await res.json()
       sessionStorage.setItem(`pending-${cardId}`, customerId)
 
-      const supabase = createBrowserSupabase()
-      const { error } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
-        options: {
-          shouldCreateUser: true,
-          emailRedirectTo: `${window.location.origin}/join/${cardId}`,
-        },
-      })
-      if (error) throw error
-
-      setStep("sent")
+      router.push(`/signup?accountType=CUSTOMER&next=${encodeURIComponent(`/join/${cardId}`)}&email=${encodeURIComponent(email.trim())}&name=${encodeURIComponent(name.trim())}`)
     } catch (err) {
       setSendError(getFriendlySendError(err))
     } finally {
       setSending(false)
     }
-  }, [name, email, cardId])
+  }, [name, email, cardId, router])
 
   const cardInfo = customer
     ? {
@@ -213,14 +230,20 @@ export default function JoinCardPage() {
         reward: customer.card.reward,
         stampsRequired: customer.card.stampsRequired,
         brandColor: customer.card.brandColor,
+        textColor: customer.card.textColor,
         iconName: customer.card.iconName,
+        stampIconName: customer.card.stampIconName,
         expiresAt: customer.card.expiresAt,
         businessName: customer.card.business.name,
         businessBrandColor: customer.card.business.brandColor,
         businessLogoUrl: customer.card.business.logoUrl,
         businessIconName: customer.card.business.iconName,
+        // El código del tema efectivo lo trae la consulta pública de la
+        // tarjeta; `/api/join` solo manda los identificadores.
+        temaEfectivo: cardData?.effectiveTheme?.code ?? null,
+        themeCode: cardData?.effectiveTheme?.code ?? null,
       }
-    : cardData
+    : cardData && { ...cardData, temaEfectivo: cardData.effectiveTheme?.code ?? null, themeCode: cardData.effectiveTheme?.code ?? null }
 
   if (step === "loading") {
     return (
@@ -231,13 +254,25 @@ export default function JoinCardPage() {
   }
 
   if (step === "error") {
+    // Cada motivo dice qué pasó y a dónde ir. Antes los tres salían bajo
+    // "Tarjeta no encontrada". Ver lib/alta-estados.ts.
+    const mensaje = mensajeDeAlta(motivo)
     return (
       <div className="min-h-screen bg-background forced-light flex flex-col items-center justify-center p-4">
-        <h1 className="text-2xl font-bold text-foreground mb-2">Tarjeta no encontrada</h1>
-        <p className="text-muted-foreground mb-4">{cardError || "El enlace no es válido"}</p>
-        <Link href="/">
-          <Button variant="outline">Volver al inicio</Button>
-        </Link>
+        <div
+          className={cn(
+            "w-full max-w-sm space-y-4 text-center",
+            // Ámbar, no rojo: la tarjeta no está rota y quien la escanea no
+            // tiene nada que ver con el plan del negocio.
+            mensaje.tono === "aviso" && "rounded-2xl border border-amber-500/40 bg-amber-500/10 p-6",
+          )}
+        >
+          <h1 className="text-2xl font-bold text-foreground">{mensaje.titulo}</h1>
+          <p className="text-muted-foreground">{mensaje.detalle}</p>
+          <Button asChild variant="outline" className="min-h-11">
+            <Link href={mensaje.accion.href}>{mensaje.accion.texto}</Link>
+          </Button>
+        </div>
       </div>
     )
   }
@@ -278,16 +313,21 @@ export default function JoinCardPage() {
                 businessName={cardInfo.businessName}
                 businessLogo={cardInfo.businessLogoUrl ?? undefined}
                 iconName={cardInfo.iconName ?? cardInfo.businessIconName}
+                stampIconName={cardInfo.stampIconName}
                 customerName={customer.name}
                 currentStamps={customer.stamps}
                 maxStamps={cardInfo.stampsRequired}
                 reward={cardInfo.reward}
                 expirationDate={cardInfo.expiresAt ? new Date(cardInfo.expiresAt).toLocaleDateString("es-MX") : undefined}
                 brandColor={cardInfo.brandColor}
+                textColor={cardInfo.textColor}
+                themeCode={cardInfo.temaEfectivo}
                 showQR={true}
                 qrValue={customer.id}
               />
             </div>
+
+            <RedesNegocio negocio={customer.card.business} />
 
             <div className="space-y-3">
               <Button
@@ -319,53 +359,17 @@ export default function JoinCardPage() {
               Escanea este código QR en el negocio para acumular sellos
             </p>
 
-            <Link href="/my-cards">
-              <Button variant="outline" className="w-full">
+            <Button variant="outline" className="w-full" asChild>
+              <Link href="/my-cards">
                 Ver todas mis tarjetas
-              </Button>
-            </Link>
-          </div>
-        </main>
-      </div>
-    )
-  }
-
-  if (step === "sent") {
-    return (
-      <div className="min-h-screen bg-background forced-light flex flex-col">
-        <header className="border-b border-border bg-card">
-          <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-center">
-            <span className="font-semibold text-foreground">Revisa tu correo electrónico</span>
-          </div>
-        </header>
-
-        <main className="flex-1 flex flex-col items-center justify-center px-4 py-8">
-          <div className="w-full max-w-md text-center space-y-6">
-            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-              <Mail className="h-10 w-10 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground mb-2">Revisa tu correo</h1>
-              <p className="text-muted-foreground">
-                Te enviamos un enlace mágico a <strong>{email}</strong>. Haz clic en el enlace para confirmar tu tarjeta.
-              </p>
-            </div>
-
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => {
-                setStep("form")
-                setSendError(null)
-              }}
-            >
-              Volver
+              </Link>
             </Button>
           </div>
         </main>
       </div>
     )
   }
+
 
   return (
     <JoinCardLayout

@@ -1,13 +1,24 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
-import { handleApiError, NotFoundError, ValidationError, UnauthorizedError } from "@/lib/api-utils"
+import { handleApiError, NotFoundError, ValidationError, UnauthorizedError, requestIdFrom, withRequestId } from "@/lib/api-utils"
+
+/**
+ * @openapi
+ * /api/my-cards/{customerId}:
+ *   delete:
+ *     tags: [Customer]
+ *     summary: Withdraw a customer membership
+ *     responses: { 200: { description: Membership withdrawn } }
+ */
 import { isExpired } from "@/lib/card-utils"
+import { assertBusinessWritable } from "@/lib/account-lifecycle"
 
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ customerId: string }> },
 ) {
+  const requestId = requestIdFrom(_request)
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -17,19 +28,20 @@ export async function DELETE(
 
     const customer = await prisma.customer.findUnique({
       where: { id: customerId },
-      include: { card: { select: { expiresAt: true } } },
+      include: { card: { select: { expiresAt: true, businessId: true } } },
     })
 
     if (!customer) throw new NotFoundError("Customer not found")
     if (customer.email !== user.email) throw new NotFoundError("Customer not found")
+    await assertBusinessWritable(prisma, customer.card.businessId)
     if (!isExpired(customer.card.expiresAt)) {
       throw new ValidationError("Only expired cards can be removed")
     }
 
     await prisma.customer.delete({ where: { id: customerId } })
 
-    return NextResponse.json({ success: true })
+    return withRequestId(NextResponse.json({ success: true }), requestId)
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }

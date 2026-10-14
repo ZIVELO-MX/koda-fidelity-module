@@ -6,6 +6,8 @@ import {
   isConfigured,
   getConfigError,
 } from "@/lib/passes/google"
+import { config } from "@/lib/config"
+import { requestIdFrom, withRequestId } from "@/lib/api-utils"
 
 /**
  * @openapi
@@ -70,6 +72,10 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ cardId: string }> },
 ) {
+  const requestId = requestIdFrom(request)
+  if (!config.isWalletEnabled) {
+    return withRequestId(NextResponse.json({ error: "Wallet issuance is disabled", code: "KF-BILLING-004", requestId }, { status: 501 }), requestId)
+  }
   const { cardId } = await params
 
   if (!isConfigured()) {

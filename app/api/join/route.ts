@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
-import { getBusinessFromSession, handleApiError, ValidationError, NotFoundError, UnauthorizedError } from "@/lib/api-utils"
+import { cuerpoJson, getBusinessFromSession, handleApiError, NotFoundError, requestIdFrom, UnauthorizedError, ValidationError, withRequestId } from "@/lib/api-utils"
 import { isExpired } from "@/lib/card-utils"
+import { assertBusinessWritable, syncExpiredEntitlements } from "@/lib/account-lifecycle"
 
 /**
  * @openapi
@@ -130,11 +131,16 @@ const customerInclude = {
       stampsRequired: true,
       reward: true,
       brandColor: true,
+      textColor: true,
       iconName: true,
       stampIconName: true,
       isActive: true,
+      status: true,
+      selectedThemeId: true,
+      effectiveThemeId: true,
+      effectiveTheme: { select: { code: true } },
       expiresAt: true,
-      business: { select: { name: true, brandColor: true, logoUrl: true, iconName: true } },
+      business: { select: { name: true, brandColor: true, logoUrl: true, iconName: true, website: true, instagram: true } },
       milestoneRewards: { select: { stampNumber: true, iconName: true, label: true } },
     },
   },
@@ -174,8 +180,9 @@ export function withCurrentCycleMilestoneClaims<
 }
 
 export async function POST(request: NextRequest) {
+  const requestId = requestIdFrom(request)
   try {
-    const body = await request.json()
+    const body = await cuerpoJson(request)
     const { name, email, cardId } = body
 
     if (!name || typeof name !== "string" || !name.trim()) {
@@ -188,12 +195,16 @@ export async function POST(request: NextRequest) {
       throw new ValidationError("Invalid card ID")
     }
 
-    const card = await prisma.loyaltyCard.findUnique({ where: { id: cardId } })
-    if (!card) {
+    const initialCard = await prisma.loyaltyCard.findUnique({ where: { id: cardId } })
+    if (!initialCard) {
       throw new NotFoundError("Loyalty card not found")
     }
+    await syncExpiredEntitlements(prisma, initialCard.businessId)
+    const card = await prisma.loyaltyCard.findUnique({ where: { id: cardId } })
+    if (!card) throw new NotFoundError("Loyalty card not found")
+    await assertBusinessWritable(prisma, card.businessId)
 
-    if (!card.isActive) {
+    if (!card.isActive || (card.status && card.status !== "ACTIVE")) {
       throw new ValidationError("This loyalty card is no longer accepting new members")
     }
 
@@ -205,24 +216,23 @@ export async function POST(request: NextRequest) {
       where: { email, cardId },
     })
     if (existing) {
-      return NextResponse.json({ existing: true })
+      return withRequestId(NextResponse.json({ existing: true }), requestId)
     }
 
-    const customer = await prisma.customer.create({
-      data: {
-        name: name.trim(),
-        email,
-        cardId,
-      },
+    const customer = await prisma.$transaction(async (tx) => {
+      const created = await tx.customer.create({ data: { name: name.trim(), email, cardId } })
+      await tx.stampLog.create({ data: { businessId: card.businessId, cardId: card.id, customerId: created.id, type: "customer_joined" } })
+      return created
     })
 
-    return NextResponse.json({ customerId: customer.id, existing: false })
+    return withRequestId(NextResponse.json({ customerId: customer.id, existing: false }), requestId)
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }
 
 export async function GET(request: NextRequest) {
+  const requestId = requestIdFrom(request)
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get("id")
@@ -246,7 +256,7 @@ export async function GET(request: NextRequest) {
         throw new NotFoundError("Customer not found")
       }
 
-      return NextResponse.json({ customer: withCurrentCycleMilestoneClaims(customer) })
+      return withRequestId(NextResponse.json({ customer: withCurrentCycleMilestoneClaims(customer) }), requestId)
     }
 
     if (email) {
@@ -265,14 +275,13 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: "desc" },
       })
 
-      if (customers.length === 0) throw new NotFoundError("Customer not found")
-      return NextResponse.json({
+      return withRequestId(NextResponse.json({
         customers: customers.map(withCurrentCycleMilestoneClaims),
-      })
+      }), requestId)
     }
 
     throw new ValidationError("Provide either ?id= or ?email=")
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }

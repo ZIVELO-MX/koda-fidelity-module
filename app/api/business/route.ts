@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getBusinessFromSession, handleApiError, ValidationError, requireRole } from "@/lib/api-utils"
+import { cuerpoJson, getBusinessFromSession, handleApiError, requestIdFrom, requireRole, requireWritableBusinessPrincipal, ValidationError, withRequestId } from "@/lib/api-utils"
+import { withBusinessAvatarUrl } from "@/lib/private-avatar"
+
+const noStore = { headers: { "Cache-Control": "private, no-store" } }
 
 /**
  * @openapi
@@ -75,20 +78,22 @@ import { getBusinessFromSession, handleApiError, ValidationError, requireRole } 
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const requestId = requestIdFrom(request)
   try {
     const { business } = await getBusinessFromSession()
-    return NextResponse.json({ business })
+    return withRequestId(NextResponse.json({ business: await withBusinessAvatarUrl(prisma, business) }, noStore), requestId)
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }
 
 export async function PUT(request: NextRequest) {
+  const requestId = requestIdFrom(request)
   try {
-    const { business, user } = await getBusinessFromSession()
+    const { business, user } = await requireWritableBusinessPrincipal()
     requireRole(user, "admin")
-    const body = await request.json()
+    const body = await cuerpoJson(request)
 
     if (body.name !== undefined && (!body.name || typeof body.name !== "string" || !body.name.trim())) {
       throw new ValidationError("Business name is required")
@@ -111,8 +116,8 @@ export async function PUT(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({ business: updated })
+    return withRequestId(NextResponse.json({ business: await withBusinessAvatarUrl(prisma, updated) }, noStore), requestId)
   } catch (error) {
-    return handleApiError(error)
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
 }

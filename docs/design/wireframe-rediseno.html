@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Wireframes Koda Fidelity</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
 <style>
@@ -72,10 +73,10 @@
   .scope { font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-3); border:1px solid var(--border-strong); border-radius:999px; padding:3px 9px; }
   .ab { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
   @media (max-width:860px) { .ab { grid-template-columns:1fr; } }
-  .side { margin:0; }
+  .side { margin:0; min-width:0; }
   .side figcaption { font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-3); margin-bottom:7px; }
   .side.after figcaption { color:var(--brand); }
-  .canvas { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--r-xl); padding:12px; overflow-x:auto; height:100%; }
+  .canvas { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--r-xl); padding:12px; overflow-x:auto; height:100%; min-width:0; }
   .canvas.narrow { max-width:320px; }
   .frame { background:var(--surface); border:1px solid var(--wf-line); border-radius:var(--r-md); overflow:hidden; min-width:270px; }
   .frame.dark { background:var(--dark-ground); border-color:#2b241d; color:#f7f2ea; }
@@ -122,6 +123,8 @@
   .avatar { width:24px; height:24px; border-radius:50%; background:var(--wf-fill-2); box-shadow:0 0 0 2px var(--brand); flex-shrink:0; }
   .avatar.lg { width:56px; height:56px; box-shadow:0 0 0 3px var(--brand); }
   .avatar.ring-teal { box-shadow:0 0 0 2px #0D9488; }
+  @keyframes tarjeta-idle { 0%,100% { transform:translateY(0) rotate(-.4deg); } 50% { transform:translateY(-5px) rotate(.4deg); } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; scroll-behavior:auto !important; } }
   .cam { height:96px; border-radius:var(--r-sm); background:var(--wf-fill-2); display:grid; place-items:center; }
   .reticle { width:60px; height:60px; border:2px solid var(--brand); border-radius:var(--r-sm); }
 
@@ -601,7 +604,8 @@
 
   <!-- 13b -->
   <article class="pair">
-    <header><h3>Primera sesión</h3><span class="scope">Escritorio y móvil</span></header>
+    <header><h3>Primera sesión</h3><span class="scope">Superada</span></header>
+    <p class="job">Esta pareja queda superada por el flujo de alta decidido el 2026-09-02, que va antes de entrar al panel. Se conserva porque el estado vacío sigue existiendo para quien abandona en el muro de pago. Ver la sección de alta y suscripción.</p>
     <div class="ab">
       <figure class="side"><figcaption>Antes</figcaption>
         <div class="canvas"><div class="frame"><div class="pad col">
@@ -780,6 +784,335 @@
   </article>
 </section>
 
+<!-- =================== ONBOARDING =================== -->
+<section class="part">
+  <h2>Alta y suscripción</h2>
+  <p class="lede">Rediseño del alta y suscripción. El recorrido mantiene la introducción, los datos del negocio, la personalización, el origen y la elección de plan, y agrega un paso persistente para revisar la tarjeta antes de publicarla.</p>
+
+  <div class="canvas" style="margin-top:22px;">
+    <div class="row" style="align-items:center;flex-wrap:wrap;gap:6px;">
+      <span class="btn gho">Intro · 3 láminas</span><span class="lbl">›</span>
+      <span class="btn pri">Datos</span><span class="lbl">›</span>
+      <span class="btn pri">Tarjeta</span><span class="lbl">›</span>
+      <span class="btn pri">Tarjeta lista</span><span class="lbl">›</span>
+      <span class="btn gho">Origen</span><span class="lbl">›</span>
+      <span class="btn pri">Planes</span>
+    </div>
+    <div class="row" style="margin-top:8px;"><span class="xs">La intro y el origen se pueden saltar. La tarjeta lista se guarda como borrador para retomar el alta.</span></div>
+  </div>
+
+  <article class="pair">
+    <header><h3>Introducción</h3><span class="scope">Móvil y escritorio</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas narrow"><div class="frame" style="min-width:0;"><div class="pad col">
+          <div class="box dash" style="padding:14px;text-align:center;"><span class="lbl">La introducción actual tiene una sola lámina estática; no incluye diálogo ni muestra por pasos.</span></div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas narrow"><div class="frame" style="min-width:0;">
+          <div class="bar"><div class="row"><div class="line s" style="width:22px;background:var(--brand);"></div><div class="line s" style="width:22px;background:var(--brand);"></div><div class="line s" style="width:22px;"></div><div class="line s" style="width:22px;"></div><div class="line s" style="width:22px;"></div><div class="line s" style="width:22px;"></div></div><span class="xs">Progreso · 1 de 6</span></div>
+          <div class="pad col">
+            <div class="row" style="align-items:flex-start;gap:8px;"><div class="avatar" style="width:34px;height:34px;overflow:hidden;animation:tarjeta-idle 4s ease-in-out infinite;"><img src="../../public/short-logo.svg" alt="" aria-hidden="true" width="34" height="34"></div><div class="box" style="position:relative;flex:1;padding:8px 10px;border-radius:12px;"><span class="lbl on">Sabes quién vuelve</span><div class="line m" style="margin-top:6px;"></div><div class="line s" style="margin-top:4px;"></div></div></div>
+            <div class="row" style="justify-content:center;gap:4px;"><span class="xs">○</span><span class="xs">○</span><span class="xs">●</span><span class="xs">Lámina 3 de 3</span></div>
+            <div class="box" style="padding:8px;border-radius:12px;"><span class="xs">Ejemplo como la tarjeta de acceso</span><div class="cardface" style="min-height:74px;margin-top:6px;animation:tarjeta-idle 5s ease-in-out infinite;"><div style="font-size:10px;font-weight:700;">The Daily Grind · Free Coffee</div><div class="stamps" style="max-width:none;"><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div></div></div></div>
+            <div class="row" style="gap:6px;"><div class="btn gho" style="flex:1;">Saltar introducción</div><div class="btn pri" style="flex:1;">Siguiente &gt;</div></div>
+            <span class="xs">Fidelity cuenta el diálogo desde su logo. La tarjeta de ejemplo flota suavemente.</span>
+          </div>
+        </div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="change"><b>Tres láminas de introducción con más movimiento y una mascota.</b> Por ahora habla el logo de Fidelity en un globo; “Saltar introducción” aparece antes de “Siguiente &gt;”.</li>
+      <li class="change"><b>La tercera lámina muestra una tarjeta de ejemplo como la de acceso</b>, con animación idle; el movimiento se detiene con la preferencia de movimiento reducido.</li>
+      <li class="change"><b>El progreso muestra seis pasos del alta.</b> La paginación de las tres láminas es aparte y no confunde el recorrido principal.</li>
+    </ul>
+  </article>
+
+  <article class="pair">
+    <header><h3>Primera tarjeta y temas Pro</h3><span class="scope">Móvil y escritorio</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad col">
+          <div class="row"><span class="btn pri">1 Datos</span><span class="btn gho">2 Diseño</span><span class="btn gho">3 Sorpresas</span><span class="btn gho">4 Revisión</span></div>
+          <span class="xs">Asistente de cuatro pasos, dentro del panel, después de registrarse</span>
+          <div class="box" style="height:18px;"></div><div class="box" style="height:18px;"></div><div class="box" style="height:18px;"></div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad row" style="gap:12px;">
+          <div class="col" style="flex:1;">
+            <div class="col" style="gap:3px;"><span class="xs">Sellos para la recompensa</span><div class="row"><span class="btn gho">5</span><span class="btn gho">8</span><span class="btn pri">10</span><span class="btn gho">12</span></div></div>
+            <div class="col" style="gap:3px;"><span class="xs">¿Qué recibirá tu cliente?</span><div class="box" style="height:22px;border-color:var(--danger);box-shadow:0 0 0 1px var(--danger);padding:4px 6px;"><span class="xs" style="color:var(--ink-3);text-transform:none;letter-spacing:0;">Un café gratis</span></div><span class="xs" style="color:var(--danger);text-transform:none;letter-spacing:0;">ⓘ Escribe la recompensa para continuar.</span></div>
+            <div class="col" style="gap:3px;"><span class="xs">Tema</span>
+              <div class="row">
+                <div style="width:26px;height:26px;border-radius:6px;background:#f97316;box-shadow:0 0 0 2px var(--ink);"></div>
+                <div style="width:26px;height:26px;border-radius:6px;background:linear-gradient(135deg,#B45309,#7C2D12);"></div>
+                <div style="width:26px;height:26px;border-radius:6px;background:linear-gradient(135deg,#7C3AED,#4C1D95);"></div>
+                <div style="width:26px;height:26px;border-radius:6px;background:linear-gradient(135deg,#BE185D,#831843);"></div>
+              </div>
+              <span class="xs">Los temas de degradado son Pro. Puedes elegirlos ahora.</span>
+            </div>
+            <div class="col" style="gap:3px;"><span class="xs">Color del texto</span><div class="row"><span class="btn pri">Automático</span><span class="btn gho">Oscuro</span><span class="btn gho">Claro</span></div></div>
+          </div>
+          <div class="col" style="flex:1;">
+            <div class="cardface" style="min-height:112px;">
+              <div style="font-size:11px;font-weight:700;">Décimo gratis</div>
+              <div class="stamps" style="max-width:none;"><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div></div>
+            </div>
+            <span class="xs">Vista previa en vivo</span>
+          </div>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="change"><b>El camino obligatorio se reduce a sellos, recompensa y personalización.</b> Vencimiento, descripción, íconos y recompensas sorpresa pasan a opciones avanzadas o se configuran después.</li>
+      <li class="change"><b>Si se continúa sin recompensa, se resalta el campo y aparece el error debajo.</b> El foco vuelve a ese campo; el indicador incluye texto e ícono, y desaparece al corregirlo.</li>
+      <li class="change"><b>El color de texto tiene tres opciones:</b> automático, oscuro y claro. La elección se guarda en la tarjeta; la interfaz resuelve el contraste del modo automático.</li>
+      <li class="change"><b>Los temas Pro se pueden elegir sin tener plan.</b> Se marcan como Pro sin bloquearse: probar el tema es parte de lo que empuja a contratar.</li>
+      <li class="keep"><b>La tarjeta y su vista previa en vivo se conservan</b> tal como están hoy en el asistente.</li>
+      <li class="change"><b>Al degradar a Lite, el tema Pro se sustituye</b> por el color que eligió el negocio, o por el naranja de KODA si no eligió ninguno. La tarjeta nunca se queda sin identidad.</li>
+    </ul>
+  </article>
+
+  <article class="pair">
+    <header><h3>Tu tarjeta está lista, pero todavía no publicada</h3><span class="scope">Móvil y escritorio</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas narrow"><div class="frame" style="min-width:0;"><div class="pad col">
+          <div class="box dash" style="padding:14px;text-align:center;"><span class="lbl">El preview de Club es efímero y no hay un paso recuperable que confirme la tarjeta antes de planes.</span></div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas narrow"><div class="frame" style="min-width:0;"><div class="bar"><span class="xs">Paso 4 de 6 · guardado</span></div><div class="pad col" style="align-items:center;">
+          <span class="lbl on" style="text-align:center;">Tu tarjeta está lista, pero todavía no publicada.</span>
+          <span class="xs">Café Aurora · así se verá con tus datos</span>
+          <div class="cardface" style="min-height:118px;width:100%;animation:tarjeta-idle 5s ease-in-out infinite;">
+            <div class="row" style="justify-content:space-between;"><div style="font-size:11px;font-weight:700;">Café Aurora</div><span class="xs" style="color:#fff;">Tarjeta de lealtad</span></div>
+            <div class="stamps" style="max-width:none;"><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div></div>
+            <div style="font-size:10px;font-weight:700;margin-top:7px;">Premio · Un café gratis</div>
+          </div>
+          <span class="xs">Borrador · QR ilustrativo, todavía sin enlace público</span>
+          <div class="btn pri wide">Continuar</div>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="change"><b>La confirmación y los planes son dos pasos distintos.</b> Primero se muestra la tarjeta configurada con el nombre, la recompensa, los sellos, el color y el tema que eligió el negocio.</li>
+      <li class="change"><b>El borrador se persiste como `CARD_READY`.</b> Al recargar o volver más tarde, el negocio recupera esta pantalla y puede continuar a origen y planes.</li>
+      <li class="keep"><b>El QR es solo ilustrativo y no tiene destino público</b> hasta completar la activación; la vista previa no aparenta estar publicada.</li>
+    </ul>
+  </article>
+
+  <article class="pair">
+    <header><h3>Origen y planes</h3><span class="scope">Móvil y escritorio</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas narrow"><div class="frame" style="min-width:0;"><div class="pad col">
+          <div class="cardface" style="min-height:48px;"><span class="xs" style="color:#fff;">Preview de tarjeta</span></div>
+          <div class="box" style="padding:9px;"><div class="row" style="justify-content:space-between;"><span class="lbl on">Lite</span><span class="num">$1,490</span></div><span class="xs">Equivale a $124.17 al mes, cobrado una vez al año.</span><br><span class="xs">Ahorras $298 frente al pago mensual.</span></div>
+          <span class="xs">El plan y el preview comparten pantalla.</span>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas narrow"><div class="frame" style="min-width:0;">
+          <div class="bar"><span class="lbl on">Ahora sí, los planes.</span><span class="xs">Paso 6 de 6</span></div>
+          <div class="pad col">
+            <div class="row" style="justify-content:center;"><span class="btn gho">Al mes</span><span class="btn pri">Al año · 2 meses gratis</span></div>
+            <div class="box" style="padding:9px;border-color:var(--brand);">
+              <div class="row" style="justify-content:space-between;"><span class="lbl on">Lite</span><span class="num">$1,490</span></div>
+              <span class="xs">MXN al año</span>
+              <div class="box" style="background:var(--ink);border-color:var(--ink);color:var(--surface);padding:6px;margin-top:7px;display:flex;align-items:center;gap:6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 1 1 2.2-3.7L12 7Zm0 0h4.5a2.5 2.5 0 1 0-2.2-3.7L12 7Z"/></svg><span style="font-size:9px;">Incluye un mes con todo lo de Pro</span></div>
+              <div class="col" style="gap:3px;margin-top:7px;"><span class="xs">Incluye</span><span class="xs" style="text-transform:none;letter-spacing:0;">✓ Una tarjeta de lealtad activa</span><span class="xs" style="text-transform:none;letter-spacing:0;">✓ Altas por QR y por enlace</span><span class="xs" style="text-transform:none;letter-spacing:0;">✓ Sellado y canje desde el escáner</span></div>
+              <div class="btn pri wide" style="margin-top:7px;">Solicitar activación de Lite</div>
+            </div>
+            <div class="box" style="padding:9px;">
+              <div class="row" style="justify-content:space-between;"><span class="lbl on">Pro</span><span class="num">$2,990</span></div>
+              <span class="xs">MXN al año</span>
+              <div class="col" style="gap:3px;margin-top:7px;"><span class="xs">Incluye</span><span class="xs" style="text-transform:none;letter-spacing:0;">✓ Varias tarjetas activas a la vez</span><span class="xs" style="text-transform:none;letter-spacing:0;">✓ Todos los diseños de tarjeta</span><span class="xs" style="text-transform:none;letter-spacing:0;">✓ Altas por QR y por enlace</span><span class="xs" style="text-transform:none;letter-spacing:0;">✓ Sellado y canje desde el escáner</span></div>
+              <div class="btn gho wide" style="margin-top:7px;">Solicitar activación de Pro</div>
+            </div>
+          </div>
+        </div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="change"><b>Antes del muro, una sola pregunta saltable:</b> dónde conociste Fidelity. Es medición, así que se puede saltar y nunca bloquea.</li>
+      <li class="change"><b>La pantalla de planes es un paso separado.</b> Se abre después de revisar la tarjeta lista y responder o saltar la pregunta de origen.</li>
+      <li class="change"><b>Se muestran ambos planes y lo que incluyen</b> con el mismo contenido de `lib/planes.ts`. Lite cuesta 149 al mes o 1,490 al año; Pro, 299 o 2,990. El anual recomendado muestra total y periodo, sin equivalencia mensual ni ahorro calculado.</li>
+      <li class="change"><b>El beneficio de Lite abre la lista:</b> un ícono de regalo precede a “Incluye un mes con todo lo de Pro”, en un bloque de alto contraste blanco y negro.</li>
+      <li class="keep"><b>Los dos planes usan solicitud de activación.</b> Pro no queda atenuado ni parece deshabilitado.</li>
+      <li class="change"><b>Se puede salir sin pagar</b>, y salir no es un botón escondido.</li>
+      <li class="keep"><b>El origen se conserva como pregunta saltable.</b> La selección de plan sigue el flujo de solicitud de activación; esta pantalla comunica prestaciones y periodo con claridad.</li>
+    </ul>
+  </article>
+
+  <article class="pair">
+    <header><h3>Regreso sin haber pagado</h3><span class="scope">Móvil y escritorio</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas narrow"><div class="frame" style="min-width:0;"><div class="pad col">
+          <div class="box dash" style="padding:14px;text-align:center;"><span class="lbl">Al salir de planes, el negocio conserva su progreso; falta un paso de tarjeta lista que pueda retomar.</span></div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas narrow"><div class="frame" style="min-width:0;">
+          <div class="bar"><span class="lbl on">Café Aurora</span><div class="avatar"></div></div>
+          <div class="pad col">
+            <div class="cardface" style="min-height:100px;opacity:.55;">
+              <div style="font-size:11px;font-weight:700;">Décimo gratis</div>
+              <div class="stamps" style="max-width:none;"><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div><div class="stamp"></div></div>
+            </div>
+            <div class="attn"><span class="lbl">Tu tarjeta está lista, pero todavía no publicada</span></div>
+            <div class="btn pri wide">Volver a elegir un plan</div>
+            <span class="xs">Tu negocio y tu tarjeta siguen guardados</span>
+          </div>
+        </div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="keep"><b>Nada de lo hecho se pierde.</b> Negocio y tarjeta quedan guardados, y al volver se entra directo a Fidelity.</li>
+      <li class="change"><b>La tarjeta se ve, atenuada, y se entiende por qué.</b> No es un error ni una pantalla de bloqueo genérica: es su tarjeta esperando publicación.</li>
+      <li class="change"><b>Una sola acción para regresar a los planes.</b> El precio y las prestaciones aparecen en el paso siguiente, junto al periodo elegido.</li>
+      <li class="change"><b>Sin publicar no hay QR.</b> Una tarjeta que nunca se activó no genera código ni se puede compartir, así que no existe el caso de un cliente escaneando algo que no está pagado. Los accesos a compartir, descargar e imprimir aparecen desactivados con su razón.</li>
+    </ul>
+  </article>
+
+  <article class="pair">
+    <header><h3>Tarjeta desactivada, vista del cliente</h3><span class="scope">Móvil · cliente final</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas narrow"><div class="frame" style="min-width:0;"><div class="pad col">
+          <div class="box dash" style="padding:14px;text-align:center;"><span class="lbl">No existe. Hoy una tarjeta activa nunca se desactiva por plan, solo vence o se archiva.</span></div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas narrow"><div class="frame" style="min-width:0;"><div class="pad col">
+          <div class="cardface" style="min-height:104px;opacity:.5;">
+            <div style="font-size:11px;font-weight:700;">Décimo gratis</div>
+            <div class="stamps" style="max-width:none;"><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp on"></div><div class="stamp"></div><div class="stamp"></div></div>
+          </div>
+          <div class="attn"><span class="lbl">Café Aurora tiene su tarjeta temporalmente desactivada</span></div>
+          <span class="xs">Tus 8 sellos siguen guardados</span>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="change"><b>Este sí ocurre:</b> una tarjeta que estuvo activa se desactiva por cambio de plan, y sus códigos QR ya andan impresos y compartidos. El cliente que escanea merece una respuesta clara.</li>
+      <li class="change"><b>Temporalmente desactivada, no error ni vencida.</b> Ámbar de advertencia y lenguaje que no culpa a nadie, porque quien escanea no tiene nada que ver con el plan del negocio.</li>
+      <li class="keep"><b>El progreso se conserva y se dice.</b> Ver que sus ocho sellos siguen ahí es lo que evita que el cliente dé por perdida la tarjeta.</li>
+      <li class="change"><b>Sin acciones falsas.</b> Nada de botones que no llevan a ningún lado: el cliente no puede resolver esto, solo el negocio.</li>
+    </ul>
+  </article>
+
+  <article class="pair">
+    <header><h3>Fin del primer mes</h3><span class="scope">Móvil y escritorio</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas narrow"><div class="frame" style="min-width:0;"><div class="pad col">
+          <div class="box dash" style="padding:14px;text-align:center;"><span class="lbl">No existe. No hay planes ni ciclo de suscripción.</span></div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas narrow"><div class="frame" style="min-width:0;"><div class="pad col">
+          <span class="lbl on">Tu mes con Pro termina en 3 días</span>
+          <div class="row" style="gap:10px;align-items:center;">
+            <div class="cardface" style="flex:1;min-height:64px;"></div>
+            <span class="lbl">›</span>
+            <div class="cardface" style="flex:1;min-height:64px;background:#f97316;"></div>
+          </div>
+          <span class="xs">Con Lite, tu tarjeta usa el color que elegiste</span>
+          <div class="btn pri wide">Mantener Pro por $299</div>
+          <div class="btn gho wide">Continuar con Lite</div>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="change"><b>Se enseña el cambio, no se describe.</b> La tarjeta con tema Pro al lado de cómo quedará con Lite, con el color propio del negocio.</li>
+      <li class="change"><b>Continuar con Lite es una salida legítima</b>, con su propio botón. No se esconde ni se disfraza de rechazo.</li>
+      <li class="change"><b>El aviso llega con tres días de margen</b>, no el día del cambio.</li>
+      <li class="keep"><b>Sin plan elegido, el color por defecto es el naranja de KODA.</b> Ninguna tarjeta queda sin identidad al degradar.</li>
+    </ul>
+  </article>
+</section>
+
+<!-- =================== TEMAS =================== -->
+<section class="part">
+  <h2>Temas de tarjeta</h2>
+  <p class="lede">La forma de la tarjeta no cambia: cabecera con ícono y negocio, fila de miembro, sellos en rejilla de cinco por dos, fila de premio, QR centrado y pie con vigencia. Es la que mejor funcionó en pruebas. Lo que cambia es la piel, y ahí se separan los dos planes.</p>
+
+  <article class="pair">
+    <header><h3>Piel Lite: color sólido con patrón</h3><span class="scope">Todas las superficies</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad row">
+          <div class="cardface" style="flex:1;min-height:86px;"></div>
+          <div class="cardface" style="flex:1;min-height:86px;background:linear-gradient(135deg,#EA580C,#9A3412);"></div>
+          <div class="cardface" style="flex:1;min-height:86px;background:linear-gradient(135deg,#0D9488,#042F2C);"></div>
+        </div><div class="pad" style="padding-top:0;"><span class="xs">Siete degradados fijos por giro, uno por categoría</span></div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad row">
+          <div class="cardface" style="flex:1;min-height:86px;background:#6f4e37;position:relative;overflow:hidden;">
+            <div style="position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.35) 1.5px,transparent 2px);background-size:14px 14px;"></div>
+            <div style="position:relative;font-size:9px;">Cafetería</div>
+          </div>
+          <div class="cardface" style="flex:1;min-height:86px;background:#0f766e;position:relative;overflow:hidden;">
+            <div style="position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.35) 1.5px,transparent 2px);background-size:14px 14px;"></div>
+            <div style="position:relative;font-size:9px;">Gimnasio</div>
+          </div>
+          <div class="cardface" style="flex:1;min-height:86px;background:#be185d;position:relative;overflow:hidden;">
+            <div style="position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.35) 1.5px,transparent 2px);background-size:14px 14px;"></div>
+            <div style="position:relative;font-size:9px;">Belleza</div>
+          </div>
+        </div><div class="pad" style="padding-top:0;"><span class="xs">Color de marca sólido más el patrón de íconos de su categoría</span></div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="keep"><b>La forma es intocable</b> en los dos planes y en todas las pantallas. Ningún tema mueve el QR, la rejilla de sellos ni el pie.</li>
+      <li class="change"><b>Trece categorías, cada una con su acento y su juego de íconos.</b> Panadería, taquería, cafetería, hamburguesas, pizzería, barbería, salón de belleza, gimnasio, fútbol, sushi, veterinaria, farmacia y heladería.</li>
+      <li class="change"><b>El patrón se genera, no se dibuja a mano.</b> Un solo grosor, una sola escala y una sola densidad para todas las categorías, así el sistema crece cuando entre una nueva sin rehacer nada.</li>
+      <li class="change"><b>Dos perillas y solo dos:</b> intensidad del patrón y radio de esquina. Suficiente para que un negocio sienta que es suya, insuficiente para que la rompa.</li>
+      <li class="block"><b>Contraste a verificar por categoría.</b> Trece acentos por dos niveles de patrón es donde se cuela un texto ilegible, sobre todo con la intensidad al máximo.</li>
+    </ul>
+  </article>
+
+  <article class="pair">
+    <header><h3>Piel Pro: cuatro acabados</h3><span class="scope">Todas las superficies</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad col">
+          <div class="box dash" style="padding:14px;text-align:center;"><span class="lbl">No existe. Hoy no hay niveles de plan ni acabados premium.</span></div>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas"><div class="frame"><div class="pad row">
+          <div class="cardface" style="flex:1;min-height:86px;background:linear-gradient(135deg,#fb923c,#f97316 38%,#c2410c);"><span style="font-size:9px;">Gradiente vivo</span></div>
+          <div class="cardface" style="flex:1;min-height:86px;background:#141212;position:relative;overflow:hidden;">
+            <div style="position:absolute;inset:0;background:conic-gradient(from 200deg at 30% 20%,rgba(249,115,22,.5),rgba(255,196,120,.25),rgba(120,60,255,.2),rgba(249,115,22,.5));opacity:.6;"></div>
+            <span style="position:relative;font-size:9px;">Foil</span>
+          </div>
+          <div class="cardface" style="flex:1;min-height:86px;background:#9a3412;position:relative;overflow:hidden;">
+            <div style="position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.18) 2px,transparent 2.5px);background-size:16px 16px;"></div>
+            <span style="position:relative;font-size:9px;">Cinético</span>
+          </div>
+          <div class="cardface" style="flex:1;min-height:86px;background:#1a1a1a;position:relative;overflow:hidden;">
+            <div style="position:absolute;top:-20px;left:-14px;width:70px;height:70px;border-radius:50%;background:#f97316;filter:blur(18px);opacity:.7;"></div>
+            <div style="position:absolute;bottom:-24px;right:-16px;width:74px;height:74px;border-radius:50%;background:#7c3aed;filter:blur(20px);opacity:.6;"></div>
+            <span style="position:relative;font-size:9px;">Vidrio</span>
+          </div>
+        </div><div class="pad" style="padding-top:0;"><span class="xs">Los cuatro conservan la misma forma que Lite</span></div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="change"><b>Cuatro acabados y ninguno más:</b> gradiente vivo, foil holográfico, patrón cinético y vidrio premium. Es lo que se compra al pasar a Pro.</li>
+      <li class="change"><b>Se pueden elegir durante el alta sin tener plan.</b> Probar el acabado es parte de lo que empuja a contratar; bloquearlos con un candado sería vender menos.</li>
+      <li class="change"><b>Al bajar a Lite el acabado se sustituye</b> por el color que eligió el negocio, o por el naranja de KODA si no eligió ninguno. La tarjeta nunca se queda sin identidad ni se rompe a mitad de un mostrador.</li>
+      <li class="change"><b>Tres de los cuatro se mueven, así que respetan reduced motion</b> y se congelan en su fotograma más favorecedor. Un acabado que marea no es premium.</li>
+    </ul>
+  </article>
+</section>
+
 <!-- =================== PERFIL =================== -->
 <section class="part">
   <h2>Perfil</h2>
@@ -885,9 +1218,50 @@
     </div>
     <ul class="delta">
       <li class="change"><b>La consecuencia se cuantifica antes de confirmar</b>, con los datos que la pantalla ya tiene. Borrar la cuenta del administrador de un negocio no borra a una persona, borra el negocio entero.</li>
-      <li class="change"><b>Confirmación escrita, no solo un botón rojo.</b> Es la única acción del producto verdaderamente irreversible.</li>
+      <li class="change"><b>Confirmación escrita, no solo un botón rojo.</b> Es la acción de mayor consecuencia del producto.</li>
+      <li class="change"><b>No borra de inmediato: cierra con treinta días de reversa.</b> Durante ese plazo la cuenta se puede reactivar entrando otra vez, y la pantalla dice en qué fecha se vuelve definitivo. Es lo que evita que un enojo de martes borre el trabajo de seis meses.</li>
       <li class="block"><b>Dos cuentas distintas, dos consecuencias distintas.</b> Un cliente que se borra pierde su progreso en las tarjetas donde está. Un administrador arrastra su negocio completo. El texto y el conteo tienen que salir del servidor, no adivinarse en la interfaz.</li>
       <li class="keep"><b>Sigue existiendo la salida por soporte</b> para quien prefiera pedirlo por WhatsApp.</li>
+    </ul>
+  </article>
+</section>
+
+<!-- =================== WALLET =================== -->
+<section class="part" id="wallet">
+  <h2>Wallet e integración</h2>
+  <p class="lede">Hoy la interfaz promete Wallet y lo apaga. De los cinco textos con la etiqueta Próximamente, solo tres son de Wallet: los otros dos, descargar y eliminar tarjeta, pertenecen al borrado del cliente y no dependen de este gate.</p>
+
+  <article class="pair">
+    <header><h3>Wallet en el portal del cliente</h3><span class="scope">Móvil · cliente final</span></header>
+    <div class="ab">
+      <figure class="side"><figcaption>Antes</figcaption>
+        <div class="canvas narrow"><div class="frame" style="min-width:0;"><div class="pad col">
+          <div class="box" style="padding:9px;opacity:.55;"><span class="lbl">Agregar a Wallet, Próximamente</span></div>
+          <div class="box" style="padding:9px;opacity:.55;"><span class="lbl">Descargar Tarjeta, Próximamente</span></div>
+          <div class="box" style="padding:9px;opacity:.55;"><span class="lbl">Eliminar Tarjeta, Próximamente</span></div>
+          <span class="xs">Tres botones apagados, sin decir de qué dependen ni cuándo</span>
+        </div></div></div>
+      </figure>
+      <figure class="side after"><figcaption>Después</figcaption>
+        <div class="canvas narrow"><div class="frame" style="min-width:0;"><div class="pad col">
+          <div class="btn pri wide">Agregar a Apple Wallet</div>
+          <div class="btn gho wide">Agregar a Google Wallet</div>
+          <div class="row" style="align-items:center;gap:8px;">
+            <div class="box" style="width:16px;height:16px;border-radius:50%;"></div>
+            <span class="xs">Sincronizando tu tarjeta</span>
+          </div>
+          <div style="border-top:1px solid var(--border);padding-top:9px;">
+            <div class="btn gho wide">Eliminar tarjeta</div>
+            <span class="xs">No depende de Wallet</span>
+          </div>
+        </div></div></div>
+      </figure>
+    </div>
+    <ul class="delta">
+      <li class="change"><b>Un botón por proveedor, no uno genérico.</b> Apple y Google se activan por separado y pueden fallar por separado, así que se muestran por separado.</li>
+      <li class="change"><b>El pase tarda en generarse, y eso se ve.</b> Estado de creación y de sincronización, con el resultado por proveedor.</li>
+      <li class="change"><b>Eliminar tarjeta sale de detrás del gate.</b> Comparte la etiqueta Próximamente con Wallet pero pertenece al borrado del cliente, y hoy queda bloqueado por una función que no tiene nada que ver.</li>
+      <li class="block"><b>Nada de esto se implementa hasta el gate.</b> Mientras Apple y Google no estén verificados en entorno real, los dos botones de Wallet no se muestran. No se sustituye una promesa apagada por otra.</li>
     </ul>
   </article>
 </section>
