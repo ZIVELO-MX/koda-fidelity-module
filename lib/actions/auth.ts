@@ -95,9 +95,10 @@ export async function updatePassword(_prev: AuthResult, formData: FormData): Pro
   if (nickname && user) {
     const userRecord = await prisma.user.findUnique({
       where: { authUserId: user.id },
-      select: { businessId: true },
+      select: { businessId: true, role: true },
     })
-    if (userRecord?.businessId) {
+    // El apodo es del negocio entero: un sellador invitado lo cambiaba para todos.
+    if (userRecord?.businessId && userRecord.role === "admin") {
       await prisma.business.update({
         where: { id: userRecord.businessId },
         data: { nickname },
