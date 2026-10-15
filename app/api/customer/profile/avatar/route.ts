@@ -36,7 +36,9 @@ export async function PUT(request: NextRequest) {
     if (file.size > MAX_BYTES) throw new ValidationError("El avatar no puede superar 2 MB")
     const bucket = process.env.SUPABASE_PRIVATE_AVATAR_BUCKET || "avatars"
     const path = `customer/${profile.id}/${randomUUID()}.webp`
+    // El tipo lo declara el cliente: un archivo que no es imagen hacía lanzar a sharp y respondía 500.
     const output = await sharp(Buffer.from(await file.arrayBuffer())).resize(512, 512, { fit: "cover" }).webp().toBuffer()
+      .catch(() => { throw new ValidationError("El avatar debe ser JPG, PNG o WEBP") })
     const admin = createAdminClient()
     const { error } = await admin.storage.from(bucket).upload(path, output, { contentType: "image/webp", upsert: false })
     if (error) throw error
