@@ -65,9 +65,16 @@ export async function activateManualSubscription(db: PrismaClient, input: Manual
       select: { firstCardId: true },
       orderBy: { createdAt: "asc" },
     })
+    // Cancelar, past_due o INACTIVO dejan la suscripción con su `liteCardId`: al
+    // reactivar se conserva la principal elegida, no la tarjeta del alta.
+    const lastSubscription = previousSubscription ? null : await tx.subscription.findFirst({
+      where: { businessId: input.businessId },
+      orderBy: { createdAt: "desc" },
+      select: { liteCardId: true },
+    })
     const preferredCardId = previousSubscription
       ? previousSubscription.liteCardId
-      : onboardingProgress?.firstCardId ?? null
+      : lastSubscription?.liteCardId ?? onboardingProgress?.firstCardId ?? null
     await tx.subscription.updateMany({ where: { businessId: input.businessId, status: "ACTIVE" }, data: { status: "CANCELED" } })
     const subscription = await tx.subscription.create({ data: { businessId: input.businessId, plan, billingInterval, amountMinor: input.amountMinor ?? 0, currency: "MXN", activatedAt, periodStart, periodEnd, externalReference: input.externalReference, proAccessGranted, proTrialEndsAt, liteCardId: preferredCardId } })
     const effective = resolveEffectiveEntitlements(subscription, activatedAt)
