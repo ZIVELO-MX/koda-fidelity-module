@@ -65,4 +65,10 @@ describe("activateManualSubscription", () => {
     expect(tx.subscription.create).not.toHaveBeenCalled()
   })
 
+  // Sin `plan`, renovar caía en LITE mensual y bajaba a un negocio Pro anual.
+  it("renueva con el plan y la modalidad vigentes si no se indican", async () => {
+    const { base, tx } = db({ activa: { id: "sub-pro", plan: "PRO", billingInterval: "ANNUAL", status: "ACTIVE", liteCardId: null, proAccessGranted: true, proTrialEndsAt: null } })
+    await activateManualSubscription(base, { businessId: "biz", action: "renew", idempotencyKey: "k4" })
+    expect(tx.subscription.create).toHaveBeenCalledWith({ data: expect.objectContaining({ plan: "PRO", billingInterval: "ANNUAL" }) })
+  })
 })

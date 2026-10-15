@@ -38,8 +38,12 @@ export function addGraceDays(date: Date, days = 30) {
 export function periodForInterval(start: Date, interval: "MONTHLY" | "ANNUAL") { return addCalendarMonths(start, interval === "ANNUAL" ? 12 : 1) }
 
 export async function activateManualSubscription(db: PrismaClient, input: ManualSubscriptionInput) {
-  const plan = input.plan ?? "LITE"
-  const billingInterval = input.billingInterval ?? "MONTHLY"
+  // Sin `plan`, renovar caía en LITE mensual y bajaba a un negocio Pro anual.
+  const vigente = input.action === "renew" && (!input.plan || !input.billingInterval)
+    ? await db.subscription.findFirst({ where: { businessId: input.businessId, status: "ACTIVE" }, orderBy: { createdAt: "desc" } })
+    : null
+  const plan = input.plan ?? vigente?.plan ?? "LITE"
+  const billingInterval = input.billingInterval ?? vigente?.billingInterval ?? "MONTHLY"
   const periodStart = input.periodStart ?? new Date()
   const periodEnd = input.periodEnd ?? periodForInterval(periodStart, billingInterval)
   const action = input.action ?? "activate"
