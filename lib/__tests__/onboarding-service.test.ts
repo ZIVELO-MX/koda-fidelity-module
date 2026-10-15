@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
 import { ConflictError, ForbiddenError } from "@/lib/api-utils"
-import { advanceOnboarding, ensureCategories, saveDraft } from "../onboarding-service"
+import { advanceOnboarding, ensureCategories, getOnboarding, saveDraft } from "../onboarding-service"
 
 function firstCardDb(subscription: unknown, hasBusiness = true) {
   const progress = {
@@ -171,5 +171,25 @@ describe("quién y cuándo avanza el alta", () => {
     const base = db({ id: "user-1", authUserId: "auth-1", email: "a@invalid.dev", role: "admin", businessId: null, onboardingProgress: progreso(paso) })
     await expect(advanceOnboarding(base, "auth-1", accion, 1)).rejects.toThrow(ConflictError)
     expect(base.onboardingProgress.updateMany).not.toHaveBeenCalled()
+  })
+})
+
+describe("getOnboarding de un miembro invitado", () => {
+  // Crear su progreso IN_PROGRESS con el negocio activo lo mandaba al alta en
+  // cada inicio de sesión.
+  it("crea su progreso como activo si el negocio tiene plan", async () => {
+    const miembro = { id: "user-2", authUserId: "auth-2", businessId: "business-1", role: "sellador", onboardingProgress: null, business: { subscriptions: [{ status: "ACTIVE" }] } }
+    const create = vi.fn()
+    const db = { user: { findUnique: vi.fn().mockResolvedValueOnce(miembro).mockResolvedValue({ ...miembro, onboardingProgress: { status: "ACTIVE" } }) }, subscription: { findFirst: vi.fn().mockResolvedValue({ id: "sub-1" }) }, onboardingProgress: { create, findFirst: vi.fn().mockResolvedValue(null) } } as any
+    await getOnboarding(db, "auth-2")
+    expect(create).toHaveBeenCalledWith({ data: { userId: "user-2", businessId: "business-1", status: "ACTIVE", step: "PAYWALL" } })
+  })
+
+  it("deja el alta normal en curso", async () => {
+    const nuevo = { id: "user-1", authUserId: "auth-1", businessId: null, role: "admin", onboardingProgress: null, business: null }
+    const create = vi.fn()
+    const db = { user: { findUnique: vi.fn().mockResolvedValueOnce(nuevo).mockResolvedValue({ ...nuevo, onboardingProgress: { status: "IN_PROGRESS" } }) }, onboardingProgress: { create } } as any
+    await getOnboarding(db, "auth-1")
+    expect(create).toHaveBeenCalledWith({ data: { userId: "user-1", businessId: undefined } })
   })
 })

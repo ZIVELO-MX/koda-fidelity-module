@@ -64,7 +64,8 @@ export async function GET(request: NextRequest) {
       response.headers.getSetCookie().forEach((cookie) => destination.headers.append("Set-Cookie", cookie))
       return destination
     }
-    if (member && (!member.businessId || member.onboardingProgress?.status !== "ACTIVE")) {
+    // Sin progreso no hay alta pendiente (un invitado no lo tiene), igual que en el layout del panel.
+    if (member && (!member.businessId || (member.onboardingProgress && member.onboardingProgress.status !== "ACTIVE"))) {
       const destination = NextResponse.redirect(new URL("/onboarding", request.url))
       response.headers.getSetCookie().forEach((cookie) => destination.headers.append("Set-Cookie", cookie))
       return destination

@@ -18,7 +18,10 @@ export async function getOnboarding(db: Db, authUserId: string) {
   })
   if (!user) throw new NotFoundError("Cuenta no encontrada")
   if (!user.onboardingProgress) {
-    await db.onboardingProgress.create({ data: { userId: user.id, businessId: user.businessId ?? undefined } })
+    // Un miembro invitado no tiene progreso. Crearlo IN_PROGRESS con el negocio
+    // ya activo lo mandaba al alta en cada inicio de sesión.
+    const negocioActivo = user.business?.subscriptions[0]?.status === "ACTIVE"
+    await db.onboardingProgress.create({ data: { userId: user.id, businessId: user.businessId ?? undefined, ...(negocioActivo && { status: "ACTIVE", step: "PAYWALL" }) } })
     return getOnboarding(db, authUserId)
   }
   if (user.businessId && user.onboardingProgress.status !== "AWAITING_PAYMENT") {

@@ -51,6 +51,20 @@ describe("auth callback destination", () => {
     expect(response.headers.get("location")).toBe("http://localhost/dashboard")
   })
 
+  // Un invitado no tiene progreso de alta; como en el layout del panel, eso no
+  // es un alta pendiente. Antes caía en /onboarding.
+  it("sends an invited member without signup progress to the dashboard", async () => {
+    findUser.mockResolvedValue({ id: "member-2", businessId: "business-1", onboardingProgress: null })
+    const response = await GET(new NextRequest("http://localhost/auth/callback?code=valid-code"))
+    expect(response.headers.get("location")).toBe("http://localhost/dashboard")
+  })
+
+  it("sends a new signup without a business to onboarding", async () => {
+    findUser.mockResolvedValue({ id: "member-3", businessId: null, onboardingProgress: { status: "IN_PROGRESS" } })
+    const response = await GET(new NextRequest("http://localhost/auth/callback?code=valid-code"))
+    expect(response.headers.get("location")).toBe("http://localhost/onboarding")
+  })
+
   it("sends a customer profile to the customer portal", async () => {
     findUser.mockResolvedValue(null)
     findCustomer.mockResolvedValue({ id: "customer-1" })
