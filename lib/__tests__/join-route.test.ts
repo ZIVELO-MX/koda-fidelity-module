@@ -6,6 +6,7 @@ const { mockPrisma } = vi.hoisted(() => {
     customer: { findFirst: vi.fn(), create: vi.fn(), findUnique: vi.fn(), findMany: vi.fn(), update: vi.fn() },
     stampLog: { create: vi.fn() },
     $transaction: vi.fn(),
+    $executeRaw: vi.fn(),
     user: { findUnique: vi.fn() },
   }
   return { mockPrisma }
@@ -144,6 +145,24 @@ describe("un cliente dado de baja vuelve a unirse", () => {
     expect(mockPrisma.customer.findMany).toHaveBeenCalledWith(expect.objectContaining({
       where: { email: { equals: "a@b.com", mode: "insensitive" }, cardId: "card1", isActive: true },
     }))
+  })
+})
+
+// No hay índice único en (cardId, email): dos altas a la vez (doble toque, el
+// efecto de la página que corre dos veces) veían las dos que no había nadie y
+// creaban dos clientes; los sellos se repartían entre ambos.
+describe("altas simultáneas", () => {
+  it("bloquea el correo en la tarjeta antes de buscarlo, dentro de la misma transacción", async () => {
+    const orden: string[] = []
+    mockPrisma.$executeRaw.mockImplementation(async () => { orden.push("bloqueo") })
+    mockPrisma.customer.findMany.mockImplementation(async () => { orden.push("buscar"); return [] })
+    mockPrisma.customer.create.mockImplementation(async () => { orden.push("crear"); return { id: "cust1" } })
+    mockPrisma.$transaction.mockImplementation(async (callback: (tx: typeof mockPrisma) => unknown) => {
+      orden.push("transacción")
+      return callback(mockPrisma)
+    })
+    await POST(makeRequest({ name: "Ana", email: "a@b.com", cardId: "card1" }))
+    expect(orden).toEqual(["transacción", "bloqueo", "buscar", "crear"])
   })
 })
 

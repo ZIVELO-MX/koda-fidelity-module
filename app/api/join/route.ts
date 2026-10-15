@@ -224,29 +224,31 @@ export async function POST(request: NextRequest) {
     }
 
     const correo = normalizeEmail(email)
-    const candidatos = await prisma.customer.findMany({
-      where: { email: mismoCorreo(correo), cardId },
-      select: { id: true, email: true, isActive: true },
-    })
-    const previo = candidatos.find(delCorreo(correo))
-    // A quien el negocio dio de baja se le respondía `existing: true` y quedaba
-    // sin salida: la página mostraba un QR que el motor ya no sella. Volver a
-    // unirse lo reactiva con sus sellos.
-    if (previo?.isActive === false) {
-      await prisma.customer.update({ where: { id: previo.id }, data: { isActive: true } })
-      return withRequestId(NextResponse.json({ customerId: previo.id, existing: false }), requestId)
-    }
-    if (previo) {
-      return withRequestId(NextResponse.json({ existing: true }), requestId)
-    }
+    const resultado = await prisma.$transaction(async (tx) => {
+      // No hay índice único en (cardId, email): dos altas a la vez (doble toque,
+      // el efecto de la página que corre dos veces) veían las dos que no había
+      // nadie y creaban dos clientes, con los sellos repartidos entre ambos.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`join:${cardId}:${correo}`}))`
+      const candidatos = await tx.customer.findMany({
+        where: { email: mismoCorreo(correo), cardId },
+        select: { id: true, email: true, isActive: true },
+      })
+      const previo = candidatos.find(delCorreo(correo))
+      // A quien el negocio dio de baja se le respondía `existing: true` y quedaba
+      // sin salida: la página mostraba un QR que el motor ya no sella. Volver a
+      // unirse lo reactiva con sus sellos.
+      if (previo?.isActive === false) {
+        await tx.customer.update({ where: { id: previo.id }, data: { isActive: true } })
+        return { customerId: previo.id, existing: false }
+      }
+      if (previo) return { existing: true }
 
-    const customer = await prisma.$transaction(async (tx) => {
       const created = await tx.customer.create({ data: { name: name.trim(), email: correo, cardId } })
       await tx.stampLog.create({ data: { businessId: card.businessId, cardId: card.id, customerId: created.id, type: "customer_joined" } })
-      return created
+      return { customerId: created.id, existing: false }
     })
 
-    return withRequestId(NextResponse.json({ customerId: customer.id, existing: false }), requestId)
+    return withRequestId(NextResponse.json(resultado), requestId)
   } catch (error) {
     return withRequestId(handleApiError(error, requestId), requestId)
   }
