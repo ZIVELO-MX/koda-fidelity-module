@@ -108,7 +108,7 @@ async function main() {
 
   // Create DB User
   const newUser = await prisma.user.create({
-    data: { email, name: name.trim(), role, businessId: business.id },
+    data: { email, name: name.trim(), role, businessId: business.id, passwordSetupRequired: true },
     select: { id: true, email: true, name: true, role: true },
   })
 

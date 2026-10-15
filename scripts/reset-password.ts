@@ -1,9 +1,11 @@
 import "dotenv/config"
 import { createAdminClient } from "../lib/supabase-admin"
 import nodemailer from "nodemailer"
+import { PrismaClient } from "@prisma/client"
 import { buildHtml } from "./invite-email"
 
 const DEFAULT_PASSWORD = "Koda1234!"
+const prisma = new PrismaClient()
 
 function parseArgs(): { email: string; password: string; sendEmail: boolean } {
   const args = process.argv.slice(2)
@@ -91,6 +93,9 @@ async function main() {
     process.exit(1)
   }
   console.log(`✓ Contraseña restablecida para: ${email}`)
+  // El metadato `must_change_password` no lo lee nadie: lo que obliga a cambiarla
+  // al entrar es `passwordSetupRequired`. Sin esto la contraseña quedaba para siempre.
+  await prisma.user.updateMany({ where: { authUserId: user.id }, data: { passwordSetupRequired: true } })
 
   // 3. Sign out all active sessions (Supabase may return a JWT error if the user
   //    has no active sessions — that's benign, so we only warn on other errors)
@@ -121,4 +126,4 @@ async function main() {
   console.log("\nEl usuario deberá cambiar su contraseña al iniciar sesión.")
 }
 
-main()
+main().finally(() => prisma.$disconnect())

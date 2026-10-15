@@ -66,7 +66,7 @@ async function main() {
     console.log(`El negocio ya existe: ${name}`)
     const existingUser = await prisma.user.findUnique({ where: { email } })
     if (!existingUser) {
-      await prisma.user.create({ data: { email, name, role: "admin", businessId: existingBusiness.id } })
+      await prisma.user.create({ data: { email, name, role: "admin", businessId: existingBusiness.id, passwordSetupRequired: true } })
       console.log(`Usuario admin creado para negocio existente: ${email}`)
     }
   } else {
@@ -75,7 +75,7 @@ async function main() {
         email,
         name,
         users: {
-          create: { email, name, role: "admin" },
+          create: { email, name, role: "admin", passwordSetupRequired: true },
         },
       },
     })
