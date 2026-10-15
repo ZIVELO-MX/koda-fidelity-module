@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { applyEntitlements, getEntitlements, syncExpiredEntitlements } from "@/lib/account-lifecycle"
-import { requireWritableBusinessPrincipal, handleApiError, NotFoundError, requireRole, requestIdFrom, withRequestId } from "@/lib/api-utils"
+import { requireWritableBusinessPrincipal, handleApiError, ForbiddenError, NotFoundError, requireRole, requestIdFrom, ValidationError, withRequestId } from "@/lib/api-utils"
 
 /**
  * @openapi
@@ -27,22 +27,25 @@ export async function POST(
     if (!existing || existing.businessId !== business.id) {
       throw new NotFoundError("Loyalty card not found")
     }
+    // Antes cualquier estado pasaba a ACTIVE: restaurar un borrador del alta lo publicaba.
+    if (existing.status !== "ARCHIVED") throw new ValidationError("Solo se puede restaurar una tarjeta archivada")
 
     await syncExpiredEntitlements(prisma, business.id)
 
     await prisma.$transaction(async (tx) => {
-      await tx.loyaltyCard.update({ where: { id }, data: { isActive: true, status: "ACTIVE" } })
       const entitlements = await getEntitlements(tx, business.id)
+      // Sin suscripción `plan` vale LITE y `applyEntitlements` dejaba la tarjeta
+      // ACTIVE: un negocio dado de baja se reactivaba solo (PR #152).
+      if (!entitlements.subscription) throw new ForbiddenError("La cuenta necesita un plan activo para restaurar tarjetas")
+      await tx.loyaltyCard.update({ where: { id }, data: { isActive: true, status: "ACTIVE" } })
       const entitledCards = await applyEntitlements(tx, business.id, entitlements.plan, {
         preferredCardId: entitlements.subscription?.liteCardId,
         preserveDrafts: true,
       })
-      if (entitlements.subscription) {
-        await tx.subscription.update({
-          where: { id: entitlements.subscription.id },
-          data: { liteCardId: entitlements.plan === "LITE" ? (entitledCards[0]?.id ?? null) : entitlements.subscription.liteCardId },
-        })
-      }
+      await tx.subscription.update({
+        where: { id: entitlements.subscription.id },
+        data: { liteCardId: entitlements.plan === "LITE" ? (entitledCards[0]?.id ?? null) : entitlements.subscription.liteCardId },
+      })
     })
 
     return withRequestId(NextResponse.json({ success: true }), requestId)
