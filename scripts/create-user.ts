@@ -70,9 +70,13 @@ async function main() {
   console.log(`Negocio encontrado: ${business.name} (${business.id})`)
 
   // Check limit
-  const memberCount = await prisma.user.count({ where: { businessId: business.id } })
-  if (memberCount >= MEMBER_LIMIT) {
-    console.error(`Error: El negocio ya alcanzó el límite de ${MEMBER_LIMIT} miembros (actualmente ${memberCount}).`)
+  // Las invitaciones pendientes ocupan lugar, como en POST /api/users.
+  const [memberCount, pendingCount] = await Promise.all([
+    prisma.user.count({ where: { businessId: business.id } }),
+    prisma.teamInvitation.count({ where: { businessId: business.id, status: "pending", expiresAt: { gt: new Date() }, email: { not: email } } }),
+  ])
+  if (memberCount + pendingCount >= MEMBER_LIMIT) {
+    console.error(`Error: El negocio ya alcanzó el límite de ${MEMBER_LIMIT} miembros (actualmente ${memberCount}, más ${pendingCount} invitaciones pendientes).`)
     console.error(`Ajusta TEAM_MEMBER_LIMIT en .env si necesitas aumentar el límite.`)
     process.exit(1)
   }
