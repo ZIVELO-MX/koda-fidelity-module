@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 const { mockPrisma } = vi.hoisted(() => {
   const mockPrisma = {
     loyaltyCard: { findUnique: vi.fn() },
-    customer: { findFirst: vi.fn(), create: vi.fn(), findUnique: vi.fn(), findMany: vi.fn() },
+    customer: { findFirst: vi.fn(), create: vi.fn(), findUnique: vi.fn(), findMany: vi.fn(), update: vi.fn() },
     stampLog: { create: vi.fn() },
     $transaction: vi.fn(),
     user: { findUnique: vi.fn() },
@@ -117,11 +117,33 @@ describe("POST /api/join", () => {
     await POST(makeRequest({ name: "Ana", email: "  Ana@Gmail.COM ", cardId: "card1" }))
     expect(mockPrisma.customer.findMany).toHaveBeenCalledWith({
       where: { email: { equals: "ana@gmail.com", mode: "insensitive" }, cardId: "card1" },
-      select: { email: true },
+      select: { id: true, email: true, isActive: true },
     })
     expect(mockPrisma.customer.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ email: "ana@gmail.com" }) }),
     )
+  })
+})
+
+// El negocio lo dio de baja (`isActive: false`). Responder `existing: true`
+// lo dejaba sin salida: la página mostraba un QR que el motor ya no sella.
+describe("un cliente dado de baja vuelve a unirse", () => {
+  it("reactiva su registro en vez de darlo por existente", async () => {
+    mockPrisma.customer.findMany.mockResolvedValue([{ id: "cust-baja", email: "a@b.com", isActive: false }])
+    const res = await POST(makeRequest({ name: "Ana", email: "a@b.com", cardId: "card1" }))
+    expect(await res.json()).toEqual({ customerId: "cust-baja", existing: false })
+    expect(mockPrisma.customer.update).toHaveBeenCalledWith({ where: { id: "cust-baja" }, data: { isActive: true } })
+    expect(mockPrisma.customer.create).not.toHaveBeenCalled()
+  })
+
+  it("en /join no devuelve un registro dado de baja como listo", async () => {
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { email: "a@b.com" } } }) },
+    } as never)
+    await GET({ url: "http://x/api/join?email=a%40b.com&cardId=card1" } as never)
+    expect(mockPrisma.customer.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { email: { equals: "a@b.com", mode: "insensitive" }, cardId: "card1", isActive: true },
+    }))
   })
 })
 

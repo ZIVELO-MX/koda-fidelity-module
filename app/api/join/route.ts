@@ -226,9 +226,17 @@ export async function POST(request: NextRequest) {
     const correo = normalizeEmail(email)
     const candidatos = await prisma.customer.findMany({
       where: { email: mismoCorreo(correo), cardId },
-      select: { email: true },
+      select: { id: true, email: true, isActive: true },
     })
-    if (candidatos.some(delCorreo(correo))) {
+    const previo = candidatos.find(delCorreo(correo))
+    // A quien el negocio dio de baja se le respondía `existing: true` y quedaba
+    // sin salida: la página mostraba un QR que el motor ya no sella. Volver a
+    // unirse lo reactiva con sus sellos.
+    if (previo?.isActive === false) {
+      await prisma.customer.update({ where: { id: previo.id }, data: { isActive: true } })
+      return withRequestId(NextResponse.json({ customerId: previo.id, existing: false }), requestId)
+    }
+    if (previo) {
       return withRequestId(NextResponse.json({ existing: true }), requestId)
     }
 
@@ -281,7 +289,9 @@ export async function GET(request: NextRequest) {
 
       const correo = normalizeEmail(email)
       const where: Record<string, unknown> = { email: mismoCorreo(correo) }
-      if (cardId) where.cardId = cardId
+      // En /join una baja no es un registro listo: su QR ya no se sella. Sin
+      // `cardId` (my-cards) se devuelven todas y la página separa las archivadas.
+      if (cardId) Object.assign(where, { cardId, isActive: true })
 
       const customers = (await prisma.customer.findMany({
         where,
