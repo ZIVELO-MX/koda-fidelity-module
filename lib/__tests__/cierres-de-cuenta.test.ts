@@ -41,3 +41,26 @@ describe("executeDueClosures", () => {
     })
   })
 })
+
+// Una invitación guarda el `authUserId` que creó Supabase aunque no se acepte.
+// Si esa persona entró después a otro negocio, cerrar el primero le borraba la
+// cuenta de acceso y la dejaba fuera del segundo.
+describe("cuentas de acceso al cerrar un negocio", () => {
+  it("no borra la de alguien que es miembro de otro negocio", async () => {
+    const db = {
+      accountClosure: { findMany: vi.fn().mockResolvedValue([{ id: "cierre", businessId: "biz-a", status: "SCHEDULED" }]), updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+      accountClosureExecution: { upsert: vi.fn().mockResolvedValue({ id: "exec" }), updateMany: vi.fn() },
+      accountClosureCleanupTask: { createMany: vi.fn(), findMany: vi.fn().mockResolvedValue([]) },
+      businessAvatarAsset: { findMany: vi.fn().mockResolvedValue([]) },
+      user: { findMany: vi.fn(async ({ where }: { where: { businessId?: string } }) => where.businessId === "biz-a" ? [{ authUserId: "auth-propio" }] : [{ authUserId: "auth-de-b" }]) },
+      teamInvitation: { findMany: vi.fn().mockResolvedValue([{ authUserId: "auth-de-b" }]) },
+      customerProfile: { findMany: vi.fn().mockResolvedValue([]) },
+      $transaction: vi.fn(async (fn: (t: unknown) => unknown) => fn({ stampLog: { updateMany: vi.fn() }, business: { delete: vi.fn() }, accountClosureExecution: { update: vi.fn() } })),
+    }
+
+    await executeDueClosures(db as never)
+
+    const tareas = db.accountClosureCleanupTask.createMany.mock.calls[0][0].data as Array<{ kind: string; subjectId: string }>
+    expect(tareas.filter((t) => t.kind === "AUTH_USER").map((t) => t.subjectId)).toEqual(["auth-propio"])
+  })
+})

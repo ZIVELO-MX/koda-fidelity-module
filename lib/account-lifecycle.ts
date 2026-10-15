@@ -458,7 +458,13 @@ async function prepareExecution(db: PrismaClient, closureId: string, businessId:
     db.teamInvitation.findMany({ where: { businessId, authUserId: { not: null } }, select: { authUserId: true } }),
   ])
   const authUserIds = [...new Set([...users, ...invitations].flatMap((record) => record.authUserId ? [record.authUserId] : []))]
-  const sharedIds = new Set((await db.customerProfile.findMany({ where: { authUserId: { in: authUserIds } }, select: { authUserId: true } })).flatMap((profile) => profile.authUserId ? [profile.authUserId] : []))
+  // Una invitación guarda el `authUserId` aunque no se acepte. Si esa persona es
+  // cliente o ya entró a otro negocio, borrar su cuenta la dejaba fuera de él.
+  const [profiles, otherMembers] = await Promise.all([
+    db.customerProfile.findMany({ where: { authUserId: { in: authUserIds } }, select: { authUserId: true } }),
+    db.user.findMany({ where: { authUserId: { in: authUserIds }, OR: [{ businessId: { not: businessId } }, { businessId: null }] }, select: { authUserId: true } }),
+  ])
+  const sharedIds = new Set([...profiles, ...otherMembers].flatMap((record) => record.authUserId ? [record.authUserId] : []))
   await db.accountClosureCleanupTask.createMany({
     data: [
       ...assets.map((asset) => ({ executionId: execution.id, kind: "BUSINESS_AVATAR" as const, subjectId: asset.id, bucket: process.env.SUPABASE_PRIVATE_AVATAR_BUCKET || "avatars", storagePath: asset.storagePath })),
