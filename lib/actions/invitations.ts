@@ -17,6 +17,9 @@ export async function acceptTeamInvitation(formData: FormData) {
       const invitation = await tx.teamInvitation.findUnique({ where: { tokenHash } })
       if (!invitation || invitation.status !== "pending" || invitation.expiresAt <= new Date()) throw new Error("INVITATION_INVALID")
       if (normalizeEmail(user.email!) !== invitation.email) throw new Error("INVITATION_EMAIL_MISMATCH")
+      // Con el cierre programado el negocio es de solo lectura: el nuevo miembro
+      // perdía la cuenta al ejecutarse el cierre, sin aviso.
+      if (await tx.accountClosure.findFirst({ where: { businessId: invitation.businessId, status: { in: ["SCHEDULED", "PROCESSING", "FAILED"] } }, select: { id: true } })) throw new Error("ACCOUNT_CLOSING")
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${invitation.businessId}))`
       const memberLimit = Number.parseInt(process.env.TEAM_MEMBER_LIMIT ?? "3", 10)
       if (await tx.user.count({ where: { businessId: invitation.businessId } }) >= memberLimit) throw new Error("TEAM_LIMIT")
@@ -35,6 +38,6 @@ export async function acceptTeamInvitation(formData: FormData) {
 function motivoDeRechazo(error: unknown) {
   // Un P2002 es que esa cuenta o ese correo ya pertenecen a otro negocio.
   if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return "otro-negocio"
-  const motivos: Record<string, string> = { INVITATION_INVALID: "no-disponible", INVITATION_EMAIL_MISMATCH: "otro-correo", TEAM_LIMIT: "equipo-completo" }
+  const motivos: Record<string, string> = { INVITATION_INVALID: "no-disponible", INVITATION_EMAIL_MISMATCH: "otro-correo", TEAM_LIMIT: "equipo-completo", ACCOUNT_CLOSING: "cuenta-en-cierre" }
   return error instanceof Error ? motivos[error.message] : undefined
 }

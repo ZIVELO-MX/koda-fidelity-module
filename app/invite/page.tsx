@@ -11,6 +11,7 @@ const AVISOS: Record<string, string> = {
   "otro-correo": "Esta invitación es para otro correo. Entra con la cuenta del correo al que te llegó.",
   "equipo-completo": "El equipo ya está completo. Pide a quien te invitó que libere un lugar.",
   "otro-negocio": "Tu cuenta ya pertenece a otro negocio, y por ahora una cuenta solo puede estar en uno.",
+  "cuenta-en-cierre": "Este negocio está cerrando su cuenta y ya no suma miembros. Pregunta a quien te invitó.",
 }
 
 export default async function InvitePage({ searchParams }: { searchParams: Promise<{ token?: string; aviso?: string }> }) {
