@@ -5,8 +5,10 @@ import { resolveTheme } from "@/lib/card-themes"
 type Db = PrismaClient
 const categories = ["Café", "Restaurante", "Retail", "Belleza", "Salud y bienestar", "Servicios profesionales", "Entretenimiento", "Otro"]
 
+// Solo crea las que faltan: con `isActive: true` en el update, cada paso del
+// alta volvía a activar las categorías retiradas del catálogo.
 export async function ensureCategories(db: Db) {
-  return Promise.all(categories.map((name) => db.businessCategory.upsert({ where: { name }, create: { name }, update: { isActive: true } })))
+  return Promise.all(categories.map((name) => db.businessCategory.upsert({ where: { name }, create: { name }, update: {} })))
 }
 
 export async function getOnboarding(db: Db, authUserId: string) {

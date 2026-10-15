@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest"
-import { advanceOnboarding, saveDraft } from "../onboarding-service"
+import { advanceOnboarding, ensureCategories, saveDraft } from "../onboarding-service"
 
 function firstCardDb(subscription: unknown, hasBusiness = true) {
   const progress = {
@@ -127,5 +127,14 @@ describe("business onboarding identity", () => {
 
     expect(tx.user.update).toHaveBeenCalledWith({ where: { id: "user-1" }, data: { name: "Alex García" } })
     expect(tx.onboardingProgress.updateMany).toHaveBeenCalledWith({ where: { id: "progress-1", draftVersion: 0 }, data: { step: "CARD", draftVersion: { increment: 1 } } })
+  })
+})
+
+// Cada POST del alta volvía a activar las categorías que se habían retirado.
+describe("ensureCategories", () => {
+  it("crea las que faltan sin reactivar las desactivadas", async () => {
+    const upsert = vi.fn()
+    await ensureCategories({ businessCategory: { upsert } } as never)
+    expect(upsert).toHaveBeenCalledWith(expect.objectContaining({ where: { name: "Otro" }, update: {} }))
   })
 })
