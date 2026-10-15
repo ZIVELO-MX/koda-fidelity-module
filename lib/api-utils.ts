@@ -179,7 +179,9 @@ export async function requireReadyBusinessPrincipal() {
 }
 
 export function safeNextPath(value: string | null | undefined, fallback: string) {
-  if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("\\")) return fallback
+  // El navegador quita tabuladores y saltos de línea al leer una URL, así que
+  // «/\t/evil.com» pasaba la revisión y terminaba en //evil.com.
+  if (!value || !value.startsWith("/") || value.startsWith("//") || /[\\\u0000-\u001f\u007f]/.test(value)) return fallback
   return value
 }
 

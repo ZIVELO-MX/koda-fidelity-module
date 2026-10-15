@@ -28,6 +28,7 @@ import {
   requireActivatedBusiness,
   handleApiError,
   withApiContext,
+  safeNextPath,
 } from "../api-utils"
 
 describe("api-utils error classes", () => {
@@ -153,5 +154,17 @@ describe("withApiContext", () => {
     expect(response.status).toBe(401)
     expect(response.headers.get("x-request-id")).toBe("req-error-1")
     expect(await response.json()).toMatchObject({ requestId: "req-error-1" })
+  })
+})
+
+describe("safeNextPath", () => {
+  it("keeps same-origin paths", () => {
+    expect(safeNextPath("/dashboard/cards?x=1", "/d")).toBe("/dashboard/cards?x=1")
+  })
+
+  // El navegador quita tabuladores y saltos de línea al leer la URL, así que
+  // «/\t/evil.com» terminaba en //evil.com tras iniciar sesión.
+  it.each(["//evil.com", "/\\evil.com", "/\t/evil.com", "/\n/evil.com", "/\r/evil.com", "https://evil.com"])("rejects %j", (next) => {
+    expect(safeNextPath(next, "/d")).toBe("/d")
   })
 })
