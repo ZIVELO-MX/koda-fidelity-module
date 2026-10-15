@@ -87,6 +87,8 @@ async function main() {
   // Create or reuse Supabase Auth user
   const { data: { users: authUsers } } = await supabase.auth.admin.listUsers()
   const existingAuth = authUsers.find((u) => u.email === email)
+  // La sesión se resuelve por `authUserId`: sin él, el colaborador no podía entrar.
+  let authUserId = existingAuth?.id
 
   if (existingAuth) {
     console.log(`El usuario de auth ya existe: ${email} — reutilizando.`)
@@ -103,12 +105,13 @@ async function main() {
       process.exit(1)
     }
 
+    authUserId = data.user.id
     console.log(`Usuario de auth creado: ${email} (${data.user.id})`)
   }
 
   // Create DB User
   const newUser = await prisma.user.create({
-    data: { email, name: name.trim(), role, businessId: business.id, passwordSetupRequired: true },
+    data: { email, name: name.trim(), role, businessId: business.id, authUserId, passwordSetupRequired: true },
     select: { id: true, email: true, name: true, role: true },
   })
 
