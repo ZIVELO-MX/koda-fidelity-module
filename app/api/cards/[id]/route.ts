@@ -332,6 +332,10 @@ export async function PUT(
         if (toDelete.length > 0) {
           await tx.milestoneReward.deleteMany({ where: { id: { in: toDelete }, cardId: id } })
         }
+        // El índice único (cardId, stampNumber) se revisa fila por fila: cada
+        // UPDATE chocaba con la que aún tenía ese número, e intercambiar dos
+        // sorpresas daba P2002. Se liberan en negativo y el bucle las reasigna.
+        await tx.milestoneReward.updateMany({ where: { cardId: id }, data: { stampNumber: { multiply: -1 } } })
         for (const m of body.milestoneRewards) {
           if (m.id && incomingIds.includes(m.id)) {
             const updated = await tx.milestoneReward.updateMany({

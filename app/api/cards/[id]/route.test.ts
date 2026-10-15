@@ -152,3 +152,37 @@ describe("PUT /api/cards/{id} rechaza campos con tipo inválido", () => {
     expect(response.status).toBe(200)
   })
 })
+
+describe("PUT /api/cards/{id} reordena sorpresas", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    requireWritableBusinessPrincipal.mockResolvedValue(principal)
+    requireActivatedBusiness.mockResolvedValue(undefined)
+    findCard.mockResolvedValue({ ...existingCard, milestoneRewards: [{ id: "pan" }, { id: "galleta" }] })
+  })
+
+  // El índice único (cardId, stampNumber) se revisa fila por fila: sin liberar
+  // los números antes, intercambiar dos sorpresas daba P2002.
+  it("libera los números antes de asignar los nuevos", async () => {
+    const tx = transactionDb("PRO")
+    const llamadas: string[] = []
+    const milestoneReward = {
+      updateMany: vi.fn(async ({ data }: { data: { stampNumber: unknown } }) => {
+        llamadas.push(typeof data.stampNumber === "object" ? "liberar" : `asignar ${data.stampNumber}`)
+        return { count: 1 }
+      }),
+      deleteMany: vi.fn(),
+      create: vi.fn(),
+    }
+    Object.assign(tx, { milestoneReward })
+    tx.loyaltyCard.update.mockResolvedValue({ ...existingCard, milestoneRewards: [] })
+    const response = await PUT(request({ milestoneRewards: [
+      { id: "pan", stampNumber: 5, label: "Pan", probability: 100 },
+      { id: "galleta", stampNumber: 3, label: "Galleta", probability: 100 },
+    ] }), { params: Promise.resolve({ id: "card-owned" }) })
+
+    expect(response.status).toBe(200)
+    expect(llamadas).toEqual(["liberar", "asignar 5", "asignar 3"])
+    expect(milestoneReward.updateMany).toHaveBeenNthCalledWith(1, { where: { cardId: "card-owned" }, data: { stampNumber: { multiply: -1 } } })
+  })
+})

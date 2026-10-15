@@ -96,4 +96,44 @@ integration("Cards API CRUD contract", () => {
     const missingResponse = await getCard(new Request(`http://localhost/api/cards/${cardId}`) as never, itemParams)
     expect(missingResponse.status).toBe(404)
   }, 30_000)
+
+  // Cada UPDATE chocaba con la fila que todavía ocupaba ese número y el
+  // índice único (cardId, stampNumber) respondía P2002 como 500.
+  it("swaps two milestones' stamp numbers", async () => {
+    const suffix = crypto.randomUUID()
+    const business = await prisma.business.create({
+      data: { name: "Cards API swap", email: `cards-swap-${suffix}@test.invalid` },
+    })
+    businessIds.push(business.id)
+    await activateManualSubscription(prisma, { businessId: business.id, plan: "PRO", idempotencyKey: `cards-swap-fixture:${suffix}` })
+    const principal = {
+      business,
+      user: { id: `admin-${suffix}`, email: business.email, name: "Swap admin", role: "admin" as const, passwordSetupRequired: false },
+    }
+    getBusinessFromSession.mockResolvedValue(principal)
+    requireWritableBusinessPrincipal.mockResolvedValue(principal)
+
+    const created = await (await createCard(new Request("http://localhost/api/cards", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "Swap", reward: "Café", milestoneRewards: [
+        { stampNumber: 3, label: "Pan", probability: 100 },
+        { stampNumber: 5, label: "Galleta", probability: 100 },
+      ] }),
+    }) as never)).json()
+    const [pan, galleta] = created.milestoneRewards as Array<{ id: string; label: string }>
+
+    const response = await updateCard(new Request(`http://localhost/api/cards/${created.card.id}`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ milestoneRewards: [
+        { id: pan.id, stampNumber: 5, label: "Pan", probability: 100 },
+        { id: galleta.id, stampNumber: 3, label: "Galleta", probability: 100 },
+      ] }),
+    }) as never, { params: Promise.resolve({ id: created.card.id }) })
+
+    expect(response.status).toBe(200)
+    await expect(prisma.milestoneReward.findMany({ where: { cardId: created.card.id }, orderBy: { stampNumber: "asc" }, select: { label: true, stampNumber: true } }))
+      .resolves.toEqual([{ label: "Galleta", stampNumber: 3 }, { label: "Pan", stampNumber: 5 }])
+  }, 30_000)
 })
