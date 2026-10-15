@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { cuerpoJson, ForbiddenError, getBusinessFromSession, handleApiError, requestIdFrom, requireActivatedBusiness, requireRole, requireWritableBusinessPrincipal, ValidationError, withRequestId } from "@/lib/api-utils"
 import { persistPrimaryCardPreference, resolveEffectiveEntitlements, resolveNewCardPrimarySelection, resolvePrimaryCard, syncExpiredEntitlements } from "@/lib/account-lifecycle"
 import { resolveTheme } from "@/lib/card-themes"
+import { validarCamposDeTarjeta } from "@/lib/campos-de-tarjeta"
 import type { CardSummary } from "@/lib/fidelity-contracts"
 
 /**
@@ -164,6 +165,7 @@ export async function POST(request: NextRequest) {
     requireRole(user, "admin")
 
     const body = await cuerpoJson(request)
+    validarCamposDeTarjeta(body, business.brandColor)
 
     if (body.textColor !== undefined && !["AUTO", "DARK", "LIGHT"].includes(String(body.textColor))) {
       throw new ValidationError("textColor must be AUTO, DARK, or LIGHT")

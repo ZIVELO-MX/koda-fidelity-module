@@ -102,3 +102,30 @@ describe("POST /api/cards primary selection", () => {
     }))
   })
 })
+
+// Antes estos cuerpos llegaban crudos a Prisma y respondían 500 reintentable.
+describe("POST /api/cards rechaza campos con tipo inválido", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    requireWritableBusinessPrincipal.mockResolvedValue(principal)
+    requireActivatedBusiness.mockResolvedValue(undefined)
+    resolveTheme.mockResolvedValue({ selectedThemeId: null, effectiveThemeId: null, themeLocked: false })
+  })
+
+  it.each([
+    ["textColor como arreglo", { textColor: ["LIGHT"] }],
+    ["sellos con decimales", { stampsRequired: 5.5 }],
+    ["una sorpresa null", { milestoneRewards: [null] }],
+    ["un sello de sorpresa en texto", { milestoneRewards: [{ stampNumber: "3", label: "Pan", probability: 50 }] }],
+    ["una probabilidad con decimales", { milestoneRewards: [{ stampNumber: 3, label: "Pan", probability: 12.5 }] }],
+    ["una fecha inválida", { expiresAt: "x" }],
+    ["un color que no es hexadecimal", { brandColor: "rojo" }],
+    ["un color que no es texto", { brandColor: {} }],
+    ["una descripción numérica", { description: 5 }],
+  ])("%s → 400", async (_caso, campos) => {
+    const tx = transactionDb()
+    const response = await POST(request({ name: "Club", reward: "Café", ...campos }))
+    expect(response.status).toBe(400)
+    expect(tx.loyaltyCard.create).not.toHaveBeenCalled()
+  })
+})

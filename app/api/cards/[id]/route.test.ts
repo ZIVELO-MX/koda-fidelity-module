@@ -120,3 +120,35 @@ describe("PUT /api/cards/{id} primary selection", () => {
     }))
   })
 })
+
+// Antes estos cuerpos llegaban crudos a Prisma y respondían 500 reintentable.
+describe("PUT /api/cards/{id} rechaza campos con tipo inválido", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    requireWritableBusinessPrincipal.mockResolvedValue(principal)
+    requireActivatedBusiness.mockResolvedValue(undefined)
+    findCard.mockResolvedValue({ ...existingCard, brandColor: "#ff6b35" })
+  })
+
+  it.each([
+    ["textColor como arreglo", { textColor: ["LIGHT"] }],
+    ["sellos que no son número", { stampsRequired: "abc" }],
+    ["una sorpresa null", { milestoneRewards: [null] }],
+    ["una sorpresa sin sello", { milestoneRewards: [{ label: "Pan", probability: 50 }] }],
+    ["una fecha inválida", { expiresAt: "x" }],
+    ["un color nuevo que no es hexadecimal", { brandColor: "rojo" }],
+  ])("%s → 400", async (_caso, campos) => {
+    const tx = transactionDb("PRO")
+    const response = await PUT(request(campos), { params: Promise.resolve({ id: "card-owned" }) })
+    expect(response.status).toBe(400)
+    expect(tx.loyaltyCard.update).not.toHaveBeenCalled()
+  })
+
+  // El panel reenvía el color guardado: uno viejo no debe impedir guardar lo demás.
+  it("acepta el color que la tarjeta ya tenía", async () => {
+    findCard.mockResolvedValue({ ...existingCard, brandColor: "naranja" })
+    transactionDb("PRO")
+    const response = await PUT(request({ brandColor: "naranja", name: "Club" }), { params: Promise.resolve({ id: "card-owned" }) })
+    expect(response.status).toBe(200)
+  })
+})

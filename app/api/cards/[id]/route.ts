@@ -4,6 +4,7 @@ import { cuerpoJson, ForbiddenError, getBusinessFromSession, handleApiError, Not
 import { isExpired } from "@/lib/card-utils"
 import { getEntitlements, persistPrimaryCardPreference, resolveEffectiveEntitlements, syncExpiredEntitlements } from "@/lib/account-lifecycle"
 import { resolveTheme } from "@/lib/card-themes"
+import { validarCamposDeTarjeta } from "@/lib/campos-de-tarjeta"
 
 /**
  * @openapi
@@ -269,6 +270,7 @@ export async function PUT(
     }
 
     const body = await cuerpoJson(request)
+    validarCamposDeTarjeta(body, existing.brandColor)
 
     if (body.name !== undefined && (!body.name || typeof body.name !== "string" || !body.name.trim())) {
       throw new ValidationError("Card name is required")
