@@ -46,9 +46,16 @@ export async function activateManualSubscription(db: PrismaClient, input: Manual
   const activatedAt = action === "set_plan" ? new Date() : periodStart
   if (periodEnd <= periodStart) throw new ValidationError("El periodo debe terminar después de iniciar")
   if (!await db.business.findUnique({ where: { id: input.businessId }, select: { id: true } })) throw new NotFoundError("Negocio no encontrado")
+  // Los scripts de facturación llaman aquí directo, sin la guarda de la API, y
+  // reactivaban un negocio con el cierre programado.
+  await assertBusinessWritable(db, input.businessId)
   const idempotencyKey = input.idempotencyKey ?? `manual:${input.businessId}:${periodStart.toISOString()}`
-  const previous = await db.billingAuditEvent.findUnique({ where: { idempotencyKey } })
-  if (previous) return db.subscription.findFirstOrThrow({ where: { businessId: input.businessId, status: "ACTIVE" }, orderBy: { createdAt: "desc" } })
+  const previous = await db.billingAuditEvent.findUnique({ where: { idempotencyKey }, select: { businessId: true } })
+  if (previous) {
+    // Una clave de otro negocio respondía como si se hubiera activado este.
+    if (previous.businessId !== input.businessId) throw new ConflictError("La clave de operación ya pertenece a otro negocio")
+    return db.subscription.findFirstOrThrow({ where: { businessId: input.businessId, status: "ACTIVE" }, orderBy: { createdAt: "desc" } })
+  }
   const proAccessGranted = plan === "PRO" ? true : (input.proAccessGranted ?? action === "activate")
   const proTrialEndsAt = plan === "LITE" && proAccessGranted
     ? input.proTrialEndsAt ?? addCalendarMonths(periodStart, 1)

@@ -51,4 +51,18 @@ describe("activateManualSubscription", () => {
     expect(tx.subscription.create).toHaveBeenCalledWith({ data: expect.objectContaining({ liteCardId: "card-a" }) })
   })
 
+  // Una clave ya usada por otro negocio respondía 201 sin activar nada.
+  it("rechaza una clave de operación de otro negocio", async () => {
+    const { base, tx } = db({ auditoria: { businessId: "otro" } })
+    await expect(activateManualSubscription(base, { businessId: "biz", plan: "PRO", idempotencyKey: "ajena" })).rejects.toBeInstanceOf(ConflictError)
+    expect(tx.subscription.create).not.toHaveBeenCalled()
+  })
+
+  // Los scripts de facturación llaman directo y reactivaban un negocio en cierre.
+  it("no activa un negocio con el cierre programado", async () => {
+    const { base, tx } = db({ cierre: true })
+    await expect(activateManualSubscription(base, { businessId: "biz", plan: "PRO", idempotencyKey: "k3" })).rejects.toBeInstanceOf(AccountReadOnlyError)
+    expect(tx.subscription.create).not.toHaveBeenCalled()
+  })
+
 })
