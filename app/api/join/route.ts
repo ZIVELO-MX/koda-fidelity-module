@@ -234,19 +234,24 @@ export async function POST(request: NextRequest) {
         select: { id: true, email: true, isActive: true },
       })
       const previo = candidatos.find(delCorreo(correo))
-      // A quien el negocio dio de baja se le respondía `existing: true` y quedaba
-      // sin salida: la página mostraba un QR que el motor ya no sella. Volver a
-      // unirse lo reactiva con sus sellos.
-      if (previo?.isActive === false) {
-        await tx.customer.update({ where: { id: previo.id }, data: { isActive: true } })
-        return { customerId: previo.id, existing: false }
-      }
+      if (previo?.isActive === false) return { inactivo: previo.id }
       if (previo) return { existing: true }
 
       const created = await tx.customer.create({ data: { name: name.trim(), email: correo, cardId } })
       await tx.stampLog.create({ data: { businessId: card.businessId, cardId: card.id, customerId: created.id, type: "customer_joined" } })
       return { customerId: created.id, existing: false }
     })
+
+    // A quien el negocio dio de baja se le respondía `existing: true` y quedaba
+    // sin salida: la página mostraba un QR que el motor ya no sella. Volver a
+    // unirse lo reactiva con sus sellos, pero solo con la sesión de ese correo:
+    // el POST es público y cualquiera habría revertido la baja.
+    if ("inactivo" in resultado) {
+      const { data: { user } } = await (await createClient()).auth.getUser()
+      if (!user?.email || normalizeEmail(user.email) !== correo) return withRequestId(NextResponse.json({ existing: true }), requestId)
+      await prisma.customer.update({ where: { id: resultado.inactivo }, data: { isActive: true } })
+      return withRequestId(NextResponse.json({ customerId: resultado.inactivo, existing: false }), requestId)
+    }
 
     return withRequestId(NextResponse.json(resultado), requestId)
   } catch (error) {

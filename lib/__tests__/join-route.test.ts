@@ -129,12 +129,24 @@ describe("POST /api/join", () => {
 // El negocio lo dio de baja (`isActive: false`). Responder `existing: true`
 // lo dejaba sin salida: la página mostraba un QR que el motor ya no sella.
 describe("un cliente dado de baja vuelve a unirse", () => {
-  it("reactiva su registro en vez de darlo por existente", async () => {
+  it("reactiva su registro cuando la sesión es de ese correo", async () => {
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { email: "A@b.com" } } }) },
+    } as never)
     mockPrisma.customer.findMany.mockResolvedValue([{ id: "cust-baja", email: "a@b.com", isActive: false }])
     const res = await POST(makeRequest({ name: "Ana", email: "a@b.com", cardId: "card1" }))
     expect(await res.json()).toEqual({ customerId: "cust-baja", existing: false })
     expect(mockPrisma.customer.update).toHaveBeenCalledWith({ where: { id: "cust-baja" }, data: { isActive: true } })
     expect(mockPrisma.customer.create).not.toHaveBeenCalled()
+  })
+
+  // El POST es público: sin probar el correo, cualquiera revertía la baja y se
+  // llevaba el id del cliente.
+  it("sin la sesión de ese correo no reactiva ni revela el id", async () => {
+    mockPrisma.customer.findMany.mockResolvedValue([{ id: "cust-baja", email: "a@b.com", isActive: false }])
+    const res = await POST(makeRequest({ name: "Ana", email: "a@b.com", cardId: "card1" }))
+    expect(await res.json()).toEqual({ existing: true })
+    expect(mockPrisma.customer.update).not.toHaveBeenCalled()
   })
 
   it("en /join no devuelve un registro dado de baja como listo", async () => {
