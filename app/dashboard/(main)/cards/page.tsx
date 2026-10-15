@@ -6,7 +6,7 @@ import { Plus, Search, Archive } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
-import { daysUntilExpiry } from "@/lib/card-utils"
+import { daysUntilExpiry, isExpired } from "@/lib/card-utils"
 import { resolveEffectiveEntitlements, syncExpiredEntitlements } from "@/lib/account-lifecycle"
 import { PrimaryCardConfigurator } from "@/components/dashboard/primary-card-configurator"
 import type { Prisma } from "@prisma/client"
@@ -62,8 +62,9 @@ export default async function CardsPage({
     prisma.subscription.findFirst({ where: { businessId: business.id, status: "ACTIVE" }, orderBy: { createdAt: "desc" } }),
   ])
 
-  const now = new Date()
-  const enriched = allCards.map((c) => ({ ...c, expired: !!(c.expiresAt && c.expiresAt < now) }))
+  // La misma regla que /join y el sellado: comparar el instante marcaba vencida
+  // la tarjeta desde el inicio de su último día, mientras seguía operando.
+  const enriched = allCards.map((c) => ({ ...c, expired: isExpired(c.expiresAt) }))
 
   const cards = status === "active"
     ? enriched.filter((c) => c.status === "ACTIVE" && !c.expired)
