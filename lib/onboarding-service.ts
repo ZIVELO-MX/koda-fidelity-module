@@ -1,5 +1,5 @@
 import { Prisma, PrismaClient } from "@prisma/client"
-import { ConflictError, NotFoundError, ValidationError } from "@/lib/api-utils"
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@/lib/api-utils"
 import { resolveTheme } from "@/lib/card-themes"
 
 type Db = PrismaClient
@@ -37,10 +37,30 @@ export async function getOnboarding(db: Db, authUserId: string) {
   return user
 }
 
+// Ninguna acción puede adelantarse a los pasos que crean el negocio y la
+// tarjeta: `complete_acquisition` en INTRO llevaba al paywall sin ninguno de
+// los dos, y la cuenta quedaba atascada. Repetir un paso ya hecho sigue valiendo
+// (`complete_card` es idempotente), y la adquisición puede saltarse la revisión
+// de la tarjeta lista.
+const ORDEN_DE_PASOS = ["INTRO", "BUSINESS", "CARD", "CARD_READY", "ACQUISITION", "PAYWALL"]
+const PASO_MINIMO: Record<string, string> = {
+  complete_business: "BUSINESS",
+  complete_card: "CARD",
+  complete_acquisition: "CARD_READY",
+  skip_acquisition: "CARD_READY",
+}
+
+// El alta la hace quien crea el negocio. Un miembro invitado ya tiene
+// `businessId`, y un sellador renombraba el negocio y creaba tarjetas.
+function exigirAdmin(user: { businessId: string | null; role: string }) {
+  if (user.businessId && user.role !== "admin") throw new ForbiddenError("Solo un administrador puede configurar el negocio")
+}
+
 type DraftInput = { draftVersion: number; business?: Record<string, unknown>; card?: Record<string, unknown>; acquisitionSource?: string | null; selectedBillingInterval?: "MONTHLY" | "ANNUAL" | null }
 
 export async function saveDraft(db: Db, authUserId: string, input: DraftInput) {
   const user = await getOnboarding(db, authUserId)
+  exigirAdmin(user)
   const progress = user.onboardingProgress!
   if (progress.status !== "IN_PROGRESS") throw new ConflictError("Tu cuenta está esperando la activación del plan y no admite cambios de onboarding")
   if (progress.draftVersion !== input.draftVersion) throw new ConflictError("El borrador cambió; recarga el onboarding")
@@ -53,6 +73,7 @@ export async function saveDraft(db: Db, authUserId: string, input: DraftInput) {
 
 export async function advanceOnboarding(db: Db, authUserId: string, action: string, draftVersion: number, billingInterval?: "MONTHLY" | "ANNUAL") {
   const user = await getOnboarding(db, authUserId)
+  exigirAdmin(user)
   const progress = user.onboardingProgress!
   if (progress.status === "ACTIVE") throw new ConflictError("Tu plan ya está activo; continúa desde el panel")
   if (progress.status === "AWAITING_PAYMENT" && action !== "open_paywall") {
@@ -68,6 +89,9 @@ export async function advanceOnboarding(db: Db, authUserId: string, action: stri
   }
   if (action === "select_billing_interval" && !billingInterval) throw new ValidationError("Selecciona una modalidad de cobro")
   if (action === "open_paywall" && progress.step !== "PAYWALL") throw new ValidationError("Primero llega al paso de selección del plan")
+  if (PASO_MINIMO[action] && ORDEN_DE_PASOS.indexOf(progress.step) < ORDEN_DE_PASOS.indexOf(PASO_MINIMO[action])) {
+    throw new ConflictError("Ese paso del alta todavía no corresponde; recarga el onboarding")
+  }
   const next: Prisma.OnboardingProgressUncheckedUpdateInput = {}
   if (action === "complete_intro" || action === "skip_intro") next.step = "BUSINESS"
   if (action === "complete_business") next.step = "CARD"
