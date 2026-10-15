@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { cuerpoJson, getBusinessFromSession, handleApiError, requestIdFrom, UnauthorizedError, ValidationError, withApiContext, withRequestId } from "@/lib/api-utils"
+import { cuerpoJson, getBusinessFromSession, handleApiError, requestIdFrom, requireRole, UnauthorizedError, ValidationError, withApiContext, withRequestId } from "@/lib/api-utils"
 import { activateManualSubscription, assertBusinessWritable, getEntitlements, syncExpiredEntitlements } from "@/lib/account-lifecycle"
 import { manualSubscriptionSchema } from "@/lib/onboarding-contracts"
 
@@ -20,7 +20,9 @@ import { manualSubscriptionSchema } from "@/lib/onboarding-contracts"
 
 export async function GET(request: NextRequest) {
   return withApiContext(request, async (requestId) => {
-    const { business } = await getBusinessFromSession()
+    const { business, user } = await getBusinessFromSession()
+    // Trae la fila de facturación completa (importe, referencia externa).
+    requireRole(user, "admin")
     return withRequestId(NextResponse.json({ entitlements: await syncExpiredEntitlements(prisma, business.id) }), requestId)
   })()
 }

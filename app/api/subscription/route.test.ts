@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import type { NextRequest } from "next/server"
 
-const { tx } = vi.hoisted(() => ({
+const { tx, getBusinessFromSession } = vi.hoisted(() => ({
   tx: { subscription: { updateMany: vi.fn() }, loyaltyCard: { updateMany: vi.fn() } },
+  getBusinessFromSession: vi.fn(),
 }))
+vi.mock("@/lib/api-utils", async () => ({ ...(await vi.importActual<typeof import("@/lib/api-utils")>("@/lib/api-utils")), getBusinessFromSession }))
 vi.mock("@/lib/prisma", () => ({ prisma: { $transaction: vi.fn(async (fn: (t: typeof tx) => unknown) => fn(tx)) } }))
 vi.mock("@/lib/account-lifecycle", () => ({
   assertBusinessWritable: vi.fn(),
@@ -12,7 +14,7 @@ vi.mock("@/lib/account-lifecycle", () => ({
   syncExpiredEntitlements: vi.fn(),
 }))
 
-import { POST } from "./route"
+import { GET, POST } from "./route"
 
 function request(secret: string) {
   return new Request("http://localhost/api/subscription", {
@@ -51,5 +53,14 @@ describe("POST /api/subscription cancel y past_due", () => {
       where: { businessId: "biz1", status: { not: "ARCHIVED" } },
       data: { isActive: false, isLite: false, status: "LOCKED_BY_PLAN", effectiveThemeId: null },
     })
+  })
+})
+
+// La respuesta trae la fila de facturación completa (importe, referencia
+// externa); un sellador no tiene por qué verla.
+describe("GET /api/subscription", () => {
+  it("responde 403 a un sellador", async () => {
+    getBusinessFromSession.mockResolvedValue({ business: { id: "biz1" }, user: { id: "u2", role: "sellador" } })
+    expect((await GET(new Request("http://localhost/api/subscription") as NextRequest)).status).toBe(403)
   })
 })
