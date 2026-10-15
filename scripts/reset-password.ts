@@ -1,11 +1,9 @@
 import "dotenv/config"
 import { createAdminClient } from "../lib/supabase-admin"
 import nodemailer from "nodemailer"
-import { readFileSync } from "fs"
-import { resolve } from "path"
+import { buildHtml } from "./invite-email"
 
 const DEFAULT_PASSWORD = "Koda1234!"
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://fidelity.zivelo.dev"
 
 function parseArgs(): { email: string; password: string; sendEmail: boolean } {
   const args = process.argv.slice(2)
@@ -55,13 +53,7 @@ export async function sendPasswordResetEmail(
   password: string,
   transporter: nodemailer.Transporter
 ): Promise<void> {
-  const loginUrl = `${BASE_URL}/login?email=${encodeURIComponent(email)}`
-  const template = readFileSync(resolve("docs/email-templates/invite.html"), "utf-8")
-  const html = template
-    .replace(/{{NAME}}/g, email)
-    .replace(/{{EMAIL}}/g, email)
-    .replace(/{{PASSWORD}}/g, password)
-    .replace(/{{LOGIN_URL}}/g, loginUrl)
+  const html = buildHtml(email, email, password)
 
   const info = await transporter.sendMail({
     from: `Koda Fidelity <${process.env.SMTP_USER}>`,
