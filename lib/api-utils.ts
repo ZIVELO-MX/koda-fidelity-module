@@ -210,11 +210,17 @@ export function requireRole(user: Pick<SessionBusiness["user"], "role">, ...allo
  * arreglo.
  */
 export async function cuerpoJson(request: { json: () => Promise<any> }): Promise<any> {
+  let cuerpo: unknown
   try {
-    return await request.json()
+    cuerpo = await request.json()
   } catch {
     throw new ValidationError("El cuerpo de la petición no es JSON válido")
   }
+  // Todas las rutas leen `body.campo`: con `null` lanzaba un TypeError y un 500.
+  if (cuerpo === null || typeof cuerpo !== "object" || Array.isArray(cuerpo)) {
+    throw new ValidationError("El cuerpo de la petición debe ser un objeto JSON")
+  }
+  return cuerpo
 }
 
 export function handleApiError(error: unknown, requestId: string = randomUUID()): NextResponse<ApiErrorBody> {

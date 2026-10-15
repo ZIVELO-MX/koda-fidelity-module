@@ -69,3 +69,13 @@ describe("cuerpo mal formado", () => {
     expect(respuesta.status).toBe(500)
   })
 })
+
+// JSON válido que no es un objeto: las rutas leen `body.campo` y `null` lanzaba
+// un TypeError que acababa en 500, también en el `/api/join` público.
+describe("cuerpo que no es un objeto", () => {
+  it.each(["null", "[]", "1", '"texto"'])("rechaza %s como ValidationError", async (cuerpo) => {
+    const peticion = new Request("https://koda.test/api/x", { method: "POST", body: cuerpo })
+    const error = await cuerpoJson(peticion).catch((e: unknown) => e)
+    expect(handleApiError(error, "req-1").status).toBe(400)
+  })
+})
