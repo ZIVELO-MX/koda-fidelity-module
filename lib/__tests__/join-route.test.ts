@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 
-const { mockPrisma } = vi.hoisted(() => {
+const { mockPrisma, mockAuthUser } = vi.hoisted(() => {
+  const mockAuthUser: { current: Record<string, unknown> | null } = { current: null }
   const mockPrisma = {
     loyaltyCard: { findUnique: vi.fn() },
     customer: { findFirst: vi.fn(), create: vi.fn(), findUnique: vi.fn(), findMany: vi.fn(), update: vi.fn() },
@@ -9,12 +10,12 @@ const { mockPrisma } = vi.hoisted(() => {
     $executeRaw: vi.fn(),
     user: { findUnique: vi.fn() },
   }
-  return { mockPrisma }
+  return { mockPrisma, mockAuthUser }
 })
 
 vi.mock("@/lib/supabase-server", () => ({
   createClient: vi.fn(async () => ({
-    auth: { getUser: vi.fn().mockResolvedValue({ data: { user: null } }) },
+    auth: { getUser: vi.fn(async () => ({ data: { user: mockAuthUser.current }, error: null })) },
   })),
 }))
 
@@ -41,8 +42,17 @@ function makeRequest(body: unknown) {
 
 const validCard = { id: "card1", businessId: "business1", expiresAt: null, isActive: true }
 
+function authenticate(email = "a@b.com", confirmed = true) {
+  mockAuthUser.current = {
+    id: "auth-user-1",
+    email,
+    email_confirmed_at: confirmed ? "2026-10-15T00:00:00.000Z" : null,
+  }
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
+  authenticate()
   mockPrisma.loyaltyCard.findUnique.mockResolvedValue(validCard)
   mockPrisma.customer.findMany.mockResolvedValue([])
   mockPrisma.customer.create.mockResolvedValue({ id: "cust1" })
@@ -99,6 +109,20 @@ describe("POST /api/join", () => {
     expect(mockPrisma.customer.create).not.toHaveBeenCalled()
   })
 
+  it("requires a confirmed session email before reading or changing membership", async () => {
+    authenticate("a@b.com", false)
+    const res = await POST(makeRequest({ name: "Ana", email: "a@b.com", cardId: "card1" }))
+    expect(res.status).toBe(401)
+    expect(mockPrisma.loyaltyCard.findUnique).not.toHaveBeenCalled()
+  })
+
+  it("rejects an email that does not match the confirmed session", async () => {
+    authenticate("ana@b.com")
+    const res = await POST(makeRequest({ name: "Ana", email: "otra@b.com", cardId: "card1" }))
+    expect(res.status).toBe(403)
+    expect(mockPrisma.loyaltyCard.findUnique).not.toHaveBeenCalled()
+  })
+
   it("creates customer with trimmed name on happy path", async () => {
     const res = await POST(makeRequest({ name: "  Ana  ", email: "a@b.com", cardId: "card1" }))
     expect(res.status).toBe(200)
@@ -115,6 +139,7 @@ describe("POST /api/join", () => {
   // El teclado del celular escribe «Ana@…» y Supabase guarda «ana@…». Al volver
   // del enlace mágico la página repite el alta: tiene que encontrar la primera.
   it("guarda el correo en minúsculas y busca sin distinguir mayúsculas", async () => {
+    authenticate("ANA@gmail.com")
     await POST(makeRequest({ name: "Ana", email: "  Ana@Gmail.COM ", cardId: "card1" }))
     expect(mockPrisma.customer.findMany).toHaveBeenCalledWith({
       where: { email: { equals: "ana@gmail.com", mode: "insensitive" }, cardId: "card1" },
@@ -131,7 +156,7 @@ describe("POST /api/join", () => {
 describe("un cliente dado de baja vuelve a unirse", () => {
   it("reactiva su registro cuando la sesión es de ese correo", async () => {
     vi.mocked(createClient).mockResolvedValueOnce({
-      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { email: "A@b.com" } } }) },
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { email: "A@b.com", email_confirmed_at: "2026-10-15T00:00:00.000Z" } } }) },
     } as never)
     mockPrisma.customer.findMany.mockResolvedValue([{ id: "cust-baja", email: "a@b.com", isActive: false }])
     const res = await POST(makeRequest({ name: "Ana", email: "a@b.com", cardId: "card1" }))
@@ -142,16 +167,19 @@ describe("un cliente dado de baja vuelve a unirse", () => {
 
   // El POST es público: sin probar el correo, cualquiera revertía la baja y se
   // llevaba el id del cliente.
-  it("sin la sesión de ese correo no reactiva ni revela el id", async () => {
-    mockPrisma.customer.findMany.mockResolvedValue([{ id: "cust-baja", email: "a@b.com", isActive: false }])
+  it("sin sesión responde igual sin consultar ni modificar clientes", async () => {
+    mockAuthUser.current = null
     const res = await POST(makeRequest({ name: "Ana", email: "a@b.com", cardId: "card1" }))
-    expect(await res.json()).toEqual({ existing: true })
+    expect(res.status).toBe(401)
+    expect(mockPrisma.loyaltyCard.findUnique).not.toHaveBeenCalled()
+    expect(mockPrisma.customer.findMany).not.toHaveBeenCalled()
+    expect(mockPrisma.customer.create).not.toHaveBeenCalled()
     expect(mockPrisma.customer.update).not.toHaveBeenCalled()
   })
 
   it("en /join no devuelve un registro dado de baja como listo", async () => {
     vi.mocked(createClient).mockResolvedValueOnce({
-      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { email: "a@b.com" } } }) },
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { email: "a@b.com", email_confirmed_at: "2026-10-15T00:00:00.000Z" } } }) },
     } as never)
     await GET({ url: "http://x/api/join?email=a%40b.com&cardId=card1" } as never)
     expect(mockPrisma.customer.findMany).toHaveBeenCalledWith(expect.objectContaining({
@@ -179,9 +207,16 @@ describe("altas simultáneas", () => {
 })
 
 describe("GET /api/join?email=", () => {
+  it("no consulta membresías con una sesión cuyo correo no está confirmado", async () => {
+    authenticate("a@b.com", false)
+    const res = await GET({ url: "http://x/api/join?email=a%40b.com" } as never)
+    expect(res.status).toBe(401)
+    expect(mockPrisma.customer.findMany).not.toHaveBeenCalled()
+  })
+
   it("encuentra las tarjetas aunque el correo se haya guardado con mayúsculas", async () => {
     vi.mocked(createClient).mockResolvedValueOnce({
-      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { email: "ana@gmail.com" } } }) },
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { email: "ana@gmail.com", email_confirmed_at: "2026-10-15T00:00:00.000Z" } } }) },
     } as never)
     mockPrisma.customer.findMany.mockResolvedValue([])
     const res = await GET({ url: "http://x/api/join?email=Ana%40Gmail.com" } as never)
@@ -195,7 +230,7 @@ describe("GET /api/join?email=", () => {
   // colarse la tarjeta de otro correo.
   it("solo devuelve las tarjetas de ese correo exacto", async () => {
     vi.mocked(createClient).mockResolvedValueOnce({
-      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { email: "ana_l@x.com" } } }) },
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { email: "ana_l@x.com", email_confirmed_at: "2026-10-15T00:00:00.000Z" } } }) },
     } as never)
     mockPrisma.customer.findMany.mockResolvedValue([
       { id: "propia", email: "Ana_L@x.com", milestoneClaims: [], stampsLog: [] },
@@ -206,6 +241,7 @@ describe("GET /api/join?email=", () => {
   })
 
   it("no da por existente un alta de otro correo parecido", async () => {
+    authenticate("ana_l@x.com")
     mockPrisma.customer.findMany.mockResolvedValue([{ email: "anaxl@x.com" }])
     const res = await POST(makeRequest({ name: "Ana", email: "ana_l@x.com", cardId: "card1" }))
     expect((await res.json()).existing).toBe(false)

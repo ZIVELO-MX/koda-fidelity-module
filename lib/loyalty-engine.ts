@@ -134,7 +134,7 @@ export async function executeLoyaltyOperation(db: Db, input: OperationInput): Pr
             outcome: !picked ? "no_prize" : milestone ? "awarded" : "milestone_removed",
           }
           if (milestone && picked) {
-            const claim = await tx.customerMilestoneClaim.create({ data: { customerId: customer.id, milestoneId: milestone.id, cardId: customer.card.id, label: picked.label, iconName: picked.iconName } })
+            const claim = await tx.customerMilestoneClaim.create({ data: { customerId: customer.id, milestoneId: milestone.id, stampNumberSnapshot: picked.stampNumber, cardId: customer.card.id, label: picked.label, iconName: picked.iconName } })
             milestoneClaim = { id: claim.id, label: picked.label, iconName: picked.iconName }
             await tx.stampLog.create({ data: { businessId: input.businessId, cardId: customer.card.id, customerId: customer.id, cycleId: cycle.id, type: "milestone", balanceAfter: nextBalance, stampsRequiredSnapshot: configuration.stampsRequired, metadata: { ...auditMetadata, milestoneClaimId: claim.id } } })
           } else {

@@ -8,7 +8,7 @@ vi.mock("@/lib/api-utils", async () => ({
   requireWritableBusinessPrincipal,
 }))
 
-import { DELETE } from "./route"
+import { DELETE, PUT } from "./route"
 
 const integration = describe.skipIf(process.env.CI !== "true")
 
@@ -40,6 +40,50 @@ integration("DELETE /api/users/:id tenant and role contract", () => {
     expect(response.status).toBe(200)
     expect((await prisma.subscriptionRequest.findUnique({ where: { id: folio.id } }))?.requestedByUserId).toBe(admin.id)
     expect((await prisma.teamInvitation.findUnique({ where: { id: invitacion.id } }))?.invitedById).toBe(admin.id)
+  })
+
+  it("serializes simultaneous admin demotions so one administrator remains", async () => {
+    const suffix = randomUUID()
+    const business = await prisma.business.create({ data: { name: "Concurrent demotion", email: `demotion-${suffix}@test.invalid` } })
+    businessIds.push(business.id)
+    const [firstAdmin, secondAdmin] = await Promise.all([
+      prisma.user.create({ data: { businessId: business.id, authUserId: randomUUID(), email: `first-${suffix}@test.invalid`, name: "First admin", role: "admin" } }),
+      prisma.user.create({ data: { businessId: business.id, authUserId: randomUUID(), email: `second-${suffix}@test.invalid`, name: "Second admin", role: "admin" } }),
+    ])
+    const session = (member: typeof firstAdmin) => ({ business, user: { id: member.id, email: member.email, name: member.name, role: "admin" as const, passwordSetupRequired: false } })
+    requireWritableBusinessPrincipal
+      .mockResolvedValueOnce(session(firstAdmin))
+      .mockResolvedValueOnce(session(secondAdmin))
+
+    const [first, second] = await Promise.all([
+      PUT(new Request(`http://localhost/api/users/${secondAdmin.id}`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ role: "sellador" }) }) as never, { params: Promise.resolve({ id: secondAdmin.id }) }),
+      PUT(new Request(`http://localhost/api/users/${firstAdmin.id}`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ role: "sellador" }) }) as never, { params: Promise.resolve({ id: firstAdmin.id }) }),
+    ])
+
+    expect([first.status, second.status].sort()).toEqual([200, 409])
+    expect(await prisma.user.count({ where: { businessId: business.id, role: "admin" } })).toBeGreaterThanOrEqual(1)
+  })
+
+  it("serializes simultaneous admin removals so one administrator remains", async () => {
+    const suffix = randomUUID()
+    const business = await prisma.business.create({ data: { name: "Concurrent removal", email: `removal-${suffix}@test.invalid` } })
+    businessIds.push(business.id)
+    const [firstAdmin, secondAdmin] = await Promise.all([
+      prisma.user.create({ data: { businessId: business.id, authUserId: randomUUID(), email: `first-${suffix}@test.invalid`, name: "First admin", role: "admin" } }),
+      prisma.user.create({ data: { businessId: business.id, authUserId: randomUUID(), email: `second-${suffix}@test.invalid`, name: "Second admin", role: "admin" } }),
+    ])
+    const session = (member: typeof firstAdmin) => ({ business, user: { id: member.id, email: member.email, name: member.name, role: "admin" as const, passwordSetupRequired: false } })
+    requireWritableBusinessPrincipal
+      .mockResolvedValueOnce(session(firstAdmin))
+      .mockResolvedValueOnce(session(secondAdmin))
+
+    const [first, second] = await Promise.all([
+      DELETE(new Request(`http://localhost/api/users/${secondAdmin.id}`) as never, { params: Promise.resolve({ id: secondAdmin.id }) }),
+      DELETE(new Request(`http://localhost/api/users/${firstAdmin.id}`) as never, { params: Promise.resolve({ id: firstAdmin.id }) }),
+    ])
+
+    expect([first.status, second.status].sort()).toEqual([200, 409])
+    expect(await prisma.user.count({ where: { businessId: business.id, role: "admin" } })).toBeGreaterThanOrEqual(1)
   })
 
   it("does not delete a member belonging to another business", async () => {

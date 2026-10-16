@@ -97,6 +97,83 @@ integration("Cards API CRUD contract", () => {
     expect(missingResponse.status).toBe(404)
   }, 30_000)
 
+  it("keeps an earned surprise claim and its stamp log when PUT removes the surprise", async () => {
+    const suffix = crypto.randomUUID()
+    const business = await prisma.business.create({
+      data: { name: "Preserve claims", email: `claims-${suffix}@test.invalid` },
+    })
+    businessIds.push(business.id)
+    await activateManualSubscription(prisma, {
+      businessId: business.id,
+      plan: "PRO",
+      idempotencyKey: `claims-fixture:${suffix}`,
+    })
+    const card = await prisma.loyaltyCard.create({
+      data: {
+        businessId: business.id,
+        name: "Claim card",
+        reward: "Coffee",
+        stampsRequired: 5,
+        milestoneRewards: { create: [{ stampNumber: 3, label: "Pan dulce", iconName: "cookie", probability: 100 }] },
+      },
+      include: { milestoneRewards: true },
+    })
+    const customer = await prisma.customer.create({ data: { name: "Claim customer", cardId: card.id } })
+    const milestone = card.milestoneRewards[0]
+    const claim = await prisma.customerMilestoneClaim.create({
+      data: {
+        customerId: customer.id,
+        milestoneId: milestone.id,
+        stampNumberSnapshot: milestone.stampNumber,
+        cardId: card.id,
+        label: milestone.label,
+        iconName: milestone.iconName,
+      },
+    })
+    const stampLog = await prisma.stampLog.create({
+      data: {
+        businessId: business.id,
+        cardId: card.id,
+        customerId: customer.id,
+        type: "milestone",
+        balanceAfter: milestone.stampNumber,
+        stampsRequiredSnapshot: card.stampsRequired,
+        metadata: { outcome: "awarded", milestoneClaimId: claim.id },
+      },
+    })
+    const principal = {
+      business,
+      user: {
+        id: `admin-${suffix}`,
+        email: business.email,
+        name: "Claims admin",
+        role: "admin" as const,
+        passwordSetupRequired: false,
+      },
+    }
+    getBusinessFromSession.mockResolvedValue(principal)
+    requireWritableBusinessPrincipal.mockResolvedValue(principal)
+
+    const response = await updateCard(new Request(`http://localhost/api/cards/${card.id}`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ milestoneRewards: [] }),
+    }) as never, { params: Promise.resolve({ id: card.id }) })
+
+    expect(response.status).toBe(200)
+    expect(await prisma.milestoneReward.findUnique({ where: { id: milestone.id } })).toBeNull()
+    await expect(prisma.customerMilestoneClaim.findUnique({ where: { id: claim.id } })).resolves.toMatchObject({
+      id: claim.id,
+      milestoneId: null,
+      stampNumberSnapshot: 3,
+      label: "Pan dulce",
+      iconName: "cookie",
+    })
+    await expect(prisma.stampLog.findUnique({ where: { id: stampLog.id } })).resolves.toMatchObject({
+      metadata: { outcome: "awarded", milestoneClaimId: claim.id },
+    })
+  }, 30_000)
+
   // Cada UPDATE chocaba con la fila que todavía ocupaba ese número y el
   // índice único (cardId, stampNumber) respondía P2002 como 500.
   it("swaps two milestones' stamp numbers", async () => {

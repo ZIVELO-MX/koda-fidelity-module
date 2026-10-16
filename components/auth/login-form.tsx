@@ -161,7 +161,7 @@ export function LoginForm() {
 
           {step === "email" ? (
             <div className="space-y-4">
-              <GoogleButton redirectTo="/dashboard/my-cards" />
+              <GoogleButton redirectTo={searchParams.get("next") ?? "/dashboard/my-cards"} />
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <span className="w-full border-t" />

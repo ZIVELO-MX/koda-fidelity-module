@@ -34,7 +34,8 @@ interface MilestoneClaim {
   label: string
   iconName: string | null
   createdAt: string
-  milestone: { stampNumber: number; iconName: string | null }
+  stampNumberSnapshot: number
+  milestone: { stampNumber: number; iconName: string | null } | null
 }
 
 interface MyCard {
@@ -443,7 +444,7 @@ export default function DashboardMyCardsPage() {
                               themeCode={c.card.effectiveTheme?.code}
                               showQR={true}
                               qrValue={c.id}
-                              milestoneClaims={c.milestoneClaims.map(cl => ({ stampNumber: cl.milestone.stampNumber, iconName: cl.iconName }))}
+                              milestoneClaims={c.milestoneClaims.map(cl => ({ stampNumber: cl.stampNumberSnapshot, iconName: cl.iconName }))}
                             />
 
                             <p className="text-xs text-muted-foreground text-center">

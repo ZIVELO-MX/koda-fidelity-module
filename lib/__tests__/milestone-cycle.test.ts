@@ -26,4 +26,23 @@ describe("current milestone reward cycle", () => {
     expect(customer.milestoneClaims).toEqual([currentClaim])
     expect(customer).not.toHaveProperty("stampsLog")
   })
+
+  it("keeps a historical claim after its milestone configuration is removed", () => {
+    const historicalClaim = {
+      id: "historical",
+      createdAt: new Date("2026-07-03T10:00:00Z"),
+      milestoneId: null,
+      stampNumberSnapshot: 3,
+      label: "Pan dulce",
+      iconName: "cookie",
+      milestone: null,
+    }
+    const customer = withCurrentCycleMilestoneClaims({
+      id: "customer-1",
+      milestoneClaims: [historicalClaim],
+      stampsLog: [],
+    })
+
+    expect(customer.milestoneClaims).toEqual([historicalClaim])
+  })
 })

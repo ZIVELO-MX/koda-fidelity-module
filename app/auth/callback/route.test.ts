@@ -71,4 +71,14 @@ describe("auth callback destination", () => {
     const response = await GET(new NextRequest("http://localhost/auth/callback?code=valid-code"))
     expect(response.headers.get("location")).toBe("http://localhost/dashboard/my-cards")
   })
+
+  it("returns a customer to the QR card after email confirmation", async () => {
+    findUser.mockResolvedValue(null)
+    findCustomer.mockResolvedValue({ id: "customer-1" })
+    const response = await GET(new NextRequest(
+      "http://localhost/auth/callback?code=valid-code&next=%2Fjoin%2Fcard-123",
+    ))
+
+    expect(response.headers.get("location")).toBe("http://localhost/join/card-123")
+  })
 })

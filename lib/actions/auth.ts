@@ -67,9 +67,12 @@ export async function login(_prev: AuthResult, formData: FormData): Promise<Auth
 
   if (member && !member.businessId) redirect("/onboarding")
   if (member?.onboardingProgress?.status === "IN_PROGRESS") redirect("/onboarding")
-  if (user && await prisma.customerProfile.findUnique({ where: { authUserId: user.id }, select: { id: true } })) redirect(safeNextPath(String(formData.get("next") ?? ""), "/dashboard/my-cards"))
+  const hasCustomerProfile = user
+    ? Boolean(await prisma.customerProfile.findUnique({ where: { authUserId: user.id }, select: { id: true } }))
+    : false
+  const fallback = hasCustomerProfile ? "/dashboard/my-cards" : "/dashboard"
   revalidatePath("/dashboard")
-  redirect(safeNextPath(String(formData.get("next") ?? ""), "/dashboard"))
+  redirect(safeNextPath(String(formData.get("next") ?? ""), fallback))
 }
 
 export async function updatePassword(_prev: AuthResult, formData: FormData): Promise<AuthResult> {
@@ -154,12 +157,13 @@ export async function signup(_prev: AuthResult, formData: FormData): Promise<Aut
       ({ data, error } = await createDebugUser(normalizedEmail, password, name || normalizedEmail.split("@")[0]))
     } else {
       const supabase = await createClient()
+      const destination = safeNextPath(next, accountType === "CUSTOMER" ? "/dashboard/my-cards" : "/onboarding")
       const result = await supabase.auth.signUp({
         email: normalizedEmail,
         password,
         options: {
           data: { name },
-          emailRedirectTo: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}${safeNextPath(next, accountType === "CUSTOMER" ? "/dashboard/my-cards" : "/onboarding")}`,
+          emailRedirectTo: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/auth/callback?next=${encodeURIComponent(destination)}`,
         },
       })
       data = result.data

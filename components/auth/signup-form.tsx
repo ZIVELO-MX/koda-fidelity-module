@@ -27,6 +27,13 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
   const allRequirementsMet = password.length > 0 && cumpleLasReglas(password)
   const passwordsMatch = confirm.length > 0 && password === confirm
   const passwordsDoNotMatch = confirm.length > 0 && password !== confirm
+  const loginParams = new URLSearchParams()
+  const nextPath = searchParams.get("next")
+  const loginEmail = searchParams.get("email")
+  if (nextPath) loginParams.set("next", nextPath)
+  if (loginEmail) loginParams.set("email", loginEmail)
+  const loginQuery = loginParams.toString()
+  const loginHref = loginQuery ? `/login?${loginQuery}` : "/login"
 
   if (isInviteOnly) {
     return (
@@ -86,7 +93,7 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
           </p>
         </CardContent>
         <CardFooter className="justify-center text-sm text-muted-foreground">
-          <Link href="/login" className="inline-flex min-h-11 items-center font-medium text-primary hover:underline">
+          <Link href={loginHref} className="inline-flex min-h-11 items-center font-medium text-primary hover:underline">
             Ir a iniciar sesión
           </Link>
         </CardFooter>
@@ -200,7 +207,7 @@ export function SignupForm({ isInviteOnly }: { isInviteOnly: boolean }) {
       <CardFooter className="flex-col gap-2 text-sm text-muted-foreground">
         <span>
           ¿Ya tienes cuenta?{" "}
-          <Link href="/login" className="inline-flex min-h-11 items-center font-medium text-primary hover:underline">
+          <Link href={loginHref} className="inline-flex min-h-11 items-center font-medium text-primary hover:underline">
             Iniciar sesión
           </Link>
         </span>
