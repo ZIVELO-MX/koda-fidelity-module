@@ -1,10 +1,10 @@
 import "dotenv/config"
 import { createAdminClient } from "../lib/supabase-admin"
+import { generateTempPassword } from "../lib/temp-password"
 import nodemailer from "nodemailer"
 import { PrismaClient } from "@prisma/client"
 import { buildHtml } from "./invite-email"
 
-const DEFAULT_PASSWORD = "Koda1234!"
 const prisma = new PrismaClient()
 
 function parseArgs(): { email: string; password: string; sendEmail: boolean } {
@@ -30,7 +30,7 @@ function parseArgs(): { email: string; password: string; sendEmail: boolean } {
   }
   return {
     email: result.email,
-    password: result.password || DEFAULT_PASSWORD,
+    password: result.password || generateTempPassword(),
     sendEmail: flags.has("send-email"),
   }
 }

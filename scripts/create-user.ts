@@ -11,11 +11,11 @@
 
 import "dotenv/config"
 import { createAdminClient } from "../lib/supabase-admin"
+import { generateTempPassword } from "../lib/temp-password"
 import { PrismaClient } from "@prisma/client"
 
 const prisma = new PrismaClient()
 
-const DEFAULT_PASSWORD = "Koda1234!"
 const MEMBER_LIMIT = parseInt(process.env.TEAM_MEMBER_LIMIT ?? "3", 10)
 
 type ParsedArgs = {
@@ -53,7 +53,7 @@ function parseArgs(): ParsedArgs {
     email: result.email,
     name: result.name,
     role: role as "admin" | "sellador",
-    password: result.password || DEFAULT_PASSWORD,
+    password: result.password || generateTempPassword(),
   }
 }
 
