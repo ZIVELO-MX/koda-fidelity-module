@@ -1,17 +1,22 @@
+import { fechaLocal } from "@/lib/dia-local"
+
 function startOfUTCDay(d: Date): number {
   return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
 }
 
+// `expiresAt` sale de un <input type="date">: «2026-10-14» es medianoche UTC y
+// su fecha UTC es el día del calendario. Hoy, en cambio, es el día de México:
+// cortarlo en UTC vencía la tarjeta a las seis de la tarde de su último día.
+const hoy = () => Date.parse(fechaLocal())
+
 export function isExpired(expiresAt: Date | string | null | undefined): boolean {
   if (!expiresAt) return false
-  return startOfUTCDay(new Date()) > startOfUTCDay(new Date(expiresAt))
+  return hoy() > startOfUTCDay(new Date(expiresAt))
 }
 
 export function daysUntilExpiry(expiresAt: Date | string | null | undefined): number | null {
   if (!expiresAt) return null
-  return Math.round(
-    (startOfUTCDay(new Date(expiresAt)) - startOfUTCDay(new Date())) / 86_400_000
-  )
+  return Math.round((startOfUTCDay(new Date(expiresAt)) - hoy()) / 86_400_000)
 }
 
 export function addDays(days: number): Date {

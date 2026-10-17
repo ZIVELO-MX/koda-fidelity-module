@@ -536,15 +536,16 @@ model MilestoneReward {
 }
 
 model CustomerMilestoneClaim {
-  id          String          @id @default(cuid())
-  customerId  String
-  customer    Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  milestoneId String
-  milestone   MilestoneReward @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
-  cardId      String
-  label       String
-  iconName    String?
-  createdAt   DateTime        @default(now())
+  id                  String          @id @default(cuid())
+  customerId          String
+  customer            Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  milestoneId         String?
+  milestone           MilestoneReward? @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
+  stampNumberSnapshot Int
+  cardId              String
+  label               String
+  iconName            String?
+  createdAt           DateTime        @default(now())
 
   @@index([customerId])
   @@index([milestoneId])

@@ -22,7 +22,8 @@ export async function GET(request: NextRequest) {
         const member = await prisma.user.findUnique({ where: { authUserId: authUser.id }, select: { id: true, businessId: true, passwordSetupRequired: true, onboardingProgress: { select: { status: true } } } })
         const customer = await prisma.customerProfile.findUnique({ where: { authUserId: authUser.id }, select: { id: true } })
         if (member || customer) {
-          const signupDestination = customer ? "/dashboard/my-cards" : member && (!member.businessId || member.onboardingProgress?.status !== "ACTIVE") ? "/onboarding" : "/dashboard"
+          // Sin progreso no hay alta pendiente (un invitado no lo tiene), igual que en el layout del panel.
+          const signupDestination = customer ? "/dashboard/my-cards" : member && (!member.businessId || (member.onboardingProgress && member.onboardingProgress.status !== "ACTIVE")) ? "/onboarding" : "/dashboard"
           const destination = member?.passwordSetupRequired
             ? "/dashboard/update-password"
             : member?.onboardingProgress && member.onboardingProgress.status !== "ACTIVE"

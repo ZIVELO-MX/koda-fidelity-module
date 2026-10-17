@@ -38,17 +38,28 @@ export function addGraceDays(date: Date, days = 30) {
 export function periodForInterval(start: Date, interval: "MONTHLY" | "ANNUAL") { return addCalendarMonths(start, interval === "ANNUAL" ? 12 : 1) }
 
 export async function activateManualSubscription(db: PrismaClient, input: ManualSubscriptionInput) {
-  const plan = input.plan ?? "LITE"
-  const billingInterval = input.billingInterval ?? "MONTHLY"
+  // Sin `plan`, renovar caía en LITE mensual y bajaba a un negocio Pro anual.
+  const vigente = input.action === "renew" && (!input.plan || !input.billingInterval)
+    ? await db.subscription.findFirst({ where: { businessId: input.businessId, status: "ACTIVE" }, orderBy: { createdAt: "desc" } })
+    : null
+  const plan = input.plan ?? vigente?.plan ?? "LITE"
+  const billingInterval = input.billingInterval ?? vigente?.billingInterval ?? "MONTHLY"
   const periodStart = input.periodStart ?? new Date()
   const periodEnd = input.periodEnd ?? periodForInterval(periodStart, billingInterval)
   const action = input.action ?? "activate"
   const activatedAt = action === "set_plan" ? new Date() : periodStart
   if (periodEnd <= periodStart) throw new ValidationError("El periodo debe terminar después de iniciar")
   if (!await db.business.findUnique({ where: { id: input.businessId }, select: { id: true } })) throw new NotFoundError("Negocio no encontrado")
+  // Los scripts de facturación llaman aquí directo, sin la guarda de la API, y
+  // reactivaban un negocio con el cierre programado.
+  await assertBusinessWritable(db, input.businessId)
   const idempotencyKey = input.idempotencyKey ?? `manual:${input.businessId}:${periodStart.toISOString()}`
-  const previous = await db.billingAuditEvent.findUnique({ where: { idempotencyKey } })
-  if (previous) return db.subscription.findFirstOrThrow({ where: { businessId: input.businessId, status: "ACTIVE" }, orderBy: { createdAt: "desc" } })
+  const previous = await db.billingAuditEvent.findUnique({ where: { idempotencyKey }, select: { businessId: true } })
+  if (previous) {
+    // Una clave de otro negocio respondía como si se hubiera activado este.
+    if (previous.businessId !== input.businessId) throw new ConflictError("La clave de operación ya pertenece a otro negocio")
+    return db.subscription.findFirstOrThrow({ where: { businessId: input.businessId, status: "ACTIVE" }, orderBy: { createdAt: "desc" } })
+  }
   const proAccessGranted = plan === "PRO" ? true : (input.proAccessGranted ?? action === "activate")
   const proTrialEndsAt = plan === "LITE" && proAccessGranted
     ? input.proTrialEndsAt ?? addCalendarMonths(periodStart, 1)
@@ -65,9 +76,16 @@ export async function activateManualSubscription(db: PrismaClient, input: Manual
       select: { firstCardId: true },
       orderBy: { createdAt: "asc" },
     })
+    // Cancelar, past_due o INACTIVO dejan la suscripción con su `liteCardId`: al
+    // reactivar se conserva la principal elegida, no la tarjeta del alta.
+    const lastSubscription = previousSubscription ? null : await tx.subscription.findFirst({
+      where: { businessId: input.businessId },
+      orderBy: { createdAt: "desc" },
+      select: { liteCardId: true },
+    })
     const preferredCardId = previousSubscription
       ? previousSubscription.liteCardId
-      : onboardingProgress?.firstCardId ?? null
+      : lastSubscription?.liteCardId ?? onboardingProgress?.firstCardId ?? null
     await tx.subscription.updateMany({ where: { businessId: input.businessId, status: "ACTIVE" }, data: { status: "CANCELED" } })
     const subscription = await tx.subscription.create({ data: { businessId: input.businessId, plan, billingInterval, amountMinor: input.amountMinor ?? 0, currency: "MXN", activatedAt, periodStart, periodEnd, externalReference: input.externalReference, proAccessGranted, proTrialEndsAt, liteCardId: preferredCardId } })
     const effective = resolveEffectiveEntitlements(subscription, activatedAt)
@@ -422,6 +440,17 @@ export async function cleanupAvatarJob(db: PrismaClient, jobId: string) {
   }
 }
 
+/**
+ * Borra ya las fotos que el cliente reemplazó o quitó. `cleanupAvatarJob` no
+ * tenía llamadores: los trabajos se quedaban PENDING y el archivo seguía en el
+ * bucket. Si el borrado falla, el trabajo queda FAILED con su error y se
+ * reintenta en el siguiente cambio de foto.
+ */
+export async function cleanupPendingCustomerAvatars(db: PrismaClient, profileId: string) {
+  const jobs = await db.avatarCleanupJob.findMany({ where: { profileId, status: { not: "COMPLETED" } }, select: { id: true } })
+  await Promise.all(jobs.map((job) => cleanupAvatarJob(db, job.id)))
+}
+
 export async function cleanupBusinessAvatar(db: PrismaClient, assetId: string) {
   const asset = await db.businessAvatarAsset.findUnique({ where: { id: assetId } })
   if (!asset) throw new NotFoundError("Avatar no encontrado")
@@ -447,7 +476,13 @@ async function prepareExecution(db: PrismaClient, closureId: string, businessId:
     db.teamInvitation.findMany({ where: { businessId, authUserId: { not: null } }, select: { authUserId: true } }),
   ])
   const authUserIds = [...new Set([...users, ...invitations].flatMap((record) => record.authUserId ? [record.authUserId] : []))]
-  const sharedIds = new Set((await db.customerProfile.findMany({ where: { authUserId: { in: authUserIds } }, select: { authUserId: true } })).flatMap((profile) => profile.authUserId ? [profile.authUserId] : []))
+  // Una invitación guarda el `authUserId` aunque no se acepte. Si esa persona es
+  // cliente o ya entró a otro negocio, borrar su cuenta la dejaba fuera de él.
+  const [profiles, otherMembers] = await Promise.all([
+    db.customerProfile.findMany({ where: { authUserId: { in: authUserIds } }, select: { authUserId: true } }),
+    db.user.findMany({ where: { authUserId: { in: authUserIds }, OR: [{ businessId: { not: businessId } }, { businessId: null }] }, select: { authUserId: true } }),
+  ])
+  const sharedIds = new Set([...profiles, ...otherMembers].flatMap((record) => record.authUserId ? [record.authUserId] : []))
   await db.accountClosureCleanupTask.createMany({
     data: [
       ...assets.map((asset) => ({ executionId: execution.id, kind: "BUSINESS_AVATAR" as const, subjectId: asset.id, bucket: process.env.SUPABASE_PRIVATE_AVATAR_BUCKET || "avatars", storagePath: asset.storagePath })),
@@ -487,20 +522,23 @@ export async function executeDueClosures(db: PrismaClient, now = new Date()) {
   for (const closure of candidates) {
     const claim = await db.accountClosure.updateMany({ where: { id: closure.id, status: closure.status }, data: { status: "PROCESSING" } })
     if (claim.count !== 1) continue
-    const execution = await prepareExecution(db, closure.id, closure.businessId, now)
-    const tasks = await db.accountClosureCleanupTask.findMany({ where: { executionId: execution.id, status: { not: "COMPLETED" } } })
-    const results = await Promise.all(tasks.map((task) => runCleanupTask(db, task)))
-    if (results.some((result) => !result)) {
-      await db.accountClosure.update({ where: { id: closure.id }, data: { status: "FAILED" } })
-      await db.accountClosureExecution.update({ where: { id: execution.id }, data: { status: "FAILED", lastError: "Una o más tareas de limpieza fallaron", leaseUntil: null } })
-      continue
+    // Un cierre que falla no puede cortar el lote ni quedarse en PROCESSING:
+    // antes la excepción salía del `for` y los siguientes no se procesaban.
+    try {
+      const execution = await prepareExecution(db, closure.id, closure.businessId, now)
+      const tasks = await db.accountClosureCleanupTask.findMany({ where: { executionId: execution.id, status: { not: "COMPLETED" } } })
+      const results = await Promise.all(tasks.map((task) => runCleanupTask(db, task)))
+      if (results.some((result) => !result)) throw new Error("Una o más tareas de limpieza fallaron")
+      await db.$transaction(async (tx) => {
+        await tx.stampLog.updateMany({ where: { businessId: closure.businessId }, data: { businessId: null, cardId: null, customerId: null, cycleId: null } })
+        await tx.business.delete({ where: { id: closure.businessId } })
+        await tx.accountClosureExecution.update({ where: { id: execution.id }, data: { status: "COMPLETED", completedAt: now, leaseUntil: null, lastError: null } })
+      })
+      processed += 1
+    } catch (error) {
+      await db.accountClosure.updateMany({ where: { id: closure.id }, data: { status: "FAILED" } })
+      await db.accountClosureExecution.updateMany({ where: { closureId: closure.id }, data: { status: "FAILED", lastError: error instanceof Error ? error.message : "Error al cerrar la cuenta", leaseUntil: null } })
     }
-    await db.$transaction(async (tx) => {
-      await tx.stampLog.updateMany({ where: { businessId: closure.businessId }, data: { businessId: null, cardId: null, customerId: null, cycleId: null } })
-      await tx.business.delete({ where: { id: closure.businessId } })
-      await tx.accountClosureExecution.update({ where: { id: execution.id }, data: { status: "COMPLETED", completedAt: now, leaseUntil: null, lastError: null } })
-    })
-    processed += 1
   }
   return processed
 }

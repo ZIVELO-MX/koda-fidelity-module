@@ -13,9 +13,11 @@ import { headers } from "next/headers"
 import { randomUUID } from "node:crypto"
 import { classifyLoginError, getFriendlySignupError } from "@/lib/auth-errors"
 import { reglaQueFalta } from "@/lib/reglas-de-contrasena"
-import { safeNextPath } from "@/lib/api-utils"
+import { RateLimitError, safeNextPath } from "@/lib/api-utils"
 
 export type AuthResult = { error?: string; success?: true }
+
+const DEMASIADOS_INTENTOS = "Demasiados intentos. Espera unos minutos e inténtalo de nuevo."
 
 export async function login(_prev: AuthResult, formData: FormData): Promise<AuthResult> {
   const email = formData.get("email") as string
@@ -35,7 +37,7 @@ export async function login(_prev: AuthResult, formData: FormData): Promise<Auth
       return { error: "Correo o contraseña incorrectos." }
     }
     if (kind === "rate_limited") {
-      return { error: "Demasiados intentos. Espera unos minutos e inténtalo de nuevo." }
+      return { error: DEMASIADOS_INTENTOS }
     }
 
     const error = err instanceof Error ? err : new Error("Unknown login error")
@@ -65,9 +67,12 @@ export async function login(_prev: AuthResult, formData: FormData): Promise<Auth
 
   if (member && !member.businessId) redirect("/onboarding")
   if (member?.onboardingProgress?.status === "IN_PROGRESS") redirect("/onboarding")
-  if (user && await prisma.customerProfile.findUnique({ where: { authUserId: user.id }, select: { id: true } })) redirect(safeNextPath(String(formData.get("next") ?? ""), "/dashboard/my-cards"))
+  const hasCustomerProfile = user
+    ? Boolean(await prisma.customerProfile.findUnique({ where: { authUserId: user.id }, select: { id: true } }))
+    : false
+  const fallback = hasCustomerProfile ? "/dashboard/my-cards" : "/dashboard"
   revalidatePath("/dashboard")
-  redirect(safeNextPath(String(formData.get("next") ?? ""), "/dashboard"))
+  redirect(safeNextPath(String(formData.get("next") ?? ""), fallback))
 }
 
 export async function updatePassword(_prev: AuthResult, formData: FormData): Promise<AuthResult> {
@@ -93,9 +98,10 @@ export async function updatePassword(_prev: AuthResult, formData: FormData): Pro
   if (nickname && user) {
     const userRecord = await prisma.user.findUnique({
       where: { authUserId: user.id },
-      select: { businessId: true },
+      select: { businessId: true, role: true },
     })
-    if (userRecord?.businessId) {
+    // El apodo es del negocio entero: un sellador invitado lo cambiaba para todos.
+    if (userRecord?.businessId && userRecord.role === "admin") {
       await prisma.business.update({
         where: { id: userRecord.businessId },
         data: { nickname },
@@ -129,8 +135,14 @@ export async function signup(_prev: AuthResult, formData: FormData): Promise<Aut
   const normalizedEmail = normalizeEmail(email)
   const debugSignup = config.isDebugEmail(normalizedEmail)
   const requestHeaders = await headers()
-  await enforceRateLimit("signup-identity", normalizedEmail, 3, 60 * 60 * 1000)
-  await enforceRateLimit("signup-ip", requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown", 5, 60 * 60 * 1000)
+  // Fuera de un try, el límite reventaba la acción y se veía una pantalla de error.
+  try {
+    await enforceRateLimit("signup-identity", normalizedEmail, 3, 60 * 60 * 1000)
+    await enforceRateLimit("signup-ip", requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown", 5, 60 * 60 * 1000)
+  } catch (err) {
+    if (err instanceof RateLimitError) return { error: DEMASIADOS_INTENTOS }
+    throw err
+  }
   try {
     await prisma.signupIntent.upsert({ where: { email: normalizedEmail }, create: { email: normalizedEmail, name, accountType: accountType as "BUSINESS" | "CUSTOMER" }, update: { name, accountType: accountType as "BUSINESS" | "CUSTOMER", status: "pending" } })
   } catch (error) {
@@ -145,12 +157,13 @@ export async function signup(_prev: AuthResult, formData: FormData): Promise<Aut
       ({ data, error } = await createDebugUser(normalizedEmail, password, name || normalizedEmail.split("@")[0]))
     } else {
       const supabase = await createClient()
+      const destination = safeNextPath(next, accountType === "CUSTOMER" ? "/dashboard/my-cards" : "/onboarding")
       const result = await supabase.auth.signUp({
         email: normalizedEmail,
         password,
         options: {
           data: { name },
-          emailRedirectTo: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}${safeNextPath(next, accountType === "CUSTOMER" ? "/dashboard/my-cards" : "/onboarding")}`,
+          emailRedirectTo: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/auth/callback?next=${encodeURIComponent(destination)}`,
         },
       })
       data = result.data
@@ -225,6 +238,7 @@ export async function sendPasswordReset(_prev: AuthResult, formData: FormData): 
     await authService.sendPasswordResetEmail(email.trim(), { redirectTo })
     return { success: true }
   } catch (err) {
+    if (err instanceof RateLimitError) return { error: DEMASIADOS_INTENTOS }
     console.error("[sendPasswordReset] Error:", err)
     return { error: "No fue posible enviar el correo. Verifica el correo e intenta de nuevo." }
   }

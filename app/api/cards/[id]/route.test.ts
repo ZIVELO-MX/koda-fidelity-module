@@ -120,3 +120,69 @@ describe("PUT /api/cards/{id} primary selection", () => {
     }))
   })
 })
+
+// Antes estos cuerpos llegaban crudos a Prisma y respondían 500 reintentable.
+describe("PUT /api/cards/{id} rechaza campos con tipo inválido", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    requireWritableBusinessPrincipal.mockResolvedValue(principal)
+    requireActivatedBusiness.mockResolvedValue(undefined)
+    findCard.mockResolvedValue({ ...existingCard, brandColor: "#ff6b35" })
+  })
+
+  it.each([
+    ["textColor como arreglo", { textColor: ["LIGHT"] }],
+    ["sellos que no son número", { stampsRequired: "abc" }],
+    ["una sorpresa null", { milestoneRewards: [null] }],
+    ["una sorpresa sin sello", { milestoneRewards: [{ label: "Pan", probability: 50 }] }],
+    ["una fecha inválida", { expiresAt: "x" }],
+    ["un color nuevo que no es hexadecimal", { brandColor: "rojo" }],
+  ])("%s → 400", async (_caso, campos) => {
+    const tx = transactionDb("PRO")
+    const response = await PUT(request(campos), { params: Promise.resolve({ id: "card-owned" }) })
+    expect(response.status).toBe(400)
+    expect(tx.loyaltyCard.update).not.toHaveBeenCalled()
+  })
+
+  // El panel reenvía el color guardado: uno viejo no debe impedir guardar lo demás.
+  it("acepta el color que la tarjeta ya tenía", async () => {
+    findCard.mockResolvedValue({ ...existingCard, brandColor: "naranja" })
+    transactionDb("PRO")
+    const response = await PUT(request({ brandColor: "naranja", name: "Club" }), { params: Promise.resolve({ id: "card-owned" }) })
+    expect(response.status).toBe(200)
+  })
+})
+
+describe("PUT /api/cards/{id} reordena sorpresas", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    requireWritableBusinessPrincipal.mockResolvedValue(principal)
+    requireActivatedBusiness.mockResolvedValue(undefined)
+    findCard.mockResolvedValue({ ...existingCard, milestoneRewards: [{ id: "pan" }, { id: "galleta" }] })
+  })
+
+  // El índice único (cardId, stampNumber) se revisa fila por fila: sin liberar
+  // los números antes, intercambiar dos sorpresas daba P2002.
+  it("libera los números antes de asignar los nuevos", async () => {
+    const tx = transactionDb("PRO")
+    const llamadas: string[] = []
+    const milestoneReward = {
+      updateMany: vi.fn(async ({ data }: { data: { stampNumber: unknown } }) => {
+        llamadas.push(typeof data.stampNumber === "object" ? "liberar" : `asignar ${data.stampNumber}`)
+        return { count: 1 }
+      }),
+      deleteMany: vi.fn(),
+      create: vi.fn(),
+    }
+    Object.assign(tx, { milestoneReward })
+    tx.loyaltyCard.update.mockResolvedValue({ ...existingCard, milestoneRewards: [] })
+    const response = await PUT(request({ milestoneRewards: [
+      { id: "pan", stampNumber: 5, label: "Pan", probability: 100 },
+      { id: "galleta", stampNumber: 3, label: "Galleta", probability: 100 },
+    ] }), { params: Promise.resolve({ id: "card-owned" }) })
+
+    expect(response.status).toBe(200)
+    expect(llamadas).toEqual(["liberar", "asignar 5", "asignar 3"])
+    expect(milestoneReward.updateMany).toHaveBeenNthCalledWith(1, { where: { cardId: "card-owned" }, data: { stampNumber: { multiply: -1 } } })
+  })
+})

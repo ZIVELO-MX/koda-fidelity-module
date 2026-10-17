@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import type { NextRequest } from "next/server"
 
-const { transaction, requireWritableBusinessPrincipal, requireActivatedBusiness, syncExpiredEntitlements, persistPrimaryCardPreference, resolveTheme } = vi.hoisted(() => ({
+const { transaction, findCards, groupStampLogs, getBusinessFromSession, requireWritableBusinessPrincipal, requireActivatedBusiness, syncExpiredEntitlements, persistPrimaryCardPreference, resolveTheme } = vi.hoisted(() => ({
   transaction: vi.fn(),
+  findCards: vi.fn(),
+  groupStampLogs: vi.fn(),
+  getBusinessFromSession: vi.fn(),
   requireWritableBusinessPrincipal: vi.fn(),
   requireActivatedBusiness: vi.fn(),
   syncExpiredEntitlements: vi.fn(),
@@ -10,9 +13,10 @@ const { transaction, requireWritableBusinessPrincipal, requireActivatedBusiness,
   resolveTheme: vi.fn(),
 }))
 
-vi.mock("@/lib/prisma", () => ({ prisma: { $transaction: transaction } }))
+vi.mock("@/lib/prisma", () => ({ prisma: { $transaction: transaction, loyaltyCard: { findMany: findCards }, stampLog: { groupBy: groupStampLogs } } }))
 vi.mock("@/lib/api-utils", async () => ({
   ...(await vi.importActual<typeof import("@/lib/api-utils")>("@/lib/api-utils")),
+  getBusinessFromSession,
   requireWritableBusinessPrincipal,
   requireActivatedBusiness,
 }))
@@ -23,7 +27,7 @@ vi.mock("@/lib/account-lifecycle", async () => ({
 }))
 vi.mock("@/lib/card-themes", () => ({ resolveTheme }))
 
-import { POST } from "./route"
+import { GET, POST } from "./route"
 
 const principal = {
   business: { id: "business-owned", brandColor: "#ff6b35", iconName: null },
@@ -100,5 +104,55 @@ describe("POST /api/cards primary selection", () => {
       plan: "LITE",
       isPrimary: true,
     }))
+  })
+})
+
+// Antes estos cuerpos llegaban crudos a Prisma y respondían 500 reintentable.
+describe("POST /api/cards rechaza campos con tipo inválido", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    requireWritableBusinessPrincipal.mockResolvedValue(principal)
+    requireActivatedBusiness.mockResolvedValue(undefined)
+    resolveTheme.mockResolvedValue({ selectedThemeId: null, effectiveThemeId: null, themeLocked: false })
+  })
+
+  it.each([
+    ["textColor como arreglo", { textColor: ["LIGHT"] }],
+    ["sellos con decimales", { stampsRequired: 5.5 }],
+    ["una sorpresa null", { milestoneRewards: [null] }],
+    ["un sello de sorpresa en texto", { milestoneRewards: [{ stampNumber: "3", label: "Pan", probability: 50 }] }],
+    ["una probabilidad con decimales", { milestoneRewards: [{ stampNumber: 3, label: "Pan", probability: 12.5 }] }],
+    ["una fecha inválida", { expiresAt: "x" }],
+    ["un color que no es hexadecimal", { brandColor: "rojo" }],
+    ["un color que no es texto", { brandColor: {} }],
+    ["una descripción numérica", { description: 5 }],
+  ])("%s → 400", async (_caso, campos) => {
+    const tx = transactionDb()
+    const response = await POST(request({ name: "Club", reward: "Café", ...campos }))
+    expect(response.status).toBe(400)
+    expect(tx.loyaltyCard.create).not.toHaveBeenCalled()
+  })
+})
+
+describe("GET /api/cards", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    getBusinessFromSession.mockResolvedValue(principal)
+  })
+
+  // Sumaba el saldo abierto de cada cliente, que vuelve a 0 al canjear, y
+  // contaba también a los clientes dados de baja.
+  it("cuenta los sellos dados y solo a los clientes activos", async () => {
+    findCards.mockResolvedValue([{ id: "card-1", name: "Club", _count: { customers: 2 }, selectedTheme: null, effectiveTheme: null }])
+    groupStampLogs.mockResolvedValue([{ cardId: "card-1", _count: { _all: 25 } }])
+
+    const response = await GET(new Request("http://localhost/api/cards") as NextRequest)
+
+    expect(response.status).toBe(200)
+    expect((await response.json()).cards[0]).toMatchObject({ id: "card-1", customers: 2, totalStamps: 25 })
+    expect(findCards).toHaveBeenCalledWith(expect.objectContaining({
+      include: expect.objectContaining({ _count: { select: { customers: { where: { isActive: true } } } } }),
+    }))
+    expect(groupStampLogs).toHaveBeenCalledWith({ by: ["cardId"], where: { businessId: "business-owned", type: "stamp", cardId: { in: ["card-1"] } }, _count: { _all: true } })
   })
 })

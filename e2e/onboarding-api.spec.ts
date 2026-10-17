@@ -13,12 +13,14 @@ test("onboarding mutations retain the catalog and account context through the pa
   expect(password).toBeTruthy()
 
   const db = new PrismaClient()
-  let fixture: { userId: string; businessId: string; name: string; ownerName: string; categoryId: string | null; firstCardId: string | null } | undefined
+  let fixture: { userId: string; businessId: string; name: string; ownerName: string; role: "admin" | "sellador"; categoryId: string | null; firstCardId: string | null } | undefined
   try {
     const user = await db.user.findUniqueOrThrow({ where: { email } })
     const business = await db.business.findUniqueOrThrow({ where: { id: user.businessId! } })
     const previous = await db.onboardingProgress.findUnique({ where: { userId: user.id } })
-    fixture = { userId: user.id, businessId: business.id, name: business.name, ownerName: user.name, categoryId: business.categoryId, firstCardId: previous?.firstCardId ?? null }
+    fixture = { userId: user.id, businessId: business.id, name: business.name, ownerName: user.name, role: user.role, categoryId: business.categoryId, firstCardId: previous?.firstCardId ?? null }
+    // Solo un admin hace el alta; el fixture del portal es sellador.
+    await db.user.update({ where: { id: user.id }, data: { role: "admin" } })
     await db.onboardingProgress.upsert({
       where: { userId: user.id },
       create: { userId: user.id, businessId: user.businessId },
@@ -81,7 +83,7 @@ test("onboarding mutations retain the catalog and account context through the pa
         if (progress?.firstCardId && progress.firstCardId !== fixture.firstCardId) {
           await db.loyaltyCard.delete({ where: { id: progress.firstCardId } })
         }
-        await db.user.update({ where: { id: fixture.userId }, data: { name: fixture.ownerName } })
+        await db.user.update({ where: { id: fixture.userId }, data: { name: fixture.ownerName, role: fixture.role } })
         await db.business.update({ where: { id: fixture.businessId }, data: { name: fixture.name, categoryId: fixture.categoryId } })
       }
     } finally {

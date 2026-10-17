@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { cuerpoJson, ForbiddenError, getBusinessFromSession, handleApiError, requestIdFrom, requireActivatedBusiness, requireRole, requireWritableBusinessPrincipal, ValidationError, withRequestId } from "@/lib/api-utils"
 import { persistPrimaryCardPreference, resolveEffectiveEntitlements, resolveNewCardPrimarySelection, resolvePrimaryCard, syncExpiredEntitlements } from "@/lib/account-lifecycle"
 import { resolveTheme } from "@/lib/card-themes"
+import { validarCamposDeTarjeta } from "@/lib/campos-de-tarjeta"
 import type { CardSummary } from "@/lib/fidelity-contracts"
 
 /**
@@ -118,13 +119,16 @@ export async function GET(request: NextRequest) {
     const cards = await prisma.loyaltyCard.findMany({
       where: { businessId: business.id, isActive: true, status: "ACTIVE" },
       include: {
-        _count: { select: { customers: true } },
-        customers: { select: { stamps: true } },
+        _count: { select: { customers: { where: { isActive: true } } } },
         selectedTheme: { select: { id: true, code: true, plan: true } },
         effectiveTheme: { select: { id: true, code: true, plan: true } },
       },
       orderBy: { createdAt: "desc" },
     })
+    // Se sumaba el saldo abierto de cada cliente, que vuelve a 0 al canjear:
+    // el total acumulado son los sellos dados.
+    const sellos = await prisma.stampLog.groupBy({ by: ["cardId"], where: { businessId: business.id, type: "stamp", cardId: { in: cards.map((card) => card.id) } }, _count: { _all: true } })
+    const sellosPorTarjeta = new Map(sellos.map((fila) => [fila.cardId, fila._count._all]))
 
     const result: CardSummary[] = cards.map((card) => ({
       id: card.id,
@@ -147,7 +151,7 @@ export async function GET(request: NextRequest) {
       createdAt: card.createdAt,
       updatedAt: card.updatedAt,
       customers: card._count.customers,
-      totalStamps: card.customers.reduce((sum, c) => sum + c.stamps, 0),
+      totalStamps: sellosPorTarjeta.get(card.id) ?? 0,
     }))
 
     return withRequestId(NextResponse.json({ cards: result }), requestId)
@@ -164,6 +168,7 @@ export async function POST(request: NextRequest) {
     requireRole(user, "admin")
 
     const body = await cuerpoJson(request)
+    validarCamposDeTarjeta(body, business.brandColor)
 
     if (body.textColor !== undefined && !["AUTO", "DARK", "LIGHT"].includes(String(body.textColor))) {
       throw new ValidationError("textColor must be AUTO, DARK, or LIGHT")
