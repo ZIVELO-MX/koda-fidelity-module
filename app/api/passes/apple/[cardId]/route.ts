@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { generateLoyaltyPass } from "@/lib/passes/apple"
 import { config } from "@/lib/config"
-import { requestIdFrom, withRequestId } from "@/lib/api-utils"
+import { cuerpoJson, handleApiError, requestIdFrom, withRequestId } from "@/lib/api-utils"
+import { clienteTitular } from "@/lib/passes/titular"
 
 /**
  * @openapi
@@ -65,52 +66,27 @@ export async function POST(
   }
   const { cardId } = await params
 
-  const body = await request.json()
-  const customerName = body.customerName as string | undefined
-  const existingCustomerId = body.customerId as string | undefined
+  try {
+    const body = await cuerpoJson(request)
+    const customer = await clienteTitular(cardId, body.customerId)
 
-  const loyaltyCard = await prisma.loyaltyCard.findUnique({
-    where: { id: cardId },
-  })
+    const passBuffer = await generateLoyaltyPass(customer.id)
 
-  if (!loyaltyCard) {
-    return NextResponse.json(
-      { error: "Loyalty card not found" },
-      { status: 404 },
-    )
-  }
+    if (!customer.applePassId) {
+      await prisma.customer.update({
+        where: { id: customer.id },
+        data: { applePassId: customer.id },
+      })
+    }
 
-  if (!existingCustomerId) {
-    return NextResponse.json(
-      { error: "customerId is required" },
-      { status: 400 },
-    )
-  }
-
-  const customer = await prisma.customer.findUnique({
-    where: { id: existingCustomerId },
-  })
-  if (!customer || customer.cardId !== cardId) {
-    return NextResponse.json(
-      { error: "Customer not found" },
-      { status: 404 },
-    )
-  }
-
-  const passBuffer = await generateLoyaltyPass(customer.id)
-
-  if (!customer.applePassId) {
-    await prisma.customer.update({
-      where: { id: customer.id },
-      data: { applePassId: customer.id },
+    return new NextResponse(new Uint8Array(passBuffer), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/vnd.apple.pkpass",
+        "Content-Disposition": `attachment; filename="koda-${cardId}.pkpass"`,
+      },
     })
+  } catch (error) {
+    return withRequestId(handleApiError(error, requestId), requestId)
   }
-
-  return new NextResponse(new Uint8Array(passBuffer), {
-    status: 200,
-    headers: {
-      "Content-Type": "application/vnd.apple.pkpass",
-      "Content-Disposition": `attachment; filename="koda-${cardId}.pkpass"`,
-    },
-  })
 }
