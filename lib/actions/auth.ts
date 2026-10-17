@@ -144,7 +144,9 @@ export async function signup(_prev: AuthResult, formData: FormData): Promise<Aut
     throw err
   }
   try {
-    await prisma.signupIntent.upsert({ where: { email: normalizedEmail }, create: { email: normalizedEmail, name, accountType: accountType as "BUSINESS" | "CUSTOMER" }, update: { name, accountType: accountType as "BUSINESS" | "CUSTOMER", status: "pending" } })
+    // Sin `update`: el registro no pide sesión, y quien se registrara con el
+    // correo de otro antes de que lo confirmara le cambiaba el tipo de cuenta.
+    await prisma.signupIntent.upsert({ where: { email: normalizedEmail }, create: { email: normalizedEmail, name, accountType: accountType as "BUSINESS" | "CUSTOMER" }, update: {} })
   } catch (error) {
     logSignupFailure("persist_intent", requestId, error)
     return { error: `No pudimos preparar tu registro. Inténtalo de nuevo. Código de referencia: ${requestId}` }
