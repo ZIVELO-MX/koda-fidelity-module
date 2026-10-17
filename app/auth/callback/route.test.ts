@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { NextRequest } from "next/server"
 
-const { exchangeCodeForSession, findUser, findCustomer, provisionSignup } = vi.hoisted(() => ({
+const { exchangeCodeForSession, getUser, findUser, findCustomer, provisionSignup } = vi.hoisted(() => ({
   exchangeCodeForSession: vi.fn(),
+  getUser: vi.fn(),
   findUser: vi.fn(),
   findCustomer: vi.fn(),
   provisionSignup: vi.fn(),
@@ -10,7 +11,7 @@ const { exchangeCodeForSession, findUser, findCustomer, provisionSignup } = vi.h
 
 vi.mock("@/lib/supabase-req-res", () => ({
   createSupabaseReqResClient: (_request: Request, response: Response) => ({
-    supabase: { auth: { exchangeCodeForSession } },
+    supabase: { auth: { exchangeCodeForSession, getUser } },
     response,
   }),
 }))
@@ -80,5 +81,19 @@ describe("auth callback destination", () => {
     ))
 
     expect(response.headers.get("location")).toBe("http://localhost/join/card-123")
+  })
+
+  // La plantilla de confirmación con token_hash pasa antes por /auth/confirm,
+  // que ya abre la sesión, y llega aquí sin `code`. Antes eso era un error.
+  it("sends a session without code to its validated destination", async () => {
+    getUser.mockResolvedValue({ data: { user: { id: "auth-user-1" } } })
+    const response = await GET(new NextRequest(`http://localhost/auth/callback?next=${encodeURIComponent("/join/card-1")}`))
+    expect(response.headers.get("location")).toBe("http://localhost/join/card-1")
+  })
+
+  it("keeps the error when there is neither code nor session", async () => {
+    getUser.mockResolvedValue({ data: { user: null } })
+    const response = await GET(new NextRequest(`http://localhost/auth/callback?next=${encodeURIComponent("/join/card-1")}`))
+    expect(response.headers.get("location")).toContain("/auth/error")
   })
 })
