@@ -144,15 +144,7 @@ export async function signup(_prev: AuthResult, formData: FormData): Promise<Aut
     throw err
   }
   try {
-    // Antes de confirmar nadie probó ser dueño del correo. Reemplazar el tipo
-    // dejaba a cualquiera convertir el alta pendiente de otro; ignorar el nuevo
-    // dejaba apartar de antemano el correo de un negocio como cliente. Un tipo
-    // distinto sobre un alta pendiente se rechaza a la vista.
-    const pendiente = await prisma.signupIntent.findUnique({ where: { email: normalizedEmail }, select: { accountType: true, status: true } })
-    if (pendiente?.status === "pending" && pendiente.accountType !== accountType) {
-      return { error: "Este correo ya tiene un registro pendiente de otro tipo de cuenta. Confírmalo desde el correo que te enviamos o escribe a soporte@zivelo.dev." }
-    }
-    await prisma.signupIntent.upsert({ where: { email: normalizedEmail }, create: { email: normalizedEmail, name, accountType: accountType as "BUSINESS" | "CUSTOMER" }, update: {} })
+    await prisma.signupIntent.upsert({ where: { email: normalizedEmail }, create: { email: normalizedEmail, name, accountType: accountType as "BUSINESS" | "CUSTOMER" }, update: { name, accountType: accountType as "BUSINESS" | "CUSTOMER", status: "pending" } })
   } catch (error) {
     logSignupFailure("persist_intent", requestId, error)
     return { error: `No pudimos preparar tu registro. Inténtalo de nuevo. Código de referencia: ${requestId}` }
