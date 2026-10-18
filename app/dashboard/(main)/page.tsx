@@ -87,12 +87,14 @@ export default async function DashboardPage() {
         where: { businessId: business.id, isActive: true },
         include: {
           _count: { select: { customers: { where: { isActive: true } } } },
-          customers: { where: { isActive: true }, select: { id: true, name: true, stamps: true } },
+          customers: { where: { isActive: true }, select: { id: true, name: true, stamps: true, currentCycle: { select: { configuration: { select: { stampsRequired: true } } } } } },
         },
         orderBy: { createdAt: "desc" },
       }),
+      // La lista solo distingue sello y canje: un alta, una tarjeta llena o una
+      // sorpresa salían como «Canjeó su recompensa».
       prisma.stampLog.findMany({
-        where: { customer: { card: { businessId: business.id } } },
+        where: { customer: { card: { businessId: business.id } }, type: { in: ["stamp", "redeem"] } },
         orderBy: { createdAt: "desc" },
         take: 10,
         include: {
@@ -154,7 +156,8 @@ export default async function DashboardPage() {
 
   const aUnSello = cards.flatMap((card) =>
     (card.customers as any[])
-      .filter((cliente) => card.stampsRequired - cliente.stamps === 1)
+      // La meta es la del ciclo en curso, con la que canjea el motor.
+      .filter((cliente) => (cliente.currentCycle?.configuration.stampsRequired ?? card.stampsRequired) - cliente.stamps === 1)
       .map((cliente) => ({ id: cliente.id, nombre: cliente.name, tarjeta: card.name })),
   )
 
