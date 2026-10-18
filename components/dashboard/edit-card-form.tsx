@@ -155,6 +155,7 @@ export function EditCardForm({
 
     setSaving(true)
 
+    // Sin el catch, un error de red dejaba el botón en «Guardando» para siempre.
     const response = await fetch(`/api/cards/${cardId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -173,9 +174,14 @@ export function EditCardForm({
         // Una sorpresa sin etiqueta es una fila que nadie llenó.
         milestoneRewards: sorpresasQueViajan(milestones),
       }),
-    })
+    }).catch(() => null)
 
     setSaving(false)
+
+    if (!response) {
+      toast.error("Error de red. Los cambios no se guardaron.")
+      return
+    }
 
     if (!response.ok) {
       const body = await response.json().catch(() => null)

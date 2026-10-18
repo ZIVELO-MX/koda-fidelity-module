@@ -17,6 +17,7 @@ import { CustomerCardListIcon } from "@/components/dashboard/customer-card-list-
 import { createBrowserSupabase } from "@/lib/supabase-browser"
 import { logout } from "@/lib/actions/auth"
 import { isExpired, daysUntilExpiry, formatExpiryDate } from "@/lib/card-utils"
+import { toast } from "sonner"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -531,7 +532,12 @@ export default function DashboardMyCardsPage() {
                               <AlertDialogAction
                                 className="bg-destructive hover:bg-destructive/90"
                                 onClick={async () => {
-                                  await fetch(`/api/my-cards/${c.id}`, { method: "DELETE" })
+                                  // Antes se quitaba aunque la API la rechazara, y volvía a aparecer al recargar.
+                                  const res = await fetch(`/api/my-cards/${c.id}`, { method: "DELETE" }).catch(() => null)
+                                  if (!res?.ok) {
+                                    toast.error("No fue posible eliminar la tarjeta. Inténtalo de nuevo.")
+                                    return
+                                  }
                                   setCards((prev) => prev.filter((card) => card.id !== c.id))
                                 }}
                               >
