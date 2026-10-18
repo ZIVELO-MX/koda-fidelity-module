@@ -196,6 +196,20 @@ export function withCurrentCycleMilestoneClaims<
   }
 }
 
+// La meta, el saldo y la recompensa que valen para el cliente son los del ciclo
+// en curso, con los que canjea el motor. Las pantallas del cliente y el escáner
+// leen los de `card`: si la meta cambió a mitad del ciclo, se veía «9/8» o se
+// ofrecía canjear algo que el servidor rechaza.
+function conMetaDelCiclo<T extends {
+  stamps: number
+  card: { stampsRequired: number; reward: string }
+  currentCycle?: { balance: number; configuration: { stampsRequired: number; reward: string } } | null
+}>(customer: T): T {
+  const ciclo = customer.currentCycle
+  if (!ciclo) return customer
+  return { ...customer, stamps: ciclo.balance, card: { ...customer.card, stampsRequired: ciclo.configuration.stampsRequired, reward: ciclo.configuration.reward } }
+}
+
 // Supabase guarda el correo en minúsculas y el teclado del celular suele
 // escribir «Ana@…». Comparar tal cual no encontraba al cliente al volver del
 // enlace mágico, y la página lo daba de alta otra vez.
@@ -299,7 +313,7 @@ export async function GET(request: NextRequest) {
         throw new NotFoundError("Customer not found")
       }
 
-      return withRequestId(NextResponse.json({ customer: withCurrentCycleMilestoneClaims(customer) }), requestId)
+      return withRequestId(NextResponse.json({ customer: withCurrentCycleMilestoneClaims(conMetaDelCiclo(customer)) }), requestId)
     }
 
     if (email) {
@@ -322,7 +336,7 @@ export async function GET(request: NextRequest) {
       })).filter(delCorreo(correo))
 
       return withRequestId(NextResponse.json({
-        customers: customers.map(withCurrentCycleMilestoneClaims),
+        customers: customers.map((customer) => withCurrentCycleMilestoneClaims(conMetaDelCiclo(customer))),
       }), requestId)
     }
 

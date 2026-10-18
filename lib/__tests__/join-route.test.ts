@@ -247,3 +247,21 @@ describe("GET /api/join?email=", () => {
     expect((await res.json()).existing).toBe(false)
   })
 })
+
+// Las pantallas del cliente y el escáner leen la meta de `card`. El motor canjea
+// con la del ciclo en curso: si la meta cambió a mitad del ciclo, se veía «9/8»
+// o se ofrecía canjear algo que el servidor rechaza.
+describe("GET /api/join con la meta del ciclo en curso", () => {
+  it("entrega la meta, el saldo y la recompensa del ciclo", async () => {
+    vi.mocked(createClient).mockResolvedValueOnce({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { email: "a@b.com", email_confirmed_at: "2026-10-15T00:00:00.000Z" } } }) },
+    } as never)
+    mockPrisma.customer.findMany.mockResolvedValue([{
+      id: "c1", email: "a@b.com", stamps: 9, milestoneClaims: [], stampsLog: [],
+      card: { stampsRequired: 8, reward: "Café" },
+      currentCycle: { balance: 9, configuration: { stampsRequired: 10, reward: "Pan" } },
+    }])
+    const res = await GET({ url: "http://x/api/join?email=a%40b.com&cardId=card1" } as never)
+    expect((await res.json()).customers[0]).toMatchObject({ stamps: 9, card: { stampsRequired: 10, reward: "Pan" } })
+  })
+})
