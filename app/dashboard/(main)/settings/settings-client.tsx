@@ -32,8 +32,12 @@ export function SettingsClient({ role }: { role: Role }) {
     // Los datos del negocio son del administrador. Sin ese rol no se piden y la
     // pantalla se queda con el perfil, que es de la persona.
     if (!esAdmin) return
+    // Una respuesta de error también trae JSON: sin revisar `ok` se mostraba un formulario vacío.
     fetch("/api/business")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        return res.json()
+      })
       .then((data) => {
         if (data.business) {
           setBusinessName(data.business.name)

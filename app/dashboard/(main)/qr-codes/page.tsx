@@ -23,8 +23,12 @@ export default function QRCodesPage() {
 
   useEffect(() => {
     queueMicrotask(() => setBaseUrl(window.location.origin))
+    // Una respuesta de error también trae JSON: sin revisar `ok` se leía como «No hay tarjetas».
     fetch("/api/cards")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        return res.json()
+      })
       .then((data) => queueMicrotask(() => setCards(data.cards || [])))
       .catch(() => queueMicrotask(() => setFetchError(true)))
       .finally(() => queueMicrotask(() => setLoading(false)))
