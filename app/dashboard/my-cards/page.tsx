@@ -16,7 +16,7 @@ import {
 import { CustomerCardListIcon } from "@/components/dashboard/customer-card-list-icon"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
 import { logout } from "@/lib/actions/auth"
-import { isExpired, daysUntilExpiry } from "@/lib/card-utils"
+import { isExpired, daysUntilExpiry, formatExpiryDate } from "@/lib/card-utils"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -438,7 +438,7 @@ export default function DashboardMyCardsPage() {
                               currentStamps={c.stamps}
                               maxStamps={c.card.stampsRequired}
                               reward={c.card.reward}
-                              expirationDate={c.card.expiresAt ? new Date(c.card.expiresAt).toLocaleDateString("es-MX") : undefined}
+                              expirationDate={c.card.expiresAt ? formatExpiryDate(c.card.expiresAt) : undefined}
                               brandColor={c.card.brandColor}
                               textColor={c.card.textColor}
                               themeCode={c.card.effectiveTheme?.code}
@@ -509,7 +509,7 @@ export default function DashboardMyCardsPage() {
                           </p>
                           {c.card.expiresAt && (
                             <p className="text-xs text-muted-foreground">
-                              Venció el {new Date(c.card.expiresAt).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}
+                              Venció el {formatExpiryDate(c.card.expiresAt, { day: "numeric", month: "long", year: "numeric" })}
                             </p>
                           )}
                         </div>

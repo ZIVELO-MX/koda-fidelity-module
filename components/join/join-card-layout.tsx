@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { GoogleButton } from "@/components/auth/google-button"
 import { ArrowLeft, ChevronDown, Loader2 } from "lucide-react"
+import { formatExpiryDate } from "@/lib/card-utils"
 
 export interface JoinCardData {
   name: string
@@ -101,7 +102,7 @@ export function JoinCardLayout({
                 reward={cardInfo.reward}
                 expirationDate={
                   cardInfo.expiresAt
-                    ? new Date(cardInfo.expiresAt).toLocaleDateString("es-MX")
+                    ? formatExpiryDate(cardInfo.expiresAt)
                     : undefined
                 }
                 brandColor={cardInfo.brandColor}

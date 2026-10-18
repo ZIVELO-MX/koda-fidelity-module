@@ -14,6 +14,19 @@ export function isExpired(expiresAt: Date | string | null | undefined): boolean 
   return hoy() > startOfUTCDay(new Date(expiresAt))
 }
 
+/**
+ * El vencimiento, para mostrarlo. Es un día del calendario guardado como
+ * medianoche UTC: con la zona del navegador, en México salía un día antes.
+ */
+export function formatExpiryDate(expiresAt: Date | string, options?: Intl.DateTimeFormatOptions): string {
+  return new Date(expiresAt).toLocaleDateString("es-MX", { ...options, timeZone: "UTC" })
+}
+
+/** El vencimiento como valor de `<input type="date">`, sin depender de la zona del servidor. */
+export function expiryInputValue(expiresAt: Date | string): string {
+  return new Date(expiresAt).toISOString().slice(0, 10)
+}
+
 export function daysUntilExpiry(expiresAt: Date | string | null | undefined): number | null {
   if (!expiresAt) return null
   return Math.round((startOfUTCDay(new Date(expiresAt)) - hoy()) / 86_400_000)

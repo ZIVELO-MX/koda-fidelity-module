@@ -8,7 +8,7 @@ import { CardActions } from "@/components/dashboard/card-actions"
 import { CardQRInline } from "@/components/dashboard/card-qr-inline"
 import { CustomersTable, SortField, SortOrder } from "@/components/dashboard/customers-table"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
-import { isExpired } from "@/lib/card-utils"
+import { formatExpiryDate, isExpired } from "@/lib/card-utils"
 
 export default async function CardDetailPage({
   params,
@@ -99,7 +99,7 @@ export default async function CardDetailPage({
           maxStamps={card.stampsRequired}
           reward={card.reward}
           showQR={false}
-          expirationDate={card.expiresAt ? card.expiresAt.toLocaleDateString("es-MX") : undefined}
+          expirationDate={card.expiresAt ? formatExpiryDate(card.expiresAt) : undefined}
           brandColor={card.brandColor}
           textColor={card.textColor}
           themeCode={card.effectiveTheme?.code}
@@ -151,7 +151,7 @@ export default async function CardDetailPage({
             <div>
               <dt className="text-xs text-muted-foreground">Vencimiento</dt>
               <dd className="text-lg font-semibold text-foreground">
-                {card.expiresAt ? card.expiresAt.toLocaleDateString("es-MX") : "Sin vencimiento"}
+                {card.expiresAt ? formatExpiryDate(card.expiresAt) : "Sin vencimiento"}
               </dd>
             </div>
           </dl>

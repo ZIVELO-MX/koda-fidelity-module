@@ -6,7 +6,7 @@ import { Plus, Search, Archive } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
-import { daysUntilExpiry, isExpired } from "@/lib/card-utils"
+import { daysUntilExpiry, formatExpiryDate, isExpired } from "@/lib/card-utils"
 import { resolveEffectiveEntitlements, syncExpiredEntitlements } from "@/lib/account-lifecycle"
 import { PrimaryCardConfigurator } from "@/components/dashboard/primary-card-configurator"
 import type { Prisma } from "@prisma/client"
@@ -222,7 +222,7 @@ export default async function CardsPage({
                   {vencimientoRequiereAtencion && card.expiresAt && (
                     <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
                       {card.expired
-                        ? `Venció el ${card.expiresAt.toLocaleDateString("es-MX")}`
+                        ? `Venció el ${formatExpiryDate(card.expiresAt)}`
                         : diasParaVencer === 0
                         ? "Vence hoy"
                         : `Vence en ${diasParaVencer} día${diasParaVencer !== 1 ? "s" : ""}`}

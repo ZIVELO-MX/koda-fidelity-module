@@ -2,7 +2,7 @@ import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 import { EditCardForm } from "@/components/dashboard/edit-card-form"
-import { toDateInputValue } from "@/lib/card-utils"
+import { expiryInputValue } from "@/lib/card-utils"
 import { resolvePrimaryCard, syncExpiredEntitlements } from "@/lib/account-lifecycle"
 
 export default async function EditCardPage({
@@ -66,7 +66,7 @@ export default async function EditCardPage({
       initialThemeId={card.selectedThemeId}
       initialTextColor={card.textColor}
       initialDescription={card.description}
-      initialExpiresAt={card.expiresAt ? toDateInputValue(card.expiresAt) : null}
+      initialExpiresAt={card.expiresAt ? expiryInputValue(card.expiresAt) : null}
       initialMilestones={card.milestoneRewards.map((milestone) => ({
         id: milestone.id,
         stampNumber: milestone.stampNumber,

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest"
-import { isExpired, daysUntilExpiry, addDays, addMonths, addYears, toDateInputValue, pickMilestoneReward } from "../card-utils"
+import { isExpired, daysUntilExpiry, addDays, addMonths, addYears, toDateInputValue, pickMilestoneReward, formatExpiryDate, expiryInputValue } from "../card-utils"
 
 const NOW = new Date("2026-06-05T12:00:00Z")
 
@@ -115,5 +115,22 @@ describe("pickMilestoneReward", () => {
 
   it("returns null for empty milestones array", () => {
     expect(pickMilestoneReward(3, [])).toBeNull()
+  })
+})
+
+// El vencimiento es un día del calendario guardado como medianoche UTC. Con la
+// zona del navegador, en México se mostraba un día antes.
+describe("formatExpiryDate", () => {
+  it("muestra el día guardado sin importar la zona", () => {
+    expect(formatExpiryDate("2026-10-14T00:00:00.000Z")).toBe("14/10/2026")
+    expect(formatExpiryDate(new Date("2026-10-14T00:00:00.000Z"), { day: "numeric", month: "long", year: "numeric" })).toBe("14 de octubre de 2026")
+  })
+})
+
+// La edición calculaba el día con la zona del servidor: con una zona al oeste de
+// UTC, cada guardado corría el vencimiento un día atrás.
+describe("expiryInputValue", () => {
+  it("da el día guardado para el campo de fecha", () => {
+    expect(expiryInputValue(new Date("2026-10-14T00:00:00.000Z"))).toBe("2026-10-14")
   })
 })

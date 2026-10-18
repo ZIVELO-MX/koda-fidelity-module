@@ -11,6 +11,7 @@ import { Check, Loader2 } from "lucide-react"
 import { mensajeDeAlta, type MotivoAlta } from "@/lib/alta-estados"
 import { cn } from "@/lib/utils"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
+import { formatExpiryDate } from "@/lib/card-utils"
 
 type Step = "loading" | "error" | "form" | "ready" | "verify-email"
 
@@ -329,7 +330,7 @@ export default function JoinCardPage() {
                 currentStamps={customer.stamps}
                 maxStamps={cardInfo.stampsRequired}
                 reward={cardInfo.reward}
-                expirationDate={cardInfo.expiresAt ? new Date(cardInfo.expiresAt).toLocaleDateString("es-MX") : undefined}
+                expirationDate={cardInfo.expiresAt ? formatExpiryDate(cardInfo.expiresAt) : undefined}
                 brandColor={cardInfo.brandColor}
                 textColor={cardInfo.textColor}
                 themeCode={cardInfo.temaEfectivo}
