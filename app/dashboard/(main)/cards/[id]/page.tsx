@@ -30,6 +30,7 @@ export default async function CardDetailPage({
 
   const business = await prisma.business.findFirst({ where: { users: { some: { authUserId: user.id } } } })
   if (!business) redirect("/login")
+  const miembro = await prisma.user.findUnique({ where: { authUserId: user.id }, select: { role: true } })
 
   const card = await prisma.loyaltyCard.findUnique({
     where: { id },
@@ -46,6 +47,7 @@ export default async function CardDetailPage({
                   milestoneClaims: true,
                 },
               },
+              currentCycle: { select: { configuration: { select: { stampsRequired: true } } } },
         },
         orderBy: { [sort]: order },
       },
@@ -59,9 +61,11 @@ export default async function CardDetailPage({
   const cardExpired = isExpired(card.expiresAt)
   const allCustomers = card.customers
   const totalStamps = allCustomers.reduce((s, c) => s + c.stamps, 0)
-  const readyToRedeem = allCustomers.filter((c) => c.stamps >= card.stampsRequired).length
+  // La meta de cada cliente es la de su ciclo en curso, con la que canjea el motor.
+  const metaDe = (c: (typeof allCustomers)[number]) => c.currentCycle?.configuration.stampsRequired ?? card.stampsRequired
+  const readyToRedeem = allCustomers.filter((c) => c.stamps >= metaDe(c)).length
   const incompleteCustomers = cardExpired
-    ? allCustomers.filter((c) => c.stamps < card.stampsRequired).length
+    ? allCustomers.filter((c) => c.stamps < metaDe(c)).length
     : 0
 
   const filteredCustomers = q?.trim()
@@ -70,7 +74,7 @@ export default async function CardDetailPage({
 
   const tableCustomers = filteredCustomers.map((c) => ({
     ...c,
-    card: { name: card.name, stampsRequired: card.stampsRequired, reward: card.reward, brandColor: card.brandColor },
+    card: { name: card.name, stampsRequired: metaDe(c), reward: card.reward, brandColor: card.brandColor },
   }))
 
   const basePath = `/dashboard/cards/${id}`
@@ -212,6 +216,7 @@ export default async function CardDetailPage({
             basePath={basePath}
             baseParams={baseParams}
             showCardColumn={false}
+            puedeArchivar={miembro?.role === "admin"}
           />
         )}
       </div>
