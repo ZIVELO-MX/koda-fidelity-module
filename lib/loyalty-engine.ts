@@ -60,6 +60,7 @@ export async function executeLoyaltyOperation(db: Db, input: OperationInput): Pr
     throw new ValidationError("Idempotency-Key is required and must be at most 200 characters")
   }
 
+  // Los mensajes van en español: el escáner del panel los muestra tal cual.
   try {
     return await withSerializableRetry(() => db.$transaction(async tx => {
       const existing = await tx.loyaltyOperation.findUnique({
@@ -72,7 +73,7 @@ export async function executeLoyaltyOperation(db: Db, input: OperationInput): Pr
         throw new NotFoundError("Customer not found")
       }
       if (customer.card.status !== "ACTIVE") throw new NotFoundError("Customer not found")
-      if (isExpired(customer.card.expiresAt)) throw new ValidationError("This loyalty card has expired")
+      if (isExpired(customer.card.expiresAt)) throw new ValidationError("Esta tarjeta ya venció.")
 
       const now = new Date()
       let cycle = customer.currentCycle
@@ -99,7 +100,7 @@ export async function executeLoyaltyOperation(db: Db, input: OperationInput): Pr
       if (input.type === "stamp") {
         const balance = cycle?.balance ?? customer.stamps
         if (balance >= configuration.stampsRequired) {
-          throw new ValidationError("Customer has completed the card and must redeem first.")
+          throw new ValidationError("El cliente completó la tarjeta. Canjea la recompensa antes de sellar de nuevo.")
         }
         const nextBalance = balance + 1
         if (!cycle) {
@@ -151,7 +152,7 @@ export async function executeLoyaltyOperation(db: Db, input: OperationInput): Pr
         result = { customer: updated, event: "stamp", message: `${customer.name} now has ${nextBalance} stamps`, milestoneClaim, operationId, cycleId: cycle.id }
       } else {
         const balance = cycle?.balance ?? customer.stamps
-        if (balance < configuration.stampsRequired) throw new ValidationError(`Customer needs ${configuration.stampsRequired - balance} more stamps to redeem`)
+        if (balance < configuration.stampsRequired) throw new ValidationError(`Faltan ${configuration.stampsRequired - balance} sellos para poder canjear.`)
         if (!cycle) {
           cycle = await tx.loyaltyCycle.create({ data: { customerId: customer.id, cardId: customer.card.id, configurationId: configuration.id, balance }, include: { configuration: true } })
         }

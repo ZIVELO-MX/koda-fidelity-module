@@ -27,3 +27,31 @@ describe("Idempotency-Key repetida", () => {
     await expect(executeLoyaltyOperation(db, entrada)).rejects.toBeInstanceOf(ValidationError)
   })
 })
+
+// El escáner muestra el mensaje del motor tal cual, y salía en inglés.
+describe("mensajes que ve quien sella", () => {
+  function dbConCliente(balance: number, stampsRequired: number, expiresAt: Date | null = null) {
+    const configuration = { id: "conf1", version: 1, stampsRequired, reward: "Café", milestones: [] }
+    const tx = {
+      loyaltyOperation: { findUnique: vi.fn().mockResolvedValue(null) },
+      customer: { findUnique: vi.fn().mockResolvedValue({
+        id: "cust1", name: "Ana", isActive: true, stamps: balance,
+        card: { id: "card1", businessId: "biz1", status: "ACTIVE", expiresAt, stampsRequired, reward: "Café", milestoneRewards: [] },
+        currentCycle: { id: "cycle1", balance, configuration },
+      }) },
+    }
+    return { $transaction: vi.fn(async (fn: (t: typeof tx) => unknown) => fn(tx)) } as never
+  }
+
+  it("pide canjear cuando la tarjeta está completa", async () => {
+    await expect(executeLoyaltyOperation(dbConCliente(10, 10), entrada)).rejects.toThrow("El cliente completó la tarjeta. Canjea la recompensa antes de sellar de nuevo.")
+  })
+
+  it("dice cuántos sellos faltan para canjear", async () => {
+    await expect(executeLoyaltyOperation(dbConCliente(7, 10), { ...entrada, type: "redeem" })).rejects.toThrow("Faltan 3 sellos para poder canjear.")
+  })
+
+  it("avisa que la tarjeta venció", async () => {
+    await expect(executeLoyaltyOperation(dbConCliente(1, 10, new Date("2020-01-01T00:00:00Z")), entrada)).rejects.toThrow("Esta tarjeta ya venció.")
+  })
+})
