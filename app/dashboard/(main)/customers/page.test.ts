@@ -5,6 +5,7 @@ const { findMany } = vi.hoisted(() => ({ findMany: vi.fn() }))
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     business: { findFirst: vi.fn().mockResolvedValue({ id: "business-1" }) },
+    user: { findUnique: vi.fn().mockResolvedValue({ role: "admin" }) },
     loyaltyCard: { findMany: vi.fn().mockResolvedValue([]) },
     customer: { findMany },
   },

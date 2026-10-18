@@ -25,6 +25,7 @@ export default async function CustomersPage({
 
   const business = await prisma.business.findFirst({ where: { users: { some: { authUserId: user.id } } } })
   if (!business) redirect("/login")
+  const miembro = await prisma.user.findUnique({ where: { authUserId: user.id }, select: { role: true } })
 
   const [loyaltyCards, customers] = await Promise.all([
     prisma.loyaltyCard.findMany({
@@ -192,6 +193,7 @@ export default async function CustomersPage({
           basePath="/dashboard/customers"
           baseParams={baseParams}
           footerSuffix={activeCard ? ` en "${activeCard.name}"` : ""}
+          puedeArchivar={miembro?.role === "admin"}
         />
       )}
     </div>
