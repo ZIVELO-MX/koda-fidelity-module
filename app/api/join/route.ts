@@ -175,6 +175,8 @@ const customerInclude = {
     orderBy: { createdAt: "desc" },
     take: 1,
   },
+  // El escáner muestra la meta del ciclo en curso, con la que canjea el motor.
+  currentCycle: { select: { balance: true, configuration: { select: { stampsRequired: true, reward: true } } } },
 } as const
 
 export function withCurrentCycleMilestoneClaims<

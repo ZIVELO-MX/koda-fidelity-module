@@ -22,7 +22,7 @@ import {
 } from "lucide-react"
 import { daysUntilExpiry } from "@/lib/card-utils"
 import { getCardIcon } from "@/lib/card-icons"
-import { parseClientesResponse, type ClienteBuscado } from "@/lib/clientes-buscados"
+import { clienteEscaneado, parseClientesResponse, type ClienteBuscado } from "@/lib/clientes-buscados"
 import { ejecutarSellado } from "@/lib/sellado"
 
 type SearchCustomer = ClienteBuscado
@@ -141,17 +141,7 @@ function ScanPageInner() {
       const res = await fetch(`/api/join?id=${encodeURIComponent(customerId)}`)
       if (!res.ok) throw new Error("Cliente no encontrado")
       const data = await res.json()
-      const c = data.customer
-      setSelectedCustomer({
-        id: c.id,
-        name: c.name,
-        stamps: c.stamps,
-        maxStamps: c.card.stampsRequired,
-        cardName: c.card.name,
-        cardReward: c.card.reward,
-        cardBrandColor: c.card.brandColor,
-        cardExpiresAt: c.card.expiresAt ?? null,
-      })
+      setSelectedCustomer(clienteEscaneado(data.customer))
       setScanState("found")
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "Error al buscar cliente")
