@@ -19,19 +19,32 @@ export async function GET(request: NextRequest) {
       const authUser = data.session?.user
       if (authUser) {
         await provisionSignup(authUser.id)
-        const member = await prisma.user.findUnique({ where: { authUserId: authUser.id }, select: { id: true } })
-        if (member) {
-          // A validated `next` may include a query string (for example, the
-          // recovery reason). Without one, business members go to the dashboard.
-          const destination = searchParams.has("next") ? next : "/dashboard"
-          const bizResponse = NextResponse.redirect(`${origin}${destination}`)
-          response.headers.getSetCookie().forEach((c) => bizResponse.headers.append("Set-Cookie", c))
-          return bizResponse
+        const member = await prisma.user.findUnique({ where: { authUserId: authUser.id }, select: { id: true, businessId: true, passwordSetupRequired: true, onboardingProgress: { select: { status: true } } } })
+        const customer = await prisma.customerProfile.findUnique({ where: { authUserId: authUser.id }, select: { id: true } })
+        if (member || customer) {
+          // Sin progreso no hay alta pendiente (un invitado no lo tiene), igual que en el layout del panel.
+          const signupDestination = customer ? "/dashboard/my-cards" : member && (!member.businessId || (member.onboardingProgress && member.onboardingProgress.status !== "ACTIVE")) ? "/onboarding" : "/dashboard"
+          const destination = member?.passwordSetupRequired
+            ? "/dashboard/update-password"
+            : member?.onboardingProgress && member.onboardingProgress.status !== "ACTIVE"
+              ? "/onboarding"
+              : searchParams.has("next") ? next : signupDestination
+          const accountResponse = NextResponse.redirect(`${origin}${destination}`)
+          response.headers.getSetCookie().forEach((c) => accountResponse.headers.append("Set-Cookie", c))
+          return accountResponse
         }
       }
       return response
     }
   }
+
+  // La plantilla de confirmación con token_hash pasa antes por /auth/confirm,
+  // que ya abre la sesión, y llega aquí sin `code`; también un enlace que se
+  // abre dos veces. Con sesión no es un error: se sigue al destino validado.
+  const response = NextResponse.redirect(`${origin}${next}`)
+  const { supabase } = createSupabaseReqResClient(request, response)
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) return response
 
   return NextResponse.redirect(`${origin}/auth/error?error=OAuth%20callback%20error`)
 }

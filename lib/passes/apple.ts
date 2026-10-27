@@ -3,6 +3,7 @@ import { promises as fs } from "node:fs"
 import path from "node:path"
 import sharp from "sharp"
 import { prisma } from "@/lib/prisma"
+import { formatExpiryDate } from "@/lib/card-utils"
 
 const DEV_MODE = process.env.APPLE_WALLET_DEV_MODE === "true"
 const PASS_TYPE_IDENTIFIER = process.env.APPLE_PASS_TYPE_IDENTIFIER || "pass.com.koda.fidelity"
@@ -169,7 +170,7 @@ export async function generateLoyaltyPass(customerId: string): Promise<Buffer> {
     pass.backFields.push({
       key: "expires",
       label: "Vence",
-      value: card.expiresAt.toLocaleDateString("es-MX"),
+      value: formatExpiryDate(card.expiresAt),
     })
   }
 

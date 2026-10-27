@@ -14,6 +14,7 @@
     --border:#EBE9E0; --border-strong:#D9D6C9;
     --ink:#1C1B17; --ink-2:#5E5A51; --ink-3:#8E897C; --ink-4:#B5B0A4;
     --warning:#B45309; --warning-soft:#FDF2DC;
+    --danger:#B91C1C; --danger-soft:#FBEAE9;
     --r-md:8px; --r-lg:10px; --r-xl:14px; --r-2xl:18px;
     --shadow-md:0 4px 12px rgba(28,27,23,.08), 0 1px 2px rgba(28,27,23,.04);
     --sans:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
@@ -26,6 +27,7 @@
       --ink:#FAFAF7; --ink-2:#CBC6B9; --ink-3:#8E897C; --ink-4:#5E5A51;
       --brand:#FF7A47; --brand-soft:#2A1810; --brand-ink:#FFE1CF;
       --warning:#FBBF24; --warning-soft:#2A1F0C;
+      --danger:#F87171; --danger-soft:#321513;
     }
   }
   * { box-sizing:border-box; }
@@ -56,16 +58,56 @@
   }
   button:active { transform:scale(.97); }
   :focus-visible { outline:2px solid var(--brand); outline-offset:2px; }
-  .primario { background:var(--brand); color:#fff; width:100%; }
+  .primario { background:var(--brand); color:var(--brand-ink); width:100%; }
   .primario:hover { background:var(--brand-hover); }
   .fantasma { background:transparent; color:var(--ink-2); border-color:var(--border-strong); }
   .texto { background:transparent; color:var(--ink-2); border:none; padding:11px 8px; }
   .acciones { display:flex; flex-direction:column; gap:8px; margin-top:20px; }
+  .intro-shell { max-width:620px; margin:0 auto; }
+  .intro-voz { display:grid; grid-template-columns:64px minmax(0,1fr); align-items:start; gap:14px; }
+  .logo-mascota { width:56px; height:56px; object-fit:contain; filter:drop-shadow(0 5px 12px rgba(28,27,23,.16)); animation:kf-logo 3.8s ease-in-out infinite; }
+  .globo-dialogo { position:relative; padding:18px 20px; border:1px solid var(--border); border-radius:18px; background:var(--surface); box-shadow:var(--shadow-md); }
+  .globo-dialogo::before { content:""; position:absolute; left:-7px; top:21px; width:12px; height:12px; transform:rotate(45deg); background:var(--surface); border-left:1px solid var(--border); border-bottom:1px solid var(--border); }
+  .globo-dialogo h1 { font-size:24px; line-height:1.2; letter-spacing:-.025em; margin:5px 0 8px; text-wrap:balance; }
+  .globo-dialogo p { margin:0; color:var(--ink-2); }
+  .intro-lamina { animation:kf-entrada 260ms cubic-bezier(.23,1,.32,1) both; }
+  .intro-muestra { margin:22px auto 0; padding:16px; border:1px solid var(--border); border-radius:18px; background:var(--surface-2); }
+  .intro-muestra .kcard { animation:kf-tarjeta-idle 5.5s ease-in-out infinite; }
+  .intro-puntos { display:flex; justify-content:center; gap:7px; margin-top:20px; }
+  .intro-punto { width:7px; height:7px; padding:0; min-height:7px; border:0; border-radius:999px; background:var(--border-strong); }
+  .intro-punto[aria-current="step"] { width:22px; background:var(--brand); }
+  .intro-acciones { display:grid; grid-template-columns:1fr 1fr; margin:18px 0 0; }
+  .intro-acciones button { width:100%; }
+  @keyframes kf-logo { 0%,100% { transform:translateY(0) rotate(-2deg); } 50% { transform:translateY(-6px) rotate(2deg); } }
+  @keyframes kf-entrada { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes kf-tarjeta-idle { 0%,100% { transform:translateY(0) rotate(-.4deg); } 50% { transform:translateY(-7px) rotate(.4deg); } }
+  .campo { margin-top:14px; }
+  .campo label { margin-top:0; }
+  .campo [aria-invalid="true"] { border-color:var(--danger); box-shadow:0 0 0 1px var(--danger); }
+  .campo-error { display:flex; align-items:flex-start; gap:7px; color:var(--danger); font-size:12.5px; margin-top:6px; }
+  .campo-error[hidden] { display:none; }
+  .campo-error-icon { display:inline-grid; place-items:center; width:17px; height:17px; flex:0 0 17px; border:1px solid currentColor; border-radius:50%; font-size:11px; font-weight:800; line-height:1; }
+  .selector-texto { border:0; padding:0; margin:14px 0 0; }
+  .selector-texto legend { font-size:13px; font-weight:600; margin-bottom:6px; }
+  .opciones-texto { display:flex; gap:8px; flex-wrap:wrap; }
+  .opcion-texto { min-height:44px; padding:8px 13px; border:1px solid var(--border-strong); background:var(--surface); color:var(--ink-2); }
+  .opcion-texto[aria-pressed="true"] { border-color:var(--brand); color:var(--brand-ink); background:var(--brand-soft); box-shadow:0 0 0 1px var(--brand); }
+  .opcion-texto small { display:block; font-size:10px; font-weight:500; }
+  .tarjeta-demo { margin-top:16px; }
+  .estado-borrador { display:inline-flex; align-items:center; gap:8px; border:1px solid var(--warning); border-radius:999px; padding:6px 11px; color:var(--warning); background:var(--warning-soft); font-size:12px; font-weight:650; }
+  .estado-borrador::before { content:""; width:7px; height:7px; border-radius:50%; background:currentColor; }
+  .plan-incluye { list-style:none; display:grid; gap:8px; margin:15px 0 0; padding:0; color:var(--ink-2); font-size:13px; }
+  .plan-incluye li { display:flex; align-items:flex-start; gap:8px; }
+  .plan-incluye li::before { content:"✓"; flex:0 0 auto; color:var(--brand-ink); font-weight:800; }
+  .regalo { display:flex; align-items:center; gap:9px; background:var(--ink); color:var(--surface); border:1px solid var(--ink); border-radius:var(--r-md); padding:10px 12px; font-size:13px; font-weight:650; margin:14px 0 0; }
+  .regalo svg { width:19px; height:19px; flex:none; }
   /* Anatomía de la tarjeta, tomada de loyalty-card-themes.dc.html sin cambiarla:
      cabecera con chip de ícono, fila de miembro, progreso, sellos en cinco por dos,
      fila de premio, QR centrado y pie con vigencia. Piel Lite: acento sólido de la
      categoría más su patrón de íconos. */
   .kcard { position:relative; width:100%; max-width:340px; margin:0 auto; border-radius:24px; overflow:hidden; background:#6f4e37; color:#fff; box-shadow:var(--shadow-md); }
+  .kcard .ketiqueta, .kcard .knegocio, .kcard .kprogreso, .kcard .kmember p, .kcard .kfoot { color:var(--texto-tarjeta, #fff) !important; }
+  .kcard .ketiqueta, .kcard .kmember .rol, .kcard .kfoot { opacity:.76; }
   .kcard .patron { position:absolute; inset:0; background-repeat:repeat; background-size:150px 150px; opacity:.22; }
   .kcard > .contenido { position:relative; }
   .khead { padding:20px 20px 10px; }
@@ -130,27 +172,53 @@
   .conmutador .activo { background:var(--brand); color:#fff; }
   .conmutador .inactivo { background:transparent; color:var(--ink-2); }
   [hidden] { display:none !important; }
-  @media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+  @media (max-width:560px) {
+    .intro-voz { grid-template-columns:48px minmax(0,1fr); gap:10px; }
+    .logo-mascota { width:44px; height:44px; }
+    .globo-dialogo { padding:15px; }
+    .globo-dialogo::before { left:-6px; }
+    .globo-dialogo h1 { font-size:20px; }
+    .intro-acciones { grid-template-columns:1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; scroll-behavior:auto !important; transition-duration:.01ms !important; }
+  }
 </style>
 </head>
 <body>
 <div class="marco">
 
   <div class="barra">
-    <div class="pasos" aria-hidden="true">
+    <div class="pasos" id="barra-progreso" role="progressbar" aria-label="Progreso del alta" aria-valuemin="1" aria-valuemax="6" aria-valuenow="1" aria-valuetext="Paso 1 de 6: Introducción">
       <div class="paso hecho" id="p1"></div><div class="paso" id="p2"></div>
       <div class="paso" id="p3"></div><div class="paso" id="p4"></div>
-      <div class="paso" id="p5"></div>
+      <div class="paso" id="p5"></div><div class="paso" id="p6"></div>
     </div>
-    <button class="texto" data-testid="saltar-intro" data-ir="datos">Saltar</button>
   </div>
 
   <section data-testid="pantalla-intro">
-    <h1>Tu programa de lealtad, listo hoy</h1>
-    <p>Tres pantallas para conocerlo. Puedes saltarlas cuando quieras.</p>
-    <div data-tarjeta data-llenos="6"></div>
-    <div class="acciones">
-      <button class="primario" data-testid="continuar-datos" data-ir="datos">Continuar</button>
+    <div class="intro-shell">
+      <div class="intro-voz">
+        <img class="logo-mascota" src="../../public/short-logo.svg" alt="" aria-hidden="true" width="56" height="56">
+        <div class="globo-dialogo intro-lamina" aria-live="polite" aria-atomic="true">
+          <p class="xs">Fidelity te cuenta</p>
+          <h1 id="intro-titulo">Tu tarjeta de sellos, en el teléfono de tu cliente</h1>
+          <p id="intro-texto">La misma mecánica de siempre: viene, compra, junta sellos y se lleva su premio. Sin cartón que se pierda.</p>
+        </div>
+      </div>
+      <div class="intro-muestra" id="intro-muestra" hidden>
+        <p class="xs" style="text-align:center;margin-bottom:12px;">Una tarjeta como la de tu cliente</p>
+        <div class="tarjeta-demo" data-tarjeta data-demo="1" data-llenos="6"></div>
+      </div>
+      <div class="intro-puntos" aria-label="Láminas de introducción">
+        <span class="intro-punto" aria-current="step" data-punto="0"></span>
+        <span class="intro-punto" data-punto="1"></span>
+        <span class="intro-punto" data-punto="2"></span>
+      </div>
+      <div class="acciones intro-acciones">
+        <button class="texto" data-testid="saltar-intro" data-ir="datos">Saltar introducción</button>
+        <button class="primario" id="siguiente-intro" data-testid="continuar-datos">Siguiente <span aria-hidden="true">&gt;</span></button>
+      </div>
     </div>
   </section>
 
@@ -158,7 +226,7 @@
     <h1>Cuéntanos de tu negocio</h1>
     <p>Solo dos datos. El resto lo configuras después.</p>
     <label for="negocio">Nombre del negocio</label>
-    <input id="negocio" value="Café Aurora">
+    <input id="negocio" value="Café Aurora" autocomplete="organization">
     <label for="categoria">Categoría</label>
     <select id="categoria" data-testid="categoria"></select>
     <p class="ayuda">La categoría define el patrón de tu tarjeta. Puedes cambiarla luego.</p>
@@ -169,26 +237,44 @@
 
   <section data-testid="pantalla-tarjeta" hidden>
     <h1>Tu primera tarjeta</h1>
-    <p>Tres decisiones y queda publicada.</p>
+    <p>Define lo que tu cliente ganará y cómo se verá. La tarjeta se publica al elegir un plan.</p>
+    <form id="form-tarjeta" novalidate>
+    <div class="campo">
     <label for="recompensa">¿Qué recibirá tu cliente?</label>
-    <input id="recompensa" value="Un café gratis">
+    <input id="recompensa" name="reward" value="" placeholder="Un café gratis" maxlength="240" required aria-describedby="recompensa-ayuda recompensa-error" aria-errormessage="recompensa-error">
+    <p class="ayuda" id="recompensa-ayuda">Escribe el premio que recibirá al completar sus sellos.</p>
+    <p class="campo-error" id="recompensa-error" role="alert" hidden><span class="campo-error-icon" aria-hidden="true">!</span><span>Escribe la recompensa para continuar.</span></p>
+    </div>
     <label for="sellos">Sellos necesarios</label>
     <select id="sellos"><option>8</option><option selected>10</option><option>12</option></select>
     <label id="etiqueta-tema">Tema</label>
     <div class="temas" id="temas" role="group" aria-labelledby="etiqueta-tema"></div>
-    <p class="ayuda">Puedes elegir un tema Pro ahora aunque todavía no tengas plan. Los cuatro Pro se mueven; con reduced motion se quedan quietos.</p>
-    <div data-tarjeta data-llenos="3" style="margin-top:16px"></div>
-    <p class="ayuda">Vista previa en vivo</p>
-    <div class="acciones">
-      <button class="primario" data-testid="continuar-club" data-ir="club">Continuar</button>
+    <p class="ayuda">Puedes elegir un acabado Pro ahora. Si sigues con Lite, se conserva como preferencia.</p>
+    <div class="campo">
+      <label for="color-marca">Color de tu marca</label>
+      <input id="color-marca" name="brandColor" type="color" value="#6f4e37" aria-describedby="color-marca-ayuda" style="width:70px;padding:4px;">
+      <p class="ayuda" id="color-marca-ayuda">Elige el color que identifica tu tarjeta.</p>
     </div>
+    <fieldset class="selector-texto">
+      <legend>Color del texto de la tarjeta</legend>
+      <div class="opciones-texto" role="group" aria-label="Color del texto">
+        <button class="opcion-texto" type="button" data-text-color="AUTO" aria-pressed="true">Automático<small>Contraste de la interfaz</small></button>
+        <button class="opcion-texto" type="button" data-text-color="DARK" aria-pressed="false">Oscuro<small>Negro</small></button>
+        <button class="opcion-texto" type="button" data-text-color="LIGHT" aria-pressed="false">Claro<small>Blanco</small></button>
+      </div>
+    </fieldset>
+    <div data-tarjeta data-llenos="0" style="margin-top:16px"></div>
+    <p class="ayuda">Vista previa en vivo</p>
+    <div class="acciones"><button class="primario" type="button" data-testid="continuar-club" data-ir="lista">Continuar</button></div>
+    </form>
   </section>
 
-  <section data-testid="pantalla-club" hidden>
-    <h1>Club Café Aurora</h1>
-    <p>Así lo verán tus clientes.</p>
-    <div data-tarjeta data-llenos="0" data-qr="1"></div>
-    <p class="ayuda">Diez sellos por llenar. Tu programa empieza en cuanto lo publiques.</p>
+  <section data-testid="pantalla-lista" hidden>
+    <div class="estado-borrador">Lista · todavía no publicada</div>
+    <h1 style="margin-top:14px;">Tu tarjeta está lista, pero todavía no publicada.</h1>
+    <p>Así se verá con los datos que agregaste. Se publicará cuando elijas un plan.</p>
+    <div data-tarjeta data-llenos="0" style="margin:18px auto 0;"></div>
+    <p class="ayuda" style="text-align:center;">El QR es solo ilustrativo; el código público se activa al publicar la tarjeta.</p>
     <div class="acciones">
       <button class="primario" data-testid="continuar-atribucion" data-ir="atribucion">Continuar</button>
     </div>
@@ -209,22 +295,38 @@
   </section>
 
   <section data-testid="pantalla-paywall" hidden>
-    <h1>Elige tu plan</h1>
+    <h1>Ahora sí, los planes.</h1>
+    <p>Elige lo que necesita tu negocio para publicar la tarjeta.</p>
     <div class="conmutador" role="group" aria-label="Periodo de facturación">
-      <button class="inactivo" data-testid="mensual" data-facturacion="mensual" aria-pressed="false">Mensual</button>
-      <button class="activo" data-testid="anual" data-facturacion="anual" aria-pressed="true">Anual, 2 meses gratis</button>
+      <button class="inactivo" data-testid="mensual" data-facturacion="mensual" aria-pressed="false">Al mes</button>
+      <button class="activo" data-testid="anual" data-facturacion="anual" aria-pressed="true">Al año · 2 meses gratis</button>
     </div>
     <div class="planes">
-      <div class="plan destacado">
-        <div class="fila"><strong>Lite</strong><span class="precio" data-precio="lite">$1,490</span></div>
-        <p class="ayuda" data-nota="lite">al año, equivale a $124 al mes</p>
-        <div class="regalo">Incluye un mes con todo Pro</div>
-        <button class="primario" data-testid="contratar-lite" data-ir="regreso">Contratar Lite</button>
+      <div class="plan destacado" aria-labelledby="plan-lite-titulo">
+        <div class="fila"><strong id="plan-lite-titulo">Lite</strong><span class="precio" data-precio="lite">$1,490</span></div>
+        <p class="ayuda" data-nota="lite">MXN al año</p>
+        <div class="regalo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 1 1 2.2-3.7L12 7Z"/><path d="M12 7h4.5a2.5 2.5 0 1 0-2.2-3.7L12 7Z"/></svg><span>Incluye un mes con todo lo de Pro</span></div>
+        <ul class="plan-incluye" aria-label="Lo que incluye Lite">
+          <li>Una tarjeta de lealtad activa</li>
+          <li>Altas por QR y por enlace</li>
+          <li>Sellado y canje desde el escáner</li>
+        </ul>
+        <button class="primario" data-testid="contratar-lite" data-solicitar="LITE">Solicitar activación de Lite</button>
       </div>
-      <div class="plan atenuado">
-        <div class="fila"><strong>Pro</strong><span class="precio" data-precio="pro">$2,990</span></div>
-        <p class="ayuda" data-nota="pro">al año. Disponible al terminar tu primer mes.</p>
+      <div class="plan" aria-labelledby="plan-pro-titulo">
+        <div class="fila"><strong id="plan-pro-titulo">Pro</strong><span class="precio" data-precio="pro">$2,990</span></div>
+        <p class="ayuda" data-nota="pro">MXN al año</p>
+        <ul class="plan-incluye" aria-label="Lo que incluye Pro">
+          <li>Varias tarjetas activas a la vez</li>
+          <li>Todos los diseños de tarjeta</li>
+          <li>Altas por QR y por enlace</li>
+          <li>Sellado y canje desde el escáner</li>
+        </ul>
+        <button class="fantasma" style="width:100%;margin-top:14px;" data-testid="contratar-pro" data-solicitar="PRO">Solicitar activación de Pro</button>
       </div>
+    </div>
+    <div id="solicitud-inline" class="aviso" role="status" aria-live="polite" hidden style="margin-top:16px;">
+      Solicitud de <strong id="solicitud-plan">Lite</strong> registrada en este prototipo. Folio de ejemplo: <span class="folio">KF-0000-0000</span>.
     </div>
     <div class="acciones">
       <button class="texto" data-testid="salir-paywall" data-ir="regreso">Salir sin pagar</button>
@@ -237,8 +339,8 @@
     <p class="aviso" style="margin-top:14px">Tu tarjeta está lista, pero todavía no publicada</p>
     <p class="ayuda">Tu negocio y tu tarjeta siguen guardados. No generamos su código QR hasta que la actives.</p>
     <div class="acciones">
-      <button class="primario" data-testid="activar" data-ir="paywall">Activar con Lite, <span data-activar>$1,490</span></button>
-      <button class="texto" data-testid="reiniciar" data-ir="intro">Volver al inicio del prototipo</button>
+      <button class="primario" data-testid="activar" data-ir="paywall">Volver a elegir un plan</button>
+      <button class="texto" data-testid="reiniciar" data-reset-demo data-ir="intro">Volver al inicio del prototipo</button>
     </div>
   </section>
 
@@ -246,26 +348,154 @@
 
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <script>
-  var ORDEN = ["intro", "datos", "tarjeta", "club", "atribucion", "paywall", "regreso"];
+  var ORDEN = ["intro", "datos", "tarjeta", "lista", "atribucion", "paywall", "regreso"];
+  var PASOS = ["intro", "datos", "tarjeta", "lista", "atribucion", "paywall"];
+  var INTRO = [
+    { titulo:"Tu tarjeta de sellos, en el teléfono de tu cliente", texto:"La misma mecánica de siempre: viene, compra, junta sellos y se lleva su premio. Sin cartón que se pierda." },
+    { titulo:"Tus clientes no instalan nada", texto:"Escanean tu código y su tarjeta se abre en el navegador. Ni aplicación que bajar ni contraseña que recordar." },
+    { titulo:"¿Sabes quién vuelve?", texto:"Cada sello queda registrado, así que ves a cuánta gente estás fidelizando y qué premios se llevan." }
+  ];
+  var BORRADOR_KEY = "koda-fidelity-onboarding-design";
+  var introIndex = 0;
+  var estado;
+
+  function persistirDemo() {
+    if (!estado) return;
+    try { localStorage.setItem(BORRADOR_KEY, JSON.stringify(estado)); } catch (e) { /* El prototipo sigue funcionando sin almacenamiento local. */ }
+  }
+
+  function restaurarDemo() {
+    var guardado = null;
+    try { guardado = JSON.parse(localStorage.getItem(BORRADOR_KEY) || "null"); } catch (e) { guardado = null; }
+    if (!guardado || typeof guardado !== "object") return;
+    if (typeof guardado.businessName === "string") estado.businessName = guardado.businessName;
+    if (typeof guardado.reward === "string") estado.reward = guardado.reward;
+    if (Number.isInteger(guardado.stamps) && guardado.stamps >= 1 && guardado.stamps <= 100) estado.stamps = guardado.stamps;
+    if (typeof guardado.brandColor === "string" && /^#[0-9a-f]{6}$/i.test(guardado.brandColor)) estado.brandColor = guardado.brandColor;
+    if (["AUTO", "DARK", "LIGHT"].includes(guardado.textColor)) estado.textColor = guardado.textColor;
+    if (Number.isInteger(guardado.categoryIndex) && CATEGORIAS[guardado.categoryIndex]) {
+      estado.categoryIndex = guardado.categoryIndex;
+      estado.categoria = CATEGORIAS[guardado.categoryIndex];
+    }
+    if (Number.isInteger(guardado.themeIndex) && PIELES[guardado.themeIndex]) {
+      estado.themeIndex = guardado.themeIndex;
+      estado.piel = PIELES[guardado.themeIndex];
+    }
+    if (["mensual", "anual"].includes(guardado.intervalo)) estado.intervalo = guardado.intervalo;
+    if (Number.isInteger(guardado.introIndex) && guardado.introIndex >= 0 && guardado.introIndex < INTRO.length) introIndex = guardado.introIndex;
+    if (ORDEN.includes(guardado.screen)) estado.screen = guardado.screen;
+  }
+
+  function renderIntro() {
+    var lamina = INTRO[introIndex];
+    document.getElementById("intro-titulo").textContent = lamina.titulo;
+    document.getElementById("intro-texto").textContent = lamina.texto;
+    document.getElementById("intro-muestra").hidden = introIndex !== 2;
+    document.querySelectorAll("[data-punto]").forEach(function (punto, i) {
+      if (i === introIndex) punto.setAttribute("aria-current", "step");
+      else punto.removeAttribute("aria-current");
+    });
+    var dialogo = document.querySelector(".globo-dialogo");
+    dialogo.classList.remove("intro-lamina");
+    void dialogo.offsetWidth;
+    dialogo.classList.add("intro-lamina");
+  }
 
   function mostrar(nombre) {
+    if (!ORDEN.includes(nombre)) return;
+    estado.screen = nombre;
     ORDEN.forEach(function (p) {
       var el = document.querySelector('[data-testid="pantalla-' + p + '"]');
       if (el) el.hidden = p !== nombre;
     });
-    var indice = ORDEN.indexOf(nombre);
-    for (var i = 1; i <= 5; i++) {
+    var paso = nombre === "regreso" ? PASOS.length - 1 : PASOS.indexOf(nombre);
+    for (var i = 1; i <= PASOS.length; i++) {
       var barra = document.getElementById("p" + i);
-      if (barra) barra.classList.toggle("hecho", i <= Math.min(indice + 1, 5));
+      if (barra) barra.classList.toggle("hecho", i <= paso + 1);
     }
-    var saltar = document.querySelector('[data-testid="saltar-intro"]');
-    if (saltar) saltar.hidden = nombre !== "intro";
+    var progreso = document.getElementById("barra-progreso");
+    if (progreso) {
+      progreso.setAttribute("aria-valuenow", String(paso + 1));
+      progreso.setAttribute("aria-valuetext", "Paso " + (paso + 1) + " de " + PASOS.length + ": " + ["Introducción", "Datos del negocio", "Tarjeta", "Tarjeta lista", "Origen", "Planes"][paso]);
+    }
+    persistirDemo();
+    if (nombre === "intro") renderIntro();
     window.scrollTo(0, 0);
   }
 
+  function limpiarErrorRecompensa() {
+    var campo = document.getElementById("recompensa");
+    var error = document.getElementById("recompensa-error");
+    if (!campo || !error) return;
+    campo.removeAttribute("aria-invalid");
+    error.hidden = true;
+  }
+
+  function validarTarjeta() {
+    var campo = document.getElementById("recompensa");
+    var error = document.getElementById("recompensa-error");
+    estado.reward = campo.value.trim();
+    if (!estado.reward) {
+      campo.setAttribute("aria-invalid", "true");
+      error.hidden = false;
+      campo.focus();
+      campo.scrollIntoView({ block:"center", behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+      return false;
+    }
+    limpiarErrorRecompensa();
+    estado.stamps = parseInt(document.getElementById("sellos").value, 10) || 10;
+    persistirDemo();
+    return true;
+  }
+
   document.addEventListener("click", function (evento) {
+    var siguienteIntro = evento.target.closest("#siguiente-intro");
+    if (siguienteIntro) {
+      if (introIndex < INTRO.length - 1) {
+        introIndex += 1;
+        estado.introIndex = introIndex;
+        persistirDemo();
+        renderIntro();
+      } else mostrar("datos");
+      return;
+    }
+    var opcionTexto = evento.target.closest("[data-text-color]");
+    if (opcionTexto) {
+      estado.textColor = opcionTexto.getAttribute("data-text-color");
+      document.querySelectorAll("[data-text-color]").forEach(function (boton) {
+        boton.setAttribute("aria-pressed", boton === opcionTexto ? "true" : "false");
+      });
+      construirTarjetas();
+      persistirDemo();
+      return;
+    }
+    var facturacion = evento.target.closest("[data-facturacion]");
+    if (facturacion) {
+      fijarFacturacion(facturacion.getAttribute("data-facturacion"));
+      return;
+    }
+    var solicitar = evento.target.closest("[data-solicitar]");
+    if (solicitar) {
+      var planElegido = solicitar.getAttribute("data-solicitar");
+      document.getElementById("solicitud-plan").textContent = planElegido === "PRO" ? "Pro" : "Lite";
+      document.getElementById("solicitud-inline").hidden = false;
+      document.getElementById("solicitud-inline").scrollIntoView({ block:"nearest", behavior:"smooth" });
+      return;
+    }
     var destino = evento.target.closest("[data-ir]");
-    if (destino) mostrar(destino.getAttribute("data-ir"));
+    if (!destino) return;
+    if (destino.hasAttribute("data-reset-demo")) {
+      localStorage.removeItem(BORRADOR_KEY);
+      window.location.reload();
+      return;
+    }
+    if (destino.getAttribute("data-ir") === "lista" && !validarTarjeta()) return;
+    mostrar(destino.getAttribute("data-ir"));
+  });
+
+  document.getElementById("form-tarjeta").addEventListener("submit", function (evento) {
+    evento.preventDefault();
+    if (validarTarjeta()) mostrar("lista");
   });
 
 
@@ -375,51 +605,88 @@
     return "data:image/svg+xml," + encodeURIComponent(svg);
   }
 
-  var QR = [1,0,1,1,0, 0,1,0,0,1, 1,0,1,0,1, 1,1,0,1,0, 0,1,1,0,1];
-  var estado = { categoria: CATEGORIAS[2], piel: PIELES[0] };
+  var DEMO_CARD = { businessName:"The Daily Grind", currentStamps:6, maxStamps:10, reward:"Free Coffee", brandColor:"#f97316" };
+  var estado = {
+    screen:"intro", introIndex:0, businessName:"Café Aurora", reward:"", stamps:10,
+    brandColor:CATEGORIAS[2].acento, textColor:"AUTO", categoryIndex:2, themeIndex:0,
+    categoria:CATEGORIAS[2], piel:PIELES[0]
+  };
+
+  function escapar(texto) {
+    return String(texto).replace(/[&<>"']/g, function (caracter) {
+      return { "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" }[caracter];
+    });
+  }
+
+  function luminancia(hex) {
+    var rgb = hex.replace("#", "").match(/.{2}/g).map(function (par) {
+      var canal = parseInt(par, 16) / 255;
+      return canal <= .04045 ? canal / 12.92 : Math.pow((canal + .055) / 1.055, 2.4);
+    });
+    return .2126 * rgb[0] + .7152 * rgb[1] + .0722 * rgb[2];
+  }
+
+  function contraste(a, b) {
+    var valores = [luminancia(a), luminancia(b)].sort(function (x, y) { return y - x; });
+    return (valores[0] + .05) / (valores[1] + .05);
+  }
+
+  function resolverTono(modo, color, piel) {
+    if (modo === "DARK") return "#1c1b17";
+    if (modo === "LIGHT") return "#ffffff";
+    // Los acabados Pro tienen fondos oscuros; la piel Lite usa el contraste del color de marca.
+    if (piel.pro) return "#ffffff";
+    return contraste("#ffffff", color) >= contraste("#1c1b17", color) ? "#ffffff" : "#1c1b17";
+  }
+
+  restaurarDemo();
 
   function construirTarjetas() {
     var cat = estado.categoria;
     var uri = patronURI(cat);
-    var fondo = estado.piel.fondo(cat.acento);
     document.querySelectorAll("[data-tarjeta]").forEach(function (host) {
+      var esDemo = host.getAttribute("data-demo") === "1";
+      var categoria = esDemo ? CATEGORIAS[2] : cat;
+      var piel = esDemo ? PIELES[0] : estado.piel;
+      var colorMarca = esDemo ? DEMO_CARD.brandColor : estado.brandColor || categoria.acento;
+      var nombreNegocio = esDemo ? DEMO_CARD.businessName : estado.businessName.trim() || "Tu negocio";
+      var recompensa = esDemo ? DEMO_CARD.reward : estado.reward.trim() || "Tu recompensa";
+      var totalSellos = esDemo ? DEMO_CARD.maxStamps : estado.stamps;
+      var tono = resolverTono(esDemo ? "AUTO" : estado.textColor, colorMarca, piel);
+      var fondo = piel.fondo(colorMarca);
+      var icono = categoria.hdr;
+      var patron = esDemo ? patronURI(CATEGORIAS[2]) : uri;
       var llenos = parseInt(host.getAttribute("data-llenos") || "0", 10);
-      var conQR = host.getAttribute("data-qr") === "1";
       var apagada = host.getAttribute("data-apagada") === "1";
       var sellos = "";
-      for (var k = 0; k < 10; k++) {
+      for (var k = 0; k < totalSellos; k++) {
         sellos += k < llenos
-          ? '<div class="kstamp on">' + svgIcono(cat.hdr, "currentColor") + "</div>"
+          ? '<div class="kstamp on">' + svgIcono(icono, "currentColor") + "</div>"
           : '<div class="kstamp"></div>';
       }
-      var qr = conQR
-        ? '<div class="kqrwrap"><div class="kqr">' + QR.map(function (v) {
-            return '<div style="background:' + (v ? cat.acento : "transparent") + '"></div>';
-          }).join("") + "</div></div>"
-        : "";
-      host.className = "kcard piel-" + estado.piel.key + (apagada ? " apagada" : "");
+      host.className = "kcard piel-" + piel.key + (apagada ? " apagada" : "");
       host.style.background = fondo;
-      host.style.setProperty("--acento", cat.acento);
+      host.style.setProperty("--acento", colorMarca);
+      host.style.setProperty("--texto-tarjeta", tono);
       host.innerHTML =
-        '<div class="patron" style="background-image:url(&quot;' + uri + '&quot;)"></div>' +
-        estado.piel.capas(cat.acento) +
+        '<div class="patron" style="background-image:url(&quot;' + patron + '&quot;)"></div>' +
+        piel.capas(colorMarca) +
         '<div class="contenido">' +
         '<div class="khead">' +
           '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">' +
-            '<div class="kicon">' + svgIcono(cat.hdr, "#fff") + "</div>" +
-            '<div><p class="ketiqueta">Tarjeta de lealtad</p><p class="knegocio">Café Aurora</p></div>' +
+            '<div class="kicon">' + svgIcono(icono, "#fff") + "</div>" +
+            '<div><p class="ketiqueta">Tarjeta de lealtad</p><p class="knegocio">' + escapar(nombreNegocio) + "</p></div>" +
           "</div>" +
           '<div class="kmember"><p class="rol">Miembro</p><p class="nombre">María González</p></div>' +
         "</div>" +
         '<div class="kstamps">' +
-          '<div class="kprogreso"><span>Tu progreso</span><span class="cuenta">' + llenos + "/10</span></div>" +
+          '<div class="kprogreso"><span>Tu progreso</span><span class="cuenta">' + llenos + "/" + totalSellos + "</span></div>" +
           '<div class="kgrid">' + sellos + "</div>" +
         "</div>" +
-        '<div class="kreward"><div class="kmember"><p class="rol">Premio</p><p class="nombre">Un café gratis</p></div></div>' +
-        qr +
+        '<div class="kreward"><div class="kmember"><p class="rol">Premio</p><p class="nombre">' + escapar(recompensa) + "</p></div></div>" +
         '<div class="kfoot"><span>Vence: 31 dic 2026</span><span>Con tecnología de Koda</span></div>' +
         "</div>";
-      host.querySelectorAll(".kstamp.on").forEach(function (e) { e.style.color = cat.acento; });
+      host.querySelectorAll(".kstamp.on").forEach(function (e) { e.style.color = colorMarca; });
     });
   }
 
@@ -427,12 +694,16 @@
     var sc = document.getElementById("categoria");
     if (sc) {
       sc.innerHTML = CATEGORIAS.map(function (c, n) {
-        return '<option value="' + n + '"' + (n === 2 ? " selected" : "") + ">" + c.key + "</option>";
+        return '<option value="' + n + '"' + (n === estado.categoryIndex ? " selected" : "") + ">" + c.key + "</option>";
       }).join("");
       sc.addEventListener("change", function () {
         estado.categoria = CATEGORIAS[parseInt(sc.value, 10)];
+        estado.categoryIndex = parseInt(sc.value, 10);
+        estado.brandColor = estado.categoria.acento;
+        document.getElementById("color-marca").value = estado.brandColor;
         pintarMuestras();
         construirTarjetas();
+        persistirDemo();
       });
     }
     var ct = document.getElementById("temas");
@@ -448,19 +719,62 @@
         var b = evento.target.closest("[data-piel]");
         if (!b) return;
         estado.piel = PIELES[parseInt(b.getAttribute("data-piel"), 10)];
+        estado.themeIndex = parseInt(b.getAttribute("data-piel"), 10);
         ct.querySelectorAll("[data-piel]").forEach(function (o) {
           o.setAttribute("aria-pressed", o === b ? "true" : "false");
         });
         pintarMuestras();
         construirTarjetas();
+        persistirDemo();
       });
       pintarMuestras();
     }
+
+    var nombre = document.getElementById("negocio");
+    var recompensa = document.getElementById("recompensa");
+    var sellos = document.getElementById("sellos");
+    var color = document.getElementById("color-marca");
+    if (nombre) {
+      nombre.value = estado.businessName;
+      nombre.addEventListener("input", function () {
+        estado.businessName = nombre.value;
+        construirTarjetas();
+        persistirDemo();
+      });
+    }
+    if (recompensa) {
+      recompensa.value = estado.reward;
+      recompensa.addEventListener("input", function () {
+        estado.reward = recompensa.value;
+        if (estado.reward.trim()) limpiarErrorRecompensa();
+        construirTarjetas();
+        persistirDemo();
+      });
+    }
+    if (sellos) {
+      sellos.value = String(estado.stamps);
+      sellos.addEventListener("change", function () {
+        estado.stamps = parseInt(sellos.value, 10) || 10;
+        construirTarjetas();
+        persistirDemo();
+      });
+    }
+    if (color) {
+      color.value = estado.brandColor;
+      color.addEventListener("input", function () {
+        estado.brandColor = color.value;
+        construirTarjetas();
+        persistirDemo();
+      });
+    }
+    document.querySelectorAll("[data-text-color]").forEach(function (boton) {
+      boton.setAttribute("aria-pressed", boton.getAttribute("data-text-color") === estado.textColor ? "true" : "false");
+    });
   }
 
   // Cada miniatura enseña su acabado con el acento de la categoría elegida.
   function pintarMuestras() {
-    var a = estado.categoria.acento;
+    var a = estado.brandColor || estado.categoria.acento;
     document.querySelectorAll("[data-muestra]").forEach(function (m) {
       var t = PIELES[parseInt(m.getAttribute("data-muestra"), 10)];
       m.style.background = t.fondo(a);
@@ -476,14 +790,12 @@
   // recomendado, y equivale a doce meses con dos de descuento.
   var TARIFAS = {
     mensual: {
-      lite: { precio: "$149", nota: "al mes" },
-      pro:  { precio: "$299", nota: "al mes. Disponible al terminar tu primer mes." },
-      activar: "$149"
+      lite: { precio: "$149", nota: "MXN al mes" },
+      pro:  { precio: "$299", nota: "MXN al mes" }
     },
     anual: {
-      lite: { precio: "$1,490", nota: "al año, equivale a $124 al mes" },
-      pro:  { precio: "$2,990", nota: "al año. Disponible al terminar tu primer mes." },
-      activar: "$1,490"
+      lite: { precio: "$1,490", nota: "MXN al año" },
+      pro:  { precio: "$2,990", nota: "MXN al año" }
     }
   };
 
@@ -494,24 +806,17 @@
     document.querySelector('[data-nota="lite"]').textContent = t.lite.nota;
     document.querySelector('[data-precio="pro"]').textContent = t.pro.precio;
     document.querySelector('[data-nota="pro"]').textContent = t.pro.nota;
-    var activar = document.querySelector("[data-activar]");
-    if (activar) activar.textContent = t.activar;
+    estado.intervalo = modo;
     document.querySelectorAll("[data-facturacion]").forEach(function (b) {
       var elegido = b.getAttribute("data-facturacion") === modo;
       b.className = elegido ? "activo" : "inactivo";
       b.setAttribute("aria-pressed", elegido ? "true" : "false");
     });
+    persistirDemo();
   }
-
-  document.addEventListener("click", function (evento) {
-    var boton = evento.target.closest("[data-facturacion]");
-    if (boton) fijarFacturacion(boton.getAttribute("data-facturacion"));
-  });
-
-  fijarFacturacion("anual");
-
-
-  mostrar("intro");
+  fijarFacturacion(estado.intervalo || "anual");
+  construirTarjetas();
+  mostrar(estado.screen || "intro");
 </script>
 </body>
 </html>

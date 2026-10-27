@@ -47,3 +47,29 @@ export function parseClientesResponse(response: unknown): ClientesPage {
 export function normalizarClientes(response: unknown): ClienteBuscado[] {
   return parseClientesResponse(response).items
 }
+
+type Escaneado = {
+  id: string
+  name: string
+  stamps: number
+  card: { name: string; reward: string; stampsRequired: number; brandColor: string; expiresAt: string | null }
+  currentCycle?: { balance: number; configuration: { stampsRequired: number; reward: string } } | null
+}
+
+/**
+ * El cliente que devuelve `GET /api/join?id`, con la meta del ciclo en curso.
+ * El motor canjea con esa meta, igual que la búsqueda: con la actual de la
+ * tarjeta, si cambió a mitad del ciclo, el escáner ofrecía la acción al revés.
+ */
+export function clienteEscaneado(c: Escaneado): ClienteBuscado {
+  return {
+    id: c.id,
+    name: c.name,
+    stamps: c.currentCycle?.balance ?? c.stamps,
+    maxStamps: c.currentCycle?.configuration.stampsRequired ?? c.card.stampsRequired,
+    cardName: c.card.name,
+    cardReward: c.currentCycle?.configuration.reward ?? c.card.reward,
+    cardBrandColor: c.card.brandColor,
+    cardExpiresAt: c.card.expiresAt ?? null,
+  }
+}

@@ -1,7 +1,15 @@
 import { describe, it, expect, vi } from "vitest"
 
+const { findActiveSubscription, findPendingProgress } = vi.hoisted(() => ({
+  findActiveSubscription: vi.fn(),
+  findPendingProgress: vi.fn(),
+}))
+
 vi.mock("@/lib/supabase-server", () => ({ createClient: vi.fn() }))
-vi.mock("@/lib/prisma", () => ({ prisma: {} }))
+vi.mock("@/lib/prisma", () => ({ prisma: {
+  subscription: { findFirst: findActiveSubscription },
+  onboardingProgress: { findFirst: findPendingProgress },
+} }))
 vi.mock("next/server", () => ({
   NextResponse: {
     json: (body: unknown, init?: ResponseInit) =>
@@ -14,8 +22,13 @@ import {
   NotFoundError,
   ValidationError,
   ForbiddenError,
+  RateLimitError,
+  ProThemeRequiresProError,
+  OnboardingActivationRequiredError,
+  requireActivatedBusiness,
   handleApiError,
   withApiContext,
+  safeNextPath,
 } from "../api-utils"
 
 describe("api-utils error classes", () => {
@@ -60,6 +73,18 @@ describe("handleApiError", () => {
     expect(response.status).toBe(403)
   })
 
+  it("returns support instructions when Lite cannot save a Pro theme", async () => {
+    const response = handleApiError(new ProThemeRequiresProError(), "request-pro-theme")
+    expect(response.status).toBe(403)
+    expect(await response.json()).toMatchObject({ code: "KF-PLAN-PRO-THEME", supportEmail: "soporte@zivelo.dev", requestId: "request-pro-theme", retryable: false })
+  })
+
+  it("sends inactive accounts back to onboarding", async () => {
+    const response = handleApiError(new OnboardingActivationRequiredError(), "request-activation")
+    expect(response.status).toBe(403)
+    expect(await response.json()).toMatchObject({ code: "KF-ACCOUNT-ACTIVATION", redirectTo: "/onboarding", requestId: "request-activation", retryable: false })
+  })
+
   it("returns 404 for NotFoundError", () => {
     const response = handleApiError(new NotFoundError("Not found"))
     expect(response.status).toBe(404)
@@ -73,6 +98,36 @@ describe("handleApiError", () => {
   it("returns 500 for unknown errors", () => {
     const response = handleApiError(new Error("Unexpected"))
     expect(response.status).toBe(500)
+  })
+
+  // Antes caía en la rama de descarte: 500 KF-SYS-001.
+  it("returns 429 for RateLimitError", async () => {
+    const response = handleApiError(new RateLimitError())
+    expect(response.status).toBe(429)
+    expect((await response.json()).code).toBe("KF-RATE-001")
+  })
+})
+
+describe("requireActivatedBusiness", () => {
+  it("requires activation when onboarding is pending and there is no active plan", async () => {
+    findActiveSubscription.mockResolvedValue(null)
+    findPendingProgress.mockResolvedValue({ id: "progress-1" })
+
+    await expect(requireActivatedBusiness("business-1")).rejects.toBeInstanceOf(OnboardingActivationRequiredError)
+  })
+
+  it("lets a business with an active subscription pass", async () => {
+    findActiveSubscription.mockResolvedValue({ id: "subscription-1" })
+    findPendingProgress.mockResolvedValue({ id: "progress-1" })
+
+    await expect(requireActivatedBusiness("business-1")).resolves.toBeUndefined()
+  })
+
+  it("currently lets a business with no subscription and no pending onboarding pass", async () => {
+    findActiveSubscription.mockResolvedValue(null)
+    findPendingProgress.mockResolvedValue(null)
+
+    await expect(requireActivatedBusiness("business-1")).resolves.toBeUndefined()
   })
 })
 
@@ -99,5 +154,17 @@ describe("withApiContext", () => {
     expect(response.status).toBe(401)
     expect(response.headers.get("x-request-id")).toBe("req-error-1")
     expect(await response.json()).toMatchObject({ requestId: "req-error-1" })
+  })
+})
+
+describe("safeNextPath", () => {
+  it("keeps same-origin paths", () => {
+    expect(safeNextPath("/dashboard/cards?x=1", "/d")).toBe("/dashboard/cards?x=1")
+  })
+
+  // El navegador quita tabuladores y saltos de línea al leer la URL, así que
+  // «/\t/evil.com» terminaba en //evil.com tras iniciar sesión.
+  it.each(["//evil.com", "/\\evil.com", "/\t/evil.com", "/\n/evil.com", "/\r/evil.com", "https://evil.com"])("rejects %j", (next) => {
+    expect(safeNextPath(next, "/d")).toBe("/d")
   })
 })

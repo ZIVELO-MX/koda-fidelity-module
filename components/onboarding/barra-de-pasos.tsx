@@ -16,6 +16,7 @@ const PASOS: { id: OnboardingStep; etiqueta: string; obligatorio: boolean }[] = 
   { id: "INTRO", etiqueta: "Intro", obligatorio: false },
   { id: "BUSINESS", etiqueta: "Datos", obligatorio: true },
   { id: "CARD", etiqueta: "Tarjeta", obligatorio: true },
+  { id: "CARD_READY", etiqueta: "Tarjeta lista", obligatorio: true },
   { id: "ACQUISITION", etiqueta: "Origen", obligatorio: false },
   { id: "PAYWALL", etiqueta: "Plan", obligatorio: true },
 ]

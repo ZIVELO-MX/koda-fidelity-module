@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client"
 import { createAdminClient } from "../lib/supabase-admin"
+import { exigirBaseLocal } from "./onboarding-e2e-guard"
 
 const prisma = new PrismaClient()
 const admin = createAdminClient().auth.admin
@@ -14,6 +15,10 @@ const expiredPassword = process.env.E2E_EXPIRED_PASSWORD ?? "ci-expired-password
 const businessId = "biz-fidelity-auth-roles"
 
 async function main() {
+  // Fija contraseñas conocidas y reescribe cuentas: contra la base compartida
+  // dejaba cuentas autenticables con contraseña pública. Mismo candado que el
+  // fixture del alta, que depende de este.
+  exigirBaseLocal(process.env)
   if (password.length < 8) throw new Error("E2E_REQUIRED_PASSWORD must be at least 8 characters")
 
   const listed = await admin.listUsers({ page: 1, perPage: 100 })
@@ -67,6 +72,13 @@ async function main() {
     ? await admin.updateUserById(customerExisting.id, { password: customerPassword, email_confirm: true, user_metadata: { name: "Fidelity Customer Fixture", must_change_password: false } })
     : await admin.createUser({ email: customerEmail, password: customerPassword, email_confirm: true, user_metadata: { name: "Fidelity Customer Fixture", must_change_password: false } })
   if (customerResult.error) throw new Error(`Unable to prepare customer fixture: ${customerResult.error.message}`)
+  const customerAuthUserId = customerResult.data.user?.id
+  if (!customerAuthUserId) throw new Error("Customer fixture was prepared without an id")
+  await prisma.customerProfile.upsert({
+    where: { emailNormalized: customerEmail.toLowerCase() },
+    create: { authUserId: customerAuthUserId, emailNormalized: customerEmail.toLowerCase(), name: "Fidelity Customer Fixture" },
+    update: { authUserId: customerAuthUserId, name: "Fidelity Customer Fixture" },
+  })
   console.log(`Prepared auth-only customer fixture: ${customerEmail}`)
 
   if (expiredPassword.length < 8) throw new Error("E2E_EXPIRED_PASSWORD must be at least 8 characters")

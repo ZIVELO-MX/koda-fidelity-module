@@ -1,19 +1,19 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { JoinCardLayout, type JoinCardData } from "@/components/join/join-card-layout"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { RedesNegocio } from "@/components/join/redes-negocio"
-import { Check, Mail, Loader2 } from "lucide-react"
-import { createBrowserSupabase } from "@/lib/supabase-browser"
-import { getFriendlySendError } from "@/lib/auth-errors"
+import { Check, Loader2 } from "lucide-react"
 import { mensajeDeAlta, type MotivoAlta } from "@/lib/alta-estados"
 import { cn } from "@/lib/utils"
+import { createBrowserSupabase } from "@/lib/supabase-browser"
+import { formatExpiryDate } from "@/lib/card-utils"
 
-type Step = "loading" | "error" | "form" | "sent" | "ready"
+type Step = "loading" | "error" | "form" | "ready" | "verify-email"
 
 interface JoinCustomer {
   id: string
@@ -24,7 +24,9 @@ interface JoinCustomer {
     stampsRequired: number
     reward: string
     brandColor: string
+    textColor?: "AUTO" | "DARK" | "LIGHT"
     iconName: string | null
+    stampIconName?: string | null
     isActive: boolean
     status?: string | null
     /** El tema que de verdad se pinta. Null cuando un acabado Pro no tiene
@@ -47,6 +49,7 @@ interface JoinCustomer {
 
 export default function JoinCardPage() {
   const params = useParams()
+  const router = useRouter()
   const cardId = params.cardId as string
   const [step, setStep] = useState<Step>("loading")
   const [customer, setCustomer] = useState<JoinCustomer | null>(null)
@@ -55,7 +58,9 @@ export default function JoinCardPage() {
     stampsRequired: number
     reward: string
     brandColor: string
+    textColor?: "AUTO" | "DARK" | "LIGHT"
     iconName: string | null
+    stampIconName?: string | null
     expiresAt: string | null
     businessName: string
     businessBrandColor: string
@@ -109,6 +114,13 @@ export default function JoinCardPage() {
       if (session?.user?.email) {
         const email = session.user.email
         const name = session.user.user_metadata?.name || email.split("@")[0]
+        if (!session.user.email_confirmed_at) {
+          setName(name)
+          setEmail(email)
+          setStep("verify-email")
+          checkedSession.current = true
+          return
+        }
 
         const custRes = await fetch(
           `/api/join?email=${encodeURIComponent(email)}&cardId=${encodeURIComponent(cardId)}`,
@@ -196,37 +208,14 @@ export default function JoinCardPage() {
     if (hasError) return
 
     setSending(true)
-    try {
-      const res = await fetch("/api/join", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), email: email.trim(), cardId }),
-      })
-
-      if (!res.ok) {
-        throw new Error("No fue posible registrarte")
-      }
-
-      const { customerId } = await res.json()
-      sessionStorage.setItem(`pending-${cardId}`, customerId)
-
-      const supabase = createBrowserSupabase()
-      const { error } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
-        options: {
-          shouldCreateUser: true,
-          emailRedirectTo: `${window.location.origin}/join/${cardId}`,
-        },
-      })
-      if (error) throw error
-
-      setStep("sent")
-    } catch (err) {
-      setSendError(getFriendlySendError(err))
-    } finally {
-      setSending(false)
-    }
-  }, [name, email, cardId])
+    const signupParams = new URLSearchParams({
+      accountType: "CUSTOMER",
+      next: `/join/${cardId}`,
+      email: email.trim().toLowerCase(),
+      name: name.trim(),
+    })
+    router.push(`/signup?${signupParams.toString()}`)
+  }, [name, email, cardId, router])
 
   const cardInfo = customer
     ? {
@@ -235,7 +224,9 @@ export default function JoinCardPage() {
         reward: customer.card.reward,
         stampsRequired: customer.card.stampsRequired,
         brandColor: customer.card.brandColor,
+        textColor: customer.card.textColor,
         iconName: customer.card.iconName,
+        stampIconName: customer.card.stampIconName,
         expiresAt: customer.card.expiresAt,
         businessName: customer.card.business.name,
         businessBrandColor: customer.card.business.brandColor,
@@ -244,8 +235,9 @@ export default function JoinCardPage() {
         // El código del tema efectivo lo trae la consulta pública de la
         // tarjeta; `/api/join` solo manda los identificadores.
         temaEfectivo: cardData?.effectiveTheme?.code ?? null,
+        themeCode: cardData?.effectiveTheme?.code ?? null,
       }
-    : cardData && { ...cardData, temaEfectivo: cardData.effectiveTheme?.code ?? null }
+    : cardData && { ...cardData, temaEfectivo: cardData.effectiveTheme?.code ?? null, themeCode: cardData.effectiveTheme?.code ?? null }
 
   if (step === "loading") {
     return (
@@ -273,6 +265,24 @@ export default function JoinCardPage() {
           <p className="text-muted-foreground">{mensaje.detalle}</p>
           <Button asChild variant="outline" className="min-h-11">
             <Link href={mensaje.accion.href}>{mensaje.accion.texto}</Link>
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (step === "verify-email") {
+    return (
+      <div className="min-h-screen bg-background forced-light flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-sm space-y-4 text-center">
+          <h1 className="text-2xl font-bold text-foreground">Confirma tu correo</h1>
+          <p className="text-muted-foreground">
+            Abre el enlace de confirmación que enviamos a {email}. Después volverás a esta tarjeta y podrás unirte.
+          </p>
+          <Button asChild variant="outline" className="min-h-11">
+            <Link href={`/login?next=${encodeURIComponent(`/join/${cardId}`)}&email=${encodeURIComponent(email)}`}>
+              Ir a iniciar sesión
+            </Link>
           </Button>
         </div>
       </div>
@@ -315,12 +325,14 @@ export default function JoinCardPage() {
                 businessName={cardInfo.businessName}
                 businessLogo={cardInfo.businessLogoUrl ?? undefined}
                 iconName={cardInfo.iconName ?? cardInfo.businessIconName}
+                stampIconName={cardInfo.stampIconName}
                 customerName={customer.name}
                 currentStamps={customer.stamps}
                 maxStamps={cardInfo.stampsRequired}
                 reward={cardInfo.reward}
-                expirationDate={cardInfo.expiresAt ? new Date(cardInfo.expiresAt).toLocaleDateString("es-MX") : undefined}
+                expirationDate={cardInfo.expiresAt ? formatExpiryDate(cardInfo.expiresAt) : undefined}
                 brandColor={cardInfo.brandColor}
+                textColor={cardInfo.textColor}
                 themeCode={cardInfo.temaEfectivo}
                 showQR={true}
                 qrValue={customer.id}
@@ -370,42 +382,6 @@ export default function JoinCardPage() {
     )
   }
 
-  if (step === "sent") {
-    return (
-      <div className="min-h-screen bg-background forced-light flex flex-col">
-        <header className="border-b border-border bg-card">
-          <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-center">
-            <span className="font-semibold text-foreground">Revisa tu correo electrónico</span>
-          </div>
-        </header>
-
-        <main className="flex-1 flex flex-col items-center justify-center px-4 py-8">
-          <div className="w-full max-w-md text-center space-y-6">
-            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-              <Mail className="h-10 w-10 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground mb-2">Revisa tu correo</h1>
-              <p className="text-muted-foreground">
-                Te enviamos un enlace mágico a <strong>{email}</strong>. Haz clic en el enlace para confirmar tu tarjeta.
-              </p>
-            </div>
-
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => {
-                setStep("form")
-                setSendError(null)
-              }}
-            >
-              Volver
-            </Button>
-          </div>
-        </main>
-      </div>
-    )
-  }
 
   return (
     <JoinCardLayout

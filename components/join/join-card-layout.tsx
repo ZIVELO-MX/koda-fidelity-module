@@ -7,13 +7,17 @@ import { Label } from "@/components/ui/label"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { GoogleButton } from "@/components/auth/google-button"
 import { ArrowLeft, ChevronDown, Loader2 } from "lucide-react"
+import { formatExpiryDate } from "@/lib/card-utils"
 
 export interface JoinCardData {
   name: string
   stampsRequired: number
   reward: string
   brandColor: string
+  textColor?: "AUTO" | "DARK" | "LIGHT"
   iconName: string | null
+  stampIconName?: string | null
+  themeCode?: string | null
   expiresAt: string | null
   businessName: string
   businessBrandColor: string
@@ -91,16 +95,19 @@ export function JoinCardLayout({
                 businessName={cardInfo.businessName}
                 businessLogo={cardInfo.businessLogoUrl ?? undefined}
                 iconName={cardInfo.iconName ?? cardInfo.businessIconName}
+                stampIconName={cardInfo.stampIconName}
                 customerName={name || "Tu Nombre"}
                 currentStamps={0}
                 maxStamps={cardInfo.stampsRequired}
                 reward={cardInfo.reward}
                 expirationDate={
                   cardInfo.expiresAt
-                    ? new Date(cardInfo.expiresAt).toLocaleDateString("es-MX")
+                    ? formatExpiryDate(cardInfo.expiresAt)
                     : undefined
                 }
                 brandColor={cardInfo.brandColor}
+                textColor={cardInfo.textColor}
+                themeCode={cardInfo.themeCode}
                 showQR={false}
                 onMemberClick={preview ? undefined : onMemberClick}
               />
@@ -192,13 +199,13 @@ export function JoinCardLayout({
                 {sending ? (
                   <Loader2 className="h-5 w-5 animate-spin mr-2" />
                 ) : (
-                  "Enviar enlace mágico"
+                  "Continuar al registro"
                 )}
               </Button>
             </form>
 
             <p className="text-xs text-muted-foreground text-center mt-4">
-              Te enviaremos un enlace por correo para confirmar tu identidad.
+              Crea una cuenta con correo y contraseña para guardar tu tarjeta.
             </p>
           </div>
         </div>

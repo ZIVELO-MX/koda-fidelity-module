@@ -49,6 +49,8 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { MobileSettingsPanel } from "./mobile-settings-panel"
 import { useEffect, useState } from "react"
 import type { Role } from "@prisma/client"
+import type { AccountPlan } from "@/lib/plan-change-notice"
+import { AccountPlanChangeNotice } from "./account-plan-change-notice"
 
 interface DashboardSidebarProps {
   userEmail: string
@@ -56,6 +58,8 @@ interface DashboardSidebarProps {
   brandColor: string
   nickname?: string
   role: Role
+  accountPlan: AccountPlan | null
+  planChangeNotice: { eventId: string; from: AccountPlan; to: AccountPlan } | null
   collapsed: boolean
   onToggleCollapse: () => void
 }
@@ -171,6 +175,8 @@ export function DashboardSidebar({
   brandColor,
   nickname,
   role,
+  accountPlan,
+  planChangeNotice,
   collapsed,
   onToggleCollapse,
 }: DashboardSidebarProps) {
@@ -200,6 +206,7 @@ export function DashboardSidebar({
   }, [openGroups])
 
   const visibleGroups = navGroups.filter((g) => g.roles.includes(role))
+  const accountPlanLabel = accountPlan === "PRO" ? "Pro" : accountPlan === "LITE" ? "Lite" : "Sin plan"
 
   // El panel de "más" repite los mismos grupos del rol. El escáner no entra:
   // ya tiene su botón central en la barra móvil.
@@ -266,7 +273,7 @@ export function DashboardSidebar({
           )}
         </div>
 
-        <nav className="flex-1 overflow-y-auto">
+        <nav className="flex min-h-0 flex-1 flex-col overflow-y-auto">
           {/* Grouped sections with Accordion */}
           {!collapsed && (
             <Accordion
@@ -301,6 +308,10 @@ export function DashboardSidebar({
                 <CollapsedNavLink key={item.name} href={item.href} icon={item.icon} label={item.name} pathname={pathname} />
               )),
             )}
+
+          <div className={cn("mt-auto shrink-0 pb-2", collapsed ? "flex justify-center px-2" : "px-2")}>
+            <AccountPlanChangeNotice notice={planChangeNotice} collapsed={collapsed} />
+          </div>
         </nav>
 
         {/* Perfil fijado abajo */}
@@ -331,8 +342,8 @@ export function DashboardSidebar({
                     <span className="font-medium text-foreground truncate w-full text-left">
                       {nickname || businessName}
                     </span>
-                    <span className="text-xs text-muted-foreground truncate w-full text-left">
-                      {userEmail}
+                    <span className="text-xs text-muted-foreground w-full text-left break-words">
+                      {userEmail}<span className="whitespace-nowrap"> · {accountPlanLabel}</span>
                     </span>
                   </div>
                 )}
@@ -352,7 +363,7 @@ export function DashboardSidebar({
                   <span className="text-sm font-medium text-foreground truncate">
                     {nickname || businessName}
                   </span>
-                  <span className="text-xs text-muted-foreground truncate">{userEmail}</span>
+                  <span className="text-xs text-muted-foreground break-words">{userEmail}<span className="whitespace-nowrap"> · {accountPlanLabel}</span></span>
                 </div>
               </div>
               <DropdownMenuSeparator />

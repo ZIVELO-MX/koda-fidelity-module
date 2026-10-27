@@ -1,0 +1,1 @@
+ALTER TYPE "OnboardingStep" ADD VALUE 'CARD_READY' AFTER 'CARD';

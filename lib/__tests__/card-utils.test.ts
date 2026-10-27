@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest"
-import { isExpired, daysUntilExpiry, addDays, addMonths, addYears, toDateInputValue, pickMilestoneReward } from "../card-utils"
+import { isExpired, daysUntilExpiry, addDays, addMonths, addYears, toDateInputValue, pickMilestoneReward, formatExpiryDate, expiryInputValue } from "../card-utils"
 
 const NOW = new Date("2026-06-05T12:00:00Z")
 
@@ -13,6 +13,21 @@ describe("isExpired", () => {
   it("returns true for past date", () => expect(isExpired(new Date(NOW.getTime() - 86_400_000))).toBe(true))
   it("returns true for past date string", () => expect(isExpired("2026-01-01T00:00:00Z")).toBe(true))
   it("returns false for future date string", () => expect(isExpired("2027-01-01T00:00:00Z")).toBe(false))
+})
+
+// `expiresAt` llega de un <input type="date">: «2026-10-14» es medianoche UTC
+// y su fecha UTC es el día del calendario. El día de hoy es el de México.
+describe("isExpired corta el día en la hora de México", () => {
+  it("sigue vigente a las 18:30 de su último día", () => {
+    vi.setSystemTime(new Date("2026-10-15T00:30:00Z"))
+    expect(isExpired("2026-10-14")).toBe(false)
+    expect(daysUntilExpiry("2026-10-14")).toBe(0)
+  })
+  it("vence al empezar el día siguiente en México", () => {
+    vi.setSystemTime(new Date("2026-10-15T06:30:00Z"))
+    expect(isExpired("2026-10-14")).toBe(true)
+    expect(daysUntilExpiry("2026-10-14")).toBe(-1)
+  })
 })
 
 describe("daysUntilExpiry", () => {
@@ -100,5 +115,22 @@ describe("pickMilestoneReward", () => {
 
   it("returns null for empty milestones array", () => {
     expect(pickMilestoneReward(3, [])).toBeNull()
+  })
+})
+
+// El vencimiento es un día del calendario guardado como medianoche UTC. Con la
+// zona del navegador, en México se mostraba un día antes.
+describe("formatExpiryDate", () => {
+  it("muestra el día guardado sin importar la zona", () => {
+    expect(formatExpiryDate("2026-10-14T00:00:00.000Z")).toBe("14/10/2026")
+    expect(formatExpiryDate(new Date("2026-10-14T00:00:00.000Z"), { day: "numeric", month: "long", year: "numeric" })).toBe("14 de octubre de 2026")
+  })
+})
+
+// La edición calculaba el día con la zona del servidor: con una zona al oeste de
+// UTC, cada guardado corría el vencimiento un día atrás.
+describe("expiryInputValue", () => {
+  it("da el día guardado para el campo de fecha", () => {
+    expect(expiryInputValue(new Date("2026-10-14T00:00:00.000Z"))).toBe("2026-10-14")
   })
 })

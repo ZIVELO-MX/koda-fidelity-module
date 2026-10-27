@@ -67,18 +67,6 @@ export const authService: AuthService = {
     return { id: data.user.id, email: data.user.email ?? "", name: data.user.user_metadata?.name }
   },
 
-  async sendMagicLink(email: string, options?: { redirectTo?: string }) {
-    const supabase = await createClient()
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: true,
-        emailRedirectTo: options?.redirectTo,
-      },
-    })
-    if (error) throw error
-  },
-
   async sendPasswordResetEmail(email: string, options?: { redirectTo?: string }) {
     const supabase = await createClient()
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
