@@ -32,6 +32,8 @@ export interface CustomersTableProps {
   baseParams: URLSearchParams
   showCardColumn?: boolean
   footerSuffix?: string
+  /** Archivar es lo único del menú, y la API solo se lo permite a un admin. */
+  puedeArchivar?: boolean
 }
 
 export function timeAgo(date: Date): string {
@@ -73,6 +75,7 @@ export function CustomersTable({
   baseParams,
   showCardColumn = true,
   footerSuffix = "",
+  puedeArchivar = false,
 }: CustomersTableProps) {
   return (
     <div className="bg-card rounded-2xl border border-border overflow-hidden">
@@ -199,10 +202,12 @@ export function CustomersTable({
                       currentStamps={customer.stamps}
                       maxStamps={customer.card.stampsRequired}
                     />
-                    <CustomerActionsMenu
-                      customerId={customer.id}
-                      customerName={customer.name}
-                    />
+                    {puedeArchivar && (
+                      <CustomerActionsMenu
+                        customerId={customer.id}
+                        customerName={customer.name}
+                      />
+                    )}
                   </div>
                 </td>
               </tr>

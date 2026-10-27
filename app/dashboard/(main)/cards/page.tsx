@@ -6,7 +6,7 @@ import { Plus, Search, Archive } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
-import { daysUntilExpiry } from "@/lib/card-utils"
+import { daysUntilExpiry, formatExpiryDate, isExpired } from "@/lib/card-utils"
 import { resolveEffectiveEntitlements, syncExpiredEntitlements } from "@/lib/account-lifecycle"
 import { PrimaryCardConfigurator } from "@/components/dashboard/primary-card-configurator"
 import type { Prisma } from "@prisma/client"
@@ -62,8 +62,9 @@ export default async function CardsPage({
     prisma.subscription.findFirst({ where: { businessId: business.id, status: "ACTIVE" }, orderBy: { createdAt: "desc" } }),
   ])
 
-  const now = new Date()
-  const enriched = allCards.map((c) => ({ ...c, expired: !!(c.expiresAt && c.expiresAt < now) }))
+  // La misma regla que /join y el sellado: comparar el instante marcaba vencida
+  // la tarjeta desde el inicio de su último día, mientras seguía operando.
+  const enriched = allCards.map((c) => ({ ...c, expired: isExpired(c.expiresAt) }))
 
   const cards = status === "active"
     ? enriched.filter((c) => c.status === "ACTIVE" && !c.expired)
@@ -221,7 +222,7 @@ export default async function CardsPage({
                   {vencimientoRequiereAtencion && card.expiresAt && (
                     <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
                       {card.expired
-                        ? `Venció el ${card.expiresAt.toLocaleDateString("es-MX")}`
+                        ? `Venció el ${formatExpiryDate(card.expiresAt)}`
                         : diasParaVencer === 0
                         ? "Vence hoy"
                         : `Vence en ${diasParaVencer} día${diasParaVencer !== 1 ? "s" : ""}`}

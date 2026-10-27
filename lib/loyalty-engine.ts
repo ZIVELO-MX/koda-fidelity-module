@@ -45,24 +45,35 @@ async function withSerializableRetry<T>(operation: () => Promise<T>): Promise<T>
   throw new Error("Serializable transaction retry exhausted")
 }
 
+// Repetir la clave es reintentar la misma operación. Con otro cliente o de otro
+// tipo no lo es: devolver la respuesta guardada haría creer que se aplicó algo
+// que no se aplicó.
+function repetida(existing: { customerId: string; type: string; response: Prisma.JsonValue }, input: OperationInput) {
+  if (existing.customerId !== input.customerId || existing.type !== input.type) {
+    throw new ValidationError("Idempotency-Key was already used for a different operation")
+  }
+  return existing.response as unknown as OperationResult
+}
+
 export async function executeLoyaltyOperation(db: Db, input: OperationInput): Promise<OperationResult> {
   if (!input.idempotencyKey || input.idempotencyKey.length > 200) {
     throw new ValidationError("Idempotency-Key is required and must be at most 200 characters")
   }
 
+  // Los mensajes van en español: el escáner del panel los muestra tal cual.
   try {
     return await withSerializableRetry(() => db.$transaction(async tx => {
       const existing = await tx.loyaltyOperation.findUnique({
         where: { businessId_idempotencyKey: { businessId: input.businessId, idempotencyKey: input.idempotencyKey } },
       })
-      if (existing) return existing.response as unknown as OperationResult
+      if (existing) return repetida(existing, input)
 
       const customer = await tx.customer.findUnique({ where: { id: input.customerId }, include: customerInclude })
       if (!customer || customer.card.businessId !== input.businessId || !customer.isActive) {
         throw new NotFoundError("Customer not found")
       }
       if (customer.card.status !== "ACTIVE") throw new NotFoundError("Customer not found")
-      if (isExpired(customer.card.expiresAt)) throw new ValidationError("This loyalty card has expired")
+      if (isExpired(customer.card.expiresAt)) throw new ValidationError("Esta tarjeta ya venció.")
 
       const now = new Date()
       let cycle = customer.currentCycle
@@ -89,7 +100,7 @@ export async function executeLoyaltyOperation(db: Db, input: OperationInput): Pr
       if (input.type === "stamp") {
         const balance = cycle?.balance ?? customer.stamps
         if (balance >= configuration.stampsRequired) {
-          throw new ValidationError("Customer has completed the card and must redeem first.")
+          throw new ValidationError("El cliente completó la tarjeta. Canjea la recompensa antes de sellar de nuevo.")
         }
         const nextBalance = balance + 1
         if (!cycle) {
@@ -119,10 +130,12 @@ export async function executeLoyaltyOperation(db: Db, input: OperationInput): Pr
             milestoneIconName: configuredMilestone.iconName,
             probability: configuredMilestone.probability,
             randomRoll,
-            outcome: picked ? "awarded" : "no_prize",
+            // Sin el hito en la tarjeta no hay a qué ligar el premio, así que
+            // el registro no puede decir que se entregó.
+            outcome: !picked ? "no_prize" : milestone ? "awarded" : "milestone_removed",
           }
           if (milestone && picked) {
-            const claim = await tx.customerMilestoneClaim.create({ data: { customerId: customer.id, milestoneId: milestone.id, cardId: customer.card.id, label: picked.label, iconName: picked.iconName } })
+            const claim = await tx.customerMilestoneClaim.create({ data: { customerId: customer.id, milestoneId: milestone.id, stampNumberSnapshot: picked.stampNumber, cardId: customer.card.id, label: picked.label, iconName: picked.iconName } })
             milestoneClaim = { id: claim.id, label: picked.label, iconName: picked.iconName }
             await tx.stampLog.create({ data: { businessId: input.businessId, cardId: customer.card.id, customerId: customer.id, cycleId: cycle.id, type: "milestone", balanceAfter: nextBalance, stampsRequiredSnapshot: configuration.stampsRequired, metadata: { ...auditMetadata, milestoneClaimId: claim.id } } })
           } else {
@@ -139,7 +152,7 @@ export async function executeLoyaltyOperation(db: Db, input: OperationInput): Pr
         result = { customer: updated, event: "stamp", message: `${customer.name} now has ${nextBalance} stamps`, milestoneClaim, operationId, cycleId: cycle.id }
       } else {
         const balance = cycle?.balance ?? customer.stamps
-        if (balance < configuration.stampsRequired) throw new ValidationError(`Customer needs ${configuration.stampsRequired - balance} more stamps to redeem`)
+        if (balance < configuration.stampsRequired) throw new ValidationError(`Faltan ${configuration.stampsRequired - balance} sellos para poder canjear.`)
         if (!cycle) {
           cycle = await tx.loyaltyCycle.create({ data: { customerId: customer.id, cardId: customer.card.id, configurationId: configuration.id, balance }, include: { configuration: true } })
         }
@@ -157,7 +170,7 @@ export async function executeLoyaltyOperation(db: Db, input: OperationInput): Pr
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       const existing = await db.loyaltyOperation.findUnique({ where: { businessId_idempotencyKey: { businessId: input.businessId, idempotencyKey: input.idempotencyKey } } })
-      if (existing) return existing.response as unknown as OperationResult
+      if (existing) return repetida(existing, input)
     }
     throw error
   }

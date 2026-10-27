@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client"
 import { createAdminClient } from "../lib/supabase-admin"
+import { exigirBaseLocal } from "./onboarding-e2e-guard"
 
 const prisma = new PrismaClient()
 const admin = createAdminClient().auth.admin
@@ -14,6 +15,10 @@ const expiredPassword = process.env.E2E_EXPIRED_PASSWORD ?? "ci-expired-password
 const businessId = "biz-fidelity-auth-roles"
 
 async function main() {
+  // Fija contraseñas conocidas y reescribe cuentas: contra la base compartida
+  // dejaba cuentas autenticables con contraseña pública. Mismo candado que el
+  // fixture del alta, que depende de este.
+  exigirBaseLocal(process.env)
   if (password.length < 8) throw new Error("E2E_REQUIRED_PASSWORD must be at least 8 characters")
 
   const listed = await admin.listUsers({ page: 1, perPage: 100 })

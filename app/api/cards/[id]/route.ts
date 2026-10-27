@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { cuerpoJson, ForbiddenError, getBusinessFromSession, handleApiError, NotFoundError, requestIdFrom, requireActivatedBusiness, requireRole, requireWritableBusinessPrincipal, ValidationError, withRequestId } from "@/lib/api-utils"
 import { isExpired } from "@/lib/card-utils"
-import { persistPrimaryCardPreference, resolveEffectiveEntitlements, syncExpiredEntitlements } from "@/lib/account-lifecycle"
+import { getEntitlements, persistPrimaryCardPreference, resolveEffectiveEntitlements, syncExpiredEntitlements } from "@/lib/account-lifecycle"
 import { resolveTheme } from "@/lib/card-themes"
+import { validarCamposDeTarjeta } from "@/lib/campos-de-tarjeta"
 
 /**
  * @openapi
@@ -269,6 +270,7 @@ export async function PUT(
     }
 
     const body = await cuerpoJson(request)
+    validarCamposDeTarjeta(body, existing.brandColor)
 
     if (body.name !== undefined && (!body.name || typeof body.name !== "string" || !body.name.trim())) {
       throw new ValidationError("Card name is required")
@@ -330,6 +332,10 @@ export async function PUT(
         if (toDelete.length > 0) {
           await tx.milestoneReward.deleteMany({ where: { id: { in: toDelete }, cardId: id } })
         }
+        // El índice único (cardId, stampNumber) se revisa fila por fila: cada
+        // UPDATE chocaba con la que aún tenía ese número, e intercambiar dos
+        // sorpresas daba P2002. Se liberan en negativo y el bucle las reasigna.
+        await tx.milestoneReward.updateMany({ where: { cardId: id }, data: { stampNumber: { multiply: -1 } } })
         for (const m of body.milestoneRewards) {
           if (m.id && incomingIds.includes(m.id)) {
             const updated = await tx.milestoneReward.updateMany({
@@ -405,11 +411,23 @@ export async function DELETE(
     }
 
     const permanent = new URL(request.url).searchParams.get("permanent") === "true"
-    if (permanent) {
-      await prisma.loyaltyCard.delete({ where: { id } })
-    } else {
-      await prisma.loyaltyCard.update({ where: { id }, data: { isActive: false, status: "ARCHIVED" } })
-    }
+    await prisma.$transaction(async (tx) => {
+      if (permanent) {
+        await tx.loyaltyCard.delete({ where: { id } })
+      } else {
+        await tx.loyaltyCard.update({ where: { id }, data: { isActive: false, status: "ARCHIVED" } })
+      }
+      // Con Lite, si se va la única activa, entra la bloqueada más antigua. Sin
+      // esto el negocio se quedaba sin ninguna tarjeta que aceptara clientes.
+      if (existing.status !== "ACTIVE") return
+      const { plan, subscription } = await getEntitlements(tx, business.id)
+      // Sin suscripción activa no hay acceso (PR #152): no se activa ninguna.
+      if (plan !== "LITE" || !subscription) return
+      if (await tx.loyaltyCard.count({ where: { businessId: business.id, status: "ACTIVE" } }) > 0) return
+      const siguiente = await tx.loyaltyCard.findFirst({ where: { businessId: business.id, status: "LOCKED_BY_PLAN" }, orderBy: { createdAt: "asc" }, select: { id: true } })
+      if (siguiente) await tx.loyaltyCard.update({ where: { id: siguiente.id }, data: { isActive: true, isLite: true, status: "ACTIVE" } })
+      if (subscription) await tx.subscription.update({ where: { id: subscription.id }, data: { liteCardId: siguiente?.id ?? null } })
+    })
 
     return withRequestId(NextResponse.json({ success: true }), requestId)
   } catch (error) {

@@ -16,7 +16,8 @@ import {
 import { CustomerCardListIcon } from "@/components/dashboard/customer-card-list-icon"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
 import { logout } from "@/lib/actions/auth"
-import { isExpired, daysUntilExpiry } from "@/lib/card-utils"
+import { isExpired, daysUntilExpiry, formatExpiryDate } from "@/lib/card-utils"
+import { toast } from "sonner"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,7 +35,8 @@ interface MilestoneClaim {
   label: string
   iconName: string | null
   createdAt: string
-  milestone: { stampNumber: number; iconName: string | null }
+  stampNumberSnapshot: number
+  milestone: { stampNumber: number; iconName: string | null } | null
 }
 
 interface MyCard {
@@ -437,13 +439,13 @@ export default function DashboardMyCardsPage() {
                               currentStamps={c.stamps}
                               maxStamps={c.card.stampsRequired}
                               reward={c.card.reward}
-                              expirationDate={c.card.expiresAt ? new Date(c.card.expiresAt).toLocaleDateString("es-MX") : undefined}
+                              expirationDate={c.card.expiresAt ? formatExpiryDate(c.card.expiresAt) : undefined}
                               brandColor={c.card.brandColor}
                               textColor={c.card.textColor}
                               themeCode={c.card.effectiveTheme?.code}
                               showQR={true}
                               qrValue={c.id}
-                              milestoneClaims={c.milestoneClaims.map(cl => ({ stampNumber: cl.milestone.stampNumber, iconName: cl.iconName }))}
+                              milestoneClaims={c.milestoneClaims.map(cl => ({ stampNumber: cl.stampNumberSnapshot, iconName: cl.iconName }))}
                             />
 
                             <p className="text-xs text-muted-foreground text-center">
@@ -508,7 +510,7 @@ export default function DashboardMyCardsPage() {
                           </p>
                           {c.card.expiresAt && (
                             <p className="text-xs text-muted-foreground">
-                              Venció el {new Date(c.card.expiresAt).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}
+                              Venció el {formatExpiryDate(c.card.expiresAt, { day: "numeric", month: "long", year: "numeric" })}
                             </p>
                           )}
                         </div>
@@ -530,7 +532,12 @@ export default function DashboardMyCardsPage() {
                               <AlertDialogAction
                                 className="bg-destructive hover:bg-destructive/90"
                                 onClick={async () => {
-                                  await fetch(`/api/my-cards/${c.id}`, { method: "DELETE" })
+                                  // Antes se quitaba aunque la API la rechazara, y volvía a aparecer al recargar.
+                                  const res = await fetch(`/api/my-cards/${c.id}`, { method: "DELETE" }).catch(() => null)
+                                  if (!res?.ok) {
+                                    toast.error("No fue posible eliminar la tarjeta. Inténtalo de nuevo.")
+                                    return
+                                  }
                                   setCards((prev) => prev.filter((card) => card.id !== c.id))
                                 }}
                               >

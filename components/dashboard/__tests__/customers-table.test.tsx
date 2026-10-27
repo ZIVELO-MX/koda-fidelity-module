@@ -162,3 +162,19 @@ describe("CustomersTable", () => {
     })
   })
 })
+
+// Archivar es lo único del menú y la API solo lo permite a un admin. El sellador
+// lo veía, el diálogo se cerraba con un 403 y no pasaba nada.
+describe("CustomersTable acciones de archivo", () => {
+  afterEach(() => cleanup())
+
+  it("no ofrece archivar a quien no es admin", () => {
+    renderTable([makeCustomer()], { puedeArchivar: false })
+    expect(screen.queryByTestId("actions-menu")).toBeNull()
+  })
+
+  it("ofrece archivar a un admin", () => {
+    renderTable([makeCustomer()], { puedeArchivar: true })
+    expect(screen.getByTestId("actions-menu")).toBeInTheDocument()
+  })
+})

@@ -25,6 +25,7 @@ function makeDb(previousPlan: "LITE" | "PRO") {
   }
   const db = {
     business: { findUnique: vi.fn().mockResolvedValue({ id: "biz-1" }) },
+    accountClosure: { findFirst: vi.fn().mockResolvedValue(null) },
     billingAuditEvent: { findUnique: vi.fn().mockResolvedValue(null) },
     $transaction: vi.fn().mockImplementation((run) => run(tx)),
   }

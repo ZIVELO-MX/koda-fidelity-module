@@ -11,9 +11,9 @@ import { Check, Loader2 } from "lucide-react"
 import { mensajeDeAlta, type MotivoAlta } from "@/lib/alta-estados"
 import { cn } from "@/lib/utils"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
-import { getFriendlySendError } from "@/lib/auth-errors"
+import { formatExpiryDate } from "@/lib/card-utils"
 
-type Step = "loading" | "error" | "form" | "ready"
+type Step = "loading" | "error" | "form" | "ready" | "verify-email"
 
 interface JoinCustomer {
   id: string
@@ -114,6 +114,13 @@ export default function JoinCardPage() {
       if (session?.user?.email) {
         const email = session.user.email
         const name = session.user.user_metadata?.name || email.split("@")[0]
+        if (!session.user.email_confirmed_at) {
+          setName(name)
+          setEmail(email)
+          setStep("verify-email")
+          checkedSession.current = true
+          return
+        }
 
         const custRes = await fetch(
           `/api/join?email=${encodeURIComponent(email)}&cardId=${encodeURIComponent(cardId)}`,
@@ -201,26 +208,13 @@ export default function JoinCardPage() {
     if (hasError) return
 
     setSending(true)
-    try {
-      const res = await fetch("/api/join", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), email: email.trim().toLowerCase(), cardId }),
-      })
-
-      if (!res.ok) {
-        throw new Error("No fue posible registrarte")
-      }
-
-      const { customerId } = await res.json()
-      sessionStorage.setItem(`pending-${cardId}`, customerId)
-
-      router.push(`/signup?accountType=CUSTOMER&next=${encodeURIComponent(`/join/${cardId}`)}&email=${encodeURIComponent(email.trim())}&name=${encodeURIComponent(name.trim())}`)
-    } catch (err) {
-      setSendError(getFriendlySendError(err))
-    } finally {
-      setSending(false)
-    }
+    const signupParams = new URLSearchParams({
+      accountType: "CUSTOMER",
+      next: `/join/${cardId}`,
+      email: email.trim().toLowerCase(),
+      name: name.trim(),
+    })
+    router.push(`/signup?${signupParams.toString()}`)
   }, [name, email, cardId, router])
 
   const cardInfo = customer
@@ -277,6 +271,24 @@ export default function JoinCardPage() {
     )
   }
 
+  if (step === "verify-email") {
+    return (
+      <div className="min-h-screen bg-background forced-light flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-sm space-y-4 text-center">
+          <h1 className="text-2xl font-bold text-foreground">Confirma tu correo</h1>
+          <p className="text-muted-foreground">
+            Abre el enlace de confirmación que enviamos a {email}. Después volverás a esta tarjeta y podrás unirte.
+          </p>
+          <Button asChild variant="outline" className="min-h-11">
+            <Link href={`/login?next=${encodeURIComponent(`/join/${cardId}`)}&email=${encodeURIComponent(email)}`}>
+              Ir a iniciar sesión
+            </Link>
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   if (step === "ready" && customer && cardInfo) {
     const joinUrl = `${window.location.origin}/join/${cardId}`
 
@@ -318,7 +330,7 @@ export default function JoinCardPage() {
                 currentStamps={customer.stamps}
                 maxStamps={cardInfo.stampsRequired}
                 reward={cardInfo.reward}
-                expirationDate={cardInfo.expiresAt ? new Date(cardInfo.expiresAt).toLocaleDateString("es-MX") : undefined}
+                expirationDate={cardInfo.expiresAt ? formatExpiryDate(cardInfo.expiresAt) : undefined}
                 brandColor={cardInfo.brandColor}
                 textColor={cardInfo.textColor}
                 themeCode={cardInfo.temaEfectivo}

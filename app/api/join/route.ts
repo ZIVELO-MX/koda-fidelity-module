@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
-import { cuerpoJson, getBusinessFromSession, handleApiError, NotFoundError, requestIdFrom, UnauthorizedError, ValidationError, withRequestId } from "@/lib/api-utils"
+import { cuerpoJson, ForbiddenError, getBusinessFromSession, handleApiError, NotFoundError, requestIdFrom, UnauthorizedError, ValidationError, withRequestId } from "@/lib/api-utils"
 import { isExpired } from "@/lib/card-utils"
 import { assertBusinessWritable, syncExpiredEntitlements } from "@/lib/account-lifecycle"
+import { normalizeEmail } from "@/lib/auth-security"
 
 /**
  * @openapi
@@ -12,7 +13,8 @@ import { assertBusinessWritable, syncExpiredEntitlements } from "@/lib/account-l
  *     tags:
  *       - Membership
  *     summary: Join a loyalty card
- *     description: Registers a customer for a loyalty card. Returns the existing customer when the email is already registered for that card.
+ *     description: Registers a customer for a loyalty card after the authenticated user's email is confirmed.
+ *     security: [{ cookieAuth: [] }]
  *     requestBody:
  *       required: true
  *       content:
@@ -36,7 +38,7 @@ import { assertBusinessWritable, syncExpiredEntitlements } from "@/lib/account-l
  *                 description: Loyalty card ID
  *     responses:
  *       200:
- *         description: Existing or created customer
+ *         description: Existing or created customer for the confirmed session email
  *         content:
  *           application/json:
  *             schema:
@@ -50,6 +52,18 @@ import { assertBusinessWritable, syncExpiredEntitlements } from "@/lib/account-l
  *                   description: true when already registered (customerId omitted), false when newly created
  *       400:
  *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: A confirmed authenticated session is required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: The body email does not match the confirmed session email
  *         content:
  *           application/json:
  *             schema:
@@ -149,6 +163,7 @@ const customerInclude = {
       id: true,
       label: true,
       iconName: true,
+      stampNumberSnapshot: true,
       createdAt: true,
       milestone: { select: { stampNumber: true, iconName: true } },
     },
@@ -160,6 +175,8 @@ const customerInclude = {
     orderBy: { createdAt: "desc" },
     take: 1,
   },
+  // El escáner muestra la meta del ciclo en curso, con la que canjea el motor.
+  currentCycle: { select: { balance: true, configuration: { select: { stampsRequired: true, reward: true } } } },
 } as const
 
 export function withCurrentCycleMilestoneClaims<
@@ -179,6 +196,30 @@ export function withCurrentCycleMilestoneClaims<
   }
 }
 
+// La meta, el saldo y la recompensa que valen para el cliente son los del ciclo
+// en curso, con los que canjea el motor. Las pantallas del cliente y el escáner
+// leen los de `card`: si la meta cambió a mitad del ciclo, se veía «9/8» o se
+// ofrecía canjear algo que el servidor rechaza.
+function conMetaDelCiclo<T extends {
+  stamps: number
+  card: { stampsRequired: number; reward: string }
+  currentCycle?: { balance: number; configuration: { stampsRequired: number; reward: string } } | null
+}>(customer: T): T {
+  const ciclo = customer.currentCycle
+  if (!ciclo) return customer
+  return { ...customer, stamps: ciclo.balance, card: { ...customer.card, stampsRequired: ciclo.configuration.stampsRequired, reward: ciclo.configuration.reward } }
+}
+
+// Supabase guarda el correo en minúsculas y el teclado del celular suele
+// escribir «Ana@…». Comparar tal cual no encontraba al cliente al volver del
+// enlace mágico, y la página lo daba de alta otra vez.
+// ponytail: `insensitive` no usa el índice de email; si la tabla crece, pasar a
+// minúsculas los correos existentes y volver a igualdad exacta.
+const mismoCorreo = (email: string) => ({ equals: email, mode: "insensitive" as const })
+// Prisma puede resolver `insensitive` con ILIKE, donde `_` y `%` son comodines
+// («ana_l@» encontraría «anaxl@»). Se confirma la igualdad exacta aquí.
+const delCorreo = (correo: string) => (customer: { email: string | null }) => normalizeEmail(customer.email ?? "") === correo
+
 export async function POST(request: NextRequest) {
   const requestId = requestIdFrom(request)
   try {
@@ -193,6 +234,14 @@ export async function POST(request: NextRequest) {
     }
     if (!cardId || typeof cardId !== "string") {
       throw new ValidationError("Invalid card ID")
+    }
+
+    const { data: { user }, error: authError } = await (await createClient()).auth.getUser()
+    if (authError || !user?.email || !user.email_confirmed_at) throw new UnauthorizedError()
+
+    const correo = normalizeEmail(email)
+    if (normalizeEmail(user.email) !== correo) {
+      throw new ForbiddenError("Inicia sesión con el correo que usaste para el alta")
     }
 
     const initialCard = await prisma.loyaltyCard.findUnique({ where: { id: cardId } })
@@ -212,20 +261,28 @@ export async function POST(request: NextRequest) {
       throw new ValidationError("This loyalty card has expired")
     }
 
-    const existing = await prisma.customer.findFirst({
-      where: { email, cardId },
-    })
-    if (existing) {
-      return withRequestId(NextResponse.json({ existing: true }), requestId)
-    }
+    const resultado = await prisma.$transaction(async (tx) => {
+      // No hay índice único en (cardId, email): dos altas a la vez (doble toque,
+      // el efecto de la página que corre dos veces) veían las dos que no había
+      // nadie y creaban dos clientes, con los sellos repartidos entre ambos.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`join:${cardId}:${correo}`}))`
+      const candidatos = await tx.customer.findMany({
+        where: { email: mismoCorreo(correo), cardId },
+        select: { id: true, email: true, isActive: true },
+      })
+      const previo = candidatos.find(delCorreo(correo))
+      if (previo?.isActive === false) {
+        await tx.customer.update({ where: { id: previo.id }, data: { isActive: true } })
+        return { customerId: previo.id, existing: false }
+      }
+      if (previo) return { existing: true }
 
-    const customer = await prisma.$transaction(async (tx) => {
-      const created = await tx.customer.create({ data: { name: name.trim(), email, cardId } })
+      const created = await tx.customer.create({ data: { name: name.trim(), email: correo, cardId } })
       await tx.stampLog.create({ data: { businessId: card.businessId, cardId: card.id, customerId: created.id, type: "customer_joined" } })
-      return created
+      return { customerId: created.id, existing: false }
     })
 
-    return withRequestId(NextResponse.json({ customerId: customer.id, existing: false }), requestId)
+    return withRequestId(NextResponse.json(resultado), requestId)
   } catch (error) {
     return withRequestId(handleApiError(error, requestId), requestId)
   }
@@ -256,27 +313,30 @@ export async function GET(request: NextRequest) {
         throw new NotFoundError("Customer not found")
       }
 
-      return withRequestId(NextResponse.json({ customer: withCurrentCycleMilestoneClaims(customer) }), requestId)
+      return withRequestId(NextResponse.json({ customer: withCurrentCycleMilestoneClaims(conMetaDelCiclo(customer)) }), requestId)
     }
 
     if (email) {
       const supabase = await createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user?.email || user.email !== email) {
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      if (authError || !user?.email || !user.email_confirmed_at || normalizeEmail(user.email) !== normalizeEmail(email)) {
         throw new UnauthorizedError()
       }
 
-      const where: Record<string, unknown> = { email }
-      if (cardId) where.cardId = cardId
+      const correo = normalizeEmail(email)
+      const where: Record<string, unknown> = { email: mismoCorreo(correo) }
+      // En /join una baja no es un registro listo: su QR ya no se sella. Sin
+      // `cardId` (my-cards) se devuelven todas y la página separa las archivadas.
+      if (cardId) Object.assign(where, { cardId, isActive: true })
 
-      const customers = await prisma.customer.findMany({
+      const customers = (await prisma.customer.findMany({
         where,
         include: customerInclude,
         orderBy: { createdAt: "desc" },
-      })
+      })).filter(delCorreo(correo))
 
       return withRequestId(NextResponse.json({
-        customers: customers.map(withCurrentCycleMilestoneClaims),
+        customers: customers.map((customer) => withCurrentCycleMilestoneClaims(conMetaDelCiclo(customer))),
       }), requestId)
     }
 

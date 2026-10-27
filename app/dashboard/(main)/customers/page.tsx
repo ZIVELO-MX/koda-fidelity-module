@@ -25,6 +25,7 @@ export default async function CustomersPage({
 
   const business = await prisma.business.findFirst({ where: { users: { some: { authUserId: user.id } } } })
   if (!business) redirect("/login")
+  const miembro = await prisma.user.findUnique({ where: { authUserId: user.id }, select: { role: true } })
 
   const [loyaltyCards, customers] = await Promise.all([
     prisma.loyaltyCard.findMany({
@@ -42,6 +43,7 @@ export default async function CustomersPage({
       include: {
         card: { select: { name: true, stampsRequired: true, reward: true, brandColor: true } },
         _count: { select: { stampsLog: { where: { type: "redeem" } }, milestoneClaims: true } },
+        currentCycle: { select: { configuration: { select: { stampsRequired: true } } } },
       },
       orderBy: { [sort]: order },
     }),
@@ -68,11 +70,19 @@ export default async function CustomersPage({
 
   const activeCard = loyaltyCards.find((c) => c.id === cardFilter)
 
+  // La meta es la del ciclo en curso, con la que el motor canjea: la actual de la
+  // tarjeta puede haber cambiado a mitad del ciclo y marcaba «listo» a quien el
+  // servidor no deja canjear.
+  const conMeta = customers.map(({ currentCycle, ...c }) => ({
+    ...c,
+    card: { ...c.card, stampsRequired: currentCycle?.configuration.stampsRequired ?? c.card.stampsRequired },
+  }))
+
   // El filtro sale de los datos que la página ya recibió: Prisma no compara dos
   // columnas del mismo registro en un where.
-  const estaListo = (c: (typeof customers)[number]) => c.stamps >= c.card.stampsRequired
-  const listosCount = customers.filter(estaListo).length
-  const visibles = soloListos ? customers.filter(estaListo) : customers
+  const estaListo = (c: (typeof conMeta)[number]) => c.stamps >= c.card.stampsRequired
+  const listosCount = conMeta.filter(estaListo).length
+  const visibles = soloListos ? conMeta.filter(estaListo) : conMeta
 
   return (
     <div className="space-y-8">
@@ -183,6 +193,7 @@ export default async function CustomersPage({
           basePath="/dashboard/customers"
           baseParams={baseParams}
           footerSuffix={activeCard ? ` en "${activeCard.name}"` : ""}
+          puedeArchivar={miembro?.role === "admin"}
         />
       )}
     </div>

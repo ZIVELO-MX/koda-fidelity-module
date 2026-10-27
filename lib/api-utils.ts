@@ -47,6 +47,14 @@ export class ForbiddenError extends Error {
   }
 }
 
+/** El mensaje sigue siendo `RATE_LIMITED`: `classifyLoginError` lo reconoce así. */
+export class RateLimitError extends Error {
+  constructor() {
+    super("RATE_LIMITED")
+    this.name = "RateLimitError"
+  }
+}
+
 export class ProThemeRequiresProError extends Error {
   constructor() {
     super("Esta tarjeta usa un tema Pro y no puede guardarse con el plan Lite.")
@@ -171,7 +179,9 @@ export async function requireReadyBusinessPrincipal() {
 }
 
 export function safeNextPath(value: string | null | undefined, fallback: string) {
-  if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("\\")) return fallback
+  // El navegador quita tabuladores y saltos de línea al leer una URL, así que
+  // «/\t/evil.com» pasaba la revisión y terminaba en //evil.com.
+  if (!value || !value.startsWith("/") || value.startsWith("//") || /[\\\u0000-\u001f\u007f]/.test(value)) return fallback
   return value
 }
 
@@ -200,11 +210,17 @@ export function requireRole(user: Pick<SessionBusiness["user"], "role">, ...allo
  * arreglo.
  */
 export async function cuerpoJson(request: { json: () => Promise<any> }): Promise<any> {
+  let cuerpo: unknown
   try {
-    return await request.json()
+    cuerpo = await request.json()
   } catch {
     throw new ValidationError("El cuerpo de la petición no es JSON válido")
   }
+  // Todas las rutas leen `body.campo`: con `null` lanzaba un TypeError y un 500.
+  if (cuerpo === null || typeof cuerpo !== "object" || Array.isArray(cuerpo)) {
+    throw new ValidationError("El cuerpo de la petición debe ser un objeto JSON")
+  }
+  return cuerpo
 }
 
 export function handleApiError(error: unknown, requestId: string = randomUUID()): NextResponse<ApiErrorBody> {
@@ -228,6 +244,9 @@ export function handleApiError(error: unknown, requestId: string = randomUUID())
   }
   if (error instanceof ValidationError) {
     return NextResponse.json({ error: error.message, code: "KF-REQUEST-001", action: "Corrige los datos enviados.", requestId, retryable: false }, { status: 400, headers: { "x-request-id": requestId } })
+  }
+  if (error instanceof RateLimitError) {
+    return NextResponse.json({ error: "Too many requests", code: "KF-RATE-001", action: "Espera unos minutos e inténtalo de nuevo.", requestId, retryable: true }, { status: 429, headers: { "x-request-id": requestId } })
   }
   if (error instanceof ConflictError) {
     return NextResponse.json({ error: error.message, code: "KF-REQUEST-001", action: "Recarga los datos e inténtalo de nuevo.", requestId, retryable: true }, { status: 409, headers: { "x-request-id": requestId } })
