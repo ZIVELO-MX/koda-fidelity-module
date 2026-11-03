@@ -2,7 +2,8 @@ import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 import { EditCardForm } from "@/components/dashboard/edit-card-form"
-import { toDateInputValue } from "@/lib/card-utils"
+import { expiryInputValue } from "@/lib/card-utils"
+import { resolvePrimaryCard, syncExpiredEntitlements } from "@/lib/account-lifecycle"
 
 export default async function EditCardPage({
   params,
@@ -33,16 +34,21 @@ export default async function EditCardPage({
     redirect("/dashboard/forbidden")
   }
 
-  const card = await prisma.loyaltyCard.findUnique({
-    where: { id },
-    include: {
-      milestoneRewards: {
-        orderBy: { stampNumber: "asc" },
+  const entitlements = await syncExpiredEntitlements(prisma, userRecord.business.id)
+  const [card, primaryCard] = await Promise.all([
+    prisma.loyaltyCard.findUnique({
+      where: { id },
+      include: {
+        selectedTheme: { select: { id: true, code: true, plan: true } },
+        milestoneRewards: {
+          orderBy: { stampNumber: "asc" },
+        },
       },
-    },
-  })
+    }),
+    resolvePrimaryCard(prisma, userRecord.business.id, entitlements.subscription?.liteCardId, entitlements.plan),
+  ])
 
-  if (!card || card.businessId !== userRecord.business.id || !card.isActive) {
+  if (!card || card.businessId !== userRecord.business.id || !["ACTIVE", "LOCKED_BY_PLAN"].includes(card.status)) {
     redirect("/dashboard/cards")
   }
 
@@ -57,8 +63,10 @@ export default async function EditCardPage({
       initialStampsRequired={card.stampsRequired}
       initialIcon={card.iconName}
       initialStampIcon={card.stampIconName}
+      initialThemeId={card.selectedThemeId}
+      initialTextColor={card.textColor}
       initialDescription={card.description}
-      initialExpiresAt={card.expiresAt ? toDateInputValue(card.expiresAt) : null}
+      initialExpiresAt={card.expiresAt ? expiryInputValue(card.expiresAt) : null}
       initialMilestones={card.milestoneRewards.map((milestone) => ({
         id: milestone.id,
         stampNumber: milestone.stampNumber,
@@ -66,6 +74,9 @@ export default async function EditCardPage({
         iconName: milestone.iconName,
         probability: milestone.probability,
       }))}
+      initialIsPrimary={primaryCard?.id === card.id}
+      initialPrimaryCardId={primaryCard?.id ?? null}
+      initialPrimaryCardName={primaryCard?.id === card.id ? null : primaryCard?.name ?? null}
     />
   )
 }

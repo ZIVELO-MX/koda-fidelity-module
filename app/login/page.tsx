@@ -8,7 +8,7 @@ import { siteConfig } from "@/lib/site-config"
 
 const brandingFeatures = [
   "Tus clientes no instalan nada: escanean el QR",
-  "Entran con un enlace seguro que les llega por correo",
+  "Tus clientes acceden con su cuenta desde cualquier dispositivo",
   "Tu tarjeta queda lista en menos de dos minutos",
 ]
 

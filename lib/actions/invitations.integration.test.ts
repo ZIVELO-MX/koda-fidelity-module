@@ -29,4 +29,26 @@ integration("team invitation acceptance", () => {
     expect(await prisma.teamInvitation.findUniqueOrThrow({ where: { id: invitation.id } })).toMatchObject({ status: "accepted" })
     expect(await prisma.user.findFirst({ where: { businessId: business.id, email: invitation.email } })).toMatchObject({ role: "sellador", passwordSetupRequired: true })
   })
+
+  // Antes estos rechazos llegaban como un Error suelto a la pantalla genérica.
+  it.each([
+    ["otro-correo", "otra-persona@test.invalid", 3],
+    ["equipo-completo", "member@test.invalid", 1],
+  ])("sends the invitee back to the invitation with aviso=%s", async (aviso, sessionEmail, limit) => {
+    process.env.AUTH_SECURITY_SECRET = "fid0021-integration-secret-01234567890123456789"
+    process.env.TEAM_MEMBER_LIMIT = String(limit)
+    const business = await prisma.business.create({ data: { name: "Invite Business", email: `invite-${aviso}-${Date.now()}@test.invalid` } })
+    businessIds.push(business.id)
+    const inviter = await prisma.user.create({ data: { businessId: business.id, authUserId: randomUUID(), email: business.email, name: "Owner", role: "admin" } })
+    const token = createInvitationToken()
+    await prisma.teamInvitation.create({ data: { businessId: business.id, invitedById: inviter.id, email: "member@test.invalid", name: "Member", role: "sellador", tokenHash: token.tokenHash, expiresAt: new Date(Date.now() + 60_000) } })
+    createClient.mockResolvedValue({ auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: randomUUID(), email: sessionEmail } } }) } })
+    const form = new FormData()
+    form.set("token", token.token)
+    try {
+      await expect(acceptTeamInvitation(form)).rejects.toMatchObject({ digest: expect.stringContaining(`aviso=${aviso}`) })
+    } finally {
+      delete process.env.TEAM_MEMBER_LIMIT
+    }
+  })
 })

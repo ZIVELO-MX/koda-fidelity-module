@@ -7,7 +7,8 @@ import {
   getConfigError,
 } from "@/lib/passes/google"
 import { config } from "@/lib/config"
-import { requestIdFrom, withRequestId } from "@/lib/api-utils"
+import { cuerpoJson, handleApiError, NotFoundError, requestIdFrom, withRequestId } from "@/lib/api-utils"
+import { clienteTitular } from "@/lib/passes/titular"
 
 /**
  * @openapi
@@ -88,65 +89,44 @@ export async function POST(
     )
   }
 
-  const body = await request.json()
-  const customerName = body.customerName as string | undefined
-  const existingCustomerId = body.customerId as string | undefined
-
-  const loyaltyCard = await prisma.loyaltyCard.findUnique({
-    where: { id: cardId },
-    include: { business: true },
-  })
-
-  if (!loyaltyCard) {
-    return NextResponse.json(
-      { error: "Loyalty card not found" },
-      { status: 404 },
-    )
-  }
-
-  if (!existingCustomerId) {
-    return NextResponse.json(
-      { error: "customerId is required" },
-      { status: 400 },
-    )
-  }
-
-  const customer = await prisma.customer.findUnique({
-    where: { id: existingCustomerId },
-  })
-  if (!customer || customer.cardId !== cardId) {
-    return NextResponse.json(
-      { error: "Customer not found" },
-      { status: 404 },
-    )
-  }
-
-  const host = request.headers.get("host") || "localhost:3000"
-  const proto = request.headers.get("x-forwarded-proto") || "http"
-  const baseUrl = `${proto}://${host}`
-
-  const jwtToken = await generateLoyaltyPassJwt({
-    customerId: customer.id,
-    cardId: loyaltyCard.id,
-    customerName: customer.name,
-    businessName: loyaltyCard.business.name,
-    cardName: loyaltyCard.name,
-    reward: loyaltyCard.reward,
-    stamps: customer.stamps,
-    stampsRequired: loyaltyCard.stampsRequired,
-    brandColor: loyaltyCard.brandColor,
-    baseUrl,
-  })
-
-  if (!customer.googlePassId) {
-    await prisma.customer.update({
-      where: { id: customer.id },
-      data: { googlePassId: customer.id },
+  try {
+    const body = await cuerpoJson(request)
+    const customer = await clienteTitular(cardId, body.customerId)
+    const loyaltyCard = await prisma.loyaltyCard.findUnique({
+      where: { id: cardId },
+      include: { business: true },
     })
-  }
+    if (!loyaltyCard) throw new NotFoundError("Loyalty card not found")
 
-  return NextResponse.json({
-    saveUrl: getSaveUrl(jwtToken),
-    customerId: customer.id,
-  })
+    const host = request.headers.get("host") || "localhost:3000"
+    const proto = request.headers.get("x-forwarded-proto") || "http"
+    const baseUrl = `${proto}://${host}`
+
+    const jwtToken = await generateLoyaltyPassJwt({
+      customerId: customer.id,
+      cardId: loyaltyCard.id,
+      customerName: customer.name,
+      businessName: loyaltyCard.business.name,
+      cardName: loyaltyCard.name,
+      reward: loyaltyCard.reward,
+      stamps: customer.stamps,
+      stampsRequired: loyaltyCard.stampsRequired,
+      brandColor: loyaltyCard.brandColor,
+      baseUrl,
+    })
+
+    if (!customer.googlePassId) {
+      await prisma.customer.update({
+        where: { id: customer.id },
+        data: { googlePassId: customer.id },
+      })
+    }
+
+    return NextResponse.json({
+      saveUrl: getSaveUrl(jwtToken),
+      customerId: customer.id,
+    })
+  } catch (error) {
+    return withRequestId(handleApiError(error, requestId), requestId)
+  }
 }

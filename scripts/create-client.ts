@@ -1,11 +1,10 @@
 import "dotenv/config"
 import { createAdminClient } from "../lib/supabase-admin"
+import { generateTempPassword } from "../lib/temp-password"
 import { PrismaClient } from "@prisma/client"
 import { sendInviteEmail } from "./invite-email"
 
 const prisma = new PrismaClient()
-
-const DEFAULT_PASSWORD = "Koda1234!"
 
 function parseArgs(): { email: string; name: string; password: string; sendEmail: boolean; to?: string } {
   const args = process.argv.slice(2)
@@ -30,7 +29,7 @@ function parseArgs(): { email: string; name: string; password: string; sendEmail
   return {
     email: result.email,
     name: result.business,
-    password: result.password || DEFAULT_PASSWORD,
+    password: result.password || generateTempPassword(),
     sendEmail: flags.has("send-email"),
     to: result.to,
   }
@@ -42,6 +41,8 @@ async function main() {
 
   const { data: { users } } = await supabase.auth.admin.listUsers()
   const existingAuth = users.find((u) => u.email === email)
+  // La sesión se resuelve por `authUserId`: sin él, el usuario creado no podía entrar.
+  let authUserId = existingAuth?.id
 
   if (existingAuth) {
     console.log(`El usuario de auth ya existe: ${email}`)
@@ -58,6 +59,7 @@ async function main() {
       process.exit(1)
     }
 
+    authUserId = data.user.id
     console.log(`Usuario de auth creado: ${email} (${data.user.id})`)
   }
 
@@ -66,7 +68,7 @@ async function main() {
     console.log(`El negocio ya existe: ${name}`)
     const existingUser = await prisma.user.findUnique({ where: { email } })
     if (!existingUser) {
-      await prisma.user.create({ data: { email, name, role: "admin", businessId: existingBusiness.id } })
+      await prisma.user.create({ data: { email, name, role: "admin", businessId: existingBusiness.id, authUserId, passwordSetupRequired: true } })
       console.log(`Usuario admin creado para negocio existente: ${email}`)
     }
   } else {
@@ -75,7 +77,7 @@ async function main() {
         email,
         name,
         users: {
-          create: { email, name, role: "admin" },
+          create: { email, name, role: "admin", authUserId, passwordSetupRequired: true },
         },
       },
     })

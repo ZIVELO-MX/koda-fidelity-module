@@ -24,6 +24,8 @@ const BASE_PROPS = {
   userEmail: "test@test.com",
   businessName: "Mi Negocio",
   brandColor: "#f97316",
+  accountPlan: "PRO" as const,
+  planChangeNotice: null,
   collapsed: false,
   onToggleCollapse: vi.fn(),
 }
@@ -56,6 +58,16 @@ describe("DashboardSidebar — role-based navigation", () => {
     it("shows Clientes", () => expect(hasText("Clientes")).toBe(true))
     it("shows Marca", () => expect(hasText("Marca")).toBe(true))
     it("shows Configuración", () => expect(hasText("Configuración")).toBe(true))
+    it("places Notificaciones below Configuración in the nav and before the profile divider", () => {
+      const aside = escritorio().getByRole("link", { name: "Configuración" }).closest("aside")!
+      const config = within(aside).getByRole("link", { name: "Configuración" })
+      const notifications = within(aside.querySelector("nav")!).getByRole("button", { name: "Notificaciones" })
+      const profile = within(aside).getByRole("button", { name: "Abrir menú de perfil" })
+
+      expect(config.compareDocumentPosition(notifications) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(notifications.compareDocumentPosition(profile) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+    it("shows the account plan after the email", () => expect(screen.getAllByText(/· Pro/).length).toBeGreaterThan(0))
     it("shows Equipo", () => expect(hasText("Equipo")).toBe(true))
     // La ayuda dejó de ser un destino: se abre desde el encabezado, con lo de
     // la pantalla en la que estás. Ver components/dashboard/ayuda-contextual.tsx.

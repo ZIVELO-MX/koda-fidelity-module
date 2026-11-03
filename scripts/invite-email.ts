@@ -11,14 +11,16 @@ export type InviteEmailInput = {
   to?: string
 }
 
-function buildHtml(name: string, email: string, password: string): string {
+// Con una función de reemplazo: con un texto, `replace` interpreta `$$` y `$&`,
+// y el correo mostraba otra contraseña que la de la cuenta.
+export function buildHtml(name: string, email: string, password: string): string {
   const loginUrl = `${BASE_URL}/login?email=${encodeURIComponent(email)}`
   const template = readFileSync(resolve("docs/email-templates/invite.html"), "utf-8")
   return template
-    .replace(/{{NAME}}/g, name)
-    .replace(/{{EMAIL}}/g, email)
-    .replace(/{{PASSWORD}}/g, password)
-    .replace(/{{LOGIN_URL}}/g, loginUrl)
+    .replace(/{{NAME}}/g, () => name)
+    .replace(/{{EMAIL}}/g, () => email)
+    .replace(/{{PASSWORD}}/g, () => password)
+    .replace(/{{LOGIN_URL}}/g, () => loginUrl)
 }
 
 export async function sendInviteEmail(input: InviteEmailInput): Promise<string> {

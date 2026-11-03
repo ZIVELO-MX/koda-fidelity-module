@@ -22,19 +22,16 @@ export default async function TeamPage() {
   const dbUsers = await prisma.user.findMany({
     where: { businessId: userRecord.businessId },
     orderBy: { createdAt: "asc" },
-    select: { id: true, email: true, name: true, role: true, createdAt: true },
+    select: { id: true, email: true, authUserId: true, name: true, role: true, createdAt: true },
   })
 
-  // Fetch last_sign_in_at from Supabase Auth to show invite vs accessed status
+  // El último acceso dice si el miembro ya entró o sigue invitado. Se pide por
+  // miembro: `listUsers` traía solo la primera página de Auth, que incluye a los
+  // clientes de toda la plataforma, y con más de 100 cuentas fallaba.
   const admin = createAdminClient()
-  const { data: { users: authUsers } } = await admin.auth.admin.listUsers({ perPage: 100 })
-  const signInByEmail = new Map(
-    authUsers.map((u) => [u.email ?? "", u.last_sign_in_at ?? null]),
-  )
-
-  const users = dbUsers.map((u) => ({
-    ...u,
-    hasLoggedIn: signInByEmail.has(u.email) && signInByEmail.get(u.email) !== null,
+  const users = await Promise.all(dbUsers.map(async ({ authUserId, ...u }) => {
+    const authUser = authUserId ? (await admin.auth.admin.getUserById(authUserId)).data.user : null
+    return { ...u, hasLoggedIn: Boolean(authUser?.last_sign_in_at) }
   }))
 
   const memberLimit = parseInt(process.env.TEAM_MEMBER_LIMIT ?? "3", 10)

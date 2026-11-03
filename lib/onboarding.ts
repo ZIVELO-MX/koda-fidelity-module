@@ -10,7 +10,7 @@
  * Aquí no se decide nada del flujo. El servidor es el dueño del paso y del
  * estado; esto solo lee, guarda y pide avanzar.
  */
-export type OnboardingStep = "INTRO" | "BUSINESS" | "CARD" | "ACQUISITION" | "PAYWALL"
+export type OnboardingStep = "INTRO" | "BUSINESS" | "CARD" | "CARD_READY" | "ACQUISITION" | "PAYWALL"
 export type OnboardingStatus = "IN_PROGRESS" | "AWAITING_PAYMENT" | "ACTIVE"
 export type BillingInterval = "MONTHLY" | "ANNUAL"
 
@@ -41,7 +41,7 @@ export type Tema = { id: string; code: string; plan: "LITE" | "PRO" }
  */
 export type ModoDelAlta = "live" | "mock"
 
-export type BorradorDeNegocio = { name?: string; categoryId?: string }
+export type BorradorDeNegocio = { ownerName?: string; name?: string; categoryId?: string }
 export type BorradorDeTarjeta = {
   name?: string
   reward?: string
@@ -49,6 +49,9 @@ export type BorradorDeTarjeta = {
   brandColor?: string
   /** El tema **elegido**. No se toca al degradar: lo que cambia es el efectivo. */
   themeId?: string
+  textColor?: "AUTO" | "DARK" | "LIGHT"
+  iconName?: string | null
+  stampIconName?: string | null
 }
 
 export type EstadoDelAlta = {
@@ -107,13 +110,16 @@ function normalizar(cuerpo: unknown): EstadoDelAlta {
     step: (texto(progreso.step) as OnboardingStep) ?? "INTRO",
     status: (texto(progreso.status) as OnboardingStatus) ?? "IN_PROGRESS",
     draftVersion: progreso.draftVersion,
-    negocio: { name: texto(negocio.name), categoryId: texto(negocio.categoryId) },
+    negocio: { ownerName: texto(negocio.ownerName), name: texto(negocio.name), categoryId: texto(negocio.categoryId) },
     tarjeta: {
       name: texto(tarjeta.name),
       reward: texto(tarjeta.reward),
       stampsRequired: typeof tarjeta.stampsRequired === "number" ? tarjeta.stampsRequired : undefined,
       brandColor: texto(tarjeta.brandColor),
       themeId: texto(tarjeta.themeId),
+      textColor: tarjeta.textColor === "DARK" || tarjeta.textColor === "AUTO" || tarjeta.textColor === "LIGHT" ? tarjeta.textColor : "LIGHT",
+      iconName: typeof tarjeta.iconName === "string" ? tarjeta.iconName : tarjeta.iconName === null ? null : undefined,
+      stampIconName: typeof tarjeta.stampIconName === "string" ? tarjeta.stampIconName : tarjeta.stampIconName === null ? null : undefined,
     },
     acquisitionSource: (texto(progreso.acquisitionSource) as AcquisitionSource) ?? null,
     selectedBillingInterval: (texto(progreso.selectedBillingInterval) as BillingInterval) ?? null,
@@ -179,7 +185,7 @@ export const guardarBorrador = (
 ) => pedir({ method: "PATCH", body: JSON.stringify({ draftVersion, ...cambios }) })
 
 export type AccionDelAlta =
-  | "complete_intro" | "skip_intro" | "complete_business" | "complete_card"
+  | "complete_intro" | "skip_intro" | "complete_business" | "complete_card" | "complete_card_ready"
   | "complete_acquisition" | "skip_acquisition" | "select_billing_interval" | "open_paywall"
 
 export const avanzar = (accion: AccionDelAlta, draftVersion: number, billingInterval?: BillingInterval) =>

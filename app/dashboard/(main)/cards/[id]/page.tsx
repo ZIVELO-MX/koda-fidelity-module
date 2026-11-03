@@ -8,7 +8,7 @@ import { CardActions } from "@/components/dashboard/card-actions"
 import { CardQRInline } from "@/components/dashboard/card-qr-inline"
 import { CustomersTable, SortField, SortOrder } from "@/components/dashboard/customers-table"
 import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
-import { isExpired } from "@/lib/card-utils"
+import { formatExpiryDate, isExpired } from "@/lib/card-utils"
 
 export default async function CardDetailPage({
   params,
@@ -30,12 +30,14 @@ export default async function CardDetailPage({
 
   const business = await prisma.business.findFirst({ where: { users: { some: { authUserId: user.id } } } })
   if (!business) redirect("/login")
+  const miembro = await prisma.user.findUnique({ where: { authUserId: user.id }, select: { role: true } })
 
   const card = await prisma.loyaltyCard.findUnique({
     where: { id },
     include: {
       _count: { select: { customers: { where: { isActive: true } } } },
       milestoneRewards: { orderBy: { stampNumber: "asc" } },
+      effectiveTheme: { select: { code: true } },
       customers: {
         where: { isActive: true },
         include: {
@@ -45,6 +47,7 @@ export default async function CardDetailPage({
                   milestoneClaims: true,
                 },
               },
+              currentCycle: { select: { configuration: { select: { stampsRequired: true } } } },
         },
         orderBy: { [sort]: order },
       },
@@ -58,9 +61,11 @@ export default async function CardDetailPage({
   const cardExpired = isExpired(card.expiresAt)
   const allCustomers = card.customers
   const totalStamps = allCustomers.reduce((s, c) => s + c.stamps, 0)
-  const readyToRedeem = allCustomers.filter((c) => c.stamps >= card.stampsRequired).length
+  // La meta de cada cliente es la de su ciclo en curso, con la que canjea el motor.
+  const metaDe = (c: (typeof allCustomers)[number]) => c.currentCycle?.configuration.stampsRequired ?? card.stampsRequired
+  const readyToRedeem = allCustomers.filter((c) => c.stamps >= metaDe(c)).length
   const incompleteCustomers = cardExpired
-    ? allCustomers.filter((c) => c.stamps < card.stampsRequired).length
+    ? allCustomers.filter((c) => c.stamps < metaDe(c)).length
     : 0
 
   const filteredCustomers = q?.trim()
@@ -69,7 +74,7 @@ export default async function CardDetailPage({
 
   const tableCustomers = filteredCustomers.map((c) => ({
     ...c,
-    card: { name: card.name, stampsRequired: card.stampsRequired, reward: card.reward, brandColor: card.brandColor },
+    card: { name: card.name, stampsRequired: metaDe(c), reward: card.reward, brandColor: card.brandColor },
   }))
 
   const basePath = `/dashboard/cards/${id}`
@@ -98,8 +103,10 @@ export default async function CardDetailPage({
           maxStamps={card.stampsRequired}
           reward={card.reward}
           showQR={false}
-          expirationDate={card.expiresAt ? card.expiresAt.toLocaleDateString("es-MX") : undefined}
+          expirationDate={card.expiresAt ? formatExpiryDate(card.expiresAt) : undefined}
           brandColor={card.brandColor}
+          textColor={card.textColor}
+          themeCode={card.effectiveTheme?.code}
         />
 
         <div className="space-y-4">
@@ -148,7 +155,7 @@ export default async function CardDetailPage({
             <div>
               <dt className="text-xs text-muted-foreground">Vencimiento</dt>
               <dd className="text-lg font-semibold text-foreground">
-                {card.expiresAt ? card.expiresAt.toLocaleDateString("es-MX") : "Sin vencimiento"}
+                {card.expiresAt ? formatExpiryDate(card.expiresAt) : "Sin vencimiento"}
               </dd>
             </div>
           </dl>
@@ -209,6 +216,7 @@ export default async function CardDetailPage({
             basePath={basePath}
             baseParams={baseParams}
             showCardColumn={false}
+            puedeArchivar={miembro?.role === "admin"}
           />
         )}
       </div>

@@ -1,22 +1,29 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-const { getBusinessFromSession, prisma } = vi.hoisted(() => ({
+const { getBusinessFromSession, requireWritableBusinessPrincipal, prisma, inviteUserByEmail } = vi.hoisted(() => ({
   getBusinessFromSession: vi.fn(),
+  requireWritableBusinessPrincipal: vi.fn(),
+  inviteUserByEmail: vi.fn(),
   prisma: {
-    user: { findMany: vi.fn() },
-    teamInvitation: { findMany: vi.fn() },
+    user: { findMany: vi.fn(), count: vi.fn(), findUnique: vi.fn() },
+    teamInvitation: { findMany: vi.fn(), count: vi.fn(), create: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
   },
 }))
 
 vi.mock("@/lib/api-utils", async () => {
   const actual = await vi.importActual<typeof import("@/lib/api-utils")>("@/lib/api-utils")
-  return { ...actual, getBusinessFromSession }
+  return { ...actual, getBusinessFromSession, requireWritableBusinessPrincipal }
 })
 vi.mock("@/lib/prisma", () => ({ prisma }))
-vi.mock("@/lib/supabase-admin", () => ({ createAdminClient: vi.fn() }))
+vi.mock("@/lib/supabase-admin", () => ({ createAdminClient: () => ({ auth: { admin: { inviteUserByEmail } } }) }))
+vi.mock("@/lib/auth-security", async () => ({
+  ...(await vi.importActual<typeof import("@/lib/auth-security")>("@/lib/auth-security")),
+  enforceRateLimit: vi.fn(),
+  createInvitationToken: () => ({ token: "token", tokenHash: "hash" }),
+}))
 vi.mock("@/lib/invite-email", () => ({ sendSecureInviteEmail: vi.fn() }))
 
-import { GET } from "./route"
+import { GET, POST } from "./route"
 import { UnauthorizedError } from "@/lib/api-utils"
 
 const business = { id: "biz-auth-roles" }
@@ -61,5 +68,45 @@ describe("GET /api/users authorization", () => {
     expect(response.status).toBe(403)
     expect(body.code).toBe("KF-ACCESS-001")
     expect(prisma.user.findMany).not.toHaveBeenCalled()
+  })
+})
+
+describe("POST /api/users invitations", () => {
+  const invitar = () => POST({ json: async () => ({ email: "Nuevo@Biz.test", name: "Nuevo", role: "sellador" }), headers: new Headers() } as never)
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    requireWritableBusinessPrincipal.mockResolvedValue({ business: { id: "biz1", name: "Biz" }, user: { id: "user-admin", role: "admin" } })
+    prisma.user.count.mockResolvedValue(1)
+    prisma.teamInvitation.count.mockResolvedValue(0)
+    prisma.user.findUnique.mockResolvedValue(null)
+    prisma.teamInvitation.create.mockResolvedValue({ id: "inv-new" })
+    inviteUserByEmail.mockResolvedValue({ data: { user: null }, error: null })
+  })
+
+  // Antes solo contaban los miembros: se mandaban más invitaciones que plazas.
+  it("counts pending invitations toward the team limit", async () => {
+    prisma.user.count.mockResolvedValue(2)
+    prisma.teamInvitation.count.mockResolvedValue(1)
+    const response = await invitar()
+    expect(response.status).toBe(400)
+    expect((await response.json()).error).toContain("invitaciones pendientes")
+    expect(prisma.teamInvitation.create).not.toHaveBeenCalled()
+  })
+
+  it("marks the invitation delivery_failed when the email cannot be sent", async () => {
+    inviteUserByEmail.mockRejectedValue(new Error("smtp down"))
+    const response = await invitar()
+    expect(response.status).toBe(500)
+    expect(prisma.teamInvitation.update).toHaveBeenCalledWith({ where: { id: "inv-new" }, data: { status: "delivery_failed" } })
+  })
+
+  it("replaces the previous pending invitation for the same email once sent", async () => {
+    const response = await invitar()
+    expect(response.status).toBe(202)
+    expect(prisma.teamInvitation.updateMany).toHaveBeenCalledWith({
+      where: { businessId: "biz1", email: "nuevo@biz.test", status: "pending", id: { not: "inv-new" } },
+      data: { status: "replaced" },
+    })
   })
 })

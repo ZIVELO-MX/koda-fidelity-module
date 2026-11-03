@@ -27,6 +27,7 @@ describe("getFriendlySendError", () => {
   it("returns invalid email message for invalid email", () => expect(getFriendlySendError(new Error("invalid email"))).toContain("válido"))
   it("returns invalid email message for not found", () => expect(getFriendlySendError(new Error("email not found"))).toContain("válido"))
   it("returns generic message for unknown errors", () => expect(getFriendlySendError(new Error("network error"))).toContain("No fue posible"))
+  it("returns rate limit message for our own RATE_LIMITED", () => expect(getFriendlySendError(new Error("RATE_LIMITED"))).toContain("Google"))
   it("returns generic message for non-Error input", () => expect(getFriendlySendError("string error")).toContain("No fue posible"))
   it("returns generic message for null", () => expect(getFriendlySendError(null)).toContain("No fue posible"))
 })

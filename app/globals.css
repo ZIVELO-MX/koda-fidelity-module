@@ -309,6 +309,38 @@
   animation: float 3.6s ease-in-out infinite;
 }
 
+@keyframes onboarding-logo-float {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-6px) rotate(2deg); }
+}
+
+@keyframes onboarding-slide-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.onboarding-mascota {
+  animation: onboarding-logo-float 3.8s ease-in-out infinite;
+}
+
+.onboarding-intro-slide {
+  animation: onboarding-slide-in 240ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+.onboarding-card-float {
+  animation: float 3.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-float,
+  .onboarding-mascota,
+  .onboarding-intro-slide,
+  .onboarding-card-float {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
 /* Mail icon bounce-in (sent / success states) */
 @keyframes bounce-in {
   0%   { transform: scale(0.4); opacity: 0; }

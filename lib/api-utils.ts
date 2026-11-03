@@ -47,6 +47,28 @@ export class ForbiddenError extends Error {
   }
 }
 
+/** El mensaje sigue siendo `RATE_LIMITED`: `classifyLoginError` lo reconoce así. */
+export class RateLimitError extends Error {
+  constructor() {
+    super("RATE_LIMITED")
+    this.name = "RateLimitError"
+  }
+}
+
+export class ProThemeRequiresProError extends Error {
+  constructor() {
+    super("Esta tarjeta usa un tema Pro y no puede guardarse con el plan Lite.")
+    this.name = "ProThemeRequiresProError"
+  }
+}
+
+export class OnboardingActivationRequiredError extends Error {
+  constructor() {
+    super("La cuenta debe ser activada por soporte antes de administrar tarjetas.")
+    this.name = "OnboardingActivationRequiredError"
+  }
+}
+
 export function requestIdFrom(request?: Request) {
   return request?.headers?.get?.("x-request-id") ?? randomUUID()
 }
@@ -142,6 +164,14 @@ export async function requireWritableBusinessPrincipal() {
   return principal
 }
 
+export async function requireActivatedBusiness(businessId: string) {
+  const [activeSubscription, pendingProgress] = await Promise.all([
+    prisma.subscription.findFirst({ where: { businessId, status: "ACTIVE" }, select: { id: true } }),
+    prisma.onboardingProgress.findFirst({ where: { businessId, status: { not: "ACTIVE" } }, select: { id: true } }),
+  ])
+  if (!activeSubscription && pendingProgress) throw new OnboardingActivationRequiredError()
+}
+
 export async function requireReadyBusinessPrincipal() {
   const principal = await getBusinessFromSession()
   if (principal.user.passwordSetupRequired) throw new ForbiddenError("Password setup required")
@@ -149,7 +179,9 @@ export async function requireReadyBusinessPrincipal() {
 }
 
 export function safeNextPath(value: string | null | undefined, fallback: string) {
-  if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("\\")) return fallback
+  // El navegador quita tabuladores y saltos de línea al leer una URL, así que
+  // «/\t/evil.com» pasaba la revisión y terminaba en //evil.com.
+  if (!value || !value.startsWith("/") || value.startsWith("//") || /[\\\u0000-\u001f\u007f]/.test(value)) return fallback
   return value
 }
 
@@ -178,14 +210,26 @@ export function requireRole(user: Pick<SessionBusiness["user"], "role">, ...allo
  * arreglo.
  */
 export async function cuerpoJson(request: { json: () => Promise<any> }): Promise<any> {
+  let cuerpo: unknown
   try {
-    return await request.json()
+    cuerpo = await request.json()
   } catch {
     throw new ValidationError("El cuerpo de la petición no es JSON válido")
   }
+  // Todas las rutas leen `body.campo`: con `null` lanzaba un TypeError y un 500.
+  if (cuerpo === null || typeof cuerpo !== "object" || Array.isArray(cuerpo)) {
+    throw new ValidationError("El cuerpo de la petición debe ser un objeto JSON")
+  }
+  return cuerpo
 }
 
 export function handleApiError(error: unknown, requestId: string = randomUUID()): NextResponse<ApiErrorBody> {
+  if (error instanceof ProThemeRequiresProError) {
+    return NextResponse.json({ error: error.message, code: "KF-PLAN-PRO-THEME", action: "Contacta a soporte para cambiar tu plan.", requestId, retryable: false, supportEmail: "soporte@zivelo.dev" }, { status: 403, headers: { "x-request-id": requestId } })
+  }
+  if (error instanceof OnboardingActivationRequiredError) {
+    return NextResponse.json({ error: error.message, code: "KF-ACCOUNT-ACTIVATION", action: "Continúa en el onboarding; soporte activará tu plan.", requestId, retryable: false, redirectTo: "/onboarding" }, { status: 403, headers: { "x-request-id": requestId } })
+  }
   if (error instanceof AccountReadOnlyError) {
     return NextResponse.json({ error: error.message, code: "KF-ACCOUNT-READONLY", action: `La cuenta se eliminará el ${error.scheduledFor.toISOString()}. Cancela el cierre para volver a editar.`, requestId, retryable: false }, { status: 423, headers: { "x-request-id": requestId } })
   }
@@ -200,6 +244,9 @@ export function handleApiError(error: unknown, requestId: string = randomUUID())
   }
   if (error instanceof ValidationError) {
     return NextResponse.json({ error: error.message, code: "KF-REQUEST-001", action: "Corrige los datos enviados.", requestId, retryable: false }, { status: 400, headers: { "x-request-id": requestId } })
+  }
+  if (error instanceof RateLimitError) {
+    return NextResponse.json({ error: "Too many requests", code: "KF-RATE-001", action: "Espera unos minutos e inténtalo de nuevo.", requestId, retryable: true }, { status: 429, headers: { "x-request-id": requestId } })
   }
   if (error instanceof ConflictError) {
     return NextResponse.json({ error: error.message, code: "KF-REQUEST-001", action: "Recarga los datos e inténtalo de nuevo.", requestId, retryable: true }, { status: 409, headers: { "x-request-id": requestId } })

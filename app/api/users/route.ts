@@ -72,9 +72,15 @@ export async function POST(request: NextRequest) {
     await enforceRateLimit("invitation-business", business.id, 10, 60 * 60 * 1000)
     await enforceRateLimit("invitation-recipient", email, 3, 60 * 60 * 1000)
     await enforceRateLimit("invitation-ip", request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown", 20, 60 * 60 * 1000)
-    const memberCount = await prisma.user.count({ where: { businessId: business.id } })
-    if (memberCount >= memberLimit) {
-      throw new ValidationError(`Team member limit of ${memberLimit} reached`)
+    // Las invitaciones vigentes ocupan lugar. Si no, se mandaban más que plazas y
+    // los últimos en aceptar chocaban con el límite. La de este mismo correo no
+    // cuenta, porque la nueva la reemplaza.
+    const [memberCount, pendingCount] = await Promise.all([
+      prisma.user.count({ where: { businessId: business.id } }),
+      prisma.teamInvitation.count({ where: { businessId: business.id, status: "pending", expiresAt: { gt: new Date() }, email: { not: email } } }),
+    ])
+    if (memberCount + pendingCount >= memberLimit) {
+      throw new ValidationError(`El equipo ya ocupa sus ${memberLimit} lugares, contando las invitaciones pendientes.`)
     }
 
     const existing = await prisma.user.findUnique({ where: { email } })
@@ -91,24 +97,29 @@ export async function POST(request: NextRequest) {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
     const supabase = createAdminClient()
     const callbackTarget = `${baseUrl}/auth/callback?next=${encodeURIComponent(`/invite?token=${token}`)}`
-    const { data: invitationData, error: authError } = await supabase.auth.admin.inviteUserByEmail(email, {
-      redirectTo: callbackTarget,
-      data: { name: name.trim() },
-    })
+    // Si el correo no sale por cualquier camino, la invitación no puede quedar
+    // pendiente: ocuparía un lugar y nadie la recibiría.
+    try {
+      const { data: invitationData, error: authError } = await supabase.auth.admin.inviteUserByEmail(email, {
+        redirectTo: callbackTarget,
+        data: { name: name.trim() },
+      })
 
-    if (authError) {
-      if (authError.message.includes("already been registered")) {
+      if (authError) {
+        if (!authError.message.includes("already been registered")) throw new Error(authError.message)
         const { data: link, error: linkError } = await supabase.auth.admin.generateLink({ type: "magiclink", email, options: { redirectTo: callbackTarget } })
         if (linkError || !link.properties?.action_link) throw new Error(linkError?.message || "Could not create invitation link")
         await sendSecureInviteEmail({ email, name: name.trim(), businessName: business.name, url: link.properties.action_link })
-      } else {
-        await prisma.teamInvitation.update({ where: { id: invitation.id }, data: { status: "delivery_failed" } })
-        throw new Error(authError.message)
       }
+      if (invitationData.user?.id) {
+        await prisma.teamInvitation.update({ where: { id: invitation.id }, data: { authUserId: invitationData.user.id } })
+      }
+    } catch (error) {
+      await prisma.teamInvitation.update({ where: { id: invitation.id }, data: { status: "delivery_failed" } })
+      throw error
     }
-    if (invitationData.user?.id) {
-      await prisma.teamInvitation.update({ where: { id: invitation.id }, data: { authUserId: invitationData.user.id } })
-    }
+    // Reinvitar deja una sola vigente por correo: la anterior ya no sirve.
+    await prisma.teamInvitation.updateMany({ where: { businessId: business.id, email, status: "pending", id: { not: invitation.id } }, data: { status: "replaced" } })
     return withRequestId(NextResponse.json({ invitation }, { status: 202 }), requestId)
   } catch (error) {
     return withRequestId(handleApiError(error, requestId), requestId)

@@ -5,14 +5,19 @@
 // argumento, que ya está previsto en la firma.
 const ZONA = "America/Mexico_City"
 
-/** Instante en el que empezó el día local de `referencia`. */
-export function inicioDelDia(referencia: Date = new Date(), zona: string = ZONA): Date {
-  const fecha = new Intl.DateTimeFormat("en-CA", {
+/** Fecha local de `referencia`, como `AAAA-MM-DD`. */
+export function fechaLocal(referencia: Date = new Date(), zona: string = ZONA): string {
+  return new Intl.DateTimeFormat("en-CA", {
     timeZone: zona,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
   }).format(referencia)
+}
+
+/** Instante en el que empezó el día local de `referencia`. */
+export function inicioDelDia(referencia: Date = new Date(), zona: string = ZONA): Date {
+  const fecha = fechaLocal(referencia, zona)
 
   const desplazamiento =
     new Intl.DateTimeFormat("en-US", { timeZone: zona, timeZoneName: "longOffset" })

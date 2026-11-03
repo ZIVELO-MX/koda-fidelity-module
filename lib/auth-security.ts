@@ -1,5 +1,6 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto"
 import { prisma } from "@/lib/prisma"
+import { RateLimitError } from "@/lib/api-utils"
 
 function secret() {
   const value = process.env.AUTH_SECURITY_SECRET
@@ -39,7 +40,7 @@ export async function enforceRateLimit(scope: string, subject: string, limit: nu
     update: { count: { increment: 1 } },
     select: { count: true },
   })
-  if (row.count > limit) throw new Error("RATE_LIMITED")
+  if (row.count > limit) throw new RateLimitError()
 }
 
 export function requestIp(headers: Headers) {

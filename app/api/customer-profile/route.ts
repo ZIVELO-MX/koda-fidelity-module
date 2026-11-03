@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { cuerpoJson, getAccountPrincipal, handleApiError, requestIdFrom, ValidationError, withRequestId } from "@/lib/api-utils"
+import { cuerpoJson, getAccountPrincipal, handleApiError, NotFoundError, requestIdFrom, ValidationError, withRequestId } from "@/lib/api-utils"
 import { createCustomerProfile } from "@/lib/account-lifecycle"
 import { withCustomerAvatarUrl } from "@/lib/private-avatar"
 
@@ -54,7 +54,11 @@ export async function PATCH(request: NextRequest) {
     if (body.avatarRingColor !== undefined && (typeof body.avatarRingColor !== "string" || !/^#[0-9a-f]{6}$/i.test(body.avatarRingColor))) {
       throw new ValidationError("El color del marco debe ser hexadecimal")
     }
-    const profile = await prisma.customerProfile.update({ where: { authUserId: principal.id }, data: { ...(body.name !== undefined && { name: String(body.name).trim() }), ...(body.avatarRingColor !== undefined && { avatarRingColor: body.avatarRingColor }) } })
+    // Igual que PUT: el nombre no puede quedar vacío.
+    if (body.name !== undefined && (typeof body.name !== "string" || !body.name.trim())) throw new ValidationError("Nombre requerido")
+    // Sin perfil, `update` lanzaba P2025 y se respondía 500.
+    if (!await prisma.customerProfile.findUnique({ where: { authUserId: principal.id }, select: { id: true } })) throw new NotFoundError("Perfil de cliente no encontrado")
+    const profile = await prisma.customerProfile.update({ where: { authUserId: principal.id }, data: { ...(body.name !== undefined && { name: body.name.trim() }), ...(body.avatarRingColor !== undefined && { avatarRingColor: body.avatarRingColor }) } })
     return withRequestId(NextResponse.json({ profile: await withCustomerAvatarUrl(profile) }, noStore), requestId)
   } catch (error) { return withRequestId(handleApiError(error, requestId), requestId) }
 }

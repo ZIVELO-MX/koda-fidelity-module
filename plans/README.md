@@ -14,7 +14,7 @@ the plan fully before starting, honor its STOP conditions, and update your row w
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
 | 001  | CI pipeline gating PRs (lint, typecheck, tests) | P1 | S | — | DONE |
-| 002  | Random per-user temporary passwords (replace shared hardcoded one) | P1 | M | — | REJECTED — deuda técnica documentada en roadmap.md |
+| 002  | Random per-user temporary passwords (replace shared hardcoded one) | P1 | M | — | DONE en PR #156 (solo scripts: la ruta API ya invita sin contraseña). Falta rotar las cuentas existentes |
 | 003  | Characterization tests for /api/stamps and /api/join handlers | P1 | M | — | DONE |
 | 004  | Atomic stamp/redeem (fix check-then-act races on the money path) | P1 | S | 003 | DONE |
 | 005  | Soft-delete filtering + accurate redemptions stat | P2 | S | 003 | DONE |

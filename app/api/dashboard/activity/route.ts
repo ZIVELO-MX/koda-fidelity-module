@@ -29,7 +29,9 @@ export async function GET(request: NextRequest) {
     if (cursor) {
       try { const value = JSON.parse(Buffer.from(cursor, "base64url").toString()) as { createdAt: string; id: string }; cursorDate = new Date(value.createdAt); cursorId = value.id; if (Number.isNaN(cursorDate.getTime()) || !cursorId) throw new Error() } catch { return withRequestId(NextResponse.json({ error: "Cursor inválido", code: "KF-REQUEST-001", action: "Solicita la siguiente página desde el cursor recibido.", requestId, retryable: false }, { status: 400 }), requestId) }
     }
-    const rows = await prisma.stampLog.findMany({ where: { businessId: business.id, customerId: { not: null }, ...(cursorDate && cursorId ? { OR: [{ createdAt: { lt: cursorDate } }, { createdAt: cursorDate, id: { lt: cursorId } }] } : {}) }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: limit + 1, include: { customer: { select: { name: true } }, card: { select: { name: true } } } })
+    // El motor registra un `milestone` en cada sello con sorpresa, la gane o no
+    // (`metadata.outcome`): el panel mostraba «Sorpresa» aunque no hubiera premio.
+    const rows = await prisma.stampLog.findMany({ where: { businessId: business.id, customerId: { not: null }, NOT: { type: "milestone", metadata: { path: ["outcome"], not: "awarded" } }, ...(cursorDate && cursorId ? { OR: [{ createdAt: { lt: cursorDate } }, { createdAt: cursorDate, id: { lt: cursorId } }] } : {}) }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: limit + 1, include: { customer: { select: { name: true } }, card: { select: { name: true } } } })
     const hasMore = rows.length > limit
     const items = rows.slice(0, limit).map((row) => ({ id: row.id, type: row.type, customerName: row.customer?.name ?? null, cardName: row.card?.name ?? null, createdAt: row.createdAt.toISOString() }))
     const last = items.at(-1)

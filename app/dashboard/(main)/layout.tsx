@@ -2,6 +2,8 @@ import { DashboardLayoutClient } from "@/components/dashboard/dashboard-layout-c
 import { derivarMarca } from "@/lib/color-marca"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
+import { resolveEffectiveEntitlements, syncExpiredEntitlements } from "@/lib/account-lifecycle"
+import { latestPlanChangeNotice } from "@/lib/plan-change-notice"
 import { redirect } from "next/navigation"
 
 export default async function DashboardLayout({
@@ -15,17 +17,39 @@ export default async function DashboardLayout({
 
   const userRecord = await prisma.user.findUnique({
     where: { authUserId: user.id },
-    include: { business: { select: { id: true, name: true, brandColor: true, nickname: true } } },
+    include: {
+      business: {
+        select: {
+          id: true, name: true, brandColor: true, nickname: true,
+          onboardingProgresses: { where: { status: { not: "ACTIVE" } }, select: { id: true }, take: 1 },
+          subscriptions: { where: { status: "ACTIVE" }, select: { id: true }, take: 1 },
+        },
+      },
+      onboardingProgress: { select: { status: true } },
+    },
   })
 
   if (!userRecord || !userRecord.business) {
     redirect("/dashboard/forbidden")
   }
   if (userRecord.passwordSetupRequired) redirect("/dashboard/update-password")
+  const businessAwaitingActivation = userRecord.business.subscriptions.length === 0
+    && ((userRecord.onboardingProgress && userRecord.onboardingProgress.status !== "ACTIVE") || userRecord.business.onboardingProgresses.length > 0)
+  if (businessAwaitingActivation) redirect("/onboarding")
 
-  const [closure] = await Promise.all([
+  await syncExpiredEntitlements(prisma, userRecord.business.id)
+  const [closure, activeSubscription] = await Promise.all([
     prisma.accountClosure.findFirst({ where: { businessId: userRecord.business.id, status: { in: ["SCHEDULED", "PROCESSING", "FAILED"] } }, orderBy: { scheduledFor: "asc" }, select: { scheduledFor: true } }),
+    prisma.subscription.findFirst({ where: { businessId: userRecord.business.id, status: "ACTIVE" }, orderBy: { createdAt: "desc" } }),
   ])
+  const accountPlan = activeSubscription ? resolveEffectiveEntitlements(activeSubscription).plan : null
+  const planChangeEvents = accountPlan ? await prisma.billingAuditEvent.findMany({
+    where: { businessId: userRecord.business.id, createdAt: { gt: userRecord.planChangeNoticeSeenAt } },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: 50,
+    select: { id: true, metadata: true, createdAt: true },
+  }) : []
+  const planChangeNotice = latestPlanChangeNotice(planChangeEvents, accountPlan)
   const { business, role } = { business: userRecord.business, role: userRecord.role }
 
   // El color del negocio no se inyecta crudo: de él se derivan los estados y el
@@ -51,6 +75,8 @@ export default async function DashboardLayout({
         brandColor={business.brandColor}
         nickname={business.nickname ?? undefined}
         role={role}
+        accountPlan={accountPlan}
+        planChangeNotice={planChangeNotice}
         closureScheduledFor={closure?.scheduledFor.toISOString()}
       >
         {children}

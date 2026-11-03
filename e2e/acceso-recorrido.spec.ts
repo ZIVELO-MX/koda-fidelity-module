@@ -27,7 +27,7 @@ const PUBLICAS = [
   { nombre: "registro", ruta: "/signup", ancla: /crear cuenta|solicitar acceso/i },
   { nombre: "invitación", ruta: `/invite?token=${TOKEN_FABRICADO}`, ancla: /invitación no disponible/i },
   { nombre: "error de autenticación", ruta: "/auth/error", ancla: /enlace|sesión|correo/i },
-  { nombre: "puerta del portal", ruta: "/my-cards", ancla: /tarjetas|correo/i },
+  { nombre: "puerta del portal", ruta: "/my-cards", ancla: /iniciar sesión|mis tarjetas/i },
 ] as const
 
 async function desborda(page: Page) {

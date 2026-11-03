@@ -11,11 +11,11 @@
 
 import "dotenv/config"
 import { createAdminClient } from "../lib/supabase-admin"
+import { generateTempPassword } from "../lib/temp-password"
 import { PrismaClient } from "@prisma/client"
 
 const prisma = new PrismaClient()
 
-const DEFAULT_PASSWORD = "Koda1234!"
 const MEMBER_LIMIT = parseInt(process.env.TEAM_MEMBER_LIMIT ?? "3", 10)
 
 type ParsedArgs = {
@@ -53,7 +53,7 @@ function parseArgs(): ParsedArgs {
     email: result.email,
     name: result.name,
     role: role as "admin" | "sellador",
-    password: result.password || DEFAULT_PASSWORD,
+    password: result.password || generateTempPassword(),
   }
 }
 
@@ -70,9 +70,13 @@ async function main() {
   console.log(`Negocio encontrado: ${business.name} (${business.id})`)
 
   // Check limit
-  const memberCount = await prisma.user.count({ where: { businessId: business.id } })
-  if (memberCount >= MEMBER_LIMIT) {
-    console.error(`Error: El negocio ya alcanzó el límite de ${MEMBER_LIMIT} miembros (actualmente ${memberCount}).`)
+  // Las invitaciones pendientes ocupan lugar, como en POST /api/users.
+  const [memberCount, pendingCount] = await Promise.all([
+    prisma.user.count({ where: { businessId: business.id } }),
+    prisma.teamInvitation.count({ where: { businessId: business.id, status: "pending", expiresAt: { gt: new Date() }, email: { not: email } } }),
+  ])
+  if (memberCount + pendingCount >= MEMBER_LIMIT) {
+    console.error(`Error: El negocio ya alcanzó el límite de ${MEMBER_LIMIT} miembros (actualmente ${memberCount}, más ${pendingCount} invitaciones pendientes).`)
     console.error(`Ajusta TEAM_MEMBER_LIMIT en .env si necesitas aumentar el límite.`)
     process.exit(1)
   }
@@ -87,6 +91,8 @@ async function main() {
   // Create or reuse Supabase Auth user
   const { data: { users: authUsers } } = await supabase.auth.admin.listUsers()
   const existingAuth = authUsers.find((u) => u.email === email)
+  // La sesión se resuelve por `authUserId`: sin él, el colaborador no podía entrar.
+  let authUserId = existingAuth?.id
 
   if (existingAuth) {
     console.log(`El usuario de auth ya existe: ${email} — reutilizando.`)
@@ -103,12 +109,13 @@ async function main() {
       process.exit(1)
     }
 
+    authUserId = data.user.id
     console.log(`Usuario de auth creado: ${email} (${data.user.id})`)
   }
 
   // Create DB User
   const newUser = await prisma.user.create({
-    data: { email, name: name.trim(), role, businessId: business.id },
+    data: { email, name: name.trim(), role, businessId: business.id, authUserId, passwordSetupRequired: true },
     select: { id: true, email: true, name: true, role: true },
   })
 

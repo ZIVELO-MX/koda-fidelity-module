@@ -17,9 +17,10 @@ export default async function ArchivedCardsPage() {
   if (!business) redirect("/login")
 
   const cards = await prisma.loyaltyCard.findMany({
-    where: { businessId: business.id, isActive: false },
+    where: { businessId: business.id, status: "ARCHIVED" },
     include: {
       _count: { select: { customers: true } },
+      effectiveTheme: { select: { code: true } },
     },
     orderBy: { updatedAt: "desc" },
   })
@@ -78,6 +79,8 @@ export default async function ArchivedCardsPage() {
                   reward={card.reward}
                   showQR={false}
                   brandColor={card.brandColor}
+                  textColor={card.textColor}
+                  themeCode={card.effectiveTheme?.code}
                 />
               </div>
 

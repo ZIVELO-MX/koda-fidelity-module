@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { MoreHorizontal, Archive, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 
 interface CustomerActionsMenuProps {
   customerId: string
@@ -35,12 +36,25 @@ export function CustomerActionsMenu({ customerId, customerName }: CustomerAction
   const [archiveOpen, setArchiveOpen] = useState(false)
   const [archiving, setArchiving] = useState(false)
 
-  const handleArchive = async () => {
+  // Antes se ignoraba la respuesta: un rechazo cerraba el diálogo como si se
+  // hubiera archivado, y un error de red lo dejaba girando.
+  const handleArchive = async (event: React.MouseEvent) => {
+    event.preventDefault()
     setArchiving(true)
-    await fetch(`/api/customers/${customerId}`, { method: "DELETE" })
-    setArchiving(false)
-    setArchiveOpen(false)
-    router.refresh()
+    try {
+      const res = await fetch(`/api/customers/${customerId}`, { method: "DELETE" })
+      if (!res.ok) {
+        const sobre = (await res.json().catch(() => null)) as { error?: string } | null
+        toast.error(sobre?.error || "No fue posible archivar al cliente")
+        return
+      }
+      setArchiveOpen(false)
+      router.refresh()
+    } catch {
+      toast.error("Error de red. El cliente no se archivó.")
+    } finally {
+      setArchiving(false)
+    }
   }
 
   return (

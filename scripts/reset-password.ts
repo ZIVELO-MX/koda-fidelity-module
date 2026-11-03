@@ -1,11 +1,11 @@
 import "dotenv/config"
 import { createAdminClient } from "../lib/supabase-admin"
+import { generateTempPassword } from "../lib/temp-password"
 import nodemailer from "nodemailer"
-import { readFileSync } from "fs"
-import { resolve } from "path"
+import { PrismaClient } from "@prisma/client"
+import { buildHtml } from "./invite-email"
 
-const DEFAULT_PASSWORD = "Koda1234!"
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://fidelity.zivelo.dev"
+const prisma = new PrismaClient()
 
 function parseArgs(): { email: string; password: string; sendEmail: boolean } {
   const args = process.argv.slice(2)
@@ -30,7 +30,7 @@ function parseArgs(): { email: string; password: string; sendEmail: boolean } {
   }
   return {
     email: result.email,
-    password: result.password || DEFAULT_PASSWORD,
+    password: result.password || generateTempPassword(),
     sendEmail: flags.has("send-email"),
   }
 }
@@ -55,13 +55,7 @@ export async function sendPasswordResetEmail(
   password: string,
   transporter: nodemailer.Transporter
 ): Promise<void> {
-  const loginUrl = `${BASE_URL}/login?email=${encodeURIComponent(email)}`
-  const template = readFileSync(resolve("docs/email-templates/invite.html"), "utf-8")
-  const html = template
-    .replace(/{{NAME}}/g, email)
-    .replace(/{{EMAIL}}/g, email)
-    .replace(/{{PASSWORD}}/g, password)
-    .replace(/{{LOGIN_URL}}/g, loginUrl)
+  const html = buildHtml(email, email, password)
 
   const info = await transporter.sendMail({
     from: `Koda Fidelity <${process.env.SMTP_USER}>`,
@@ -99,6 +93,9 @@ async function main() {
     process.exit(1)
   }
   console.log(`✓ Contraseña restablecida para: ${email}`)
+  // El metadato `must_change_password` no lo lee nadie: lo que obliga a cambiarla
+  // al entrar es `passwordSetupRequired`. Sin esto la contraseña quedaba para siempre.
+  await prisma.user.updateMany({ where: { authUserId: user.id }, data: { passwordSetupRequired: true } })
 
   // 3. Sign out all active sessions (Supabase may return a JWT error if the user
   //    has no active sessions — that's benign, so we only warn on other errors)
@@ -129,4 +126,4 @@ async function main() {
   console.log("\nEl usuario deberá cambiar su contraseña al iniciar sesión.")
 }
 
-main()
+main().finally(() => prisma.$disconnect())
