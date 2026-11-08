@@ -43,7 +43,7 @@ requisitos nuevos.
 
 - [Inventario y corte de código](./1.2.0-baseline.md).
 - [Requisitos, actores y criterios de aceptación](./1.2.0-requisitos.md).
-- [Brechas, decisiones pendientes y trazabilidad](./1.2.0-brechas.md).
+- [Brechas, decisiones y trazabilidad](./1.2.0-brechas.md).
 
 Benji confirma las decisiones de producto. Cada comportamiento dudoso se le
 consulta: ni una función existente ni una recomendación histórica equivale a
@@ -53,4 +53,4 @@ lo no determinado, e identifica contradicciones con el código.
 El SDD corresponde a **1.2.0**. Wallet se incorporará y validará en 1.3.0;
 cobros automáticos y automatización de eliminación se evaluarán para la salida
 regional. Temporadas y reinicios mensuales son propuestas sin versión asignada.
-El estado de cierre y las dudas restantes están en el registro de brechas.
+Las decisiones, las brechas abiertas y el criterio de cierre están en el registro de brechas.
