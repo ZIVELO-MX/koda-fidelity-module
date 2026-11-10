@@ -56,3 +56,8 @@ regional. Temporadas y reinicios mensuales son propuestas sin versión asignada.
 Las decisiones, las brechas abiertas y el criterio de cierre están en el registro de brechas.
 
 - [Validación de los 35 requisitos y evidencia](./1.2.0-validacion.md).
+
+## Propuestas para 1.3.0
+
+[Ideas iniciales](./1.3.0-propuestas.md): selección visual de temas y escenarios
+para desarrollo local. Pendientes de especificar; no representan alcance aprobado.
