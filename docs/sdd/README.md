@@ -54,3 +54,5 @@ El SDD corresponde a **1.2.0**. Wallet se incorporará y validará en 1.3.0;
 cobros automáticos y automatización de eliminación se evaluarán para la salida
 regional. Temporadas y reinicios mensuales son propuestas sin versión asignada.
 Las decisiones, las brechas abiertas y el criterio de cierre están en el registro de brechas.
+
+- [Validación de los 35 requisitos y evidencia](./1.2.0-validacion.md).
