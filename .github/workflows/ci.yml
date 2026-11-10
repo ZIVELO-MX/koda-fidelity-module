@@ -58,7 +58,9 @@ jobs:
         run: CI=true pnpm test
 
   browser-smoke:
-    runs-on: ubuntu-latest
+    # ubuntu-latest ya es Ubuntu 26 y Playwright 1.60 no publica Chromium para
+    # esa plataforma. Volver a ubuntu-latest al subir Playwright.
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:17
@@ -140,7 +142,8 @@ jobs:
 
   auth-e2e:
     name: auth-e2e (Supabase local + Mailpit)
-    runs-on: ubuntu-latest
+    # Mismo motivo que browser-smoke: Playwright 1.60 no tiene Chromium para Ubuntu 26.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     concurrency:
       group: fid-0016-auth-e2e-${{ github.workflow }}-${{ github.ref }}
