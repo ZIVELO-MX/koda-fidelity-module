@@ -4,6 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "local:setup": "node scripts/local-environment.mjs setup",
+    "local:dev": "node scripts/local-environment.mjs dev",
+    "local:test": "node scripts/local-environment.mjs test",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint .",

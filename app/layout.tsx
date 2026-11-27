@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { JetBrains_Mono, Playfair_Display } from 'next/font/google'
 import localFont from 'next/font/local'
 import { Analytics } from '@vercel/analytics/next'
 import { ServiceWorkerRegister } from '@/components/service-worker-register'
@@ -23,8 +22,9 @@ const switzer = localFont({
 })
 
 // Para cifras que se alinean en columna.
-const jetbrains = JetBrains_Mono({
-  subsets: ['latin'],
+const jetbrains = localFont({
+  src: '../public/fonts/jetbrains-mono-latin.woff2',
+  weight: '100 800',
   variable: '--font-jetbrains',
   display: 'swap',
   // Sin precarga: la mono solo se usa en las cifras del panel, y se precargaba
@@ -35,10 +35,10 @@ const jetbrains = JetBrains_Mono({
 
 // Playfair en cursiva es el acento del diseño aprobado de la landing. No se
 // usa en el panel: ahí manda Switzer sola.
-const playfair = Playfair_Display({
-  subsets: ['latin'],
-  style: ['italic'],
-  weight: ['700'],
+const playfair = localFont({
+  src: '../public/fonts/playfair-display-latin-700-italic.woff2',
+  style: 'italic',
+  weight: '700',
   variable: '--font-playfair',
   display: 'swap',
 })
@@ -124,7 +124,7 @@ export default function RootLayout({
         </ThemeProvider>
         <Toaster richColors closeButton position="bottom-right" />
         <ServiceWorkerRegister />
-        {process.env.NODE_ENV === 'production' && <Analytics />}
+        {process.env.NODE_ENV === 'production' && process.env.KODA_LOCAL_ENVIRONMENT !== 'true' && <Analytics />}
       </body>
     </html>
   )
