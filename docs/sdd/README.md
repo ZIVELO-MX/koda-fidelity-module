@@ -61,3 +61,8 @@ Las decisiones, las brechas abiertas y el criterio de cierre están en el regist
 
 [Ideas iniciales](./1.3.0-propuestas.md): selección visual de temas y escenarios
 para desarrollo local. Pendientes de especificar; no representan alcance aprobado.
+
+- [Auditoría de Raúl](./1.3.0-auditoria.md): fallos observados, comportamiento
+  esperado, pruebas, prioridad propuesta y cambios ya hechos en `fix/frontend-audit`.
+- [Alta pública y correo sin confirmar](./1.3.0-alta-y-correo.md): revisión de
+  B-09 y de las tarjetas no disponibles (B-02).
