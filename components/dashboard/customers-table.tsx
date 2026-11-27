@@ -10,6 +10,7 @@ export type SortOrder = "asc" | "desc"
 export interface TableCustomer {
   id: string
   name: string
+  email?: string | null
   stamps: number
   createdAt: Date
   card: {
@@ -32,7 +33,7 @@ export interface CustomersTableProps {
   baseParams: URLSearchParams
   showCardColumn?: boolean
   footerSuffix?: string
-  /** Archivar es lo único del menú, y la API solo se lo permite a un admin. */
+  /** Las acciones de membresía requieren un administrador. */
   puedeArchivar?: boolean
 }
 
@@ -206,6 +207,7 @@ export function CustomersTable({
                       <CustomerActionsMenu
                         customerId={customer.id}
                         customerName={customer.name}
+                        customerEmail={customer.email}
                       />
                     )}
                   </div>

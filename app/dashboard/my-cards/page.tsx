@@ -11,7 +11,7 @@ import { RedesNegocio } from "@/components/join/redes-negocio"
 import { GoogleButton } from "@/components/auth/google-button"
 import {
   ArrowLeft, Mail, Loader2, Smartphone, ChevronDown, LogOut,
-  Trash2, Search, RefreshCw, AlertTriangle, Clock,
+  EyeOff, Search, RefreshCw, AlertTriangle, Clock,
 } from "lucide-react"
 import { CustomerCardListIcon } from "@/components/dashboard/customer-card-list-icon"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
@@ -516,32 +516,31 @@ export default function DashboardMyCardsPage() {
                         </div>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="sm" className="w-full gap-2 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive">
-                              <Trash2 className="h-4 w-4" />Eliminar tarjeta
+                            <Button variant="outline" size="sm" className="w-full gap-2">
+                              <EyeOff className="h-4 w-4" />Ocultar tarjeta
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>¿Eliminar tarjeta vencida?</AlertDialogTitle>
+                              <AlertDialogTitle>¿Ocultar tarjeta vencida?</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Se eliminará <strong>{c.card.name}</strong> de {c.card.business.name} con {c.stamps} sello{c.stamps !== 1 ? "s" : ""}. Esta acción no se puede deshacer.
+                                <strong>{c.card.name}</strong> dejará de aparecer en Mis tarjetas mientras esté vencida. Tu progreso y tu historial se conservan.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancelar</AlertDialogCancel>
                               <AlertDialogAction
-                                className="bg-destructive hover:bg-destructive/90"
                                 onClick={async () => {
                                   // Antes se quitaba aunque la API la rechazara, y volvía a aparecer al recargar.
                                   const res = await fetch(`/api/my-cards/${c.id}`, { method: "DELETE" }).catch(() => null)
                                   if (!res?.ok) {
-                                    toast.error("No fue posible eliminar la tarjeta. Inténtalo de nuevo.")
+                                    toast.error("No fue posible ocultar la tarjeta. Inténtalo de nuevo.")
                                     return
                                   }
                                   setCards((prev) => prev.filter((card) => card.id !== c.id))
                                 }}
                               >
-                                Eliminar
+                                Ocultar
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>

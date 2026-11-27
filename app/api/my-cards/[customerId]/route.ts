@@ -8,8 +8,8 @@ import { handleApiError, NotFoundError, ValidationError, UnauthorizedError, requ
  * /api/my-cards/{customerId}:
  *   delete:
  *     tags: [Customer]
- *     summary: Withdraw a customer membership
- *     responses: { 200: { description: Membership withdrawn } }
+ *     summary: Hide an expired membership from its owner
+ *     responses: { 200: { description: Membership hidden from the customer portal } }
  */
 import { isExpired } from "@/lib/card-utils"
 import { assertBusinessWritable } from "@/lib/account-lifecycle"
@@ -36,10 +36,14 @@ export async function DELETE(
     if (normalizeEmail(customer.email ?? "") !== normalizeEmail(user.email)) throw new NotFoundError("Customer not found")
     await assertBusinessWritable(prisma, customer.card.businessId)
     if (!isExpired(customer.card.expiresAt)) {
-      throw new ValidationError("Only expired cards can be removed")
+      throw new ValidationError("Solo puedes ocultar tarjetas vencidas")
     }
 
-    await prisma.customer.delete({ where: { id: customerId } })
+    const hidden = await prisma.customer.updateMany({
+      where: { id: customerId, email: customer.email, card: { expiresAt: customer.card.expiresAt } },
+      data: { portalHiddenAt: new Date() },
+    })
+    if (hidden.count !== 1) throw new NotFoundError("Customer not found")
 
     return withRequestId(NextResponse.json({ success: true }), requestId)
   } catch (error) {
