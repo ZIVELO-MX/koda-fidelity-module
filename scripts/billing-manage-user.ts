@@ -7,6 +7,7 @@ import { assertBillingEnvironmentConfirmation, chooseBillingEnvironment, formatB
 import {
   activateManualSubscription,
   deactivateManualSubscription,
+  resolveEffectiveEntitlements,
 } from "../lib/account-lifecycle"
 import { completeSubscriptionRequest, saveSubscriptionRequest } from "../lib/subscription-requests"
 
@@ -88,11 +89,8 @@ async function main() {
   if (!business) throw new Error("El negocio asociado al usuario ya no existe")
 
   const activeSubscription = business.subscriptions.find((subscription) => subscription.status === "ACTIVE") ?? null
-  const hasProTrial = activeSubscription?.plan === "LITE"
-    && activeSubscription.proAccessGranted
-    && Boolean(activeSubscription.proTrialEndsAt && activeSubscription.proTrialEndsAt > new Date())
   const effectivePlan: RequestedPlan = activeSubscription
-    ? activeSubscription.plan === "PRO" || hasProTrial ? "PRO" : "LITE"
+    ? resolveEffectiveEntitlements(activeSubscription).plan
     : "INACTIVO"
   const cardCount = (status: string) => cardCounts.find((group) => group.status === status)?._count._all ?? 0
 

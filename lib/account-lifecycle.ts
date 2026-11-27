@@ -1,5 +1,6 @@
 import { Prisma, PrismaClient, Subscription, SubscriptionPlan } from "@prisma/client"
 import { AccountReadOnlyError, ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@/lib/api-utils"
+import { isAutomaticProExpiryEnabled } from "@/lib/config"
 import { createAdminClient } from "@/lib/supabase-admin"
 
 type QueryDb = PrismaClient | Prisma.TransactionClient
@@ -290,11 +291,11 @@ export async function persistPrimaryCardPreference(
   return []
 }
 
-export function resolveEffectiveEntitlements(subscription: Subscription | null, now = new Date()) {
+export function resolveEffectiveEntitlements(subscription: Pick<Subscription, "plan" | "proAccessGranted" | "proTrialEndsAt"> | null, now = new Date()) {
   if (!subscription) return { plan: SubscriptionPlan.LITE, trial: false }
   const trial = subscription.plan === SubscriptionPlan.LITE
     && subscription.proAccessGranted
-    && Boolean(subscription.proTrialEndsAt && subscription.proTrialEndsAt > now)
+    && (!isAutomaticProExpiryEnabled() || Boolean(subscription.proTrialEndsAt && subscription.proTrialEndsAt > now))
   return {
     plan: subscription.plan === SubscriptionPlan.PRO || trial ? SubscriptionPlan.PRO : SubscriptionPlan.LITE,
     trial,
@@ -309,6 +310,8 @@ export async function getEntitlements(db: QueryDb, businessId: string, now = new
 
 export async function syncExpiredEntitlements(db: PrismaClient, businessId: string, now = new Date()) {
   const entitlements = await getEntitlements(db, businessId, now)
+  if (!isAutomaticProExpiryEnabled()) return entitlements
+
   const subscription = entitlements.subscription
   const expiredTrial = subscription?.plan === SubscriptionPlan.LITE
     && subscription.proAccessGranted
@@ -350,6 +353,8 @@ export async function syncExpiredEntitlements(db: PrismaClient, businessId: stri
 }
 
 export async function syncExpiredEntitlementsBatch(db: PrismaClient, now = new Date(), take = 25) {
+  if (!isAutomaticProExpiryEnabled()) return 0
+
   const candidates = await db.subscription.findMany({
     where: {
       status: "ACTIVE",

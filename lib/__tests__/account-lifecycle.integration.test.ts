@@ -1,13 +1,15 @@
-import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest"
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { randomUUID } from "node:crypto"
 import { prisma } from "@/lib/prisma"
 import { ConflictError, NotFoundError, ValidationError } from "@/lib/api-utils"
-import { activateManualSubscription, configurePrimaryCard, createCustomerProfile, deactivateManualSubscription, getEntitlements, scheduleClosure, syncExpiredEntitlements } from "../account-lifecycle"
+import { activateManualSubscription, configurePrimaryCard, createCustomerProfile, deactivateManualSubscription, getEntitlements, scheduleClosure, syncExpiredEntitlements, syncExpiredEntitlementsBatch } from "../account-lifecycle"
 import { ensureCategories, getOnboarding, saveDraft } from "../onboarding-service"
 
 const integration = describe.skipIf(process.env.CI !== "true")
 
 integration("account lifecycle PostgreSQL integration", () => {
+  afterEach(() => vi.unstubAllEnvs())
+
   let businessId = ""
   let userId = ""
   let profileId = ""
@@ -61,6 +63,13 @@ integration("account lifecycle PostgreSQL integration", () => {
     const trial = await activateManualSubscription(prisma, { businessId, plan: "LITE", billingInterval: "MONTHLY", periodStart })
     expect(trial.proTrialEndsAt).toEqual(trialEndsAt)
     expect(await getEntitlements(prisma, businessId, new Date("2026-02-28T11:59:59.999Z"))).toMatchObject({ plan: "PRO", trial: true })
+    vi.stubEnv("FID_AUTOMATIC_PRO_EXPIRY", undefined)
+    expect(await syncExpiredEntitlements(prisma, businessId, trialEndsAt)).toMatchObject({ plan: "PRO", trial: true })
+    expect(await syncExpiredEntitlementsBatch(prisma, trialEndsAt)).toBe(0)
+    expect(await prisma.billingAuditEvent.count({ where: { idempotencyKey: `trial-expired:${trial.id}` } })).toBe(0)
+    expect(await prisma.loyaltyCard.count({ where: { businessId, status: "ACTIVE" } })).toBe(2)
+
+    vi.stubEnv("FID_AUTOMATIC_PRO_EXPIRY", "true")
     expect(await getEntitlements(prisma, businessId, trialEndsAt)).toMatchObject({ plan: "LITE", trial: false })
 
     await syncExpiredEntitlements(prisma, businessId, trialEndsAt)

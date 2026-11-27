@@ -11,6 +11,10 @@ export function isWalletEnabled() {
   return process.env.FID_WALLET_ENABLED === "true"
 }
 
+export function isAutomaticProExpiryEnabled() {
+  return process.env.FID_AUTOMATIC_PRO_EXPIRY === "true"
+}
+
 export const config = {
   get isInviteOnly() {
     return process.env.INVITE_ONLY === "true"
