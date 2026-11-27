@@ -73,3 +73,7 @@ playwright.local.config.ts
 # solo miraba .ts y .tsx, y por eso llegaron a dev nueve .md y nueve .sql dentro
 # de una carpeta de migración de Prisma.
 * [0-9]*.*
+
+# --- Supabase CLI ---
+supabase/.branches/
+supabase/.temp/

@@ -39,6 +39,11 @@
 | `/join/[cardId]`        | Flujo para que clientes agreguen tarjeta |
 | `/scan`                 | Escáner de sellado para empleados    |
 
+## Desarrollo local
+
+Consulta el [instructivo de Docker y Supabase local](docs/local-environment.md)
+para arrancar la app y ejecutar pruebas con datos de ejemplo.
+
 ## Scripts
 
 ```bash

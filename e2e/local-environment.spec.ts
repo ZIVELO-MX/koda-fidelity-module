@@ -1,0 +1,122 @@
+import { randomUUID } from "node:crypto"
+import { expect, test } from "@playwright/test"
+import sharp from "sharp"
+
+test.skip(process.env.KODA_LOCAL_ENVIRONMENT !== "true", "Ejecutar con pnpm local:test")
+
+test("el cliente se inscribe y el operador sella y canjea en Supabase local", async ({ page, browser, request }) => {
+  const preview = await request.get("/opengraph-image")
+  expect(preview.ok()).toBeTruthy()
+  expect(preview.headers()["content-type"]).toContain("image/png")
+
+  const email = `cliente-${randomUUID()}@example.com`
+  const cardId = "card-local-fidelity"
+
+  await page.goto(`/join/${cardId}`)
+  await page.getByLabel("Tu Nombre").fill("Cliente local")
+  await page.getByLabel("Correo Electrónico").fill(email)
+  await page.getByRole("button", { name: "Continuar al registro" }).click()
+  await page.getByLabel("Contraseña", { exact: true }).fill("ClienteLocal123!")
+  await page.getByLabel("Confirmar contraseña", { exact: true }).fill("ClienteLocal123!")
+  await page.getByRole("button", { name: "Continuar", exact: true }).click()
+  await page.getByRole("button", { name: "Crear cuenta", exact: true }).click()
+
+  const lookup = () => page.request.get("/api/join", { params: { email, cardId } })
+  await expect.poll(async () => {
+    const response = await lookup()
+    return response.ok() ? (await response.json()).customers.length : response.status()
+  }, { timeout: 15000 }).toBe(1)
+  const { customers: [customer] } = await (await lookup()).json()
+  expect(customer.stamps).toBe(0)
+
+  const operator = await browser.newPage()
+  try {
+    await operator.goto("/login")
+    await operator.getByLabel("Correo electrónico").fill("operator.local@dev.invalid")
+    await operator.getByRole("button", { name: "Continuar", exact: true }).click()
+    await operator.locator('input[name="password"]').fill("KodaLocal123!")
+    await operator.getByRole("button", { name: "Iniciar sesión" }).click()
+    await expect(operator.getByRole("heading", { name: "Panel" })).toBeVisible()
+    await operator.reload()
+    await expect(operator.getByRole("heading", { name: "Panel" })).toBeVisible()
+
+    const operation = (type: "stamp" | "redeem", id = randomUUID()) => operator.request.post("/api/stamps", {
+      headers: { "Idempotency-Key": id },
+      data: { customerId: customer.id, type },
+    })
+    const stampId = randomUUID()
+    for (const [type, balance, id] of [
+      ["stamp", 1, stampId],
+      ["stamp", 1, stampId],
+      ["stamp", 2, randomUUID()],
+      ["redeem", 0, randomUUID()],
+    ] as const) {
+      const response = await operation(type, id)
+      expect(response.ok(), await response.text()).toBeTruthy()
+      expect((await response.json()).customer.stamps).toBe(balance)
+    }
+
+    const response = await lookup()
+    expect(response.ok()).toBeTruthy()
+    expect((await response.json()).customers).toEqual([
+      expect.objectContaining({ id: customer.id, stamps: 0 }),
+    ])
+  } finally {
+    await operator.close()
+  }
+})
+
+test("el cliente puede subir y quitar un avatar en Storage local", async ({ page }) => {
+  const email = `avatar-${randomUUID()}@example.com`
+  await page.goto("/signup")
+  await page.getByLabel("Correo electrónico").fill(email)
+  await page.getByLabel("Contraseña", { exact: true }).fill("ClienteLocal123!")
+  await page.getByLabel("Confirmar contraseña", { exact: true }).fill("ClienteLocal123!")
+  await page.getByRole("button", { name: "Continuar", exact: true }).click()
+  await page.getByText("Soy un cliente", { exact: true }).click()
+  await page.getByLabel("Tu nombre").fill("Cliente avatar")
+  await page.getByRole("button", { name: "Crear cuenta", exact: true }).click()
+  await page.waitForURL("**/dashboard/my-cards")
+
+  const png = await sharp({ create: { width: 2, height: 2, channels: 3, background: "red" } }).png().toBuffer()
+  const upload = await page.request.put("/api/customer/profile/avatar", {
+    multipart: { file: { name: "avatar.png", mimeType: "image/png", buffer: png } },
+  })
+  expect(upload.ok(), await upload.text()).toBeTruthy()
+  const { signedUrl } = await upload.json()
+  expect(new URL(signedUrl).origin).toBe(process.env.NEXT_PUBLIC_SUPABASE_URL)
+  const image = await page.request.get(signedUrl)
+  expect(image.ok()).toBeTruthy()
+  expect(image.headers()["content-type"]).toContain("image/webp")
+  const removed = await page.request.delete("/api/customer/profile/avatar")
+  expect(removed.ok(), await removed.text()).toBeTruthy()
+  expect((await removed.json()).profile.avatarUrl).toBeNull()
+  expect((await page.request.get(signedUrl)).ok()).toBeFalsy()
+})
+
+test("Auth entrega el correo de recuperación en Mailpit local", async ({ page, request }) => {
+  const email = "operator.local@dev.invalid"
+  const inbox = `${process.env.MAILPIT_URL}/api/v1/search`
+  const messages = async () => {
+    const response = await request.get(inbox, { params: { query: `to:${email}` } })
+    expect(response.ok()).toBeTruthy()
+    return (await response.json()).messages as { ID: string }[]
+  }
+
+  const existing = new Set((await messages()).map(message => message.ID))
+  await page.goto("/login")
+  await page.getByLabel("Correo electrónico").fill(email)
+  await page.getByRole("button", { name: "Continuar", exact: true }).click()
+  await page.getByRole("button", { name: "¿Olvidaste tu contraseña?" }).click()
+  await page.getByRole("button", { name: "Enviarme el enlace" }).click()
+  await expect(page.getByRole("heading", { name: "Revisa tu correo" })).toBeVisible()
+
+  await expect.poll(async () => {
+    const message = (await messages()).find(candidate => !existing.has(candidate.ID))
+    if (!message) return false
+    const response = await request.get(`${process.env.MAILPIT_URL}/api/v1/message/${message.ID}`)
+    expect(response.ok()).toBeTruthy()
+    const body = await response.json()
+    return String(body.HTML).includes("http://localhost:3000/auth/confirm")
+  }).toBe(true)
+})

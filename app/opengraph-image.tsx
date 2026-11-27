@@ -6,7 +6,7 @@ export const alt = siteConfig.name
 export const size = { width: 1200, height: 630 }
 export const contentType = "image/png"
 
-export default async function Image() {
+async function loadFonts() {
   const css = await fetch(
     "https://fonts.googleapis.com/css2?family=Inter:wght@600;800&display=swap",
   ).then((res) => res.text())
@@ -16,12 +16,17 @@ export default async function Image() {
     parseInt(m[1]),
   )
 
-  const fonts = await Promise.all(
+  return Promise.all(
     urls.map(async (url, i) => {
       const data = await fetch(url).then((res) => res.arrayBuffer())
       return { name: "Inter", data, weight: weights[i] as 300 | 400 | 500 | 600 | 700 | 800, style: "normal" as const }
     }),
   )
+}
+
+export default async function Image() {
+  const local = process.env.KODA_LOCAL_ENVIRONMENT === "true"
+  const fonts = local ? undefined : await loadFonts()
 
   return new ImageResponse(
     <div
@@ -33,7 +38,7 @@ export default async function Image() {
         alignItems: "center",
         justifyContent: "center",
         background: "#ffffff",
-        fontFamily: "Inter, system-ui, -apple-system, sans-serif",
+        fontFamily: local ? "sans-serif" : "Inter, system-ui, -apple-system, sans-serif",
         color: "#1a1a1a",
         position: "relative",
       }}
@@ -101,7 +106,7 @@ export default async function Image() {
     </div>,
     {
       ...size,
-      fonts: fonts.length > 0 ? fonts : undefined,
+      fonts: fonts?.length ? fonts : undefined,
     },
   )
 }
