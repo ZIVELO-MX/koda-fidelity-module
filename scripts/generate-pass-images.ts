@@ -47,7 +47,7 @@ async function main() {
   await uploadToSupabase("google-logo.png", path.join(PASSES_DIR, "google-logo.png"))
 }
 
-async function heroImage(color: string, logo: Buffer): Promise<sharp.Sharp> {
+async function heroImage(color: string, logo: Buffer): Promise<ReturnType<typeof sharp>> {
   const hex = color.replace("#", "")
   const r = Number.parseInt(hex.slice(0, 2), 16)
   const g = Number.parseInt(hex.slice(2, 4), 16)
