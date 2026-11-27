@@ -34,9 +34,8 @@ El asistente solicita correo, plan (`PRO`, `LITE` o `INACTIVO`), resumen y confi
 
 ## Reglas de datos
 
-- La primera activación manual de Lite concede un mes Pro y persiste su límite en `proTrialEndsAt`; las renovaciones y cambios de plan siguen siendo manuales y no ejecutan cobros.
-- El vencimiento se aplica de forma idempotente, conserva una sola tarjeta Lite activa sin borrar las demás y registra `expire_pro_trial` en la auditoría de billing.
-- El scheduler debe invocar cada hora `POST /api/cron/subscription-entitlements` con `Authorization: Bearer $CRON_SECRET`. Las rutas de onboarding, suscripción, tarjetas y alta pública actúan como respaldo si el worker se retrasa.
+- La primera activación manual de Lite concede acceso Pro e informa la fecha de referencia en `proTrialEndsAt`. Al pasar esa fecha, el negocio conserva su acceso hasta que el equipo operativo aplique un cambio de plan. Las renovaciones y cambios manuales no ejecutan cobros.
+- En la operación actual, `FID_AUTOMATIC_PRO_EXPIRY` queda desactivada. El endpoint `POST /api/cron/subscription-entitlements` responde con cero cambios después de autenticar el scheduler. Las consultas de la app conservan tanto el acceso como el estado de las tarjetas.
 - El ledger se anonimiza (`customerId = null`) antes de un borrado permanente de cliente.
 - El cierre de negocio se agenda a 30 días y su ejecución elimina el negocio en cascada después de la gracia.
 - Durante la gracia el negocio queda en sólo lectura. Para ejecutar cierres vencidos temporalmente se invoca manualmente `POST /api/cron/account-closures` con `Authorization: Bearer $CRON_SECRET`; cada ejecución reintenta limpiezas fallidas.

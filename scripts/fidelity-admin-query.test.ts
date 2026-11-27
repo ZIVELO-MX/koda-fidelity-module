@@ -140,7 +140,7 @@ describe("Fidelity admin query helpers", () => {
     expect(output).not.toContain("clientes")
   })
 
-  it("does not grant effective Pro after the trial expires", async () => {
+  it("reports effective Pro after the reference date while the grant is active", async () => {
     const { client, methods } = makeDb()
     const now = new Date("2026-11-01T00:00:00.000Z")
     methods.user.findUnique.mockResolvedValue({ email: "admin@example.com", name: "Admin", role: "admin", businessId: "biz-1", onboardingProgress: null })
@@ -156,7 +156,7 @@ describe("Fidelity admin query helpers", () => {
     const result = await queryAdminAccount(client, "admin@example.com", now)
 
     expect(result.kind).toBe("business")
-    if (result.kind === "business") expect(result.effectivePlan).toBe("LITE")
+    if (result.kind === "business") expect(result.effectivePlan).toBe("PRO")
   })
 
   it("counts consecutive time on the current plan across renewals", async () => {

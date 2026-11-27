@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@prisma/client"
 import { resolve } from "node:path"
+import { resolveEffectiveEntitlements } from "../lib/account-lifecycle"
 
 export type FidelityAdminReadClient = {
   user: Pick<PrismaClient["user"], "findUnique">
@@ -130,12 +131,9 @@ export async function queryAdminAccount(db: FidelityAdminReadClient, rawEmail: s
     }
   }
   const daysOnPlan = planSince ? Math.max(0, Math.floor((now.getTime() - planSince.getTime()) / 86_400_000)) : null
-  const proTrial = subscription?.plan === "LITE"
-    && subscription.proAccessGranted
-    && Boolean(subscription.proTrialEndsAt && subscription.proTrialEndsAt > now)
-  const effectivePlan = subscription?.status !== "ACTIVE"
-    ? "INACTIVO"
-    : subscription.plan === "PRO" || proTrial ? "PRO" : "LITE"
+  const effectivePlan = subscription?.status === "ACTIVE"
+    ? resolveEffectiveEntitlements(subscription, now).plan
+    : "INACTIVO"
   const cardCounts = { ACTIVE: 0, DRAFT: 0, LOCKED_BY_PLAN: 0, ARCHIVED: 0 }
   for (const group of cardGroups) cardCounts[group.status] = group._count._all
 

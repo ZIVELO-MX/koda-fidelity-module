@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import type { Subscription } from "@prisma/client"
 import { AccountReadOnlyError } from "@/lib/api-utils"
 import { addCalendarMonths, applyEntitlements, assertBusinessWritable, cancelClosure, createCustomerProfile, normalizeProfileEmail, periodForInterval, persistPrimaryCardPreference, resolveEffectiveEntitlements, resolveNewCardPrimarySelection } from "../account-lifecycle"
@@ -24,7 +24,10 @@ describe("account lifecycle", () => {
     expect(periodForInterval(new Date("2026-02-28T12:00:00.000Z"), "ANNUAL").toISOString()).toBe("2027-02-28T12:00:00.000Z")
   })
 
-  it("expires Lite Pro access exactly at the stored trial boundary", () => {
+  afterEach(() => vi.unstubAllEnvs())
+
+  it("expires Lite Pro access at the stored boundary only when automatic expiry is enabled", () => {
+    vi.stubEnv("FID_AUTOMATIC_PRO_EXPIRY", "true")
     const trialEndsAt = new Date("2026-02-28T12:00:00.000Z")
     const subscription = {
       plan: "LITE",
@@ -36,6 +39,10 @@ describe("account lifecycle", () => {
     expect(resolveEffectiveEntitlements(subscription, trialEndsAt)).toEqual({ plan: "LITE", trial: false })
     expect(resolveEffectiveEntitlements({ ...subscription, proTrialEndsAt: null }, new Date("2026-01-31T12:00:00.000Z"))).toEqual({ plan: "LITE", trial: false })
     expect(resolveEffectiveEntitlements({ ...subscription, plan: "PRO", proTrialEndsAt: null }, new Date("2027-01-01T00:00:00.000Z"))).toEqual({ plan: "PRO", trial: false })
+
+    vi.stubEnv("FID_AUTOMATIC_PRO_EXPIRY", undefined)
+    expect(resolveEffectiveEntitlements(subscription, trialEndsAt)).toEqual({ plan: "PRO", trial: true })
+    expect(resolveEffectiveEntitlements({ ...subscription, proAccessGranted: false }, trialEndsAt)).toEqual({ plan: "LITE", trial: false })
   })
 
   it("keeps the chosen Lite card active, falls Pro themes back, and leaves archives and drafts untouched", async () => {
