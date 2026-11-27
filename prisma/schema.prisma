@@ -445,6 +445,7 @@ model Customer {
   card            LoyaltyCard              @relation(fields: [cardId], references: [id], onDelete: Cascade)
   stamps          Int                      @default(0)
   isActive        Boolean                  @default(true)
+  portalHiddenAt  DateTime?
   applePassId     String?
   googlePassId    String?
   createdAt       DateTime                 @default(now())

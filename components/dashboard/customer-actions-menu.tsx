@@ -18,23 +18,53 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { MoreHorizontal, Archive, Loader2 } from "lucide-react"
+import { MoreHorizontal, Archive, Loader2, Mail } from "lucide-react"
 import { toast } from "sonner"
 
 interface CustomerActionsMenuProps {
   customerId: string
   customerName: string
+  customerEmail?: string | null
 }
 
 /**
  * Acciones secundarias del cliente. Sellar y canjear salieron de aquí a la
  * propia fila: son la acción de todos los días y no deben costar dos toques.
  */
-export function CustomerActionsMenu({ customerId, customerName }: CustomerActionsMenuProps) {
+export function CustomerActionsMenu({ customerId, customerName, customerEmail }: CustomerActionsMenuProps) {
   const router = useRouter()
   const [archiveOpen, setArchiveOpen] = useState(false)
   const [archiving, setArchiving] = useState(false)
+  const [emailOpen, setEmailOpen] = useState(false)
+  const [email, setEmail] = useState("")
+  const [savingEmail, setSavingEmail] = useState(false)
+
+  async function saveEmail(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setSavingEmail(true)
+    try {
+      const response = await fetch(`/api/customers/${customerId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      })
+      if (!response.ok) {
+        const error = await response.json().catch(() => null)
+        toast.error(error?.error ?? "No fue posible corregir el correo")
+        return
+      }
+      setEmailOpen(false)
+      router.refresh()
+      toast.success("Correo corregido")
+    } catch {
+      toast.error("Error de red. El correo no se actualizó.")
+    } finally {
+      setSavingEmail(false)
+    }
+  }
 
   // Antes se ignoraba la respuesta: un rechazo cerraba el diálogo como si se
   // hubiera archivado, y un error de red lo dejaba girando.
@@ -71,7 +101,11 @@ export function CustomerActionsMenu({ customerId, customerName }: CustomerAction
           </Button>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="end" className="w-40">
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onSelect={() => { setEmail(customerEmail ?? ""); setEmailOpen(true) }}>
+            <Mail className="h-4 w-4" />
+            Corregir correo
+          </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => setArchiveOpen(true)}
             className="gap-2 cursor-pointer text-muted-foreground focus:text-foreground"
@@ -81,6 +115,24 @@ export function CustomerActionsMenu({ customerId, customerName }: CustomerAction
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <Dialog open={emailOpen} onOpenChange={open => { if (!savingEmail) setEmailOpen(open) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Corregir correo</DialogTitle>
+            <DialogDescription>Actualiza el correo de {customerName}. Su progreso y su historial se conservan.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={saveEmail} className="space-y-4">
+            <label className="block space-y-2">
+              <span>Correo electrónico</span>
+              <Input type="email" value={email} onChange={event => setEmail(event.target.value)} maxLength={254} required disabled={savingEmail} />
+            </label>
+            <DialogFooter>
+              <Button type="submit" disabled={savingEmail}>Guardar correo</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={archiveOpen} onOpenChange={setArchiveOpen}>
         <AlertDialogContent>

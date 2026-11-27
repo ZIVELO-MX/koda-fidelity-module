@@ -9,11 +9,13 @@ test("el cliente se inscribe y el operador sella y canjea en Supabase local", as
   expect(preview.ok()).toBeTruthy()
   expect(preview.headers()["content-type"]).toContain("image/png")
 
-  const email = `cliente-${randomUUID()}@example.com`
+  const id = randomUUID()
+  const email = `cliente-${id}@example.com`
+  const name = `Cliente local ${id.slice(0, 8)}`
   const cardId = "card-local-fidelity"
 
   await page.goto(`/join/${cardId}`)
-  await page.getByLabel("Tu Nombre").fill("Cliente local")
+  await page.getByLabel("Tu Nombre").fill(name)
   await page.getByLabel("Correo Electrónico").fill(email)
   await page.getByRole("button", { name: "Continuar al registro" }).click()
   await page.getByLabel("Contraseña", { exact: true }).fill("ClienteLocal123!")
@@ -66,6 +68,14 @@ test("el cliente se inscribe y el operador sella y canjea en Supabase local", as
     expect((await response.json()).customers).toEqual([
       expect.objectContaining({ id: customer.id, stamps: 0 }),
     ])
+
+    await operator.goto("/dashboard/customers")
+    await operator.getByRole("button", { name: `Más acciones para ${name}` }).click()
+    await operator.getByRole("menuitem", { name: "Corregir correo" }).click()
+    await operator.getByLabel("Correo electrónico").fill(`corregido-${id}@example.com`)
+    await operator.getByRole("button", { name: "Guardar correo" }).click()
+    await expect(operator.getByText("Correo corregido", { exact: true })).toBeVisible()
+    expect((await (await lookup()).json()).customers).toEqual([])
   } finally {
     await operator.close()
   }

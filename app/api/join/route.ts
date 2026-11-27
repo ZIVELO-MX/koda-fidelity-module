@@ -326,14 +326,16 @@ export async function GET(request: NextRequest) {
       const correo = normalizeEmail(email)
       const where: Record<string, unknown> = { email: mismoCorreo(correo) }
       // En /join una baja no es un registro listo: su QR ya no se sella. Sin
-      // `cardId` (my-cards) se devuelven todas y la página separa las archivadas.
+      // `cardId` (my-cards) se omiten las vencidas que el titular ocultó.
       if (cardId) Object.assign(where, { cardId, isActive: true })
 
       const customers = (await prisma.customer.findMany({
         where,
         include: customerInclude,
         orderBy: { createdAt: "desc" },
-      })).filter(delCorreo(correo))
+      })).filter(delCorreo(correo)).filter(customer =>
+        Boolean(cardId) || !customer.portalHiddenAt || !isExpired(customer.card.expiresAt),
+      )
 
       return withRequestId(NextResponse.json({
         customers: customers.map((customer) => withCurrentCycleMilestoneClaims(conMetaDelCiclo(customer))),
