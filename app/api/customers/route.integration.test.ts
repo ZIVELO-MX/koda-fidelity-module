@@ -31,6 +31,26 @@ integration("GET /api/customers C1 contract", () => {
     expect(await empty.json()).toMatchObject({ items: [], total: 0 })
   })
 
+  it("keeps customer search scoped to the business of an authenticated sellador", async () => {
+    const businesses = await Promise.all(["own", "other"].map(label =>
+      prisma.business.create({ data: { name: label, email: `customer-scope-${label}-${crypto.randomUUID()}@test.invalid` } }),
+    ))
+    businessIds.push(...businesses.map(business => business.id))
+    const [ownCard, otherCard] = await Promise.all(businesses.map(business =>
+      prisma.loyaltyCard.create({ data: { businessId: business.id, name: "Card", reward: "Coffee" } }),
+    ))
+    await prisma.customer.createMany({ data: [
+      { cardId: ownCard.id, name: "Cliente de prueba", stamps: 10 },
+      { cardId: otherCard.id, name: "Cliente de prueba", stamps: 10 },
+    ] })
+    const [business] = businesses
+    getBusinessFromSession.mockResolvedValue({ business, user: { id: "u", email: business.email, name: "Sellador", role: "sellador", passwordSetupRequired: false } })
+
+    const search = await GET(new Request("http://localhost/api/customers?q=prueba&readyToRedeem=true") as never)
+    expect(search.status).toBe(200)
+    expect(await search.json()).toMatchObject({ total: 1, items: [{ cardId: ownCard.id }] })
+  })
+
   it("returns a contract error for invalid pagination", async () => {
     const business = await prisma.business.create({ data: { name: "Customer API Invalid", email: `customer-api-invalid-${Date.now()}@test.invalid` } })
     businessIds.push(business.id)

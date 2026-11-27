@@ -29,6 +29,11 @@ test("el cliente se inscribe y el operador sella y canjea en Supabase local", as
   const { customers: [customer] } = await (await lookup()).json()
   expect(customer.stamps).toBe(0)
 
+  const stamp = { headers: { "Idempotency-Key": randomUUID() }, data: { customerId: customer.id, type: "stamp" } }
+  expect((await request.post("/api/stamps", stamp)).status()).toBe(401)
+  expect((await page.request.post("/api/stamps", stamp)).status()).toBe(404)
+  expect((await (await lookup()).json()).customers[0].stamps).toBe(0)
+
   const operator = await browser.newPage()
   try {
     await operator.goto("/login")

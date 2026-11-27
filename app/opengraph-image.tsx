@@ -1,7 +1,10 @@
+import { readFile } from "node:fs/promises"
+import { join } from "node:path"
+import sharp from "sharp"
 import { ImageResponse } from "next/og"
 import { siteConfig } from "@/lib/site-config"
 
-export const runtime = "edge"
+export const runtime = "nodejs"
 export const alt = siteConfig.name
 export const size = { width: 1200, height: 630 }
 export const contentType = "image/png"
@@ -26,7 +29,11 @@ async function loadFonts() {
 
 export default async function Image() {
   const local = process.env.KODA_LOCAL_ENVIRONMENT === "true"
-  const fonts = local ? undefined : await loadFonts()
+  const [fonts, logo] = await Promise.all([
+    local ? undefined : loadFonts(),
+    readFile(join(process.cwd(), "public", "short-logo.svg"))
+      .then(svg => sharp(svg).resize(96, 96).png().toBuffer()),
+  ])
 
   return new ImageResponse(
     <div
@@ -65,7 +72,7 @@ export default async function Image() {
         }}
       >
         <img
-          src={`${siteConfig.url}/short-logo.svg`}
+          src={`data:image/png;base64,${logo.toString("base64")}`}
           alt={siteConfig.shortName}
           width={96}
           height={96}
