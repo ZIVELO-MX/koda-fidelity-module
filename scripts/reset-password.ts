@@ -53,7 +53,7 @@ function createMailTransporter() {
 export async function sendPasswordResetEmail(
   email: string,
   password: string,
-  transporter: nodemailer.Transporter
+  transporter: ReturnType<typeof nodemailer.createTransport>
 ): Promise<void> {
   const html = buildHtml(email, email, password)
 
