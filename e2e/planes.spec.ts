@@ -7,7 +7,7 @@ import { entrar } from "./sesion"
  * "Los planes funcionan" significa aquí activación manual, trial y entitlements.
  * El cobro real no existe todavía y no se simula ninguna compra.
  *
- * Las transiciones que dependen del vencimiento del mes de Pro se prueban
+ * La conservación de Pro tras la fecha de referencia se prueba
  * con un fixture local que prepara el trial vencido.
  */
 const CORREO = process.env.E2E_ONBOARDING_EMAIL
@@ -124,7 +124,7 @@ test.describe("Planes Lite y Pro", () => {
   })
 
   /**
-   * Transición del mes de Pro incluido a Lite.
+   * El mes de Pro supera la fecha de referencia con el cambio automático desactivado.
    *
    * Necesita el estado que monta `E2E_ONBOARDING_MODE=expired-trial`: un mes de
    * Pro ya vencido, dos tarjetas y un tema Pro elegido en la primera.
@@ -145,28 +145,27 @@ test.describe("Planes Lite y Pro", () => {
       expect(temas.some((t) => t.plan === "PRO"), "el fixture necesita un tema Pro activo").toBe(true)
     })
 
-    test("con la fecha pasada, los entitlements son Lite y ya no hay trial", async ({ page }) => {
+    test("con la fecha pasada, conserva el acceso Pro concedido", async ({ page }) => {
       const { entitlements } = await (await page.request.get("/api/subscription")).json()
 
-      // La suscripción sigue siendo Lite con acceso Pro concedido; lo que manda
-      // es la fecha, no la bandera.
       expect(entitlements.subscription?.plan).toBe("LITE")
-      expect(entitlements.plan, "un trial vencido no puede seguir dando Pro").toBe("LITE")
-      expect(entitlements.trial).toBe(false)
+      expect(entitlements.subscription?.proAccessGranted).toBe(true)
+      expect(Date.parse(entitlements.subscription.proTrialEndsAt)).toBeLessThan(Date.now())
+      expect(entitlements.plan).toBe("PRO")
+      expect(entitlements.trial).toBe(true)
     })
 
-    test("al vencer se aplican los entitlements de Lite: una sola tarjeta activa", async ({ page }) => {
-      // Leer las tarjetas dispara la sincronización.
+    test("al pasar la fecha, conserva ambas tarjetas activas", async ({ page }) => {
       const tarjetas = await (await page.request.get("/api/cards")).json()
       const activas: { status?: string }[] = tarjetas.cards ?? tarjetas.items ?? []
 
-      expect(activas.length, "con Lite solo una tarjeta queda activa").toBe(1)
+      expect(activas).toHaveLength(2)
       for (const tarjeta of activas) expect(tarjeta.status).toBe("ACTIVE")
       // Que las demás queden bloqueadas y no borradas lo cubre la prueba de
       // integración del backend; desde el cliente solo se ven las activas.
     })
 
-    test("el tema Pro conserva su selección y la tarjeta cae al color del negocio", async ({ page }) => {
+    test("el tema Pro sigue seleccionado y aplicado", async ({ page }) => {
       const tarjetas = await (await page.request.get("/api/cards")).json()
       const lista: {
         selectedThemeId?: string | null
@@ -174,16 +173,9 @@ test.describe("Planes Lite y Pro", () => {
         themeLocked?: boolean
       }[] = tarjetas.cards ?? tarjetas.items ?? []
       const conTema = lista.find((t) => t.selectedThemeId)
-      expect(conTema, "la tarjeta que se conserva tiene que traer su tema elegido").toBeTruthy()
-
-      expect(conTema!.selectedThemeId, "la selección no se pierde al degradar").toBeTruthy()
-      // El diseño pide el color del negocio, no el tema de otro giro: sin tema
-      // efectivo, la tarjeta se pinta con `brandColor`.
-      expect(
-        conTema!.effectiveThemeId,
-        "sin plan que lo sostenga, el acabado Pro no deja tema efectivo",
-      ).toBeNull()
-      expect(conTema!.themeLocked).toBe(true)
+      expect(conTema?.selectedThemeId).toBeTruthy()
+      expect(conTema?.effectiveThemeId).toBe(conTema?.selectedThemeId)
+      expect(conTema?.themeLocked).toBe(false)
     })
   })
 })
