@@ -7,12 +7,12 @@
  *     responses: { 200: { description: Closure preview } }
  *   post:
  *     tags: [Account]
- *     summary: Schedule or cancel business account closure
+ *     summary: Apply an internal business closure action
  *     responses: { 201: { description: Closure scheduled } }
  *   delete:
  *     tags: [Account]
- *     summary: Cancel business account closure
- *     responses: { 200: { description: Closure canceled } }
+ *     summary: Legacy cancellation route (use the internal POST action)
+ *     responses: { 401: { description: Internal authorization required } }
  */
 export { GET, POST } from "@/app/api/account/closure/route"
 
