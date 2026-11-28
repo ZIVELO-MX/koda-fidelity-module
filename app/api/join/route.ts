@@ -6,6 +6,7 @@ import { cuerpoJson, ForbiddenError, getBusinessFromSession, handleApiError, Not
 import { isExpired } from "@/lib/card-utils"
 import { assertBusinessWritable, syncExpiredEntitlements } from "@/lib/account-lifecycle"
 import { normalizeEmail } from "@/lib/auth-security"
+import { hasUsableCustomerEmail } from "@/lib/customer-session"
 
 /**
  * @openapi
@@ -14,7 +15,7 @@ import { normalizeEmail } from "@/lib/auth-security"
  *     tags:
  *       - Membership
  *     summary: Join a loyalty card
- *     description: Registers a customer for a loyalty card after the authenticated user's email is confirmed.
+ *     description: Registers a customer for a loyalty card using the authenticated user's email. Confirmation is required only when enabled.
  *     security: [{ cookieAuth: [] }]
  *     requestBody:
  *       required: true
@@ -39,7 +40,7 @@ import { normalizeEmail } from "@/lib/auth-security"
  *                 description: Loyalty card ID
  *     responses:
  *       200:
- *         description: Existing or created customer for the confirmed session email
+ *         description: Existing or created customer for the session email
  *         content:
  *           application/json:
  *             schema:
@@ -58,13 +59,13 @@ import { normalizeEmail } from "@/lib/auth-security"
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       401:
- *         description: A confirmed authenticated session is required
+ *         description: An authenticated session with an eligible email is required
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       403:
- *         description: The body email does not match the confirmed session email
+ *         description: The body email does not match the session email
  *         content:
  *           application/json:
  *             schema:
@@ -238,7 +239,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { data: { user }, error: authError } = await (await createClient()).auth.getUser()
-    if (authError || !user?.email || !user.email_confirmed_at) throw new UnauthorizedError()
+    if (authError || !hasUsableCustomerEmail(user)) throw new UnauthorizedError()
 
     const correo = normalizeEmail(email)
     if (normalizeEmail(user.email) !== correo) {
@@ -316,7 +317,7 @@ export async function GET(request: NextRequest) {
     if (email) {
       const supabase = await createClient()
       const { data: { user }, error: authError } = await supabase.auth.getUser()
-      if (authError || !user?.email || !user.email_confirmed_at || normalizeEmail(user.email) !== normalizeEmail(email)) {
+      if (authError || !hasUsableCustomerEmail(user) || normalizeEmail(user.email) !== normalizeEmail(email)) {
         throw new UnauthorizedError()
       }
 

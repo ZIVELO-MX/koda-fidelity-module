@@ -97,7 +97,7 @@ export default function JoinCardPage() {
       if (session?.user?.email) {
         const email = session.user.email
         const name = session.user.user_metadata?.name || email.split("@")[0]
-        if (!session.user.email_confirmed_at) {
+        if (cardJson.card.requiresEmailConfirmation && !session.user.email_confirmed_at) {
           setName(name)
           setEmail(email)
           setStep("verify-email")

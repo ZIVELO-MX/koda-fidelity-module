@@ -31,6 +31,11 @@ test("el cliente se inscribe y el operador sella y canjea en Supabase local", as
   }, { timeout: 15000 }).toBe(1)
   const { customers: [customer] } = await (await lookup()).json()
   expect(customer.stamps).toBe(0)
+  const inbox = await request.get(`${process.env.MAILPIT_URL}/api/v1/search`, {
+    params: { query: `to:${email}` },
+  })
+  expect(inbox.ok()).toBeTruthy()
+  expect((await inbox.json()).messages).toEqual([])
 
   const stamp = { headers: { "Idempotency-Key": randomUUID() }, data: { customerId: customer.id, type: "stamp" } }
   expect((await request.post("/api/stamps", stamp)).status()).toBe(401)

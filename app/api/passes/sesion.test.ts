@@ -25,11 +25,12 @@ const pedir = (handler: typeof applePost) => handler(
 describe.each([["Apple", applePost], ["Google", googlePost]])("pase de %s", (_nombre, handler) => {
   beforeEach(() => {
     vi.clearAllMocks()
-    process.env.FID_WALLET_ENABLED = "true"
+    vi.stubEnv("FID_WALLET_ENABLED", "true")
+    vi.stubEnv("FID_REQUIRE_EMAIL_CONFIRMATION", undefined)
     findCustomer.mockResolvedValue({ id: "cust-1", cardId: "card-1", email: "ana@test.invalid", name: "Ana", stamps: 3 })
     findCard.mockResolvedValue({ id: "card-1", name: "Club", reward: "Café", stampsRequired: 10, brandColor: "#ff6b35", business: { name: "Café" } })
   })
-  afterEach(() => { delete process.env.FID_WALLET_ENABLED })
+  afterEach(() => vi.unstubAllEnvs())
 
   it("pide sesión", async () => {
     getUser.mockResolvedValue({ data: { user: null }, error: null })
@@ -45,8 +46,15 @@ describe.each([["Apple", applePost], ["Google", googlePost]])("pase de %s", (_no
     expect(generateLoyaltyPassJwt).not.toHaveBeenCalled()
   })
 
-  it("entrega el pase a su dueño", async () => {
-    getUser.mockResolvedValue({ data: { user: { email: "Ana@test.invalid", email_confirmed_at: "2026-10-15T00:00:00Z" } }, error: null })
+  it("exige confirmación cuando está configurada", async () => {
+    vi.stubEnv("FID_REQUIRE_EMAIL_CONFIRMATION", "true")
+    getUser.mockResolvedValue({ data: { user: { email: "ana@test.invalid", email_confirmed_at: null } }, error: null })
+    expect((await pedir(handler)).status).toBe(401)
+    expect(findCustomer).not.toHaveBeenCalled()
+  })
+
+  it("entrega el pase a su dueño sin confirmación por defecto", async () => {
+    getUser.mockResolvedValue({ data: { user: { email: "Ana@test.invalid", email_confirmed_at: null } }, error: null })
     expect((await pedir(handler)).status).toBe(200)
   })
 })
