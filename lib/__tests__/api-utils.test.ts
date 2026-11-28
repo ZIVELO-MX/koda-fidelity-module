@@ -18,6 +18,7 @@ vi.mock("next/server", () => ({
 }))
 
 import {
+  AccountReadOnlyError,
   UnauthorizedError,
   NotFoundError,
   ValidationError,
@@ -63,6 +64,24 @@ describe("api-utils error classes", () => {
 })
 
 describe("handleApiError", () => {
+  it.each([
+    ["America/Mexico_City", "La cuenta se eliminará el 30 de noviembre de 2026. "],
+    ["America/Tijuana", "La cuenta se eliminará el 30 de noviembre de 2026. "],
+    ["Europe/Madrid", "La cuenta se eliminará el 1 de diciembre de 2026. "],
+    ["zona-invalida", ""],
+  ])("mantiene el bloqueo y muestra la fecha local del cierre para %s", async (timezone, date) => {
+    const error = new AccountReadOnlyError(new Date("2026-12-01T00:30:00Z"), timezone)
+    const response = handleApiError(error, "request-aud-03")
+
+    expect(response.status).toBe(423)
+    expect(await response.json()).toMatchObject({
+      code: "KF-ACCOUNT-READONLY",
+      action: `${date}Cancela el cierre para volver a editar.`,
+      requestId: "request-aud-03",
+      retryable: false,
+    })
+  })
+
   it("returns 401 for UnauthorizedError", () => {
     const response = handleApiError(new UnauthorizedError())
     expect(response.status).toBe(401)

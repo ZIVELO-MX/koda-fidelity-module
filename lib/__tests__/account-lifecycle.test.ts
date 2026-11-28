@@ -175,11 +175,11 @@ describe("account lifecycle", () => {
   it("blocks writes while a closure is active and permits cancellation before its deadline", async () => {
     const db = {
       accountClosure: {
-        findFirst: async () => ({ scheduledFor: new Date("2026-02-01T00:00:00.000Z") }),
+        findFirst: async () => ({ scheduledFor: new Date("2026-02-01T00:00:00.000Z"), business: { timezone: "America/Tijuana" } }),
         updateMany: async () => ({ count: 1 }),
       },
     } as never
-    await expect(assertBusinessWritable(db, "business")).rejects.toBeInstanceOf(AccountReadOnlyError)
+    await expect(assertBusinessWritable(db, "business")).rejects.toMatchObject({ name: AccountReadOnlyError.name, timezone: "America/Tijuana" })
     await expect(cancelClosure(db, "business", new Date("2026-01-01T00:00:00.000Z"))).resolves.toEqual({ count: 1 })
   })
 

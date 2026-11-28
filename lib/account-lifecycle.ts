@@ -406,9 +406,9 @@ export async function assertBusinessWritable(db: PrismaClient, businessId: strin
   const closure = await db.accountClosure.findFirst({
     where: { businessId, status: { in: ["SCHEDULED", "PROCESSING", "FAILED"] } },
     orderBy: { scheduledFor: "asc" },
-    select: { scheduledFor: true },
+    select: { scheduledFor: true, business: { select: { timezone: true } } },
   })
-  if (closure) throw new AccountReadOnlyError(closure.scheduledFor)
+  if (closure) throw new AccountReadOnlyError(closure.scheduledFor, closure.business.timezone)
 }
 
 

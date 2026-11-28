@@ -26,7 +26,7 @@ function db({ activa = null as Sub | null, ultima = null as Sub | null, cierre =
   }
   const base = {
     business: { findUnique: vi.fn().mockResolvedValue({ id: "biz" }) },
-    accountClosure: { findFirst: vi.fn().mockResolvedValue(cierre ? { scheduledFor: new Date("2026-12-01") } : null) },
+    accountClosure: { findFirst: vi.fn().mockResolvedValue(cierre ? { scheduledFor: new Date("2026-12-01"), business: { timezone: "America/Mexico_City" } } : null) },
     billingAuditEvent: { findUnique: vi.fn().mockResolvedValue(auditoria) },
     subscription: { findFirst: tx.subscription.findFirst },
     $transaction: vi.fn(async (fn: (t: typeof tx) => unknown) => fn(tx)),

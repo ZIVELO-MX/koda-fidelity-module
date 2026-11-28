@@ -40,7 +40,7 @@ export class CardChangeConfirmationError extends ConflictError {
 }
 
 export class AccountReadOnlyError extends Error {
-  constructor(readonly scheduledFor: Date) {
+  constructor(readonly scheduledFor: Date, readonly timezone: string) {
     super("La cuenta está en periodo de cierre y sólo permite consultas, exportación o cancelación")
     this.name = "AccountReadOnlyError"
   }
@@ -166,7 +166,7 @@ export const requireBusinessPrincipal = getBusinessFromSession
 export async function requireWritableBusinessPrincipal() {
   const principal = await getBusinessFromSession()
   const closure = await prisma.accountClosure.findFirst({ where: { businessId: principal.business.id, status: { in: ["SCHEDULED", "PROCESSING", "FAILED"] } }, orderBy: { scheduledFor: "asc" } })
-  if (closure) throw new AccountReadOnlyError(closure.scheduledFor)
+  if (closure) throw new AccountReadOnlyError(closure.scheduledFor, principal.business.timezone)
   return principal
 }
 
@@ -237,7 +237,17 @@ export function handleApiError(error: unknown, requestId: string = randomUUID())
     return NextResponse.json({ error: error.message, code: "KF-ACCOUNT-ACTIVATION", action: "Continúa en el onboarding; soporte activará tu plan.", requestId, retryable: false, redirectTo: "/onboarding" }, { status: 403, headers: { "x-request-id": requestId } })
   }
   if (error instanceof AccountReadOnlyError) {
-    return NextResponse.json({ error: error.message, code: "KF-ACCOUNT-READONLY", action: `La cuenta se eliminará el ${error.scheduledFor.toISOString()}. Cancela el cierre para volver a editar.`, requestId, retryable: false }, { status: 423, headers: { "x-request-id": requestId } })
+    let action = "Cancela el cierre para volver a editar."
+    try {
+      const scheduledDate = new Intl.DateTimeFormat("es-MX", {
+        dateStyle: "long",
+        timeZone: error.timezone,
+      }).format(error.scheduledFor)
+      action = `La cuenta se eliminará el ${scheduledDate}. ${action}`
+    } catch (formatError) {
+      if (!(formatError instanceof RangeError)) throw formatError
+    }
+    return NextResponse.json({ error: error.message, code: "KF-ACCOUNT-READONLY", action, requestId, retryable: false }, { status: 423, headers: { "x-request-id": requestId } })
   }
   if (error instanceof UnauthorizedError) {
     return NextResponse.json({ error: error.message, code: "KF-AUTH-001", action: "Inicia sesión de nuevo.", requestId, retryable: false }, { status: 401, headers: { "x-request-id": requestId } })
