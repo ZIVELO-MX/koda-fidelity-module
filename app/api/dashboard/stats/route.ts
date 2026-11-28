@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getBusinessFromSession, handleApiError, requestIdFrom, withRequestId } from "@/lib/api-utils"
 import { statsQuerySchema } from "@/lib/dashboard-contracts"
-import { inicioDelDia } from "@/lib/dia-local"
+import { desplazarFechaLocal, fechaLocal, inicioDelDia } from "@/lib/dia-local"
 
 /**
  * @openapi
@@ -30,8 +30,8 @@ export async function GET(request: NextRequest) {
     // Los días son del negocio: el periodo empieza a medianoche local de hace
     // `days - 1` días y cuenta hoy. Antes eran 24 h corridas desde ahora y la
     // serie se armaba con fechas UTC, así que podía faltar el día de hoy.
-    const periodStart = inicioDelDia(new Date(periodEnd.getTime() - (days - 1) * 86400000), business.timezone)
-    const fechaLocal = new Intl.DateTimeFormat("en-CA", { timeZone: business.timezone })
+    const periodStart = inicioDelDia(periodEnd, business.timezone, days - 1)
+    const firstDate = desplazarFechaLocal(fechaLocal(periodEnd, business.timezone), 1 - days)
     const [totals, daily, weekly, topCards] = await Promise.all([
       prisma.$queryRaw<Array<{ activeCards: bigint; activeCustomers: bigint; stamps: bigint; redemptions: bigint; completedCycles: bigint }>>`SELECT (SELECT count(*) FROM "LoyaltyCard" c WHERE c."businessId" = ${business.id} AND c."isActive" = true) AS "activeCards", (SELECT count(*) FROM "Customer" cu JOIN "LoyaltyCard" c ON c.id = cu."cardId" WHERE c."businessId" = ${business.id} AND cu."isActive" = true) AS "activeCustomers", count(*) FILTER (WHERE l.type = 'stamp') AS stamps, count(*) FILTER (WHERE l.type = 'redeem') AS redemptions, count(*) FILTER (WHERE l.type = 'completion') AS "completedCycles" FROM "StampLog" l WHERE l."businessId" = ${business.id} AND l."createdAt" >= ${periodStart} AND l."createdAt" < ${periodEnd}`,
       // `createdAt` es TIMESTAMP sin zona y guarda UTC. Un solo `AT TIME ZONE`
@@ -45,8 +45,7 @@ export async function GET(request: NextRequest) {
     const completedCycles = Number(total.completedCycles)
     const dailyByDate = new Map(daily.map((row) => [row.date, row]))
     const dailySeries = Array.from({ length: days }, (_, index) => {
-      // A mediodía, para que un cambio de horario no repita ni salte un día.
-      const date = fechaLocal.format(new Date(periodStart.getTime() + index * 86400000 + 12 * 3600000))
+      const date = desplazarFechaLocal(firstDate, index)
       const row = dailyByDate.get(date)
       return { date, stamps: Number(row?.stamps ?? 0), redemptions: Number(row?.redemptions ?? 0) }
     })

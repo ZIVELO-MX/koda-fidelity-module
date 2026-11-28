@@ -1,36 +1,42 @@
-// Los negocios de Fidelity son de México. Si el día se cortara en UTC, las
-// cifras de hoy se reiniciarían a las seis de la tarde, en plena hora pico.
-//
-// ponytail: la zona es fija. Cuando Business tenga la suya, se recibe como
-// argumento, que ya está previsto en la firma.
 const ZONA = "America/Mexico_City"
+const MILISEGUNDOS_POR_DIA = 86_400_000
 
-/** Fecha local de `referencia`, como `AAAA-MM-DD`. */
-export function fechaLocal(referencia: Date = new Date(), zona: string = ZONA): string {
+function calendario(zona: string) {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: zona,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).format(referencia)
+  })
 }
 
-/** Instante en el que empezó el día local de `referencia`. */
-export function inicioDelDia(referencia: Date = new Date(), zona: string = ZONA): Date {
-  const fecha = fechaLocal(referencia, zona)
-
-  const desplazamiento =
-    new Intl.DateTimeFormat("en-US", { timeZone: zona, timeZoneName: "longOffset" })
-      .format(referencia)
-      .match(/GMT([+-]\d{2}:\d{2})/)?.[1] ?? "+00:00"
-
-  return new Date(`${fecha}T00:00:00${desplazamiento}`)
+/** Fecha local de referencia, como AAAA-MM-DD. */
+export function fechaLocal(referencia: Date = new Date(), zona: string = ZONA): string {
+  return calendario(zona).format(referencia)
 }
 
-/** Instante en el que empezó el día local anterior al de `referencia`. */
+/** Suma días civiles a una fecha de calendario AAAA-MM-DD. */
+export function desplazarFechaLocal(fecha: string, dias: number): string {
+  return new Date(Date.parse(fecha) + dias * MILISEGUNDOS_POR_DIA).toISOString().slice(0, 10)
+}
+
+export function inicioDelDia(referencia: Date = new Date(), zona: string = ZONA, diasAntes = 0): Date {
+  const formato = calendario(zona)
+  const fecha = desplazarFechaLocal(formato.format(referencia), -diasAntes)
+  const centro = Date.parse(fecha)
+
+  // Buscar el primer instante de la fecha local da el desplazamiento de
+  // medianoche, incluso cuando la referencia ya tiene otro horario.
+  let anterior = centro - MILISEGUNDOS_POR_DIA
+  let posterior = centro + MILISEGUNDOS_POR_DIA
+  while (posterior - anterior > 1) {
+    const medio = Math.floor((anterior + posterior) / 2)
+    if (formato.format(medio) < fecha) anterior = medio
+    else posterior = medio
+  }
+  return new Date(posterior)
+}
+
 export function inicioDelDiaAnterior(referencia: Date = new Date(), zona: string = ZONA): Date {
-  // Se retrocede medio día desde la medianoche local para caer a mediodía de
-  // ayer. Así un cambio de horario no deja el cálculo en el día equivocado.
-  const hoy = inicioDelDia(referencia, zona)
-  return inicioDelDia(new Date(hoy.getTime() - 12 * 60 * 60 * 1000), zona)
+  return inicioDelDia(referencia, zona, 1)
 }

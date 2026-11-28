@@ -20,6 +20,12 @@ describe("inicioDelDia", () => {
     expect(inicioDelDia(inicio).toISOString()).toBe(inicio.toISOString())
   })
 
+  it("usa el desplazamiento de medianoche en un día con cambio de horario", () => {
+    const referencia = new Date("2026-03-08T14:00:00Z")
+    expect(inicioDelDia(referencia, "America/Tijuana").toISOString()).toBe("2026-03-08T08:00:00.000Z")
+    expect(inicioDelDiaAnterior(referencia, "America/Tijuana").toISOString()).toBe("2026-03-07T08:00:00.000Z")
+  })
+
   it("respeta otra zona cuando se le pasa", () => {
     expect(inicioDelDia(new Date("2026-09-05T04:00:00Z"), "UTC").toISOString()).toBe(
       "2026-09-05T00:00:00.000Z",

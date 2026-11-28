@@ -25,6 +25,14 @@ describe("GET /api/dashboard/stats en la zona del negocio", () => {
     expect(cuerpo.period.from).toBe("2026-09-29T06:00:00.000Z")
   })
 
+  it("cuenta los días de calendario aunque el día anterior haya durado 23 horas", async () => {
+    vi.setSystemTime(new Date("2026-03-09T07:30:00Z"))
+    getBusinessFromSession.mockResolvedValue({ business: { id: "biz1", timezone: "America/Tijuana" } })
+    const body = await (await pedir(2)).json()
+    expect(body.daily.map((day: { date: string }) => day.date)).toEqual(["2026-03-08", "2026-03-09"])
+    expect(body.period.from).toBe("2026-03-08T08:00:00.000Z")
+  })
+
   // `createdAt` es TIMESTAMP sin zona: hay que declararlo UTC antes de convertir.
   it("convierte la hora guardada desde UTC antes de agrupar por día y semana", async () => {
     await pedir(7)
