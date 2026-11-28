@@ -1,7 +1,7 @@
+import { motivoNoDisponible } from "@/lib/alta-estados"
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { cuerpoJson, ForbiddenError, getBusinessFromSession, handleApiError, NotFoundError, requestIdFrom, requireActivatedBusiness, requireRole, requireWritableBusinessPrincipal, ValidationError, withRequestId } from "@/lib/api-utils"
-import { isExpired } from "@/lib/card-utils"
 import { getEntitlements, persistPrimaryCardPreference, resolveEffectiveEntitlements, syncExpiredEntitlements } from "@/lib/account-lifecycle"
 import { resolveTheme } from "@/lib/card-themes"
 import { validarCamposDeTarjeta } from "@/lib/campos-de-tarjeta"
@@ -23,7 +23,7 @@ import { validarCamposDeTarjeta } from "@/lib/campos-de-tarjeta"
  *         description: Card ID
  *     responses:
  *       200:
- *         description: Card details
+ *         description: Public card details or an availability response
  *         content:
  *           application/json:
  *             schema:
@@ -32,6 +32,11 @@ import { validarCamposDeTarjeta } from "@/lib/campos-de-tarjeta"
  *                 card:
  *                   type: object
  *                   properties:
+ *                     available:
+ *                       type: boolean
+ *                     reason:
+ *                       type: string
+ *                       enum: [vencida, no-disponible]
  *                     id:
  *                       type: string
  *                     name:
@@ -204,8 +209,7 @@ export async function GET(
         milestoneRewards: {
           orderBy: { stampNumber: "asc" },
         },
-        selectedTheme: { select: { id: true, code: true, plan: true } },
-        effectiveTheme: { select: { id: true, code: true, plan: true } },
+        effectiveTheme: { select: { code: true } },
       },
     })
 
@@ -216,8 +220,12 @@ export async function GET(
       throw new NotFoundError("Loyalty card not found")
     }
 
+    const reason = motivoNoDisponible(card)
+    if (reason) return withRequestId(NextResponse.json({ card: { available: false, reason } }), requestId)
+
     return withRequestId(NextResponse.json({
       card: {
+        available: true,
         id: card.id,
         name: card.name,
         description: card.description,
@@ -226,14 +234,9 @@ export async function GET(
         brandColor: card.brandColor,
         iconName: card.iconName,
         textColor: card.textColor,
-        isActive: card.isActive,
-        status: card.status,
-        selectedTheme: card.selectedTheme,
-        effectiveTheme: card.effectiveTheme,
-        themeLocked: Boolean(card.selectedTheme && card.selectedTheme.plan === "PRO" && card.selectedThemeId !== card.effectiveThemeId),
+        effectiveTheme: card.effectiveTheme ? { code: card.effectiveTheme.code } : null,
         stampIconName: card.stampIconName,
         expiresAt: card.expiresAt,
-        expired: isExpired(card.expiresAt),
         businessName: card.business.name,
         businessBrandColor: card.business.brandColor,
         businessLogoUrl: card.business.logoUrl,

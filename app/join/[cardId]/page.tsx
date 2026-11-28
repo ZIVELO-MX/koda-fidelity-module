@@ -9,7 +9,6 @@ import { LoyaltyCardPreview } from "@/components/loyalty-card-preview"
 import { RedesNegocio } from "@/components/join/redes-negocio"
 import { Check, Loader2 } from "lucide-react"
 import { mensajeDeAlta, type MotivoAlta } from "@/lib/alta-estados"
-import { cn } from "@/lib/utils"
 import { createBrowserSupabase } from "@/lib/supabase-browser"
 import { formatExpiryDate } from "@/lib/card-utils"
 
@@ -27,13 +26,10 @@ interface JoinCustomer {
     textColor?: "AUTO" | "DARK" | "LIGHT"
     iconName: string | null
     stampIconName?: string | null
-    isActive: boolean
-    status?: string | null
     /** El tema que de verdad se pinta. Null cuando un acabado Pro no tiene
      *  plan que lo sostenga: entonces manda el color del negocio. */
     effectiveTheme?: { code: string } | null
     expiresAt: string | null
-    expired: boolean
     business: {
       name: string
       brandColor: string
@@ -66,7 +62,6 @@ export default function JoinCardPage() {
     businessBrandColor: string
     businessLogoUrl: string | null
     businessIconName: string | null
-    status?: string | null
     /** El tema que de verdad se pinta. Null cuando un acabado Pro no tiene plan
      *  que lo sostenga: entonces manda el color del negocio. */
     effectiveTheme?: { code: string } | null
@@ -78,20 +73,19 @@ export default function JoinCardPage() {
   const [emailError, setEmailError] = useState(false)
   const [nameError, setNameError] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
-  const checkedSession = useRef(false)
   const formRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const init = async () => {
-      const cardRes = await fetch(`/api/cards/${cardId}`)
-      if (!cardRes.ok) {
-        setMotivo("no-encontrada")
+      const cardRes = await fetch(`/api/cards/${cardId}`).catch(() => null)
+      if (!cardRes?.ok) {
+        setMotivo(cardRes?.status === 404 ? "no-encontrada" : "sin-conexion")
         setStep("error")
         return
       }
       const cardJson = await cardRes.json()
-      if (cardJson.card.expired) {
-        setMotivo("vencida")
+      if (!cardJson.card.available) {
+        setMotivo(cardJson.card.reason)
         setStep("error")
         return
       }
@@ -100,17 +94,6 @@ export default function JoinCardPage() {
       const supabase = createBrowserSupabase()
       const { data: { session } } = await supabase.auth.getSession()
 
-      // Una tarjeta que estuvo activa y se desactivó por cambio de plan no es
-      // lo mismo que una cerrada a nuevas altas: sus códigos ya andan impresos,
-      // y quien escanea merece saber que sus sellos siguen ahí.
-      if (!cardJson.card.isActive) {
-        if (!session?.user?.email) {
-          setMotivo(cardJson.card.status === "LOCKED_BY_PLAN" ? "desactivada" : "cerrada")
-          setStep("error")
-          return
-        }
-      }
-
       if (session?.user?.email) {
         const email = session.user.email
         const name = session.user.user_metadata?.name || email.split("@")[0]
@@ -118,7 +101,6 @@ export default function JoinCardPage() {
           setName(name)
           setEmail(email)
           setStep("verify-email")
-          checkedSession.current = true
           return
         }
 
@@ -130,23 +112,7 @@ export default function JoinCardPage() {
           if (data.customers?.length > 0) {
             setCustomer(data.customers[0])
             setStep("ready")
-            checkedSession.current = true
             return
-          }
-        }
-
-        const pendingId = sessionStorage.getItem(`pending-${cardId}`)
-        if (pendingId) {
-          const custRes2 = await fetch(`/api/join?id=${encodeURIComponent(pendingId)}`)
-          if (custRes2.ok) {
-            const data = await custRes2.json()
-            if (data.customer) {
-              setCustomer(data.customer)
-              setStep("ready")
-              checkedSession.current = true
-              sessionStorage.removeItem(`pending-${cardId}`)
-              return
-            }
           }
         }
 
@@ -156,30 +122,25 @@ export default function JoinCardPage() {
           body: JSON.stringify({ name, email, cardId }),
         })
         if (createRes.ok) {
-          const data = await createRes.json()
           const custRes3 = await fetch(`/api/join?email=${encodeURIComponent(email)}&cardId=${encodeURIComponent(cardId)}`)
           if (custRes3.ok) {
             const data3 = await custRes3.json()
             if (data3.customers?.length > 0) {
               setCustomer(data3.customers[0])
               setStep("ready")
-              checkedSession.current = true
               return
             }
           }
         }
       }
 
-      if (!cardJson.card.isActive) {
-        setMotivo("cerrada")
-        setStep("error")
-      } else {
-        setStep("form")
-      }
-      checkedSession.current = true
+      setStep("form")
     }
 
-    init()
+    init().catch(() => {
+      setMotivo("sin-conexion")
+      setStep("error")
+    })
   }, [cardId])
 
   const scrollToForm = useCallback(() => {
@@ -253,18 +214,10 @@ export default function JoinCardPage() {
     const mensaje = mensajeDeAlta(motivo)
     return (
       <div className="min-h-screen bg-background forced-light flex flex-col items-center justify-center p-4">
-        <div
-          className={cn(
-            "w-full max-w-sm space-y-4 text-center",
-            // Ámbar, no rojo: la tarjeta no está rota y quien la escanea no
-            // tiene nada que ver con el plan del negocio.
-            mensaje.tono === "aviso" && "rounded-2xl border border-amber-500/40 bg-amber-500/10 p-6",
-          )}
-        >
-          <h1 className="text-2xl font-bold text-foreground">{mensaje.titulo}</h1>
+        <div className="w-full max-w-sm space-y-4 text-center">          <h1 className="text-2xl font-bold text-foreground">{mensaje.titulo}</h1>
           <p className="text-muted-foreground">{mensaje.detalle}</p>
           <Button asChild variant="outline" className="min-h-11">
-            <Link href={mensaje.accion.href}>{mensaje.accion.texto}</Link>
+            <Link href={mensaje.accion.href || `/join/${cardId}`} onClick={motivo === "sin-conexion" ? event => { event.preventDefault(); window.location.reload() } : undefined}>{mensaje.accion.texto}</Link>
           </Button>
         </div>
       </div>

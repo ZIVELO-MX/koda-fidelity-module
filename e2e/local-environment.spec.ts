@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto"
+import { PrismaClient } from "@prisma/client"
 import { expect, test } from "@playwright/test"
 import sharp from "sharp"
 
@@ -134,4 +135,37 @@ test("Auth entrega el correo de recuperación en Mailpit local", async ({ page, 
     const body = await response.json()
     return String(body.HTML).includes("http://localhost:3000/auth/confirm")
   }).toBe(true)
+})
+
+test("el alta pública oculta los motivos comerciales y el formulario de tarjetas no disponibles", async ({ page, request }) => {
+  const prisma = new PrismaClient()
+  const cardIds: string[] = []
+  const cases = [
+    { status: "ARCHIVED", isActive: false, expiresAt: null, title: "Esta tarjeta no está disponible" },
+    { status: "LOCKED_BY_PLAN", isActive: false, expiresAt: null, title: "Esta tarjeta no está disponible" },
+    { status: "ACTIVE", isActive: true, expiresAt: new Date("2020-01-01"), title: "Esta tarjeta no está disponible por ahora" },
+  ] as const
+  try {
+    for (const { title, ...state } of cases) {
+      const card = await prisma.loyaltyCard.create({ data: {
+        ...state, businessId: "business-local-fidelity", name: "Prueba de disponibilidad", reward: "Premio de prueba",
+      } })
+      cardIds.push(card.id)
+      await page.goto(`/join/${card.id}`)
+      await expect(page.getByRole("heading", { name: title, exact: true })).toBeVisible()
+      await expect(page.getByLabel("Tu Nombre")).toHaveCount(0)
+      const data = await request.get(`/api/cards/${card.id}`)
+      expect(data.ok()).toBeTruthy()
+      expect(await data.json()).toEqual({ card: { available: false, reason: state.expiresAt ? "vencida" : "no-disponible" } })
+      const og = await request.get(`/join/${card.id}/opengraph-image`)
+      expect(og.ok()).toBeTruthy()
+      expect(og.headers()["content-type"]).toContain("image/png")
+    }
+  } finally {
+    try {
+      await prisma.loyaltyCard.deleteMany({ where: { id: { in: cardIds } } })
+    } finally {
+      await prisma.$disconnect()
+    }
+  }
 })

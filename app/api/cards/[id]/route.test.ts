@@ -23,7 +23,7 @@ vi.mock("@/lib/account-lifecycle", async () => ({
 }))
 
 import { ValidationError } from "@/lib/api-utils"
-import { PUT } from "./route"
+import { GET, PUT } from "./route"
 
 const principal = {
   business: { id: "business-owned" },
@@ -184,5 +184,37 @@ describe("PUT /api/cards/{id} reordena sorpresas", () => {
     expect(response.status).toBe(200)
     expect(llamadas).toEqual(["liberar", "asignar 5", "asignar 3"])
     expect(milestoneReward.updateMany).toHaveBeenNthCalledWith(1, { where: { cardId: "card-owned" }, data: { stampNumber: { multiply: -1 } } })
+  })
+})
+
+describe("GET /api/cards/{id} public enrollment", () => {
+  const context = { params: Promise.resolve({ id: "card-owned" }) }
+
+  it.each([
+    ["ARCHIVED", false, null, "no-disponible"],
+    ["LOCKED_BY_PLAN", false, null, "no-disponible"],
+    ["ACTIVE", true, new Date("2020-01-01"), "vencida"],
+  ] as const)("omits card and plan metadata for %s (%s)", async (status, isActive, expiresAt, reason) => {
+    findCard.mockResolvedValue({ ...existingCard, status, isActive, expiresAt, selectedTheme: { plan: "PRO" } })
+    const response = await GET(request({}), context)
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ card: { available: false, reason } })
+  })
+
+  it("shows the effective public theme without its plan or the selected theme", async () => {
+    findCard.mockResolvedValue({
+      ...existingCard,
+      expiresAt: null,
+      business: { name: "Club" },
+      selectedTheme: { code: "pro-theme", plan: "PRO" },
+      effectiveTheme: { code: "effective", plan: "PRO" },
+    })
+    const response = await GET(request({}), context)
+    const { card } = await response.json()
+    expect(card).toMatchObject({ available: true, effectiveTheme: { code: "effective" } })
+    expect(card.effectiveTheme).toEqual({ code: "effective" })
+    expect(card).not.toHaveProperty("status")
+    expect(card).not.toHaveProperty("selectedTheme")
+    expect(card).not.toHaveProperty("themeLocked")
   })
 })

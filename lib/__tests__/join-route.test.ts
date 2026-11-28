@@ -97,7 +97,16 @@ describe("POST /api/join", () => {
     const res = await POST(makeRequest({ name: "Ana", email: "a@b.com", cardId: "card1" }))
     expect(res.status).toBe(400)
     const body = await res.json()
-    expect(body.error).toContain("expired")
+    expect(body.error).toBe("Esta tarjeta no está disponible por ahora")
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled()
+  })
+
+  it.each(["ARCHIVED", "LOCKED_BY_PLAN"])("rechaza el alta en %s sin modificar membresías", async (status) => {
+    mockPrisma.loyaltyCard.findUnique.mockResolvedValue({ ...validCard, status, isActive: false })
+    const res = await POST(makeRequest({ name: "Ana", email: "a@b.com", cardId: "card1" }))
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toBe("Esta tarjeta no está disponible")
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled()
   })
 
   it("returns existing:true and does NOT call create when customer already joined", async () => {
