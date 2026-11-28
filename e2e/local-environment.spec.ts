@@ -4,6 +4,8 @@ import { expect, test } from "@playwright/test"
 import sharp from "sharp"
 
 test.skip(process.env.KODA_LOCAL_ENVIRONMENT !== "true", "Ejecutar con pnpm local:test")
+// Permite simular fallos de red con page.route, sin que el worker los intercepte.
+test.use({ serviceWorkers: "block" })
 
 test("el cliente se inscribe y el operador sella y canjea en Supabase local", async ({ page, browser, request }) => {
   const preview = await request.get("/opengraph-image")
@@ -36,6 +38,20 @@ test("el cliente se inscribe y el operador sella y canjea en Supabase local", as
   })
   expect(inbox.ok()).toBeTruthy()
   expect((await inbox.json()).messages).toEqual([])
+
+  const joinApi = /\/api\/join(?:\?|$)/
+  let writesDuringLookupFailure = 0
+  await page.route(joinApi, route => {
+    if (route.request().method() === "POST") writesDuringLookupFailure += 1
+    return route.fulfill({ status: 503, json: { error: "Service unavailable" } })
+  })
+  await page.goto(`/join/${cardId}`)
+  await expect(page.getByRole("heading", { name: "No pudimos cargar la tarjeta" })).toBeVisible()
+  await expect(page.getByRole("link", { name: "Reintentar" })).toBeVisible()
+  expect(writesDuringLookupFailure).toBe(0)
+  await page.unroute(joinApi)
+  await page.getByRole("link", { name: "Reintentar" }).click()
+  await expect(page.getByRole("heading", { name: "No pudimos cargar la tarjeta" })).toBeHidden()
 
   const stamp = { headers: { "Idempotency-Key": randomUUID() }, data: { customerId: customer.id, type: "stamp" } }
   expect((await request.post("/api/stamps", stamp)).status()).toBe(401)

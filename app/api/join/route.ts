@@ -229,13 +229,13 @@ export async function POST(request: NextRequest) {
     const { name, email, cardId } = body
 
     if (!name || typeof name !== "string" || !name.trim()) {
-      throw new ValidationError("Name is required")
+      throw new ValidationError("Escribe tu nombre")
     }
     if (!email || typeof email !== "string" || !email.includes("@")) {
-      throw new ValidationError("Invalid email")
+      throw new ValidationError("Escribe un correo electrónico válido")
     }
     if (!cardId || typeof cardId !== "string") {
-      throw new ValidationError("Invalid card ID")
+      throw new ValidationError("Identificador de tarjeta inválido")
     }
 
     const { data: { user }, error: authError } = await (await createClient()).auth.getUser()
@@ -248,11 +248,11 @@ export async function POST(request: NextRequest) {
 
     const initialCard = await prisma.loyaltyCard.findUnique({ where: { id: cardId } })
     if (!initialCard) {
-      throw new NotFoundError("Loyalty card not found")
+      throw new NotFoundError("Tarjeta no encontrada")
     }
     await syncExpiredEntitlements(prisma, initialCard.businessId)
     const card = await prisma.loyaltyCard.findUnique({ where: { id: cardId } })
-    if (!card) throw new NotFoundError("Loyalty card not found")
+    if (!card) throw new NotFoundError("Tarjeta no encontrada")
     await assertBusinessWritable(prisma, card.businessId)
 
     if (card.status === "DRAFT") throw new NotFoundError("Tarjeta no encontrada")
@@ -340,7 +340,7 @@ export async function GET(request: NextRequest) {
       }), requestId)
     }
 
-    throw new ValidationError("Provide either ?id= or ?email=")
+    throw new ValidationError("Indica el identificador o el correo para la consulta")
   } catch (error) {
     return withRequestId(handleApiError(error, requestId), requestId)
   }

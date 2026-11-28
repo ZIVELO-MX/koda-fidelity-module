@@ -1,7 +1,7 @@
 import { isExpired } from "@/lib/card-utils"
 
 export type MotivoNoDisponible = "vencida" | "no-disponible"
-export type MotivoAlta = MotivoNoDisponible | "no-encontrada" | "sin-conexion"
+export type MotivoAlta = MotivoNoDisponible | "no-encontrada" | "sin-conexion" | "sesion-vencida"
 
 export function motivoNoDisponible(card: {
   isActive: boolean
@@ -30,6 +30,11 @@ const MENSAJES = {
     titulo: "Esta tarjeta no está disponible",
     detalle: CONSERVACION,
     accion: MIS_TARJETAS,
+  },
+  "sesion-vencida": {
+    titulo: "Vuelve a iniciar sesión",
+    detalle: "Necesitamos verificar tu sesión para mostrarte esta tarjeta.",
+    accion: { texto: "Iniciar sesión", href: "/login" },
   },
   "sin-conexion": {
     titulo: "No pudimos cargar la tarjeta",
