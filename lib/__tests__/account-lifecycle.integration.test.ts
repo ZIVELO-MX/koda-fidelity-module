@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vites
 import { randomUUID } from "node:crypto"
 import { prisma } from "@/lib/prisma"
 import { ConflictError, NotFoundError, ValidationError } from "@/lib/api-utils"
-import { activateManualSubscription, configurePrimaryCard, createCustomerProfile, deactivateManualSubscription, getEntitlements, scheduleClosure, syncExpiredEntitlements, syncExpiredEntitlementsBatch } from "../account-lifecycle"
+import { activateManualSubscription, cancelClosure, configurePrimaryCard, createCustomerProfile, deactivateManualSubscription, executeDueClosures, getEntitlements, scheduleClosure, syncExpiredEntitlements, syncExpiredEntitlementsBatch } from "../account-lifecycle"
 import { ensureCategories, getOnboarding, saveDraft } from "../onboarding-service"
 
 const integration = describe.skipIf(process.env.CI !== "true")
@@ -91,6 +91,42 @@ integration("account lifecycle PostgreSQL integration", () => {
     expect(closure.scheduledFor.toISOString()).toBe("2026-03-02T00:00:00.000Z")
     expect(card).toHaveLength(2)
   }, 15_000)
+
+  it("conserva la fecha inicial al repetir la activación y no concede otra tras cambiar a Lite", async () => {
+    const periodStart = new Date("2026-01-15T12:00:00Z")
+    const first = await activateManualSubscription(prisma, { businessId, plan: "LITE", periodStart })
+    const repeat = await activateManualSubscription(prisma, {
+      businessId, plan: "LITE", periodStart: new Date("2026-03-01T12:00:00Z"),
+    })
+    expect(repeat.proAccessGranted).toBe(true)
+    expect(repeat.proTrialEndsAt).toEqual(first.proTrialEndsAt)
+
+    await activateManualSubscription(prisma, { businessId, plan: "LITE", action: "set_plan", idempotencyKey: randomUUID() })
+    const afterChange = await activateManualSubscription(prisma, { businessId, plan: "LITE", idempotencyKey: randomUUID() })
+    expect(afterChange).toMatchObject({ proAccessGranted: false, proTrialEndsAt: null })
+  })
+
+  it("programa una sola vez, aísla el cierre por negocio y permite cancelar dentro de la gracia", async () => {
+    const observer = await prisma.business.create({
+      data: { name: "Otro negocio", email: `closure-${randomUUID()}@test.invalid` },
+    })
+    extraBusinessIds.push(observer.id)
+    const start = new Date("2026-01-01T00:00:00Z")
+    const due = new Date("2026-01-15T00:00:00Z")
+    const otherClosure = await prisma.accountClosure.create({
+      data: { businessId: observer.id, scheduledFor: due },
+    })
+
+    const pending = await scheduleClosure(prisma, businessId, start)
+    const repeated = await scheduleClosure(prisma, businessId, due)
+    expect(repeated.id).toBe(pending.id)
+    expect(repeated.scheduledFor).toEqual(new Date("2026-01-31T00:00:00Z"))
+
+    expect(await executeDueClosures(prisma, due, businessId)).toBe(0)
+    expect((await prisma.accountClosure.findUniqueOrThrow({ where: { id: otherClosure.id } })).status).toBe("SCHEDULED")
+    await expect(cancelClosure(prisma, businessId, due)).resolves.toEqual({ count: 1 })
+    expect((await prisma.accountClosure.findUniqueOrThrow({ where: { id: pending.id } })).status).toBe("CANCELED")
+  })
 
   it("preserves the current billing period when applying a plan change", async () => {
     const periodStart = new Date("2026-10-01T00:00:00.000Z")

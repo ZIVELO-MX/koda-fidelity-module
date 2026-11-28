@@ -63,13 +63,7 @@ export async function activateManualSubscription(db: PrismaClient, input: Manual
     if (previous.businessId !== input.businessId) throw new ConflictError("La clave de operación ya pertenece a otro negocio")
     return db.subscription.findFirstOrThrow({ where: { businessId: input.businessId, status: "ACTIVE" }, orderBy: { createdAt: "desc" } })
   }
-  const proAccessGranted = plan === "PRO" ? true : (input.proAccessGranted ?? action === "activate")
-  const proTrialEndsAt = plan === "LITE" && proAccessGranted
-    ? input.proTrialEndsAt ?? addCalendarMonths(periodStart, 1)
-    : null
-  if (proTrialEndsAt && proTrialEndsAt <= periodStart) throw new ValidationError("El trial Pro debe terminar después de iniciar")
-  if (input.proTrialEndsAt && !proAccessGranted) throw new ValidationError("El trial Pro requiere acceso Pro")
-  return db.$transaction(async (tx) => {
+  return withSerializableRetry(() => db.$transaction(async (tx) => {
     const previousSubscription = await tx.subscription.findFirst({
       where: { businessId: input.businessId, status: "ACTIVE" },
       orderBy: { createdAt: "desc" },
@@ -86,6 +80,17 @@ export async function activateManualSubscription(db: PrismaClient, input: Manual
       orderBy: { createdAt: "desc" },
       select: { liteCardId: true },
     })
+    const firstActivation = action === "activate" && !previousSubscription && !lastSubscription
+    const existingTrial = action === "activate" && previousSubscription?.plan === "LITE" &&
+      previousSubscription.proAccessGranted ? previousSubscription.proTrialEndsAt : null
+    const proAccessGranted = plan === "PRO" || (input.proAccessGranted ?? (firstActivation || Boolean(existingTrial)))
+    const proTrialEndsAt = plan === "LITE" && proAccessGranted
+      ? input.proTrialEndsAt ?? existingTrial ?? addCalendarMonths(periodStart, 1)
+      : null
+    if (proTrialEndsAt && proTrialEndsAt <= periodStart && proTrialEndsAt !== existingTrial) {
+      throw new ValidationError("El trial Pro debe terminar después de iniciar")
+    }
+    if (input.proTrialEndsAt && !proAccessGranted) throw new ValidationError("El trial Pro requiere acceso Pro")
     const preferredCardId = previousSubscription
       ? previousSubscription.liteCardId
       : lastSubscription?.liteCardId ?? onboardingProgress?.firstCardId ?? null
@@ -102,7 +107,7 @@ export async function activateManualSubscription(db: PrismaClient, input: Manual
     await tx.onboardingProgress.updateMany({ where: { businessId: input.businessId }, data: { status: "ACTIVE", step: "PAYWALL" } })
     await tx.billingAuditEvent.create({ data: { businessId: input.businessId, action, operator: input.operator ?? "internal", idempotencyKey, externalReference: input.externalReference, metadata: { plan, previousPlan, effectivePlan: effective.plan, billingInterval, amountMinor: input.amountMinor ?? 0, proTrialEndsAt: proTrialEndsAt?.toISOString() ?? null, summary: input.summary?.trim() || null } } })
     return updatedSubscription
-  }, { timeout: 30_000 })
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 30_000 }))
 }
 
 export async function deactivateManualSubscription(db: PrismaClient, input: {
@@ -389,11 +394,14 @@ export async function createCustomerProfile(db: PrismaClient, input: { authUserI
 }
 
 export async function scheduleClosure(db: PrismaClient, businessId: string, now = new Date()) {
-  const active = await db.accountClosure.findFirst({ where: { businessId, status: { in: ["PROCESSING", "FAILED"] } } })
-  if (active) throw new ConflictError("El cierre ya está en proceso y no puede reprogramarse")
-  const scheduledFor = addGraceDays(now, 30)
-  await db.accountClosure.updateMany({ where: { businessId, status: "SCHEDULED" }, data: { status: "CANCELED", canceledAt: now } })
-  return db.accountClosure.create({ data: { businessId, scheduledFor } })
+  return withSerializableRetry(() => db.$transaction(async (tx) => {
+    const active = await tx.accountClosure.findFirst({
+      where: { businessId, status: { in: ["SCHEDULED", "PROCESSING", "FAILED"] } },
+    })
+    if (active?.status === "SCHEDULED") return active
+    if (active) throw new ConflictError("El cierre ya está en proceso y no puede reprogramarse")
+    return tx.accountClosure.create({ data: { businessId, scheduledFor: addGraceDays(now, 30) } })
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }))
 }
 
 export async function cancelClosure(db: PrismaClient, businessId: string, now = new Date()) {
@@ -524,14 +532,21 @@ async function runCleanupTask(db: PrismaClient, task: { id: string; kind: "BUSIN
   }
 }
 
-export async function executeDueClosures(db: PrismaClient, now = new Date()) {
+export async function executeDueClosures(db: PrismaClient, now = new Date(), businessId?: string) {
+  const eligible: Prisma.AccountClosureWhereInput = {
+    businessId,
+    OR: [
+      { status: "SCHEDULED", scheduledFor: { lte: now } },
+      { status: "FAILED" },
+      { status: "PROCESSING", updatedAt: { lt: new Date(now.getTime() - 5 * 60 * 1000) } },
+    ],
+  }
   const candidates = await db.accountClosure.findMany({
-    where: { OR: [{ status: "SCHEDULED", scheduledFor: { lte: now } }, { status: "FAILED" }, { status: "PROCESSING", updatedAt: { lt: new Date(now.getTime() - 5 * 60 * 1000) } }] },
-    select: { id: true, businessId: true, status: true }, take: 25,
+    where: eligible, select: { id: true, businessId: true, status: true }, take: 25,
   })
   let processed = 0
   for (const closure of candidates) {
-    const claim = await db.accountClosure.updateMany({ where: { id: closure.id, status: closure.status }, data: { status: "PROCESSING" } })
+    const claim = await db.accountClosure.updateMany({ where: { ...eligible, id: closure.id, status: closure.status }, data: { status: "PROCESSING" } })
     if (claim.count !== 1) continue
     // Un cierre que falla no puede cortar el lote ni quedarse en PROCESSING:
     // antes la excepción salía del `for` y los siguientes no se procesaban.
