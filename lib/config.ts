@@ -15,6 +15,10 @@ export function isAutomaticProExpiryEnabled() {
   return process.env.FID_AUTOMATIC_PRO_EXPIRY === "true"
 }
 
+export function isEmailConfirmationRequired() {
+  return process.env.FID_REQUIRE_EMAIL_CONFIRMATION === "true"
+}
+
 export const config = {
   get isInviteOnly() {
     return process.env.INVITE_ONLY === "true"

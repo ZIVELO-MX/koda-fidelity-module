@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { cuerpoJson, ForbiddenError, getBusinessFromSession, handleApiError, NotFoundError, requestIdFrom, requireActivatedBusiness, requireRole, requireWritableBusinessPrincipal, ValidationError, withRequestId } from "@/lib/api-utils"
 import { getEntitlements, persistPrimaryCardPreference, resolveEffectiveEntitlements, resolvePrimaryCard, syncExpiredEntitlements } from "@/lib/account-lifecycle"
+import { isEmailConfirmationRequired } from "@/lib/config"
 import { resolveTheme } from "@/lib/card-themes"
 import { validarCamposDeTarjeta } from "@/lib/campos-de-tarjeta"
 
@@ -36,6 +37,9 @@ import { validarCamposDeTarjeta } from "@/lib/campos-de-tarjeta"
  *                   properties:
  *                     available:
  *                       type: boolean
+ *                     requiresEmailConfirmation:
+ *                       type: boolean
+ *                       description: Email confirmation policy for available cards
  *                     reason:
  *                       type: string
  *                       enum: [vencida, no-disponible]
@@ -228,6 +232,7 @@ export async function GET(
     return withRequestId(NextResponse.json({
       card: {
         available: true,
+        requiresEmailConfirmation: isEmailConfirmationRequired(),
         id: card.id,
         name: card.name,
         description: card.description,

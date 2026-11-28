@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 
 const { mockPrisma, mockAuthUser } = vi.hoisted(() => {
   const mockAuthUser: { current: Record<string, unknown> | null } = { current: null }
@@ -52,12 +52,15 @@ function authenticate(email = "a@b.com", confirmed = true) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.stubEnv("FID_REQUIRE_EMAIL_CONFIRMATION", undefined)
   authenticate()
   mockPrisma.loyaltyCard.findUnique.mockResolvedValue(validCard)
   mockPrisma.customer.findMany.mockResolvedValue([])
   mockPrisma.customer.create.mockResolvedValue({ id: "cust1" })
   mockPrisma.$transaction.mockImplementation(async (callback: (tx: typeof mockPrisma) => unknown) => callback(mockPrisma))
 })
+
+afterEach(() => vi.unstubAllEnvs())
 
 describe("POST /api/join", () => {
   it("returns 400 when name is missing", async () => {
@@ -118,7 +121,15 @@ describe("POST /api/join", () => {
     expect(mockPrisma.customer.create).not.toHaveBeenCalled()
   })
 
-  it("requires a confirmed session email before reading or changing membership", async () => {
+  it("joins with a session email awaiting confirmation by default", async () => {
+    authenticate("a@b.com", false)
+    const res = await POST(makeRequest({ name: "Ana", email: "a@b.com", cardId: "card1" }))
+    expect(res.status).toBe(200)
+    expect(mockPrisma.customer.create).toHaveBeenCalled()
+  })
+
+  it("requires a confirmed session email when configured", async () => {
+    vi.stubEnv("FID_REQUIRE_EMAIL_CONFIRMATION", "true")
     authenticate("a@b.com", false)
     const res = await POST(makeRequest({ name: "Ana", email: "a@b.com", cardId: "card1" }))
     expect(res.status).toBe(401)
@@ -216,7 +227,15 @@ describe("altas simultáneas", () => {
 })
 
 describe("GET /api/join?email=", () => {
-  it("no consulta membresías con una sesión cuyo correo no está confirmado", async () => {
+  it("consulta las membresías propias sin confirmación por defecto", async () => {
+    authenticate("a@b.com", false)
+    const res = await GET({ url: "http://x/api/join?email=a%40b.com" } as never)
+    expect(res.status).toBe(200)
+    expect(mockPrisma.customer.findMany).toHaveBeenCalled()
+  })
+
+  it("exige confirmación para consultar membresías cuando está configurada", async () => {
+    vi.stubEnv("FID_REQUIRE_EMAIL_CONFIRMATION", "true")
     authenticate("a@b.com", false)
     const res = await GET({ url: "http://x/api/join?email=a%40b.com" } as never)
     expect(res.status).toBe(401)
