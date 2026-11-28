@@ -1,5 +1,6 @@
 "use client"
 
+import { submitCardChange } from "@/lib/submit-card-change"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -18,11 +19,18 @@ export function RestoreCardButton({ cardId, cardName }: RestoreCardButtonProps) 
   const handleRestore = async () => {
     setLoading(true)
     setError(null)
-    const res = await fetch(`/api/cards/${cardId}/restore`, { method: "POST" })
-    if (res.ok) {
-      router.refresh()
-    } else {
-      setError("No fue posible restaurar la tarjeta")
+    try {
+      const res = await submitCardChange(`/api/cards/${cardId}/restore`, { method: "POST" })
+      if (!res) return
+      if (res.ok) {
+        router.refresh()
+      } else {
+        const body = await res.json().catch(() => null)
+        setError(body?.error || "No fue posible restaurar la tarjeta")
+      }
+    } catch {
+      setError("No fue posible conectar con el servidor")
+    } finally {
       setLoading(false)
     }
   }

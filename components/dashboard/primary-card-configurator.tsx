@@ -1,5 +1,6 @@
 "use client"
 
+import { submitCardChange } from "@/lib/submit-card-change"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Check, Loader2, Settings2 } from "lucide-react"
@@ -51,7 +52,8 @@ export function PrimaryCardConfigurator({
     setSaving(true)
     setError(null)
     try {
-      const response = await fetch(`/api/cards/${selectedCardId}/primary`, { method: "POST" })
+      const response = await submitCardChange(`/api/cards/${selectedCardId}/primary`, { method: "POST" })
+      if (!response) return
       if (!response.ok) {
         const body = await response.json().catch(() => null) as { error?: string } | null
         setError(body?.error ?? "No fue posible configurar la tarjeta principal.")

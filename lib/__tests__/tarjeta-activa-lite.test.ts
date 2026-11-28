@@ -10,7 +10,7 @@ const { mockGetUser, mockUserFind, tx, mockCardFind, mockEntitlements } = vi.hoi
   mockCardFind: vi.fn(),
   mockEntitlements: vi.fn(),
   tx: {
-    loyaltyCard: { findFirst: vi.fn(), update: vi.fn(), delete: vi.fn(), count: vi.fn() },
+    loyaltyCard: { findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), delete: vi.fn(), count: vi.fn() },
     subscription: { update: vi.fn() },
   },
 }))
@@ -37,6 +37,8 @@ beforeEach(() => {
   mockGetUser.mockResolvedValue({ data: { user: { id: "auth1", email: "owner@biz.test" } }, error: null })
   mockUserFind.mockResolvedValue({ id: "u1", email: "owner@biz.test", name: "Owner", role: "admin", business: { id: "biz1" } })
   mockEntitlements.mockResolvedValue(lite)
+  tx.loyaltyCard.findFirst.mockReset()
+  tx.loyaltyCard.findUnique.mockImplementation(args => mockCardFind(args))
 })
 
 describe("archivar la activa con Lite", () => {

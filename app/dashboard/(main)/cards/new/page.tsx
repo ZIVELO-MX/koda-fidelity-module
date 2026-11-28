@@ -1,5 +1,6 @@
 "use client"
 
+import { submitCardChange } from "@/lib/submit-card-change"
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -130,7 +131,7 @@ export default function CreateCardPage() {
 
     setSaving(true)
     try {
-      const res = await fetch("/api/cards", {
+      const res = await submitCardChange("/api/cards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -150,6 +151,7 @@ export default function CreateCardPage() {
         }),
       })
 
+      if (!res) return
       const data = await res.json().catch(() => null)
 
       if (!res.ok) {

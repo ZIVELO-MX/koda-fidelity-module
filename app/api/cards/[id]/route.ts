@@ -1,8 +1,10 @@
+import { withSerializableRetry } from "@/lib/serializable-retry"
+import { primaryReplacement, requireCardChangeConfirmation } from "@/lib/card-change-confirmation"
 import { motivoNoDisponible } from "@/lib/alta-estados"
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { cuerpoJson, ForbiddenError, getBusinessFromSession, handleApiError, NotFoundError, requestIdFrom, requireActivatedBusiness, requireRole, requireWritableBusinessPrincipal, ValidationError, withRequestId } from "@/lib/api-utils"
-import { getEntitlements, persistPrimaryCardPreference, resolveEffectiveEntitlements, syncExpiredEntitlements } from "@/lib/account-lifecycle"
+import { getEntitlements, persistPrimaryCardPreference, resolveEffectiveEntitlements, resolvePrimaryCard, syncExpiredEntitlements } from "@/lib/account-lifecycle"
 import { resolveTheme } from "@/lib/card-themes"
 import { validarCamposDeTarjeta } from "@/lib/campos-de-tarjeta"
 
@@ -264,73 +266,91 @@ export async function PUT(
     requireRole(user, "admin")
     const { id } = await params
 
-    const existing = await prisma.loyaltyCard.findUnique({
-      where: { id },
-      include: { milestoneRewards: { select: { id: true } } },
-    })
-    if (!existing || existing.businessId !== business.id) {
-      throw new NotFoundError("Loyalty card not found")
-    }
-
     const body = await cuerpoJson(request)
-    validarCamposDeTarjeta(body, existing.brandColor)
-
-    if (body.name !== undefined && (!body.name || typeof body.name !== "string" || !body.name.trim())) {
-      throw new ValidationError("Card name is required")
-    }
-    if (body.reward !== undefined && (!body.reward || typeof body.reward !== "string" || !body.reward.trim())) {
-      throw new ValidationError("Reward is required")
-    }
-    if (body.stampsRequired !== undefined) {
-      const s = Number(body.stampsRequired)
-      if (s < 1 || s > 100) throw new ValidationError("Required stamps must be between 1 and 100")
-    }
-    if (body.textColor !== undefined && !["AUTO", "DARK", "LIGHT"].includes(String(body.textColor))) {
-      throw new ValidationError("textColor must be AUTO, DARK, or LIGHT")
-    }
-    if (body.isPrimary !== undefined && typeof body.isPrimary !== "boolean") {
-      throw new ValidationError("isPrimary must be a boolean")
-    }
-
-    const stampsRequired = body.stampsRequired !== undefined ? Number(body.stampsRequired) : existing.stampsRequired
     await syncExpiredEntitlements(prisma, business.id)
 
-    const card = await prisma.$transaction(async tx => {
+    const card = await withSerializableRetry(() => prisma.$transaction(async tx => {
+      const existing = await tx.loyaltyCard.findUnique({
+        where: { id },
+        include: { milestoneRewards: { select: { id: true } } },
+      })
+      if (!existing || existing.businessId !== business.id) {
+        throw new NotFoundError("Loyalty card not found")
+      }
+
+      validarCamposDeTarjeta(body, existing.brandColor)
+
+      if (body.name !== undefined && (!body.name || typeof body.name !== "string" || !body.name.trim())) {
+        throw new ValidationError("Card name is required")
+      }
+      if (body.reward !== undefined && (!body.reward || typeof body.reward !== "string" || !body.reward.trim())) {
+        throw new ValidationError("Reward is required")
+      }
+      if (body.stampsRequired !== undefined) {
+        const s = Number(body.stampsRequired)
+        if (!Number.isInteger(s) || s < 1 || s > 100) throw new ValidationError("Required stamps must be between 1 and 100")
+      }
+      if (body.textColor !== undefined && !["AUTO", "DARK", "LIGHT"].includes(String(body.textColor))) {
+        throw new ValidationError("textColor must be AUTO, DARK, or LIGHT")
+      }
+      if (body.isPrimary !== undefined && typeof body.isPrimary !== "boolean") {
+        throw new ValidationError("isPrimary must be a boolean")
+      }
+
+      const stampsRequired = body.stampsRequired !== undefined ? Number(body.stampsRequired) : existing.stampsRequired
+
       const subscription = await tx.subscription.findFirst({
         where: { businessId: business.id, status: "ACTIVE" },
         orderBy: { createdAt: "desc" },
       })
       if (!subscription) throw new ForbiddenError("La cuenta necesita un plan activo para editar tarjetas")
       const plan = resolveEffectiveEntitlements(subscription).plan
+      const reward = body.reward?.trim() ?? existing.reward
+      const updatesOpenCycles = stampsRequired !== existing.stampsRequired || reward !== existing.reward
+      const hasProgress = updatesOpenCycles && await tx.customer.findFirst({
+        where: { cardId: id, OR: [{ stamps: { gt: 0 } }, { currentCycle: { is: { redeemedAt: null, balance: { gt: 0 } } } }] },
+        select: { id: true },
+      })
+      const currentPrimary = plan === "LITE" && body.isPrimary === true
+        ? await resolvePrimaryCard(tx, business.id, null, plan)
+        : null
+      requireCardChangeConfirmation(
+        request.headers.get("X-Confirm-Card-Change"),
+        hasProgress ? {
+          key: JSON.stringify([id, existing.stampsRequired, existing.reward, stampsRequired, reward]),
+          message: "La nueva meta y recompensa se aplicarán a los ciclos abiertos. Subir la meta puede impedir un canje que ya estaba disponible; bajarla puede habilitarlo de inmediato. Los sellos y premios ya otorgados se conservan.",
+        } : null,
+        primaryReplacement(currentPrimary, id),
+      )
       const theme = body.themeId !== undefined
         ? await resolveTheme(tx, typeof body.themeId === "string" ? body.themeId : undefined, plan)
         : null
 
       if (body.milestoneRewards !== undefined) {
-      if (!Array.isArray(body.milestoneRewards)) {
-        throw new ValidationError("milestoneRewards must be an array")
-      }
-      for (const m of body.milestoneRewards) {
-        if (m.stampNumber < 1 || m.stampNumber > stampsRequired) {
-          throw new ValidationError(`stampNumber ${m.stampNumber} is out of range (1-${stampsRequired})`)
+        if (!Array.isArray(body.milestoneRewards)) {
+          throw new ValidationError("milestoneRewards must be an array")
         }
-        if (!m.label || typeof m.label !== "string" || !m.label.trim()) {
-          throw new ValidationError("Each milestone must have a label")
+        for (const m of body.milestoneRewards) {
+          if (m.stampNumber < 1 || m.stampNumber > stampsRequired) {
+            throw new ValidationError(`stampNumber ${m.stampNumber} is out of range (1-${stampsRequired})`)
+          }
+          if (!m.label || typeof m.label !== "string" || !m.label.trim()) {
+            throw new ValidationError("Each milestone must have a label")
+          }
+          if (typeof m.probability !== "number" || m.probability < 0 || m.probability > 100) {
+            throw new ValidationError("probability must be between 0 and 100")
+          }
         }
-        if (typeof m.probability !== "number" || m.probability < 0 || m.probability > 100) {
-          throw new ValidationError("probability must be between 0 and 100")
+        const seen = new Set<number>()
+        for (const m of body.milestoneRewards) {
+          if (seen.has(m.stampNumber)) {
+            throw new ValidationError(`Duplicate stampNumber: ${m.stampNumber}`)
+          }
+          seen.add(m.stampNumber)
         }
-      }
-      const seen = new Set<number>()
-      for (const m of body.milestoneRewards) {
-        if (seen.has(m.stampNumber)) {
-          throw new ValidationError(`Duplicate stampNumber: ${m.stampNumber}`)
-        }
-        seen.add(m.stampNumber)
-      }
 
-      const incomingIds = body.milestoneRewards.filter((m: { id?: string }) => m.id).map((m: { id: string }) => m.id)
-      const toDelete = existing.milestoneRewards.filter(m => !incomingIds.includes(m.id)).map(m => m.id)
+        const incomingIds = body.milestoneRewards.filter((m: { id?: string }) => m.id).map((m: { id: string }) => m.id)
+        const toDelete = existing.milestoneRewards.filter(m => !incomingIds.includes(m.id)).map(m => m.id)
 
         if (toDelete.length > 0) {
           await tx.milestoneReward.deleteMany({ where: { id: { in: toDelete }, cardId: id } })
@@ -355,21 +375,21 @@ export async function PUT(
       }
 
       const updatedCard = await tx.loyaltyCard.update({
-      where: { id },
-      data: {
-        ...(body.name?.trim() && { name: body.name.trim() }),
-        ...(body.reward?.trim() && { reward: body.reward.trim() }),
-        ...(body.stampsRequired !== undefined && { stampsRequired }),
-        ...(body.brandColor !== undefined && { brandColor: body.brandColor }),
-        ...(body.textColor !== undefined && { textColor: body.textColor }),
-        ...(body.iconName !== undefined && { iconName: body.iconName || null }),
-        ...(body.stampIconName !== undefined && { stampIconName: body.stampIconName || null }),
-        ...(body.description !== undefined && { description: body.description?.trim() || null }),
-        ...(body.expiresAt !== undefined && { expiresAt: body.expiresAt ? new Date(body.expiresAt) : null }),
-        ...(theme && { selectedThemeId: theme.selectedThemeId, effectiveThemeId: theme.effectiveThemeId }),
-      },
-      include: { milestoneRewards: { orderBy: { stampNumber: "asc" } } },
-    })
+        where: { id },
+        data: {
+          ...(body.name?.trim() && { name: body.name.trim() }),
+          ...(body.reward?.trim() && { reward: body.reward.trim() }),
+          ...(body.stampsRequired !== undefined && { stampsRequired }),
+          ...(body.brandColor !== undefined && { brandColor: body.brandColor }),
+          ...(body.textColor !== undefined && { textColor: body.textColor }),
+          ...(body.iconName !== undefined && { iconName: body.iconName || null }),
+          ...(body.stampIconName !== undefined && { stampIconName: body.stampIconName || null }),
+          ...(body.description !== undefined && { description: body.description?.trim() || null }),
+          ...(body.expiresAt !== undefined && { expiresAt: body.expiresAt ? new Date(body.expiresAt) : null }),
+          ...(theme && { selectedThemeId: theme.selectedThemeId, effectiveThemeId: theme.effectiveThemeId }),
+        },
+        include: { milestoneRewards: { orderBy: { stampNumber: "asc" } } },
+      })
 
       if (body.isPrimary !== undefined) {
         await persistPrimaryCardPreference(tx, {
@@ -384,13 +404,25 @@ export async function PUT(
       const latest = await tx.cardConfiguration.findFirst({ where: { cardId: id }, orderBy: { version: "desc" } })
       const milestones = updatedCard.milestoneRewards.map(m => ({ stampNumber: m.stampNumber, label: m.label, iconName: m.iconName, probability: m.probability }))
       const changed = !latest || latest.stampsRequired !== updatedCard.stampsRequired || latest.reward !== updatedCard.reward || JSON.stringify(latest.milestones) !== JSON.stringify(milestones)
-      if (changed) {
-        await tx.cardConfiguration.create({
-          data: { cardId: id, version: (latest?.version ?? 0) + 1, stampsRequired: updatedCard.stampsRequired, reward: updatedCard.reward, milestones },
+      const configuration = changed
+        ? await tx.cardConfiguration.create({
+            data: { cardId: id, version: (latest?.version ?? 0) + 1, stampsRequired: updatedCard.stampsRequired, reward: updatedCard.reward, milestones },
+          })
+        : latest
+      if (updatesOpenCycles && configuration) {
+        const open = { cardId: id, redeemedAt: null }
+        await tx.loyaltyCycle.updateMany({ where: open, data: { configurationId: configuration.id } })
+        await tx.loyaltyCycle.updateMany({
+          where: { ...open, balance: { lt: updatedCard.stampsRequired }, completedAt: { not: null } },
+          data: { completedAt: null },
+        })
+        await tx.loyaltyCycle.updateMany({
+          where: { ...open, balance: { gte: updatedCard.stampsRequired }, completedAt: null },
+          data: { completedAt: new Date() },
         })
       }
       return updatedCard
-    })
+    }, { isolationLevel: "Serializable" }))
 
     return withRequestId(NextResponse.json({ card: { ...card, themeLocked: Boolean(card.selectedThemeId && card.selectedThemeId !== card.effectiveThemeId) }, milestoneRewards: card.milestoneRewards }), requestId)
   } catch (error) {

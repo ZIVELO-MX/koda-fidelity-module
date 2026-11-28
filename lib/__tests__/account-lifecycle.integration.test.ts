@@ -249,7 +249,10 @@ integration("account lifecycle PostgreSQL integration", () => {
     await expect(configurePrimaryCard(prisma, businessId, archived.id)).rejects.toBeInstanceOf(ValidationError)
     await expect(configurePrimaryCard(prisma, businessId, draft.id)).rejects.toBeInstanceOf(ValidationError)
     await expect(configurePrimaryCard(prisma, businessId, randomUUID())).rejects.toBeInstanceOf(NotFoundError)
-    await configurePrimaryCard(prisma, businessId, legacyLocked.id)
+    const challenge = await configurePrimaryCard(prisma, businessId, legacyLocked.id).catch(error => error)
+    expect(challenge).toMatchObject({ message: expect.stringContaining("Current"), confirmation: expect.any(String) })
+    await expect(prisma.loyaltyCard.findUniqueOrThrow({ where: { id: current.id } })).resolves.toMatchObject({ status: "ACTIVE" })
+    await configurePrimaryCard(prisma, businessId, legacyLocked.id, challenge.confirmation)
 
     await expect(prisma.subscription.findFirstOrThrow({ where: { businessId, status: "ACTIVE" } })).resolves.toMatchObject({ liteCardId: legacyLocked.id })
     await expect(prisma.loyaltyCard.findUniqueOrThrow({ where: { id: legacyLocked.id } })).resolves.toMatchObject({ status: "ACTIVE", isActive: true, isLite: true, selectedThemeId: proTheme.id, effectiveThemeId: null })

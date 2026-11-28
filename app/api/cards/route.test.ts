@@ -34,10 +34,10 @@ const principal = {
   user: { id: "admin-owned", role: "admin" as const },
 }
 
-function request(body: Record<string, unknown>) {
+function request(body: Record<string, unknown>, confirmation?: string) {
   return new Request("http://localhost/api/cards", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(confirmation && { "X-Confirm-Card-Change": confirmation }) },
     body: JSON.stringify(body),
   }) as NextRequest
 }
@@ -56,7 +56,7 @@ function transactionDb() {
   const tx = {
     subscription: { findFirst: vi.fn().mockResolvedValue(subscription) },
     loyaltyCard: {
-      findFirst: vi.fn().mockResolvedValue({ id: "current-card" }),
+      findFirst: vi.fn().mockResolvedValue({ id: "current-card", name: "Tarjeta anterior" }),
       create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
         createdData = { id: "new-card", ...data, milestoneRewards: [] }
         return createdData
@@ -92,7 +92,13 @@ describe("POST /api/cards primary selection", () => {
   it("sets a checked Lite card as primary through the entitlement service", async () => {
     const tx = transactionDb()
     persistPrimaryCardPreference.mockResolvedValue([])
-    const response = await POST(request({ name: "Principal nueva", reward: "Café", isPrimary: true }))
+    const payload = { name: "Principal nueva", reward: "Café", isPrimary: true }
+    const challenge = await POST(request(payload))
+    expect(challenge.status).toBe(409)
+    const { confirmation, error } = await challenge.json()
+    expect(error).toContain("Tarjeta anterior")
+    expect(tx.loyaltyCard.create).not.toHaveBeenCalled()
+    const response = await POST(request(payload, confirmation))
 
     expect(response.status).toBe(201)
     expect(tx.loyaltyCard.create).toHaveBeenCalledWith(expect.objectContaining({

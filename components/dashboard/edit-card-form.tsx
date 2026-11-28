@@ -1,5 +1,6 @@
 "use client"
 
+import { submitCardChange } from "@/lib/submit-card-change"
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
@@ -156,7 +157,7 @@ export function EditCardForm({
     setSaving(true)
 
     // Sin el catch, un error de red dejaba el botón en «Guardando» para siempre.
-    const response = await fetch(`/api/cards/${cardId}`, {
+    const response = await submitCardChange(`/api/cards/${cardId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -174,10 +175,11 @@ export function EditCardForm({
         // Una sorpresa sin etiqueta es una fila que nadie llenó.
         milestoneRewards: sorpresasQueViajan(milestones),
       }),
-    }).catch(() => null)
+    }).catch(() => undefined)
 
     setSaving(false)
 
+    if (response === null) return
     if (!response) {
       toast.error("Error de red. Los cambios no se guardaron.")
       return

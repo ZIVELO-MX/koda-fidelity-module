@@ -1,4 +1,5 @@
 import { Prisma, PrismaClient } from "@prisma/client"
+import { withSerializableRetry } from "@/lib/serializable-retry"
 import { randomUUID } from "node:crypto"
 import { NotFoundError, ValidationError } from "@/lib/api-utils"
 import { isExpired, type MilestoneRewardData } from "@/lib/card-utils"
@@ -29,20 +30,6 @@ const customerInclude = {
 function asMilestones(value: unknown): MilestoneRewardData[] {
   if (!Array.isArray(value)) return []
   return value as MilestoneRewardData[]
-}
-
-async function withSerializableRetry<T>(operation: () => Promise<T>): Promise<T> {
-  for (let attempt = 0; attempt < 7; attempt++) {
-    try {
-      return await operation()
-    } catch (error) {
-      const retryable = error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034"
-      if (!retryable || attempt === 6) throw error
-      const delayMs = Math.min(1000, 25 * 2 ** attempt)
-      await new Promise((resolve) => setTimeout(resolve, delayMs))
-    }
-  }
-  throw new Error("Serializable transaction retry exhausted")
 }
 
 // Repetir la clave es reintentar la misma operación. Con otro cliente o de otro

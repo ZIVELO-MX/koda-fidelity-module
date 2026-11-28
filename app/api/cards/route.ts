@@ -1,3 +1,5 @@
+import { withSerializableRetry } from "@/lib/serializable-retry"
+import { primaryReplacement, requireCardChangeConfirmation } from "@/lib/card-change-confirmation"
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { cuerpoJson, ForbiddenError, getBusinessFromSession, handleApiError, requestIdFrom, requireActivatedBusiness, requireRole, requireWritableBusinessPrincipal, ValidationError, withRequestId } from "@/lib/api-utils"
@@ -214,7 +216,7 @@ export async function POST(request: NextRequest) {
     }
 
     await syncExpiredEntitlements(prisma, business.id)
-    const card = await prisma.$transaction(async (tx) => {
+    const card = await withSerializableRetry(() => prisma.$transaction(async (tx) => {
       const subscription = await tx.subscription.findFirst({
         where: { businessId: business.id, status: "ACTIVE" },
         orderBy: { createdAt: "desc" },
@@ -222,8 +224,11 @@ export async function POST(request: NextRequest) {
       if (!subscription) throw new ForbiddenError("La cuenta necesita un plan activo para crear tarjetas")
 
       const plan = resolveEffectiveEntitlements(subscription).plan
-      const currentPrimary = await resolvePrimaryCard(tx, business.id, subscription.liteCardId, plan)
+      const currentPrimary = await resolvePrimaryCard(tx, business.id, plan === "LITE" ? null : subscription.liteCardId, plan)
       const primarySelection = resolveNewCardPrimarySelection(plan, currentPrimary?.id ?? null, body.isPrimary)
+      if (plan === "LITE" && primarySelection.isPrimary) {
+        requireCardChangeConfirmation(request.headers.get("X-Confirm-Card-Change"), primaryReplacement(currentPrimary))
+      }
       const theme = await resolveTheme(tx, typeof body.themeId === "string" ? body.themeId : undefined, plan)
       const created = await tx.loyaltyCard.create({
         data: {
@@ -271,7 +276,7 @@ export async function POST(request: NextRequest) {
         include: { milestoneRewards: { orderBy: { stampNumber: "asc" } } },
       })
       return { ...savedCard, themeLocked: theme.themeLocked }
-    })
+    }, { isolationLevel: "Serializable" }))
 
     return withRequestId(NextResponse.json({ card, milestoneRewards: card.milestoneRewards }, { status: 201 }), requestId)
   } catch (error) {
