@@ -1,3 +1,4 @@
+import { mensajeDeAlta, motivoNoDisponible } from "@/lib/alta-estados"
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
@@ -253,13 +254,9 @@ export async function POST(request: NextRequest) {
     if (!card) throw new NotFoundError("Loyalty card not found")
     await assertBusinessWritable(prisma, card.businessId)
 
-    if (!card.isActive || (card.status && card.status !== "ACTIVE")) {
-      throw new ValidationError("This loyalty card is no longer accepting new members")
-    }
-
-    if (isExpired(card.expiresAt)) {
-      throw new ValidationError("This loyalty card has expired")
-    }
+    if (card.status === "DRAFT") throw new NotFoundError("Tarjeta no encontrada")
+    const motivo = motivoNoDisponible(card)
+    if (motivo) throw new ValidationError(mensajeDeAlta(motivo).titulo)
 
     const resultado = await prisma.$transaction(async (tx) => {
       // No hay índice único en (cardId, email): dos altas a la vez (doble toque,

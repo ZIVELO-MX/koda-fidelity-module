@@ -1,47 +1,23 @@
 import { describe, it, expect } from "vitest"
-import { mensajeDeAlta, type MotivoAlta } from "../alta-estados"
+import { mensajeDeAlta, motivoNoDisponible } from "../alta-estados"
 
-const MOTIVOS: MotivoAlta[] = ["no-encontrada", "vencida", "cerrada", "desactivada"]
-
-describe("mensajeDeAlta", () => {
-  it("no repite el título entre motivos", () => {
-    // La regresión que arregla: los tres decían "Tarjeta no encontrada".
-    const titulos = MOTIVOS.map((m) => mensajeDeAlta(m).titulo)
-    expect(new Set(titulos).size).toBe(MOTIVOS.length)
+describe("estados públicos de alta", () => {
+  it.each(["ARCHIVED", "LOCKED_BY_PLAN"])("usa el mismo mensaje discreto para %s", status => {
+    const motivo = motivoNoDisponible({ isActive: false, status, expiresAt: null })
+    expect(motivo).toBe("no-disponible")
+    expect(mensajeDeAlta(motivo!).titulo).toBe("Esta tarjeta no está disponible")
+    expect(mensajeDeAlta(motivo!).accion.href).toBe("/my-cards")
   })
 
-  it("manda a las tarjetas propias cuando la persona ya podía tener sellos", () => {
+  it("comunica que una tarjeta vencida puede volver a estar disponible", () => {
+    expect(motivoNoDisponible({ isActive: true, status: "ACTIVE", expiresAt: "2020-01-01" })).toBe("vencida")
+    expect(mensajeDeAlta("vencida").titulo).toBe("Esta tarjeta no está disponible por ahora")
     expect(mensajeDeAlta("vencida").accion.href).toBe("/my-cards")
-    expect(mensajeDeAlta("cerrada").accion.href).toBe("/my-cards")
-    expect(mensajeDeAlta("desactivada").accion.href).toBe("/my-cards")
   })
 
-  it("la desactivación por plan avisa, no alarma, y dice que los sellos siguen", () => {
-    const mensaje = mensajeDeAlta("desactivada")
-    // Ámbar, no rojo: la tarjeta no está rota y quien la escanea no tiene nada
-    // que ver con el plan del negocio.
-    expect(mensaje.tono).toBe("aviso")
-    expect(mensaje.detalle).toMatch(/siguen guardados/i)
-    // Sin culpar a nadie ni pedir algo que el cliente no puede hacer.
-    expect(mensaje.detalle).not.toMatch(/error|tu culpa|inténtalo de nuevo/i)
-  })
-
-  it("solo la desactivación lleva tono de aviso", () => {
-    for (const motivo of MOTIVOS.filter((m) => m !== "desactivada")) {
-      expect(mensajeDeAlta(motivo).tono, motivo).toBeUndefined()
-    }
-  })
-
-  it("manda al inicio cuando la tarjeta nunca existió", () => {
+  it("distingue el enlace inexistente de una falla transitoria", () => {
     expect(mensajeDeAlta("no-encontrada").accion.href).toBe("/")
-  })
-
-  it("cada motivo dice qué hacer", () => {
-    for (const motivo of MOTIVOS) {
-      const mensaje = mensajeDeAlta(motivo)
-      expect(mensaje.detalle.length, motivo).toBeGreaterThan(40)
-      expect(mensaje.accion.texto.length, motivo).toBeGreaterThan(0)
-      expect(mensaje.titulo, motivo).not.toContain("—")
-    }
+    expect(mensajeDeAlta("sin-conexion").accion.texto).toBe("Reintentar")
+    expect(motivoNoDisponible({ isActive: true, status: "ACTIVE", expiresAt: null })).toBeNull()
   })
 })

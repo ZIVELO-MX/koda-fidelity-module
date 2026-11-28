@@ -1,3 +1,4 @@
+import { mensajeDeAlta, motivoNoDisponible } from "@/lib/alta-estados"
 import type { Metadata } from "next"
 import { prisma } from "@/lib/prisma"
 import { siteConfig } from "@/lib/site-config"
@@ -12,13 +13,16 @@ export async function generateMetadata({
   const card = await prisma.loyaltyCard.findUnique({
     where: { id: cardId },
     include: { business: true },
-  })
+  }).catch(() => null)
 
-  if (!card) {
+  if (!card || card.status === "DRAFT") {
     return {
       title: "Este enlace no lleva a ninguna tarjeta",
     }
   }
+
+  const motivo = motivoNoDisponible(card)
+  if (motivo) return { title: mensajeDeAlta(motivo).titulo }
 
   const ogImageUrl = `/join/${cardId}/opengraph-image`
   const title = `Únete a ${card.business.name} - ${siteConfig.name}`

@@ -1,3 +1,4 @@
+import { motivoNoDisponible } from "@/lib/alta-estados"
 import { ImageResponse } from "next/og"
 import { siteConfig } from "@/lib/site-config"
 import { prisma } from "@/lib/prisma"
@@ -26,11 +27,13 @@ export default async function Image({
       stampsRequired: true,
       brandColor: true,
       expiresAt: true,
+      isActive: true,
+      status: true,
       business: {
         select: { name: true },
       },
     },
-  })
+  }).catch(() => null)
 
   const fallback = (
     <div
@@ -52,7 +55,7 @@ export default async function Image({
     </div>
   )
 
-  if (!card) return new ImageResponse(fallback, { width: 1200, height: 630 })
+  if (!card || motivoNoDisponible(card)) return new ImageResponse(fallback, { width: 1200, height: 630 })
 
   const accent = card.brandColor || siteConfig.defaultBrandColor
   const accentOnDark = isLight(accent) ? "#111827" : "#ffffff"
