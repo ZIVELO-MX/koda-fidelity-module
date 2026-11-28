@@ -1,5 +1,6 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest"
 import { prisma } from "@/lib/prisma"
+import { executeLoyaltyOperation } from "@/lib/loyalty-engine"
 import { activateManualSubscription } from "@/lib/account-lifecycle"
 
 const { getBusinessFromSession, requireWritableBusinessPrincipal } = vi.hoisted(() => ({
@@ -15,6 +16,8 @@ vi.mock("@/lib/api-utils", async () => ({
 
 import { GET as listCards, POST as createCard } from "./route"
 import { DELETE as deleteCard, GET as getCard, PUT as updateCard } from "./[id]/route"
+
+import { POST as restoreCard } from "./[id]/restore/route"
 
 const integration = describe.skipIf(process.env.CI !== "true")
 
@@ -213,4 +216,92 @@ integration("Cards API CRUD contract", () => {
     await expect(prisma.milestoneReward.findMany({ where: { cardId: created.card.id }, orderBy: { stampNumber: "asc" }, select: { label: true, stampNumber: true } }))
       .resolves.toEqual([{ label: "Galleta", stampNumber: 3 }, { label: "Pan", stampNumber: 5 }])
   }, 30_000)
+
+  it("requires confirmation before changing open cycles and recalculates redeem eligibility", async () => {
+    const suffix = crypto.randomUUID()
+    const business = await prisma.business.create({ data: { name: "Cycle rules", email: `cycles-${suffix}@test.invalid` } })
+    businessIds.push(business.id)
+    await activateManualSubscription(prisma, { businessId: business.id, plan: "PRO" })
+    requireWritableBusinessPrincipal.mockResolvedValue({ business, user: { role: "admin" } })
+    const card = await prisma.loyaltyCard.create({ data: {
+      businessId: business.id, name: "Club", reward: "Café", stampsRequired: 2,
+      milestoneRewards: { create: { stampNumber: 1, label: "Sorpresa", probability: 100 } },
+    } })
+    const customer = await prisma.customer.create({ data: { cardId: card.id, name: "Cliente" } })
+    const operate = (type: "stamp" | "redeem") => executeLoyaltyOperation(prisma, {
+      businessId: business.id, customerId: customer.id, type, idempotencyKey: crypto.randomUUID(),
+    })
+    await operate("stamp")
+    await operate("stamp")
+    const firstRedemption = await operate("redeem")
+    await operate("stamp")
+    const open = await operate("stamp")
+    const openId = open.cycleId
+    const historicalId = firstRedemption.cycleId
+    if (!openId || !historicalId) throw new Error("Se esperaban ciclos de prueba")
+    const prior = await prisma.loyaltyCycle.findUniqueOrThrow({ where: { id: openId } })
+    const historical = await prisma.loyaltyCycle.findUniqueOrThrow({ where: { id: historicalId } })
+    const params = { params: Promise.resolve({ id: card.id }) }
+    const update = (stampsRequired: number, reward: string, confirmation?: string) => updateCard(new Request("http://localhost/api/cards/item", {
+      method: "PUT",
+      headers: confirmation ? { "X-Confirm-Card-Change": confirmation } : undefined,
+      body: JSON.stringify({ stampsRequired, reward }),
+    }) as never, params)
+
+    const challenge = await update(3, "Té")
+    expect(challenge.status).toBe(409)
+    const { confirmation } = await challenge.json()
+    await expect(prisma.loyaltyCard.findUniqueOrThrow({ where: { id: card.id } })).resolves.toMatchObject({ stampsRequired: 2, reward: "Café" })
+    await expect(prisma.loyaltyCycle.findUniqueOrThrow({ where: { id: openId } })).resolves.toMatchObject({ configurationId: prior.configurationId })
+    expect((await update(3, "Té", confirmation)).status).toBe(200)
+    await expect(operate("redeem")).rejects.toThrow("Faltan 1 sellos")
+    await expect(prisma.loyaltyCycle.findUniqueOrThrow({ where: { id: openId } })).resolves.toMatchObject({ balance: 2, completedAt: null })
+
+    const lower = await update(1, "Pan")
+    expect(lower.status).toBe(409)
+    expect((await update(1, "Pan", (await lower.json()).confirmation)).status).toBe(200)
+    const current = await prisma.loyaltyCycle.findUniqueOrThrow({ where: { id: openId } })
+    expect(current).toMatchObject({ balance: 2, completedAt: expect.any(Date) })
+    await expect(operate("redeem")).resolves.toMatchObject({ message: expect.stringContaining("Pan") })
+    await expect(prisma.loyaltyCycle.findUniqueOrThrow({ where: { id: historicalId } })).resolves.toEqual(historical)
+    expect(await prisma.customerMilestoneClaim.count({ where: { customerId: customer.id } })).toBe(2)
+  })
+
+  it("keeps the published Lite card until an edit or restore replacement is confirmed", async () => {
+    const suffix = crypto.randomUUID()
+    const business = await prisma.business.create({ data: { name: "Primary rules", email: `primary-${suffix}@test.invalid` } })
+    businessIds.push(business.id)
+    const [current, locked, archived] = await prisma.loyaltyCard.createManyAndReturn({ data: [
+      { businessId: business.id, name: "Actual", reward: "Café", isLite: true },
+      { businessId: business.id, name: "Bloqueada", reward: "Café", status: "LOCKED_BY_PLAN", isActive: false },
+      { businessId: business.id, name: "Archivada", reward: "Café", status: "ARCHIVED", isActive: false },
+    ] })
+    const subscription = await activateManualSubscription(prisma, { businessId: business.id, plan: "LITE", proAccessGranted: false })
+    requireWritableBusinessPrincipal.mockResolvedValue({ business, user: { role: "admin" } })
+    const edit = (confirmation?: string) => updateCard(new Request("http://localhost/api/cards/item", {
+      method: "PUT",
+      headers: confirmation ? { "X-Confirm-Card-Change": confirmation } : undefined,
+      body: JSON.stringify({ isPrimary: true }),
+    }) as never, { params: Promise.resolve({ id: locked.id }) })
+    const editChallenge = await edit()
+    expect(editChallenge.status).toBe(409)
+    expect(await prisma.loyaltyCard.findUniqueOrThrow({ where: { id: current.id } })).toMatchObject({ status: "ACTIVE" })
+    expect((await edit((await editChallenge.json()).confirmation)).status).toBe(200)
+    expect(await prisma.loyaltyCard.findUniqueOrThrow({ where: { id: current.id } })).toMatchObject({ status: "LOCKED_BY_PLAN" })
+
+    // Una preferencia antigua por la tarjeta archivada provocaba un reemplazo al restaurarla.
+    await prisma.subscription.update({ where: { id: subscription.id }, data: { liteCardId: archived.id } })
+    const restore = (confirmation?: string) => restoreCard(new Request("http://localhost/api/cards/item/restore", {
+      method: "POST",
+      headers: confirmation ? { "X-Confirm-Card-Change": confirmation } : undefined,
+    }) as never, { params: Promise.resolve({ id: archived.id }) })
+    const restoreChallenge = await restore()
+    expect(restoreChallenge.status).toBe(409)
+    expect(await prisma.loyaltyCard.findUniqueOrThrow({ where: { id: archived.id } })).toMatchObject({ status: "ARCHIVED" })
+    expect(await prisma.loyaltyCard.findUniqueOrThrow({ where: { id: locked.id } })).toMatchObject({ status: "ACTIVE" })
+    expect((await restore((await restoreChallenge.json()).confirmation)).status).toBe(200)
+    expect(await prisma.loyaltyCard.findUniqueOrThrow({ where: { id: archived.id } })).toMatchObject({ status: "ACTIVE" })
+    expect(await prisma.loyaltyCard.findUniqueOrThrow({ where: { id: locked.id } })).toMatchObject({ status: "LOCKED_BY_PLAN" })
+  })
+
 })

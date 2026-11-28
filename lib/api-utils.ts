@@ -33,6 +33,12 @@ export class ConflictError extends Error {
   }
 }
 
+export class CardChangeConfirmationError extends ConflictError {
+  constructor(message: string, readonly confirmation: string) {
+    super(message)
+  }
+}
+
 export class AccountReadOnlyError extends Error {
   constructor(readonly scheduledFor: Date) {
     super("La cuenta está en periodo de cierre y sólo permite consultas, exportación o cancelación")
@@ -247,6 +253,9 @@ export function handleApiError(error: unknown, requestId: string = randomUUID())
   }
   if (error instanceof RateLimitError) {
     return NextResponse.json({ error: "Too many requests", code: "KF-RATE-001", action: "Espera unos minutos e inténtalo de nuevo.", requestId, retryable: true }, { status: 429, headers: { "x-request-id": requestId } })
+  }
+  if (error instanceof CardChangeConfirmationError) {
+    return NextResponse.json({ error: error.message, code: "KF-CARD-CONFIRMATION", confirmation: error.confirmation, action: "Confirma el cambio para continuar.", requestId, retryable: false }, { status: 409, headers: { "x-request-id": requestId } })
   }
   if (error instanceof ConflictError) {
     return NextResponse.json({ error: error.message, code: "KF-REQUEST-001", action: "Recarga los datos e inténtalo de nuevo.", requestId, retryable: true }, { status: 409, headers: { "x-request-id": requestId } })

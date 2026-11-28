@@ -50,7 +50,7 @@ describe("POST /api/cards/{id}/primary", () => {
     expect(response.headers.get("Cache-Control")).toBe("private, no-store")
     expect(response.headers.get("x-request-id")).toBe("request-test")
     expect(syncExpiredEntitlements).toHaveBeenCalledWith(expect.anything(), "business-owned")
-    expect(configurePrimaryCard).toHaveBeenCalledWith(expect.anything(), "business-owned", "card-owned")
+    expect(configurePrimaryCard).toHaveBeenCalledWith(expect.anything(), "business-owned", "card-owned", null)
     expect(await response.json()).toEqual({ success: true, cardId: "card-owned", plan: "LITE" })
   })
 

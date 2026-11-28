@@ -35,7 +35,7 @@ export async function POST(
     requireRole(user, "admin")
     await syncExpiredEntitlements(prisma, business.id)
     const { id } = await params
-    const result = await configurePrimaryCard(prisma, business.id, id)
+    const result = await configurePrimaryCard(prisma, business.id, id, request.headers.get("X-Confirm-Card-Change"))
     return withRequestId(NextResponse.json({ success: true, ...result }, { headers: { "Cache-Control": "private, no-store" } }), requestId)
   } catch (error) {
     return withRequestId(handleApiError(error, requestId), requestId)

@@ -63,7 +63,7 @@ function transactionDb(plan: "LITE" | "PRO", liteCardId = "card-owned") {
   }
   const tx = {
     subscription: { findFirst: vi.fn().mockResolvedValue(subscription), update: vi.fn() },
-    loyaltyCard: { update: vi.fn().mockResolvedValue({ ...existingCard }) },
+    loyaltyCard: { findUnique: findCard, findFirst: vi.fn().mockResolvedValue(null), update: vi.fn().mockResolvedValue({ ...existingCard }) },
     cardConfiguration: {
       findFirst: vi.fn().mockResolvedValue(null),
       create: vi.fn().mockResolvedValue({}),

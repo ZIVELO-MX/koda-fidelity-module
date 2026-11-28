@@ -1,5 +1,7 @@
+import { withSerializableRetry } from "@/lib/serializable-retry"
 import { Prisma, PrismaClient, Subscription, SubscriptionPlan } from "@prisma/client"
 import { AccountReadOnlyError, ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@/lib/api-utils"
+import { primaryReplacement, requireCardChangeConfirmation } from "@/lib/card-change-confirmation"
 import { isAutomaticProExpiryEnabled } from "@/lib/config"
 import { createAdminClient } from "@/lib/supabase-admin"
 
@@ -206,8 +208,8 @@ export async function applyEntitlements(db: PrismaClient | Prisma.TransactionCli
   return [keep]
 }
 
-export async function configurePrimaryCard(db: PrismaClient, businessId: string, cardId: string) {
-  return db.$transaction(async (tx) => {
+export async function configurePrimaryCard(db: PrismaClient, businessId: string, cardId: string, confirmation?: string | null) {
+  return withSerializableRetry(() => db.$transaction(async (tx) => {
     const subscription = await tx.subscription.findFirst({
       where: { businessId, status: "ACTIVE" },
       orderBy: { createdAt: "desc" },
@@ -221,6 +223,10 @@ export async function configurePrimaryCard(db: PrismaClient, businessId: string,
     }
 
     const plan = resolveEffectiveEntitlements(subscription).plan
+    if (plan === SubscriptionPlan.LITE) {
+      const current = await resolvePrimaryCard(tx, businessId, null, plan)
+      requireCardChangeConfirmation(confirmation, primaryReplacement(current, card.id))
+    }
     await tx.subscription.update({ where: { id: subscription.id }, data: { liteCardId: card.id } })
 
     if (plan === SubscriptionPlan.LITE) {
@@ -233,7 +239,7 @@ export async function configurePrimaryCard(db: PrismaClient, businessId: string,
     }
 
     return { cardId: card.id, plan }
-  })
+  }, { isolationLevel: "Serializable" }))
 }
 
 export async function resolvePrimaryCard(
