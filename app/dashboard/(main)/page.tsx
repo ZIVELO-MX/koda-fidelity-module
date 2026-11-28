@@ -4,28 +4,14 @@ import { Button } from "@/components/ui/button"
 import { StatCard } from "@/components/dashboard/stat-card"
 import { MetricasHistoricas } from "@/components/dashboard/metricas-historicas"
 import { ActividadPaginada } from "@/components/dashboard/actividad-paginada"
+import type { LoyaltyCard, StampLog } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@/lib/supabase-server"
 import { getCardIcon } from "@/lib/card-icons"
 import { daysUntilExpiry } from "@/lib/card-utils"
 import { inicioDelDia, inicioDelDiaAnterior } from "@/lib/dia-local"
+import { findNearRewardPreview, summarizeActiveCardCustomers } from "@/lib/dashboard-card-metrics"
 import { Users, Stamp, Gift, Plus, ArrowRight, AlertCircle, Eye, AlertTriangle } from "lucide-react"
-
-const ZONA = "America/Mexico_City"
-
-const HORA = new Intl.DateTimeFormat("es-MX", {
-  timeZone: ZONA,
-  hour: "2-digit",
-  minute: "2-digit",
-  hour12: false,
-})
-
-const DIA = new Intl.DateTimeFormat("es-MX", { timeZone: ZONA, day: "numeric", month: "short" })
-
-/** Hora del evento si es de hoy, y su fecha corta si no. */
-function cuando(fecha: Date, inicioDeHoy: Date): string {
-  return fecha >= inicioDeHoy ? HORA.format(fecha) : DIA.format(fecha)
-}
 
 function contraAyer(hoy: number, ayer: number): {
   change: string
@@ -61,7 +47,7 @@ export default async function DashboardPage() {
 
   const business = await prisma.business.findUnique({
     where: { id: userRecord.businessId },
-    select: { id: true, name: true, nickname: true, brandColor: true, logoUrl: true, iconName: true },
+    select: { id: true, name: true, nickname: true, timezone: true, brandColor: true, logoUrl: true, iconName: true },
   })
 
   if (!business) {
@@ -69,26 +55,24 @@ export default async function DashboardPage() {
   }
 
   const ahora = new Date()
-  const inicioDeHoy = inicioDelDia(ahora)
-  const inicioDeAyer = inicioDelDiaAnterior(ahora)
+  const inicioDeHoy = inicioDelDia(ahora, business.timezone)
+  const inicioDeAyer = inicioDelDiaAnterior(ahora, business.timezone)
   // Hoy va a medias y ayer está completo, así que ayer se corta a la misma hora
   // del día. Si no, la comparación diría "menos que ayer" toda la mañana.
   const corteDeAyer = new Date(inicioDeAyer.getTime() + (ahora.getTime() - inicioDeHoy.getTime()))
 
   let loadingError = false
-  let cards: any[] = []
-  let allLogs: any[] = []
+  let cards: LoyaltyCard[] = []
+  let allLogs: (StampLog & { customer: { name: string; card: { name: string } } | null })[] = []
+  let totals: Awaited<ReturnType<typeof summarizeActiveCardCustomers>> = []
+  let aUnSello: Awaited<ReturnType<typeof findNearRewardPreview>> = []
   let logsDelPeriodo: { type: string; createdAt: Date }[] = []
   let altasDelPeriodo: { createdAt: Date }[] = []
 
   try {
-    const [fetchedCards, fetchedLogs, fetchedPeriodo, fetchedAltas] = await Promise.all([
+    const [fetchedCards, fetchedLogs, fetchedPeriodo, fetchedAltas, fetchedTotals, fetchedNearReward] = await Promise.all([
       prisma.loyaltyCard.findMany({
         where: { businessId: business.id, isActive: true },
-        include: {
-          _count: { select: { customers: { where: { isActive: true } } } },
-          customers: { where: { isActive: true }, select: { id: true, name: true, stamps: true, currentCycle: { select: { configuration: { select: { stampsRequired: true } } } } } },
-        },
         orderBy: { createdAt: "desc" },
       }),
       // La lista solo distingue sello y canje: un alta, una tarjeta llena o una
@@ -112,12 +96,16 @@ export default async function DashboardPage() {
         where: { card: { businessId: business.id }, createdAt: { gte: inicioDeAyer } },
         select: { createdAt: true },
       }),
+      summarizeActiveCardCustomers(business.id),
+      findNearRewardPreview(business.id),
     ])
 
     cards = fetchedCards
     allLogs = fetchedLogs
     logsDelPeriodo = fetchedPeriodo
     altasDelPeriodo = fetchedAltas
+    totals = fetchedTotals
+    aUnSello = fetchedNearReward
   } catch {
     loadingError = true
   }
@@ -151,15 +139,17 @@ export default async function DashboardPage() {
   const altasAyer = altasDelPeriodo.filter((c) => deAyerALaMismaHora(c.createdAt)).length
 
   const soonExpiring = cards
-    .map((c) => ({ ...c, daysLeft: daysUntilExpiry(c.expiresAt) }))
+    .map((c) => ({ ...c, daysLeft: daysUntilExpiry(c.expiresAt, business.timezone) }))
     .filter((c) => c.daysLeft !== null && c.daysLeft >= 0 && c.daysLeft <= 7)
 
-  const aUnSello = cards.flatMap((card) =>
-    (card.customers as any[])
-      // La meta es la del ciclo en curso, con la que canjea el motor.
-      .filter((cliente) => (cliente.currentCycle?.configuration.stampsRequired ?? card.stampsRequired) - cliente.stamps === 1)
-      .map((cliente) => ({ id: cliente.id, nombre: cliente.name, tarjeta: card.name })),
-  )
+  const totalsByCard = new Map(totals.map(total => [total.cardId, total]))
+  const totalAUnSello = Number(aUnSello[0]?.total ?? 0)
+  const hora = new Intl.DateTimeFormat("es-MX", {
+    timeZone: business.timezone, hour: "2-digit", minute: "2-digit", hour12: false,
+  })
+  const dia = new Intl.DateTimeFormat("es-MX", {
+    timeZone: business.timezone, day: "numeric", month: "short",
+  })
 
   const hayAtencion = aUnSello.length > 0 || soonExpiring.length > 0
 
@@ -193,9 +183,9 @@ export default async function DashboardPage() {
             {aUnSello.length > 0 && (
               <div className="space-y-1">
                 <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-                  {aUnSello.length === 1
+                  {totalAUnSello === 1
                     ? "Un cliente está a un sello de completar"
-                    : `${aUnSello.length} clientes están a un sello de completar`}
+                    : `${totalAUnSello} clientes están a un sello de completar`}
                 </p>
                 <ul className="space-y-0.5">
                   {aUnSello.map((cliente) => (
@@ -206,6 +196,11 @@ export default async function DashboardPage() {
                     </li>
                   ))}
                 </ul>
+                {totalAUnSello > aUnSello.length && (
+                  <p className="text-sm text-amber-700 dark:text-amber-400">
+                    Se muestran {aUnSello.length} de {totalAUnSello}. <Link href="/dashboard/customers" className="underline">Ver clientes</Link>
+                  </p>
+                )}
               </div>
             )}
 
@@ -304,10 +299,10 @@ export default async function DashboardPage() {
                   </p>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">
-                      <span className="font-medium text-foreground">{card._count.customers}</span> clientes
+                      <span className="font-medium text-foreground">{totalsByCard.get(card.id)?._count._all ?? 0}</span> clientes
                     </span>
                     <span className="text-muted-foreground">
-                      <span className="font-medium text-foreground">{(card.customers as any[]).reduce((s: number, c: any) => s + c.stamps, 0)}</span> sellos
+                      <span className="font-medium text-foreground">{totalsByCard.get(card.id)?._sum.stamps ?? 0}</span> sellos
                     </span>
                   </div>
                 </div>
@@ -361,18 +356,18 @@ export default async function DashboardPage() {
                       {log.type === "stamp" ? <Stamp className="h-4 w-4" /> : <Gift className="h-4 w-4" />}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-foreground truncate">{log.customer.name}</p>
+                      <p className="text-sm font-medium text-foreground truncate">{log.customer?.name ?? "Cliente"}</p>
                       <p className="text-xs text-muted-foreground truncate">
                         {log.type === "stamp" ? "Recibió un sello" : "Canjeó su recompensa"}
                         {" · "}
-                        {log.customer.card.name}
+                        {log.customer?.card.name}
                       </p>
                     </div>
                     <time
                       dateTime={log.createdAt.toISOString()}
                       className="font-mono tabular-nums text-xs text-muted-foreground shrink-0"
                     >
-                      {cuando(log.createdAt, inicioDeHoy)}
+                      {(deHoy(log.createdAt) ? hora : dia).format(log.createdAt)}
                     </time>
                   </li>
                 ))}

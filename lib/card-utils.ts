@@ -27,9 +27,9 @@ export function expiryInputValue(expiresAt: Date | string): string {
   return new Date(expiresAt).toISOString().slice(0, 10)
 }
 
-export function daysUntilExpiry(expiresAt: Date | string | null | undefined): number | null {
+export function daysUntilExpiry(expiresAt: Date | string | null | undefined, timezone?: string): number | null {
   if (!expiresAt) return null
-  return Math.round((startOfUTCDay(new Date(expiresAt)) - hoy()) / 86_400_000)
+  return Math.round((startOfUTCDay(new Date(expiresAt)) - Date.parse(fechaLocal(new Date(), timezone))) / 86_400_000)
 }
 
 export function addDays(days: number): Date {
