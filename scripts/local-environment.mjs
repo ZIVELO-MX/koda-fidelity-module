@@ -1,6 +1,6 @@
 import { execFileSync, spawn } from "node:child_process"
 import { parseEnv } from "node:util"
-import { createHmac } from "node:crypto"
+import { createHmac, randomBytes } from "node:crypto"
 
 function run(command, args, env = process.env) {
   return new Promise((resolve, reject) => {
@@ -50,7 +50,10 @@ async function main() {
     SMTP_USER: "",
     SMTP_PASS: "",
     NEXT_TELEMETRY_DISABLED: "1",
-    AUTH_SECURITY_SECRET: createHmac("sha256", status.SERVICE_ROLE_KEY).update("koda-local-auth").digest("hex"),
+    // Cada corrida de pruebas usa sus propios contadores de Auth en la base local.
+    AUTH_SECURITY_SECRET: mode === "test"
+      ? randomBytes(32).toString("hex")
+      : createHmac("sha256", status.SERVICE_ROLE_KEY).update("koda-local-auth").digest("hex"),
     CRON_SECRET: "",
     SUPABASE_PRIVATE_AVATAR_BUCKET: "avatars",
     SUPABASE_STORAGE_BUCKET: "pass-images",

@@ -76,71 +76,96 @@ export default function JoinCardPage() {
   const formRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    const controller = new AbortController()
+    const { signal } = controller
+    const fail = (reason: MotivoAlta) => {
+      setMotivo(reason)
+      setStep("error")
+    }
+    const sessionFailure = (status: number) =>
+      status === 401 || status === 403 ? "sesion-vencida" : "sin-conexion"
+
     const init = async () => {
-      const cardRes = await fetch(`/api/cards/${cardId}`).catch(() => null)
-      if (!cardRes?.ok) {
-        setMotivo(cardRes?.status === 404 ? "no-encontrada" : "sin-conexion")
-        setStep("error")
+      const cardRes = await fetch(`/api/cards/${cardId}`, { signal })
+      if (!cardRes.ok) {
+        fail(cardRes.status === 404 ? "no-encontrada" : "sin-conexion")
         return
       }
-      const cardJson = await cardRes.json()
-      if (!cardJson.card.available) {
-        setMotivo(cardJson.card.reason)
-        setStep("error")
+      const { card } = await cardRes.json()
+      if (!card.available) {
+        fail(card.reason)
         return
       }
-      setCardData(cardJson.card)
+      setCardData(card)
 
       const supabase = createBrowserSupabase()
       const { data: { session } } = await supabase.auth.getSession()
+      if (signal.aborted) return
+      if (!session?.user?.email) {
+        setStep("form")
+        return
+      }
 
-      if (session?.user?.email) {
-        const email = session.user.email
-        const name = session.user.user_metadata?.name || email.split("@")[0]
-        if (cardJson.card.requiresEmailConfirmation && !session.user.email_confirmed_at) {
-          setName(name)
-          setEmail(email)
-          setStep("verify-email")
-          return
-        }
+      const email = session.user.email
+      const name = session.user.user_metadata?.name || email.split("@")[0]
+      if (card.requiresEmailConfirmation && !session.user.email_confirmed_at) {
+        setEmail(email)
+        setStep("verify-email")
+        return
+      }
 
-        const custRes = await fetch(
-          `/api/join?email=${encodeURIComponent(email)}&cardId=${encodeURIComponent(cardId)}`,
-        )
-        if (custRes.ok) {
-          const data = await custRes.json()
-          if (data.customers?.length > 0) {
-            setCustomer(data.customers[0])
-            setStep("ready")
-            return
-          }
-        }
-
-        const createRes = await fetch("/api/join", {
+      const lookupUrl = `/api/join?${new URLSearchParams({ email, cardId })}`
+      const initialLookup = await fetch(lookupUrl, { signal })
+      if (!initialLookup.ok) {
+        fail(sessionFailure(initialLookup.status))
+        return
+      }
+      let [membership] = (await initialLookup.json()).customers
+      if (!membership) {
+        const created = await fetch("/api/join", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name, email, cardId }),
+          signal,
         })
-        if (createRes.ok) {
-          const custRes3 = await fetch(`/api/join?email=${encodeURIComponent(email)}&cardId=${encodeURIComponent(cardId)}`)
-          if (custRes3.ok) {
-            const data3 = await custRes3.json()
-            if (data3.customers?.length > 0) {
-              setCustomer(data3.customers[0])
-              setStep("ready")
+        if (!created.ok) {
+          if (created.status === 400 || created.status === 404) {
+            const latest = await fetch(`/api/cards/${cardId}`, { signal })
+            if (latest.status === 404) {
+              fail("no-encontrada")
               return
             }
+            if (latest.ok) {
+              const { card } = await latest.json()
+              if (!card.available) {
+                fail(card.reason)
+                return
+              }
+            }
           }
+          fail(sessionFailure(created.status))
+          return
         }
+        const refreshed = await fetch(lookupUrl, { signal })
+        if (!refreshed.ok) {
+          fail(sessionFailure(refreshed.status))
+          return
+        }
+        const { customers } = await refreshed.json()
+        membership = customers[0]
       }
-
-      setStep("form")
+      if (!membership) {
+        fail("sin-conexion")
+        return
+      }
+      setCustomer(membership)
+      setStep("ready")
     }
 
     init().catch(() => {
-      setMotivo("sin-conexion")
-      setStep("error")
+      if (!signal.aborted) fail("sin-conexion")
     })
+    return () => controller.abort()
   }, [cardId])
 
   const scrollToForm = useCallback(() => {
@@ -212,12 +237,16 @@ export default function JoinCardPage() {
     // Cada motivo dice qué pasó y a dónde ir. Antes los tres salían bajo
     // "Tarjeta no encontrada". Ver lib/alta-estados.ts.
     const mensaje = mensajeDeAlta(motivo)
+    const joinPath = `/join/${cardId}`
+    const actionHref = motivo === "sesion-vencida"
+      ? `/login?next=${encodeURIComponent(joinPath)}`
+      : mensaje.accion.href || joinPath
     return (
       <div className="min-h-screen bg-background forced-light flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-sm space-y-4 text-center">          <h1 className="text-2xl font-bold text-foreground">{mensaje.titulo}</h1>
           <p className="text-muted-foreground">{mensaje.detalle}</p>
           <Button asChild variant="outline" className="min-h-11">
-            <Link href={mensaje.accion.href || `/join/${cardId}`} onClick={motivo === "sin-conexion" ? event => { event.preventDefault(); window.location.reload() } : undefined}>{mensaje.accion.texto}</Link>
+            <Link href={actionHref} onClick={motivo === "sin-conexion" ? event => { event.preventDefault(); window.location.reload() } : undefined}>{mensaje.accion.texto}</Link>
           </Button>
         </div>
       </div>

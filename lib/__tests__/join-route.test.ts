@@ -67,7 +67,7 @@ describe("POST /api/join", () => {
     const res = await POST(makeRequest({ email: "a@b.com", cardId: "card1" }))
     expect(res.status).toBe(400)
     const body = await res.json()
-    expect(body.error).toContain("Name is required")
+    expect(body.error).toBe("Escribe tu nombre")
   })
 
   it("returns 400 when name is blank", async () => {
@@ -79,14 +79,14 @@ describe("POST /api/join", () => {
     const res = await POST(makeRequest({ name: "Ana", email: "invalidemail", cardId: "card1" }))
     expect(res.status).toBe(400)
     const body = await res.json()
-    expect(body.error).toContain("Invalid email")
+    expect(body.error).toBe("Escribe un correo electrónico válido")
   })
 
   it("returns 400 when cardId is missing", async () => {
     const res = await POST(makeRequest({ name: "Ana", email: "a@b.com" }))
     expect(res.status).toBe(400)
     const body = await res.json()
-    expect(body.error).toContain("Invalid card ID")
+    expect(body.error).toBe("Identificador de tarjeta inválido")
   })
 
   it("returns 404 when card does not exist", async () => {
