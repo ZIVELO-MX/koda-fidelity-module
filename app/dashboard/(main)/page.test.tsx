@@ -26,7 +26,7 @@ describe("inicio del panel", () => {
       id: "card-1", name: "Club", stampsRequired: 8, expiresAt: null,
     }])
 
-    nearReward.mockResolvedValue([{ id: "c1", nombre: "Ana", tarjeta: "Club", total: 1n }])
+    nearReward.mockResolvedValue([{ id: "c1", nombre: "Ana", tarjeta: "Club", total: BigInt(1) }])
 
     const html = renderToStaticMarkup(await DashboardPage())
 
